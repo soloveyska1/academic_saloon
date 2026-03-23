@@ -25,7 +25,7 @@ const WORK_TYPE_LABELS: Record<string, string> = {
   presentation: 'Презентация',
   control: 'Контрольная',
   independent: 'Самостоятельная',
-  report: 'Доклад',
+  report: 'Реферат',
   photo_task: 'Фото задания',
   other: 'Другое',
 }
@@ -74,7 +74,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.14em',
-              color: 'rgba(255,255,255,0.32)',
+              color: 'rgba(255,255,255,0.56)',
               textTransform: 'uppercase',
               marginBottom: 8,
             }}
@@ -234,7 +234,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.12em',
-              color: embedded ? 'rgba(255,255,255,0.32)' : 'rgba(212,175,55,0.72)',
+              color: embedded ? 'rgba(255,255,255,0.56)' : 'rgba(212,175,55,0.72)',
               textTransform: 'uppercase',
             }}
           >

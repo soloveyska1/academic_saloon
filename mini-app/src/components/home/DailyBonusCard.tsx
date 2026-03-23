@@ -232,7 +232,7 @@ function DailyBonusCardInner({
                         {Math.max(0, currentStreak)}
                       </span>
                       <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {currentStreak === 1 ? 'день подряд' : 'дня подряд'}
+                        {currentStreak === 1 ? 'день подряд' : currentStreak >= 2 && currentStreak <= 4 ? 'дня подряд' : 'дней подряд'}
                       </span>
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>

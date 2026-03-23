@@ -629,7 +629,7 @@ function ThemePreviewChip({ active, label, dark }: { active: boolean; label: str
         flex: 1,
         padding: '10px 12px',
         background: dark
-          ? 'linear-gradient(135deg, #0a0a0c 0%, #141417 100%)'
+          ? 'linear-gradient(135deg, #121212 0%, #1E1E1E 100%)'
           : 'linear-gradient(135deg, #f8f7f4 0%, #ffffff 100%)',
         border: `2px solid ${active
           ? (dark ? 'rgba(212, 175, 55, 0.4)' : 'rgba(180, 142, 38, 0.4)')

@@ -320,7 +320,7 @@ export const GlowBorder = memo(function GlowBorder({
     >
       <div
         style={{
-          background: 'var(--bg-card, #141417)',
+          background: 'var(--bg-card, #1E1E1E)',
           borderRadius: radius - width,
           height: '100%',
         }}

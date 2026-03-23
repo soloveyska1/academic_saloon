@@ -139,7 +139,7 @@ export function LoadingScreen() {
         >
           <span
             style={{
-              fontFamily: "'Cinzel', 'Playfair Display', serif",
+              fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: 28,
               fontWeight: 700,
               letterSpacing: '0.12em',
@@ -163,7 +163,7 @@ export function LoadingScreen() {
       >
         <h1
           style={{
-            fontFamily: "'Cinzel', 'Playfair Display', serif",
+            fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 16,
             fontWeight: 600,
             letterSpacing: '0.3em',

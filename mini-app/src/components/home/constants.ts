@@ -52,7 +52,7 @@ export const URGENT_OPTIONS: UrgentOption[] = [
   {
     id: 'photo_estimate',
     icon: Camera,
-    title: 'Скинь фото',
+    title: 'Фото задания',
     subtitle: 'Оценим за 5 минут',
     badge: '5 мин',
     route: '/create-order?type=photo_task&urgent=true',

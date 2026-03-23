@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useState, lazy, Suspense, type ReactNode } from 'react'
+import { useCallback, useRef, useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
@@ -192,12 +192,20 @@ export function HomePage({ user, onRefresh }: Props) {
     })
   }, [user?.orders, navigate])
 
+  // Cleanup ref for copy timeout
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
+
   const handleCopyReferral = useCallback(() => {
     if (!user) return
     haptic('light')
-    navigator.clipboard?.writeText(user.referral_code).catch(() => {})
-    setReferralCopied(true)
-    setTimeout(() => setReferralCopied(false), 2000)
+    navigator.clipboard?.writeText(user.referral_code).then(() => {
+      setReferralCopied(true)
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => setReferralCopied(false), 2000)
+    }).catch(() => {
+      // Clipboard not available — don't show false "copied" feedback
+    })
   }, [user, haptic])
 
   const handleTelegramShare = useCallback(() => {
@@ -213,6 +221,16 @@ export function HomePage({ user, onRefresh }: Props) {
       void onRefresh()
     }
   }, [onRefresh])
+
+  const handleOpenModal = useCallback((modal: ModalName) => {
+    if (modal === 'cashback') actions.openModal('cashback')
+    else if (modal === 'guarantees') actions.openModal('guarantees')
+  }, [actions])
+
+  const handleOpenUrgentSheet = useCallback(() => {
+    haptic('medium')
+    actions.openModal('urgentSheet')
+  }, [haptic, actions])
 
   // User type detection for progressive disclosure
   const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
@@ -238,7 +256,24 @@ export function HomePage({ user, onRefresh }: Props) {
   const shouldShowDailyBonus = Boolean(user?.daily_luck_available || (user?.daily_bonus_streak ?? 0) > 0)
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
 
-  if (!user) return null
+  if (!user) return (
+    <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))' }}>
+      <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '0' }}>
+        {/* Header skeleton */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, padding: '12px 0' }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--surface-hover)' }} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ width: 120, height: 18, borderRadius: 8, background: 'var(--surface-hover)' }} />
+            <div style={{ width: 80, height: 12, borderRadius: 6, background: 'var(--surface-hover)', opacity: 0.6 }} />
+          </div>
+        </div>
+        {/* CTA skeleton */}
+        <div style={{ height: 180, borderRadius: 24, background: 'var(--surface-hover)', opacity: 0.5 }} />
+        {/* Actions skeleton */}
+        <div style={{ height: 120, borderRadius: 20, background: 'var(--surface-hover)', opacity: 0.3 }} />
+      </div>
+    </main>
+  )
 
   return (
     <>
@@ -254,6 +289,7 @@ export function HomePage({ user, onRefresh }: Props) {
         width: '100%',
         maxWidth: '100%',
         height: '100dvh',
+        paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))',
       }}>
       <PullIndicator />
       {/* Premium Background */}
@@ -354,14 +390,8 @@ export function HomePage({ user, onRefresh }: Props) {
                   <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
-                    onOpenModal={(modal: ModalName) => {
-                      if (modal === 'cashback') actions.openModal('cashback')
-                      else if (modal === 'guarantees') actions.openModal('guarantees')
-                    }}
-                    onOpenUrgentSheet={() => {
-                      haptic('medium')
-                      actions.openModal('urgentSheet')
-                    }}
+                    onOpenModal={handleOpenModal}
+                    onOpenUrgentSheet={handleOpenUrgentSheet}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
                     embedded
@@ -387,14 +417,8 @@ export function HomePage({ user, onRefresh }: Props) {
                   <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
-                    onOpenModal={(modal: ModalName) => {
-                      if (modal === 'cashback') actions.openModal('cashback')
-                      else if (modal === 'guarantees') actions.openModal('guarantees')
-                    }}
-                    onOpenUrgentSheet={() => {
-                      haptic('medium')
-                      actions.openModal('urgentSheet')
-                    }}
+                    onOpenModal={handleOpenModal}
+                    onOpenUrgentSheet={handleOpenUrgentSheet}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
                     embedded
@@ -420,14 +444,8 @@ export function HomePage({ user, onRefresh }: Props) {
                   <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
-                    onOpenModal={(modal: ModalName) => {
-                      if (modal === 'cashback') actions.openModal('cashback')
-                      else if (modal === 'guarantees') actions.openModal('guarantees')
-                    }}
-                    onOpenUrgentSheet={() => {
-                      haptic('medium')
-                      actions.openModal('urgentSheet')
-                    }}
+                    onOpenModal={handleOpenModal}
+                    onOpenUrgentSheet={handleOpenUrgentSheet}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
                     embedded

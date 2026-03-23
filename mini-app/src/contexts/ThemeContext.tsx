@@ -17,8 +17,8 @@ const STORAGE_KEY = 'academic_saloon_theme'
 // Get theme colors for Telegram WebApp
 // IMPORTANT: Sync header with bg-base, not black — prevents visual "seam"
 const getThemeColors = (theme: Theme) => ({
-  header: theme === 'dark' ? '#050507' : '#FAFAF9',      // Obsidian Glass / Royal Porcelain
-  background: theme === 'dark' ? '#050507' : '#FAFAF9',
+  header: theme === 'dark' ? '#121212' : '#FAFAF9',      // Material dark / Royal Porcelain
+  background: theme === 'dark' ? '#0A0A0A' : '#FAFAF9',
 })
 
 export function useTheme() {

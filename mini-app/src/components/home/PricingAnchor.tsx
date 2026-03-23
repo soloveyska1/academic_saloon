@@ -8,10 +8,10 @@ import { FileText, BookOpen, GraduationCap, PenLine, ArrowRight } from 'lucide-r
 // ═══════════════════════════════════════════════════════════════════════════
 
 const PRICING_ITEMS = [
-  { icon: PenLine, workType: 'Реферат', workTypeKey: 'referat', marketPrice: '2 500', ourPrice: 'от 990' },
-  { icon: FileText, workType: 'Курсовая', workTypeKey: 'kursovaya', marketPrice: '8 000', ourPrice: 'от 2 990' },
-  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diplomnaya', marketPrice: '25 000', ourPrice: 'от 9 990' },
-  { icon: BookOpen, workType: 'Эссе', workTypeKey: 'esse', marketPrice: '3 000', ourPrice: 'от 1 490' },
+  { icon: PenLine, workType: 'Реферат', workTypeKey: 'report', marketPrice: '2 500', ourPrice: 'от 990' },
+  { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', marketPrice: '8 000', ourPrice: 'от 2 990' },
+  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', marketPrice: '25 000', ourPrice: 'от 9 990' },
+  { icon: BookOpen, workType: 'Эссе', workTypeKey: 'essay', marketPrice: '3 000', ourPrice: 'от 1 490' },
 ] as const
 
 interface PricingAnchorProps {

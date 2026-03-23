@@ -59,13 +59,13 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
     }
 
     // Add text
-    ctx.fillStyle = '#09090b'
-    ctx.font = 'bold 16px Montserrat, sans-serif'
+    ctx.fillStyle = '#121212'
+    ctx.font = 'bold 16px Manrope, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('СОТРИ И УЗНАЙ ПРИЗ', WIDTH / 2, HEIGHT / 2 - 10)
 
-    ctx.font = '12px Montserrat, sans-serif'
+    ctx.font = '12px Manrope, sans-serif'
     ctx.fillText('Проведи пальцем', WIDTH / 2, HEIGHT / 2 + 15)
   }, [])
 
@@ -324,7 +324,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                   fontSize: 36,
                   fontWeight: 800,
                   color: revealed ? 'var(--success-text)' : 'var(--gold-400)',
-                  fontFamily: "'Montserrat', sans-serif",
+                  fontFamily: "'Manrope', sans-serif",
                   textShadow: revealed ? '0 0 20px rgba(34,197,94,0.5)' : 'none',
                 }}
               >

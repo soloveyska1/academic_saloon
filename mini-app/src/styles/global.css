@@ -4,7 +4,7 @@
    Cartier aesthetics + High-end dark mode crypto wallet
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TAILWIND CSS — MUST BE AT THE TOP
@@ -151,22 +151,22 @@ textarea:focus-visible,
      OBSIDIAN GLASS THEME (Dark Mode) — Deepest Charcoal
      ═══════════════════════════════════════════════════════════════════════════ */
 
-  /* Backgrounds - Deepest Obsidian (Never pure black, slight blue undertone) */
-  --bg-void: #050507;
-  --bg-onyx: #08080b;
-  --bg-base: #050507;
-  --bg-main: #050507;
-  --bg-surface: #0c0c10;
-  --bg-elevated: #121218;
-  --bg-card: rgba(20, 20, 23, 0.6);
-  --bg-card-solid: #101015;
-  --bg-glass: rgba(255, 255, 255, 0.04);
+  /* Backgrounds - Material Design dark surface (warm neutral, not blue-tinted) */
+  --bg-void: #0A0A0A;
+  --bg-onyx: #0F0F0F;
+  --bg-base: #0A0A0A;
+  --bg-main: #121212;
+  --bg-surface: #1E1E1E;
+  --bg-elevated: #2A2A2A;
+  --bg-card: rgba(30, 30, 30, 0.7);
+  --bg-card-solid: #1E1E1E;
+  --bg-glass: rgba(255, 255, 255, 0.06);
 
   /* === GLASS OVERLAY SURFACES === */
-  --surface-hover: rgba(255, 255, 255, 0.06);
-  --surface-active: rgba(255, 255, 255, 0.1);
-  --surface-overlay: rgba(255, 255, 255, 0.15);
-  --surface-strong: rgba(255, 255, 255, 0.2);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-active: rgba(255, 255, 255, 0.12);
+  --surface-overlay: rgba(255, 255, 255, 0.16);
+  --surface-strong: rgba(255, 255, 255, 0.22);
 
   /* Gold Glass Overlays */
   --gold-glass-subtle: rgba(212, 175, 55, 0.08);
@@ -174,13 +174,13 @@ textarea:focus-visible,
   --gold-glass-strong: rgba(212, 175, 55, 0.25);
 
   /* Navigation */
-  --nav-capsule-bg: rgba(14, 14, 11, 0.82);
-  --nav-pill-bg: rgba(201, 162, 39, 0.10);
-  --nav-glow: 0 0 12px rgba(201, 162, 39, 0.08);
+  --nav-capsule-bg: rgba(18, 18, 18, 0.88);
+  --nav-pill-bg: rgba(212, 175, 55, 0.10);
+  --nav-glow: 0 0 12px rgba(212, 175, 55, 0.08);
 
   /* Text on gold/accent backgrounds */
-  --text-on-gold: #050507;
-  --text-inverse: #050507;
+  --text-on-gold: #121212;
+  --text-inverse: #121212;
 
   /* === ACCENT COLOR SCALE (for semantic UI) === */
   --accent-purple: #c4b5fd;
@@ -223,20 +223,20 @@ textarea:focus-visible,
   --status-error: #ef4444;
   --status-info: #3b82f6;
 
-  /* Text Colors — Never pure white! Off-white for warmth */
-  --text-primary: #EDEDED;
-  --text-main: #EDEDED;
-  --text-secondary: #a8a29e;
-  --text-muted: #8C857F;
+  /* Text Colors — Warm off-white for premium readability */
+  --text-primary: #F5F5F5;
+  --text-main: #F5F5F5;
+  --text-secondary: #B0B0B0;
+  --text-muted: #808080;
   --text-gold: var(--gold-400);
 
-  /* Borders — Must simulate light hitting edges */
-  --border-subtle: rgba(255, 255, 255, 0.03);
-  --border-default: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.08);
-  --border-gold: rgba(212, 175, 55, 0.2);
-  --border-gold-strong: rgba(212, 175, 55, 0.35);
-  --card-border: rgba(255, 255, 255, 0.08);
+  /* Borders — Glass-edge simulation */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-gold: rgba(212, 175, 55, 0.25);
+  --border-gold-strong: rgba(212, 175, 55, 0.40);
+  --card-border: rgba(255, 255, 255, 0.10);
 
   /* Typography — Editorial display + restrained sans */
   --font-display: 'Playfair Display', Georgia, serif;
@@ -244,6 +244,24 @@ textarea:focus-visible,
   --font-heading: 'Playfair Display', Georgia, serif;
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Fluid Type Scale (Golden Ratio 1.618x) */
+  --text-display-xl: clamp(2.5rem, 8vw + 0.5rem, 4rem);
+  --text-display-lg: clamp(2rem, 6vw + 0.25rem, 3.2rem);
+  --text-display-md: clamp(1.6rem, 4vw, 2.4rem);
+  --text-h1: clamp(1.4rem, 3.5vw, 2rem);
+  --text-h2: clamp(1.2rem, 2.8vw, 1.6rem);
+  --text-h3: 1.2rem;
+  --text-body-lg: clamp(1rem, 1.2vw + 0.8rem, 1.1rem);
+  --text-body: clamp(0.95rem, 1vw + 0.75rem, 1.05rem);
+  --text-body-sm: clamp(0.875rem, 0.8vw + 0.65rem, 0.95rem);
+  --text-caption: 0.75rem;
+
+  /* Letter Spacing — Playfair Display specific */
+  --ls-display: -0.02em;   /* 48px+ serif */
+  --ls-heading: -0.01em;   /* 32-48px serif */
+  --ls-body: 0;            /* sans-serif body */
+  --ls-caps: 0.08em;       /* uppercase headings */
 
   /* === THE SECRET SAUCE: GOLD GLOW SHADOWS === */
   /* Rule: Shadows must have gold/bronze tint to simulate light through glass */
@@ -264,13 +282,13 @@ textarea:focus-visible,
   /* High-contrast gold for accessibility (7.1:1 ratio on dark) */
   --gold-bright: #E8D04B;
 
-  /* Border Radius Scale — Consistent corners */
-  --radius-sm: 12px;     /* buttons, badges, icon boxes */
-  --radius-md: 16px;     /* standard cards */
-  --radius-lg: 24px;     /* hero sections, modals */
-  --radius-xl: 20px;     /* legacy compat */
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
+  /* Border Radius Scale — 3 values only (premium restraint) */
+  --radius-sm: 4px;      /* buttons, badges, inputs */
+  --radius-md: 8px;      /* cards, modals, containers */
+  --radius-lg: 12px;     /* hero sections, glass panels */
+  --radius-xl: 12px;     /* alias for lg */
+  --radius-2xl: 12px;    /* alias for lg */
+  --radius-3xl: 12px;    /* alias for lg */
   --radius-full: 9999px; /* Pills, avatars */
 
   /* Spacing Scale — Consistent padding/gaps */
@@ -284,10 +302,10 @@ textarea:focus-visible,
   --space-10: 40px;
   --space-12: 48px;
 
-  /* Card Padding Standards */
+  /* Card Padding Standards (8px grid aligned) */
   --card-padding-sm: 12px;
   --card-padding-md: 16px;
-  --card-padding-lg: 20px;
+  --card-padding-lg: 24px;
 
   /* Blur Standards — Performance optimized */
   --blur-sm: blur(8px);
@@ -304,9 +322,9 @@ textarea:focus-visible,
   --success-text-contrast: #22c55e;
 
   /* Modal styles */
-  --overlay-bg: rgba(0, 0, 0, 0.85);
-  --modal-bg: linear-gradient(180deg, rgba(212,175,55,0.12) 0%, rgba(20,20,23,0.98) 25%);
-  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px -10px rgba(212, 175, 55, 0.2);
+  --overlay-bg: rgba(0, 0, 0, 0.80);
+  --modal-bg: linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(30,30,30,0.98) 25%);
+  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 24px -8px rgba(212, 175, 55, 0.15);
 
   /* Legacy shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -2855,4 +2873,224 @@ h4 {
 @keyframes backdropFadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM EFFECTS v6.0 — New Luxury Animations & Utilities
+   Aurora, Shimmer Text, Animated Gradient Border, Scroll Reveals
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- AURORA BACKGROUND --- */
+/* Organic flowing gradient for hero sections (CSS-only, 60fps) */
+.aurora-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-bg::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212,175,55,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 20% 50%, rgba(142,110,39,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 50%, rgba(232,197,71,0.06) 0%, transparent 50%);
+  animation: aurora-hero 15s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes aurora-hero {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(-5%, -3%) rotate(1deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(3%, -5%) rotate(-1deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translate(-2%, 3%) rotate(0.5deg);
+    opacity: 0.9;
+  }
+}
+
+/* --- SHIMMER TEXT --- */
+/* Gold metallic shimmer effect for hero headlines */
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--gold-400) 0%,
+    var(--gold-200) 25%,
+    var(--gold-100) 50%,
+    var(--gold-200) 75%,
+    var(--gold-400) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text-flow 3s linear infinite;
+}
+
+@keyframes shimmer-text-flow {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* --- ANIMATED GRADIENT BORDER --- */
+/* Premium border effect for CTA buttons and featured cards */
+.gradient-border {
+  position: relative;
+  background: var(--bg-card-solid);
+  z-index: 0;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--gold-700) 0%,
+    var(--gold-400) 25%,
+    var(--gold-200) 50%,
+    var(--gold-400) 75%,
+    var(--gold-700) 100%
+  );
+  background-size: 300% 300%;
+  animation: gradient-border-flow 3s linear infinite;
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 1px;
+}
+
+@keyframes gradient-border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* --- SHINE SWEEP --- */
+/* Gold shine sweeps across an element on hover */
+.shine-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(212, 175, 55, 0.12) 45%,
+    rgba(252, 246, 186, 0.2) 50%,
+    rgba(212, 175, 55, 0.12) 55%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.shine-sweep:hover::after {
+  transform: translateX(100%);
+}
+
+/* --- GLASS PANEL (Refined Glassmorphism) --- */
+/* blur: 12px, not 40-60px. Subtle and performant. */
+.glass-panel {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-panel-gold {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+/* --- SKELETON SHIMMER (Gold-tinted) --- */
+.skeleton-gold {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    rgba(212, 175, 55, 0.06) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-gold-flow 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-gold-flow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- SCROLL REVEAL UTILITY --- */
+/* Used with IntersectionObserver or Framer Motion useInView */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children (use with data-delay attribute or nth-child) */
+.reveal-stagger > .reveal-on-scroll:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger > .reveal-on-scroll:nth-child(2) { transition-delay: 50ms; }
+.reveal-stagger > .reveal-on-scroll:nth-child(3) { transition-delay: 100ms; }
+.reveal-stagger > .reveal-on-scroll:nth-child(4) { transition-delay: 150ms; }
+.reveal-stagger > .reveal-on-scroll:nth-child(5) { transition-delay: 200ms; }
+.reveal-stagger > .reveal-on-scroll:nth-child(6) { transition-delay: 250ms; }
+
+/* --- FLUID TYPOGRAPHY UTILITIES --- */
+.text-fluid-display {
+  font-family: var(--font-display);
+  font-size: var(--text-display-lg);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: var(--ls-display);
+}
+
+.text-fluid-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: var(--ls-heading);
+}
+
+.text-fluid-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: var(--ls-body);
+}
+
+.text-caps {
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  font-weight: 600;
 }

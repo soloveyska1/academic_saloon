@@ -165,7 +165,7 @@ export function Dashboard({ user }: DashboardProps) {
           </p>
           <h2
             style={{
-              fontFamily: "'Montserrat', sans-serif",
+              fontFamily: "'Manrope', sans-serif",
               fontSize: 20,
               fontWeight: 700,
               letterSpacing: '0.02em',
@@ -227,7 +227,7 @@ export function Dashboard({ user }: DashboardProps) {
             </div>
             <span
               style={{
-                fontFamily: "'Montserrat', sans-serif",
+                fontFamily: "'Manrope', sans-serif",
                 fontSize: 10,
                 color: 'var(--gold-400)',
                 textTransform: 'uppercase',
@@ -265,7 +265,7 @@ export function Dashboard({ user }: DashboardProps) {
             </div>
             <span
               style={{
-                fontFamily: "'Montserrat', sans-serif",
+                fontFamily: "'Manrope', sans-serif",
                 fontSize: 10,
                 color: 'var(--text-muted)',
                 textTransform: 'uppercase',
@@ -281,7 +281,7 @@ export function Dashboard({ user }: DashboardProps) {
             style={{
               fontSize: 22,
               fontWeight: 700,
-              fontFamily: "'Montserrat', sans-serif",
+              fontFamily: "'Manrope', sans-serif",
               color: 'var(--text-primary)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -374,7 +374,7 @@ export function Dashboard({ user }: DashboardProps) {
                 <Users size={14} color="#d4af37" strokeWidth={1.5} />
                 <span
                   style={{
-                    fontFamily: "'Montserrat', sans-serif",
+                    fontFamily: "'Manrope', sans-serif",
                     fontSize: 10,
                     color: 'var(--gold-400)',
                     textTransform: 'uppercase',
@@ -484,7 +484,7 @@ export function Dashboard({ user }: DashboardProps) {
                 style={{
                   fontSize: 28,
                   fontWeight: 700,
-                  fontFamily: "'Montserrat', sans-serif",
+                  fontFamily: "'Manrope', sans-serif",
                   color: 'var(--text-primary)',
                 }}
               >
@@ -519,7 +519,7 @@ export function Dashboard({ user }: DashboardProps) {
                 style={{
                   fontSize: 28,
                   fontWeight: 700,
-                  fontFamily: "'Montserrat', sans-serif",
+                  fontFamily: "'Manrope', sans-serif",
                   color: '#22c55e',
                   textShadow: '0 0 20px rgba(34, 197, 94, 0.3)',
                 }}

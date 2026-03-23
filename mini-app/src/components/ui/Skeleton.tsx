@@ -63,7 +63,7 @@ export function SkeletonCard() {
 
 export function SkeletonHomePage() {
   return (
-    <div style={{ padding: '24px 20px 120px', background: '#09090b', minHeight: '100vh' }}>
+    <div style={{ padding: '24px 20px 120px', background: '#121212', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

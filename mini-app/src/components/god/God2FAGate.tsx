@@ -176,7 +176,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
         </div>
 
         <h1 style={{
-          fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
+          fontFamily: "'Playfair Display', Georgia, serif",
           fontSize: 22, fontWeight: 700, fontStyle: 'italic',
           color: 'var(--text-primary)',
           marginBottom: 8, letterSpacing: '-0.01em',

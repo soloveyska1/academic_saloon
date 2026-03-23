@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
+import { formatMoney } from '../../lib/utils'
 
 interface HomeHeaderProps {
   user: {
@@ -21,10 +22,6 @@ interface HomeHeaderProps {
   onSecretTap: () => void
   onOpenLounge: () => void
   isNewUser?: boolean
-}
-
-function formatMoney(value: number): string {
-  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
 }
 
 export const HomeHeader = memo(function HomeHeader({

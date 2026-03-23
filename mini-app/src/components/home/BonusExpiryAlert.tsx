@@ -65,7 +65,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       urgency: 'medium' as const,
       icon: Gift,
       title: `Используйте ${Math.round(amount).toLocaleString('ru-RU')} ₽ бонусов`,
-      subtitle: `Истекают через ${days} дней`,
+      subtitle: `Истекают через ${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'}`,
       gradient: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, rgba(12,12,10,0.6) 100%)',
       border: 'rgba(201,162,39,0.08)',
       iconBg: 'rgba(201,162,39,0.06)',
