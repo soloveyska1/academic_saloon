@@ -247,7 +247,14 @@ export function HomePage({ user, onRefresh }: Props) {
       role="main"
       data-scroll-container="true"
       className={`${s.container} bg-void relative`}
-      style={{ paddingBottom: 'var(--page-padding-bottom)', overflowY: 'auto', height: '100dvh' }}>
+      style={{
+        paddingBottom: 'var(--page-padding-bottom)',
+        overflowY: 'auto',
+        overflowX: 'clip',
+        width: '100%',
+        maxWidth: '100%',
+        height: '100dvh',
+      }}>
       <PullIndicator />
       {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
