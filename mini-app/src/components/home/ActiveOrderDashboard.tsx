@@ -7,7 +7,7 @@ import {
   Clock3,
   CreditCard,
   FileEdit,
-  Loader2,
+  FolderKanban,
   Sparkles,
 } from 'lucide-react'
 import { Order } from '../../types'
@@ -34,9 +34,9 @@ const ACTIVE_STATUSES = [
 ]
 
 const STAGES = [
-  { key: 'created', label: 'Создан', icon: FileEdit },
-  { key: 'paid', label: 'Оплачен', icon: CreditCard },
-  { key: 'working', label: 'В работе', icon: Loader2 },
+  { key: 'created', label: 'Заявка', icon: FileEdit },
+  { key: 'paid', label: 'Оплата', icon: CreditCard },
+  { key: 'working', label: 'Работа', icon: FolderKanban },
   { key: 'done', label: 'Готово', icon: CheckCircle2 },
 ] as const
 
@@ -48,41 +48,59 @@ function getStageIndex(status: string): number {
   return 0
 }
 
-function getStatusNarrative(status: string, progress?: number): string {
+function getVisibleOrderStatus(order: Order): string {
+  const total = Math.max(0, order.final_price ?? order.price ?? 0)
+  const paid = Math.max(0, order.paid_amount ?? 0)
+  const remaining = Math.max(0, total - paid)
+
+  if (paid > 0 && remaining > 0 && ['waiting_payment', 'confirmed', 'verification_pending'].includes(order.status)) {
+    return 'paid'
+  }
+
+  if (paid > 0 && remaining <= 0 && ['waiting_payment', 'confirmed', 'verification_pending', 'paid'].includes(order.status)) {
+    return 'paid_full'
+  }
+
+  return order.status
+}
+
+function getStatusNarrative(status: string, remaining: number, paid: number, progress?: number): string {
   switch (status) {
     case 'pending':
-      return 'Менеджер уже смотрит заявку и собирает финальные вводные.'
+      return 'Заявка принята.'
     case 'waiting_estimation':
-      return 'Формируем аккуратную смету и уточняем сложность работы.'
+      return 'Готовим оценку.'
     case 'waiting_payment':
-      return 'Стоимость согласована. Осталось подтвердить оплату и сразу запускаем заказ.'
+      return paid > 0 ? `Осталось доплатить ${formatMoney(remaining)}.` : 'Оплатите, чтобы закрепить заказ.'
     case 'verification_pending':
-      return 'Платёж замечен. Сейчас менеджер подтверждает поступление.'
+      return 'Подтверждаем перевод.'
     case 'confirmed':
     case 'paid':
+      return remaining > 0 ? 'Аванс принят. Готовим запуск.' : 'Оплата принята. Заказ закреплён.'
     case 'paid_full':
-      return 'Заказ закреплён. Подбираем исполнителя и строим рабочий план.'
     case 'in_progress':
-      return progress ? `Выполнение уже вышло примерно на ${progress}%.` : 'Работа в производстве. Все обновления будут здесь.'
+      return progress ? `Готовность около ${progress}%.` : 'Работа в процессе.'
     case 'review':
-      return 'Материал готов. Осталось посмотреть результат и дать финальную обратную связь.'
+      return 'Материал готов к просмотру.'
     case 'revision':
-      return 'Правки приняты. Команда дорабатывает работу в текущем цикле.'
+      return 'Вносим правки.'
     default:
-      return 'Заказ находится под контролем команды.'
+      return 'Все детали внутри заказа.'
   }
 }
 
-function getPrimaryAction(status: string): string {
+function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
   switch (status) {
     case 'waiting_payment':
-      return 'Перейти к оплате'
+      return hasPartialPayment ? 'Доплатить остаток' : 'Перейти к оплате'
     case 'waiting_estimation':
-      return 'Проверить детали'
+      return 'Открыть заказ'
+    case 'verification_pending':
+      return 'Открыть заказ'
     case 'review':
       return 'Открыть результат'
     case 'revision':
-      return 'Посмотреть доработку'
+      return 'Посмотреть правки'
     default:
       return 'Открыть заказ'
   }
@@ -123,21 +141,26 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
   if (!activeOrder) return null
 
-  const stageIdx = getStageIndex(activeOrder.status)
-  const statusInfo = ORDER_STATUS_MAP[activeOrder.status]
+  const visibleStatus = getVisibleOrderStatus(activeOrder)
+  const stageIdx = getStageIndex(visibleStatus)
+  const statusInfo = ORDER_STATUS_MAP[visibleStatus]
   const total = Math.max(0, activeOrder.final_price ?? activeOrder.price ?? 0)
   const paid = Math.max(0, activeOrder.paid_amount ?? 0)
   const remaining = Math.max(0, total - paid)
+  const hasPartialPayment = paid > 0 && remaining > 0
   const workType = stripEmoji(activeOrder.work_type_label ?? activeOrder.work_type ?? 'Заказ')
   const headline = getOrderHeadlineSafe(activeOrder)
   const deadlineText = activeOrder.deadline ? formatOrderDeadlineRu(activeOrder.deadline) : 'Срок уточняется'
-  const needsAction = ['waiting_payment', 'waiting_estimation', 'review', 'revision'].includes(activeOrder.status)
+  const needsAction = ['waiting_payment', 'waiting_estimation', 'review', 'revision'].includes(visibleStatus)
   const financeSummary = remaining > 0 && paid > 0
     ? `Оплачено ${formatMoney(paid)} · Осталось ${formatMoney(remaining)}`
     : remaining > 0 && paid === 0
       ? `К оплате ${formatMoney(remaining)}`
       : 'Оплачено полностью'
-  const stageSummary = STAGES[stageIdx]?.label ?? 'Создан'
+  const stageSummary = STAGES[stageIdx]?.label ?? 'Заявка'
+  const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
+  const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
+  const highlightAmount = hasPartialPayment ? formatMoney(remaining) : remaining > 0 && visibleStatus === 'waiting_payment' ? formatMoney(remaining) : null
 
   return (
     <motion.section
@@ -223,7 +246,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               }}
               >
                 <Sparkles size={12} color="var(--gold-300)" strokeWidth={1.9} />
-                Активный проект
+                Активный заказ
               </div>
 
             <span
@@ -240,8 +263,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 whiteSpace: 'nowrap',
               }}
             >
-              {statusInfo?.label ?? activeOrder.status}
-            </span>
+                {statusInfo?.label ?? visibleStatus}
+              </span>
           </div>
 
           <div style={{ marginBottom: 18 }}>
@@ -274,61 +297,90 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             <div
               style={{
                 fontSize: 14,
-                lineHeight: 1.55,
+                fontWeight: 500,
+                lineHeight: 1.45,
                 color: 'var(--text-secondary)',
                 maxWidth: 320,
               }}
             >
-              {getStatusNarrative(activeOrder.status, activeOrder.progress)}
+              {narrative}
             </div>
           </div>
 
           <div
             style={{
-              padding: '16px 16px 14px',
+              padding: '16px 16px 15px',
               borderRadius: 22,
               marginBottom: 16,
               background: needsAction
                 ? 'linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(14,12,10,0.44) 100%)'
                 : 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(14,12,10,0.44) 100%)',
               border: `1px solid ${needsAction ? 'rgba(212,175,55,0.13)' : 'rgba(255,255,255,0.05)'}`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.38)',
-                marginBottom: 8,
               }}
             >
-              Следующее действие
-            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.38)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Следующий шаг
+                </div>
 
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                lineHeight: 1.25,
-                color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
-                marginBottom: 6,
-              }}
-            >
-              {getPrimaryAction(activeOrder.status)}
-            </div>
+                <div
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    lineHeight: 1.1,
+                    color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
+                    letterSpacing: '-0.03em',
+                  }}
+                >
+                  {primaryAction}
+                </div>
+              </div>
 
-            <div
-              style={{
-                fontSize: 13,
-                lineHeight: 1.45,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              {remaining > 0 && paid > 0
-                ? 'Часть суммы уже подтверждена. Клиент видит остаток прямо в карточке заказа.'
-                : 'Главный шаг вынесен наверх, чтобы не искать его среди второстепенных блоков.'}
+              {highlightAmount && (
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 16,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    textAlign: 'right',
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.32)',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {hasPartialPayment ? 'Остаток' : 'Сумма'}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: 'var(--gold-300)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {highlightAmount}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -348,9 +400,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 icon: Clock3,
               },
               {
-                label: remaining > 0 ? 'Финансы' : 'Оплата',
-                value: financeSummary,
-                hint: total > 0 ? `Бюджет ${formatMoney(total)}` : 'Сумма уточняется',
+                label: hasPartialPayment ? 'Оплата' : remaining > 0 ? 'Финансы' : 'Оплата',
+                value: hasPartialPayment ? `Аванс ${formatMoney(paid)}` : financeSummary,
+                hint: hasPartialPayment
+                  ? `Осталось ${formatMoney(remaining)}`
+                  : total > 0 ? `Бюджет ${formatMoney(total)}` : 'Сумма уточняется',
                 icon: CircleDollarSign,
               },
             ].map((item) => {
@@ -501,8 +555,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 }}
               >
                 {otherActiveCount > 0
-                  ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'проект' : otherActiveCount < 5 ? 'проекта' : 'проектов'} ждут ниже в списке заказов.`
-                  : 'Здесь собраны прогресс, чат, файлы, финансы и все следующие шаги.'}
+                  ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в списке.`
+                  : 'Чат, файлы и финансы внутри карточки.'}
               </div>
             </div>
 

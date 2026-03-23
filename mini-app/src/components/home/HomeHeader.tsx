@@ -1,6 +1,6 @@
 import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, Coins, ShieldCheck, Wallet } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 
@@ -37,59 +37,47 @@ export const HomeHeader = memo(function HomeHeader({
 }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
-  const isPremiumClub = user.rank.is_max
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours()
-    if (hour < 6) return 'Доброй ночи'
-    if (hour < 12) return 'Доброе утро'
-    if (hour < 18) return 'Добрый день'
-    return 'Добрый вечер'
-  }, [])
-
-  const serviceLine = useMemo(() => {
-    if (!summary || summary.activeOrders <= 0) {
-      return isPremiumClub
-        ? 'Премиальный кабинет и персональное сопровождение'
-        : 'Личный кабинет с быстрым доступом к заказам и привилегиям'
-    }
-
-    const count = summary.activeOrders
-    const noun = count === 1 ? 'заказ' : count < 5 ? 'заказа' : 'заказов'
-    return `${count} ${noun} под контролем • менеджер и прогресс в одном месте`
-  }, [summary, isPremiumClub])
-
-  const metricRail = useMemo(() => {
+  const metricChips = useMemo(() => {
     if (!summary || isNewUser) return []
 
-    return [
-      {
-        key: 'balance',
-        label: 'Баланс',
-        value: formatMoney(summary.balance),
-        icon: Wallet,
-      },
-      {
-        key: 'bonus',
-        label: 'Бонусы',
-        value: formatMoney(summary.bonusBalance),
-        icon: Coins,
-      },
-      {
-        key: 'club',
-        label: 'Статус',
+    const chips: Array<{ key: string; value: string }> = []
+
+    if (summary.activeOrders > 0) {
+      chips.push({
+        key: 'active',
+        value: `${summary.activeOrders} ${summary.activeOrders === 1 ? 'активный заказ' : summary.activeOrders < 5 ? 'активных заказа' : 'активных заказов'}`,
+      })
+    } else if ((user.orders_count || 0) > 0) {
+      chips.push({
+        key: 'orders',
+        value: `${user.orders_count} ${user.orders_count === 1 ? 'заказ' : user.orders_count < 5 ? 'заказа' : 'заказов'}`,
+      })
+    }
+
+    if ((summary.cashback || 0) > 0) {
+      chips.push({
+        key: 'cashback',
         value: `${summary.cashback}% кэшбэк`,
-        icon: ShieldCheck,
-      },
-    ]
-  }, [summary, isNewUser])
+      })
+    }
+
+    if ((summary.bonusBalance || 0) > 0) {
+      chips.push({
+        key: 'bonus',
+        value: `Бонусы ${formatMoney(summary.bonusBalance)}`,
+      })
+    }
+
+    return chips.slice(0, 3)
+  }, [summary, isNewUser, user.orders_count])
 
   return (
     <motion.header
       className={s.header}
-      style={{ marginBottom: 18 }}
+      style={{ marginBottom: 16 }}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -98,7 +86,7 @@ export const HomeHeader = memo(function HomeHeader({
         style={{
           position: 'relative',
           overflow: 'hidden',
-          padding: isNewUser ? '22px 20px 18px' : '24px 20px 18px',
+          padding: isNewUser ? '22px 20px 18px' : '22px 20px 18px',
           borderRadius: 30,
           background: isNewUser
             ? 'linear-gradient(160deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
@@ -138,7 +126,6 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 14,
-              marginBottom: 18,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
@@ -216,7 +203,7 @@ export const HomeHeader = memo(function HomeHeader({
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
                 >
-                  {isNewUser ? 'Личный вход' : 'Личный салон'}
+                  {isNewUser ? 'Личный кабинет' : 'Академический салон'}
                 </div>
 
                 <div
@@ -229,19 +216,38 @@ export const HomeHeader = memo(function HomeHeader({
                     textTransform: 'none',
                   }}
                 >
-                  {isNewUser ? `${greeting}, ${firstName}` : firstName}
+                  {firstName}
                 </div>
 
-                <div
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    color: 'rgba(255,255,255,0.58)',
-                    maxWidth: 250,
-                  }}
-                >
-                  {serviceLine}
-                </div>
+                {!isNewUser && metricChips.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 6,
+                    }}
+                  >
+                    {metricChips.map((chip) => (
+                      <div
+                        key={chip.key}
+                        style={{
+                          padding: '7px 11px',
+                          borderRadius: 999,
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          lineHeight: 1,
+                          color: chip.key === 'bonus' ? 'var(--gold-300)' : 'rgba(255,255,255,0.68)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {chip.value}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -269,72 +275,11 @@ export const HomeHeader = memo(function HomeHeader({
                   boxShadow: '0 16px 32px -24px rgba(0, 0, 0, 0.76)',
                 }}
               >
-                Клуб
+                Привилегии
                 <ArrowUpRight size={14} strokeWidth={2.1} />
               </motion.button>
             )}
           </div>
-
-          {!isNewUser && metricRail.length > 0 && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 0,
-                overflow: 'hidden',
-                borderRadius: 20,
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(14,12,10,0.44) 100%)',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
-              {metricRail.map((metric, index) => {
-                const Icon = metric.icon
-
-                return (
-                  <div
-                    key={metric.key}
-                    style={{
-                      minWidth: 0,
-                      padding: '14px 14px 13px',
-                      borderLeft: index > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        marginBottom: 8,
-                        color: 'rgba(212, 175, 55, 0.72)',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      <Icon size={13} strokeWidth={1.9} />
-                      {metric.label}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        lineHeight: 1.1,
-                        color: 'var(--text-primary)',
-                        letterSpacing: '-0.03em',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {metric.value}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       </div>
     </motion.header>
@@ -343,9 +288,9 @@ export const HomeHeader = memo(function HomeHeader({
   return prev.userPhoto === next.userPhoto &&
     prev.user.fullname === next.user.fullname &&
     prev.user.rank.is_max === next.user.rank.is_max &&
-    prev.summary?.balance === next.summary?.balance &&
     prev.summary?.bonusBalance === next.summary?.bonusBalance &&
     prev.summary?.cashback === next.summary?.cashback &&
     prev.summary?.activeOrders === next.summary?.activeOrders &&
+    prev.user.orders_count === next.user.orders_count &&
     prev.isNewUser === next.isNewUser
 })

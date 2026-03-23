@@ -59,12 +59,10 @@ import s from './HomePage.module.css'
 function SectionFrame({
   eyebrow,
   title,
-  description,
   children,
 }: {
-  eyebrow: string
+  eyebrow?: string
   title: string
-  description?: string
   children: React.ReactNode
 }) {
   return (
@@ -72,45 +70,35 @@ function SectionFrame({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 22 }}
+      style={{ marginBottom: 18 }}
     >
-      <div style={{ padding: '0 4px', marginBottom: 12 }}>
+      <div style={{ padding: '0 4px', marginBottom: 10 }}>
+        {eyebrow && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(212, 175, 55, 0.72)',
+              marginBottom: 6,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
         <div
           style={{
-            fontSize: 10,
+            fontSize: 18,
             fontWeight: 700,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: 'rgba(212, 175, 55, 0.72)',
-            marginBottom: 8,
-          }}
-        >
-          {eyebrow}
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-display, 'Playfair Display', serif)",
-            fontSize: 26,
-            lineHeight: 0.98,
-            letterSpacing: '-0.04em',
+            lineHeight: 1.1,
+            letterSpacing: '-0.03em',
             color: 'var(--text-primary)',
-            marginBottom: description ? 8 : 0,
+            fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
           }}
         >
           {title}
         </div>
-        {description && (
-          <div
-            style={{
-              fontSize: 13,
-              lineHeight: 1.5,
-              color: 'var(--text-secondary)',
-              maxWidth: 320,
-            }}
-          >
-            {description}
-          </div>
-        )}
       </div>
       {children}
     </motion.section>
@@ -352,22 +340,14 @@ export function HomePage({ user, onRefresh }: Props) {
             {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
             {returningUserState === 'active' && (
               <>
-                <SectionFrame
-                  eyebrow="Сегодня"
-                  title="Главный фокус"
-                  description="Сначала показываем текущий проект и ближайшее действие, чтобы не растворять главное в мелких карточках."
-                >
-                  <ActiveOrderDashboard
-                    orders={user.orders}
-                    onNavigate={navigate}
-                    haptic={haptic}
-                  />
-                </SectionFrame>
+                <ActiveOrderDashboard
+                  orders={user.orders}
+                  onNavigate={navigate}
+                  haptic={haptic}
+                />
 
                 <SectionFrame
-                  eyebrow="Следующий шаг"
-                  title="Следующий заказ и бонусы"
-                  description="Второй экран внимания: новый запрос и клубный бонус, когда текущий проект уже под контролем."
+                  title="Новая заявка"
                 >
                   <div style={{ display: 'grid', gap: 12 }}>
                     <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
@@ -387,9 +367,7 @@ export function HomePage({ user, onRefresh }: Props) {
             {returningUserState === 'just-completed' && (
               <>
                 <SectionFrame
-                  eyebrow="Продолжение"
-                  title="Сразу в следующий проект"
-                  description="После завершения заказа главный сценарий должен быть коротким: повторить, создать новый или забрать бонус."
+                  title="Продолжить"
                 >
                   <div style={{ display: 'grid', gap: 12 }}>
                     {user.orders.length > 0 && (
@@ -416,9 +394,7 @@ export function HomePage({ user, onRefresh }: Props) {
             {returningUserState === 'idle' && (
               <>
                 <SectionFrame
-                  eyebrow="Консьерж"
-                  title="Новая работа без лишнего трения"
-                  description="Если активных заказов нет, страница должна сразу вести к новой заявке и мягко подталкивать к возврату."
+                  title="Новая заявка"
                 >
                   <div style={{ display: 'grid', gap: 12 }}>
                     <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
@@ -443,9 +419,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {/* ── SHARED: Quick tools, gamification, promo, referral ── */}
             <SectionFrame
-              eyebrow="Сервисы"
-              title="Сервисный блок"
-              description="Срочные сценарии и гарантии под рукой, без дешёвого ощущения от одинаковых чипов."
+              title="Быстрый доступ"
             >
               <QuickActionsRow
                 onNavigate={navigate}
@@ -463,9 +437,7 @@ export function HomePage({ user, onRefresh }: Props) {
             </SectionFrame>
 
             <SectionFrame
-              eyebrow="Привилегии"
-              title="Клуб и выгода"
-              description="Показываем рост статуса, персональные условия и приватные офферы в одном блоке."
+              title="Привилегии"
             >
               <div style={{ display: 'grid', gap: 14 }}>
                 <LevelProgressCard
@@ -495,7 +467,7 @@ export function HomePage({ user, onRefresh }: Props) {
                       marginBottom: 10,
                     }}
                   >
-                    Персональное предложение
+                    Предложения
                   </div>
 
                   <div
@@ -508,18 +480,7 @@ export function HomePage({ user, onRefresh }: Props) {
                       marginBottom: 8,
                     }}
                   >
-                    Персональные скидки и коды
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      color: 'var(--text-secondary)',
-                      marginBottom: 14,
-                    }}
-                  >
-                    Скрыли технический шум и оставили только понятный offer-блок с актуальным промокодом.
+                    Промокоды и специальные условия
                   </div>
 
                   <PromoCodeSection
@@ -532,9 +493,7 @@ export function HomePage({ user, onRefresh }: Props) {
             </SectionFrame>
 
             <SectionFrame
-              eyebrow="Рекомендации"
-              title="Рекомендации и репутация"
-              description="Партнёрский блок оставлен ближе к низу, чтобы не красть внимание у заказа и основного CTA."
+              title="Партнёрская программа"
             >
               <ReputationCard
                 referralCode={user.referral_code}

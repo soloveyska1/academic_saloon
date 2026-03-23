@@ -133,7 +133,7 @@ export const ReputationCard = memo(function ReputationCard({
             lineHeight: 1.5,
           }}
         >
-          Приглашайте друзей →{' '}
+          Приглашайте друзей и получайте{' '}
           <span
             style={{
               background: 'var(--gold-text-shine)',
@@ -144,7 +144,7 @@ export const ReputationCard = memo(function ReputationCard({
           >
             5% с каждого заказа
           </span>{' '}
-          навсегда
+          по вашей ссылке
         </p>
 
         {/* Action buttons row */}
@@ -245,26 +245,6 @@ export const ReputationCard = memo(function ReputationCard({
           </motion.button>
         </div>
 
-        {/* Motivation hint for users with 0 referrals */}
-        {referralsCount === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            style={{
-              marginTop: 12,
-              padding: '10px 12px',
-              background: 'var(--gold-glass-subtle)',
-              borderRadius: 8,
-              border: '1px solid var(--border-gold)',
-            }}
-          >
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-              💡 <strong style={{ color: 'var(--text-secondary)' }}>Пример:</strong> Пригласите 3 друзей с заказами по 5000₽ → заработаете{' '}
-              <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>750₽</span> пассивно
-            </p>
-          </motion.div>
-        )}
       </div>
     </motion.div>
   )
