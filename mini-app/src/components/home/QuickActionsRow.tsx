@@ -29,7 +29,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
       if (action.id === 'urgent') {
         return {
           ...action,
-          subtitle: 'оценка за 5 минут и приоритетный поток',
+          subtitle: 'оценка за 5 минут',
         }
       }
       return action
@@ -182,7 +182,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                   color: isPrimary ? 'rgba(212,175,55,0.72)' : 'rgba(255,255,255,0.3)',
                 }}
               >
-                {isPrimary ? 'Priority Access' : 'Открыть'}
+                {isPrimary ? '5 минут' : 'Открыть'}
               </div>
             </div>
           </motion.button>

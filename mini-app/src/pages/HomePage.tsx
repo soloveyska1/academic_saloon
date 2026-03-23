@@ -86,12 +86,12 @@ function SectionFrame({
         )}
         <div
           style={{
-            fontSize: 18,
+            fontFamily: "var(--font-display, 'Playfair Display', serif)",
+            fontSize: 24,
             fontWeight: 700,
-            lineHeight: 1.1,
-            letterSpacing: '-0.03em',
+            lineHeight: 0.95,
+            letterSpacing: '-0.04em',
             color: 'var(--text-primary)',
-            fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
           }}
         >
           {title}
@@ -403,7 +403,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {/* ── SHARED: Quick tools, gamification, promo, referral ── */}
             <SectionFrame
-              title="Быстрый доступ"
+              title="Сервисы"
             >
               <QuickActionsRow
                 onNavigate={navigate}

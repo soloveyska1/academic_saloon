@@ -177,7 +177,7 @@ export const LoungeVault = memo(function LoungeVault({
                   marginBottom: 8,
                 }}
               >
-                Private Lounge
+                Клуб
               </div>
 
               <div
@@ -187,21 +187,10 @@ export const LoungeVault = memo(function LoungeVault({
                   lineHeight: 0.95,
                   letterSpacing: '-0.05em',
                   color: 'var(--text-primary)',
-                  marginBottom: 8,
+                  marginBottom: 0,
                 }}
               >
                 Привилегии
-              </div>
-
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  color: 'var(--text-secondary)',
-                  maxWidth: 280,
-                }}
-              >
-                Клуб, бонусы, промокоды и реферальный доступ в одном месте.
               </div>
             </div>
 
@@ -251,14 +240,14 @@ export const LoungeVault = memo(function LoungeVault({
             <VaultBlock
               title="Кэшбэк"
               value={`${rank.cashback}%`}
-              hint={rank.is_max ? 'Максимальный уровень клуба' : 'На все новые заказы'}
+              hint={rank.is_max ? 'Максимальный уровень открыт' : 'На новые заказы'}
               accent
               icon={Percent}
             />
             <VaultBlock
               title="Бонусы"
               value={formatMoney(bonusBalance)}
-              hint={bonusBalance > 0 ? 'Доступны к применению' : 'Появятся после начислений'}
+              hint={bonusBalance > 0 ? 'Доступны к списанию' : 'Появятся после начислений'}
               icon={Coins}
             />
           </div>
@@ -412,7 +401,7 @@ export const LoungeVault = memo(function LoungeVault({
                     marginBottom: 6,
                   }}
                 >
-                  Реферальный доступ
+                  Приглашения
                 </div>
                 <div
                   style={{

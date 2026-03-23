@@ -69,21 +69,21 @@ function getStatusNarrative(status: string, remaining: number, paid: number, pro
     case 'pending':
       return 'Заявка принята.'
     case 'waiting_estimation':
-      return 'Готовим оценку.'
+      return 'Готовим расчёт.'
     case 'waiting_payment':
-      return paid > 0 ? `Осталось доплатить ${formatMoney(remaining)}.` : 'Оплатите, чтобы закрепить заказ.'
+      return paid > 0 ? `Осталось внести ${formatMoney(remaining)}.` : 'Ожидает оплаты.'
     case 'verification_pending':
-      return 'Подтверждаем перевод.'
+      return 'Подтверждаем оплату.'
     case 'confirmed':
     case 'paid':
-      return remaining > 0 ? 'Аванс принят. Готовим запуск.' : 'Оплата принята. Заказ закреплён.'
+      return remaining > 0 ? 'Аванс внесён.' : 'Оплата принята.'
     case 'paid_full':
     case 'in_progress':
       return progress ? `Готовность около ${progress}%.` : 'Работа в процессе.'
     case 'review':
-      return 'Материал готов к просмотру.'
+      return 'Материал готов.'
     case 'revision':
-      return 'Вносим правки.'
+      return 'Идёт доработка.'
     default:
       return 'Все детали внутри заказа.'
   }
@@ -246,7 +246,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               }}
               >
                 <Sparkles size={12} color="var(--gold-300)" strokeWidth={1.9} />
-                Активный заказ
+                Текущий заказ
               </div>
 
             <span
@@ -330,7 +330,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                     marginBottom: 8,
                   }}
                 >
-                  Следующий шаг
+                  Далее
                 </div>
 
                 <div
@@ -363,11 +363,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                       fontWeight: 700,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.32)',
-                      marginBottom: 4,
-                    }}
-                  >
-                    {hasPartialPayment ? 'Остаток' : 'Сумма'}
+                  color: 'rgba(255,255,255,0.32)',
+                  marginBottom: 4,
+                }}
+              >
+                  {hasPartialPayment ? 'Остаток' : 'Сумма'}
                   </div>
                   <div
                     style={{
@@ -404,7 +404,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 value: hasPartialPayment ? `Аванс ${formatMoney(paid)}` : financeSummary,
                 hint: hasPartialPayment
                   ? `Осталось ${formatMoney(remaining)}`
-                  : total > 0 ? `Бюджет ${formatMoney(total)}` : 'Сумма уточняется',
+                  : total > 0 ? `Общая сумма ${formatMoney(total)}` : 'Сумма уточняется',
                 icon: CircleDollarSign,
               },
             ].map((item) => {
@@ -555,8 +555,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 }}
               >
                 {otherActiveCount > 0
-                  ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в списке.`
-                  : 'Чат, файлы и финансы внутри карточки.'}
+                  ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе.`
+                  : 'Чат, файлы и расчёты внутри заказа.'}
               </div>
             </div>
 

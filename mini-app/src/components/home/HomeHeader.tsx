@@ -37,32 +37,25 @@ export const HomeHeader = memo(function HomeHeader({
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
-  const metricChips = useMemo(() => {
+  const metricLine = useMemo(() => {
     if (!summary || isNewUser) return []
 
-    const chips: Array<{ key: string; value: string }> = []
+    const items: string[] = []
 
     if (summary.activeOrders > 0) {
-      chips.push({
-        key: 'active',
-        value: `${summary.activeOrders} ${summary.activeOrders === 1 ? 'активный заказ' : summary.activeOrders < 5 ? 'активных заказа' : 'активных заказов'}`,
-      })
+      items.push(
+        `${summary.activeOrders} ${summary.activeOrders === 1 ? 'активный заказ' : summary.activeOrders < 5 ? 'активных заказа' : 'активных заказов'}`
+      )
     } else if (ordersCount > 0) {
-      chips.push({
-        key: 'orders',
-        value: `${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`,
-      })
+      items.push(`${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`)
     }
 
-    if (user.rank.is_max) {
-      chips.push({
-        key: 'club',
-        value: 'Премиум клуб',
-      })
+    if (summary.cashback > 0) {
+      items.push(`${summary.cashback}% кэшбэк`)
     }
 
-    return chips.slice(0, 2)
-  }, [summary, isNewUser, ordersCount, user.rank.is_max])
+    return items.slice(0, 2)
+  }, [summary, isNewUser, ordersCount])
 
   return (
     <motion.header
@@ -209,33 +202,47 @@ export const HomeHeader = memo(function HomeHeader({
                   {firstName}
                 </div>
 
-                {!isNewUser && metricChips.length > 0 && (
+                {!isNewUser && (
                   <div
                     style={{
                       display: 'flex',
                       flexWrap: 'wrap',
+                      alignItems: 'center',
                       gap: 8,
-                      marginTop: 6,
+                      marginTop: 8,
+                      minHeight: 24,
                     }}
                   >
-                    {metricChips.map((chip) => (
+                    {user.rank.is_max && (
                       <div
-                        key={chip.key}
                         style={{
                           padding: '7px 11px',
                           borderRadius: 999,
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.06)',
+                          background: 'rgba(212,175,55,0.08)',
+                          border: '1px solid rgba(212,175,55,0.14)',
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 700,
                           lineHeight: 1,
-                          color: chip.key === 'bonus' ? 'var(--gold-300)' : 'rgba(255,255,255,0.68)',
+                          color: 'var(--gold-300)',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {chip.value}
+                        Премиум-клуб
                       </div>
-                    ))}
+                    )}
+
+                    {metricLine.length > 0 && (
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          lineHeight: 1.35,
+                          color: 'rgba(255,255,255,0.58)',
+                        }}
+                      >
+                        {metricLine.join(' • ')}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

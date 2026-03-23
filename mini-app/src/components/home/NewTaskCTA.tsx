@@ -85,7 +85,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 10,
             }}
           >
-            Учись спокойно.{'\n'}Мы сделаем.
+            Работы под ключ.{'\n'}Точно в срок.
           </h1>
 
           {/* Subhead */}
@@ -99,7 +99,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               maxWidth: 300,
             }}
           >
-            Курсовые, дипломы, рефераты и ещё 15+ видов работ.{' '}
+            Курсовые, дипломы, рефераты и ещё 15+ форматов.{' '}
             <span style={{ color: 'var(--gold-400)', fontWeight: 700 }}>
               От 990 ₽
             </span>
@@ -188,7 +188,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               opacity: 0.7,
             }}
           >
-            Бесплатно · без предоплаты · ответ за 5 мин
+            Бесплатный расчёт · без предоплаты · ответ за 5 минут
           </div>
         </div>
       </motion.section>
@@ -259,7 +259,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 8,
             }}
           >
-            Новый проект
+            Новая заявка
           </div>
           <div
             style={{
@@ -272,7 +272,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 10,
             }}
           >
-            Запустить новую работу
+            Оформить ещё одну работу
           </div>
           <div style={{
             fontSize: 13,
@@ -281,11 +281,11 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             lineHeight: 1.45,
             marginBottom: 16,
           }}>
-            Быстрый расчёт, ясная стоимость и запуск в один маршрут.
+            Расчёт за 5 минут, стоимость известна до оплаты.
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {['от 990 ₽', '5 минут', 'без звонков'].map((item) => (
+            {['от 990 ₽', '5 минут', 'в чате'].map((item) => (
               <span
                 key={item}
                 style={{
