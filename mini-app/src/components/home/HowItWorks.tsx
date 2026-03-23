@@ -3,8 +3,7 @@ import { motion } from 'framer-motion'
 import { MessageSquareText, CreditCard, FileCheck } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOW IT WORKS — 3-step anxiety reducer.
-//  Unified card style with design system tokens.
+//  HOW IT WORKS — 3-step timeline with connecting line.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STEPS = [
@@ -36,102 +35,121 @@ export const HowItWorks = memo(function HowItWorks() {
       {/* Section header */}
       <div
         style={{
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
-          marginBottom: 12,
+          marginBottom: 16,
           paddingLeft: 2,
         }}
       >
         Как это работает
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {STEPS.map((s, i) => {
-          const Icon = s.icon
-          return (
-            <motion.div
-              key={s.title}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.30 + i * 0.06 }}
-              style={{
-                display: 'flex',
-                gap: 12,
-                padding: 16,
-                borderRadius: 'var(--radius-md)',
-                background: 'rgba(12, 12, 10, 0.6)',
-                backdropFilter: 'blur(16px) saturate(120%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-                border: '1px solid rgba(255, 255, 255, 0.04)',
-              }}
-            >
-              {/* Step number + icon */}
-              <div
+      {/* Timeline steps */}
+      <div style={{ position: 'relative' }}>
+        {/* Connecting line */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 19,
+            top: 44,
+            bottom: 44,
+            width: 1,
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.08) 100%)',
+          }}
+        />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {STEPS.map((step, i) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.30 + i * 0.08 }}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(201, 162, 39, 0.05)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  gap: 14,
+                  padding: '14px 0',
                   position: 'relative',
                 }}
               >
-                <Icon size={18} color="var(--gold-400)" strokeWidth={1.8} />
+                {/* Step circle with number */}
                 <div
                   style={{
-                    position: 'absolute',
-                    top: -3,
-                    right: -3,
-                    width: 16,
-                    height: 16,
+                    width: 40,
+                    height: 40,
                     borderRadius: '50%',
-                    background: 'var(--gold-metallic)',
+                    background: i === 0
+                      ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))'
+                      : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${i === 0 ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)'}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: 'var(--text-on-gold)',
+                    flexShrink: 0,
+                    position: 'relative',
+                    zIndex: 1,
                   }}
                 >
-                  {i + 1}
+                  <Icon
+                    size={17}
+                    color={i === 0 ? 'var(--gold-300)' : 'var(--gold-400)'}
+                    strokeWidth={1.8}
+                  />
                 </div>
-              </div>
 
-              {/* Content */}
-              <div style={{ flex: 1, paddingTop: 2 }}>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.3,
-                    marginBottom: 3,
-                  }}
-                >
-                  {s.title}
+                {/* Content */}
+                <div style={{ flex: 1, paddingTop: 2 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: 'var(--gold-400)',
+                        letterSpacing: '0.1em',
+                      }}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {step.title}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.5,
+                      paddingLeft: 28,
+                    }}
+                  >
+                    {step.description}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {s.description}
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
+              </motion.div>
+            )
+          })}
+        </div>
       </div>
     </motion.div>
   )

@@ -1,6 +1,6 @@
 import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Wallet, TrendingUp } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { formatMoney } from '../../lib/utils'
@@ -53,342 +53,340 @@ export const HomeHeader = memo(function HomeHeader({
   }, [summary, isNewUser, ordersCount])
   const hasSummary = Boolean(summary && !isNewUser)
 
+  // Greeting based on time of day
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) return 'Доброе утро'
+    if (hour >= 12 && hour < 18) return 'Добрый день'
+    if (hour >= 18 && hour < 23) return 'Добрый вечер'
+    return 'Доброй ночи'
+  }, [])
+
   return (
     <motion.header
       className={s.header}
-      style={{ marginBottom: 16 }}
+      style={{ marginBottom: 20 }}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
     >
+      {/* ─── Top row: Avatar + Name + Club button ─── */}
       <div
         style={{
-          position: 'relative',
-          overflow: 'hidden',
-          padding: isNewUser ? '22px 20px 18px' : '24px 20px 20px',
-          borderRadius: 12,
-          background: isNewUser
-            ? 'linear-gradient(165deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
-            : 'linear-gradient(165deg, rgba(24, 20, 12, 0.98) 0%, rgba(14, 13, 14, 0.97) 44%, rgba(8, 8, 10, 1) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.10)',
-          boxShadow: '0 34px 64px -42px rgba(0, 0, 0, 0.88)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          marginBottom: hasSummary ? 24 : 0,
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: -82,
-            right: -44,
-            width: 210,
-            height: 210,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.04) 34%, transparent 74%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 24%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          {/* Avatar — larger, with premium ring */}
           <div
+            onClick={onSecretTap}
             style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 16,
-              marginBottom: hasSummary ? 18 : 0,
+              position: 'relative',
+              width: 56,
+              height: 56,
+              flexShrink: 0,
+              cursor: 'pointer',
             }}
           >
-            {!isNewUser && (
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  right: 24,
-                  top: 32,
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 118,
-                  lineHeight: 0.82,
-                  color: 'rgba(212,175,55,0.035)',
-                  letterSpacing: '-0.09em',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}
-              >
-                {(firstName && firstName.trim().length > 0 ? firstName : 'S').charAt(0)}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-              <div
-                className={s.avatarContainer}
-                onClick={onSecretTap}
-                style={{ width: 72, height: 72, flexShrink: 0 }}
-              >
-                <div
-                  className={s.avatar}
-                  style={{
-                    position: 'relative',
-                    background: 'var(--bg-elevated)',
-                    width: 66,
-                    height: 66,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'var(--bg-elevated)',
-                      zIndex: 1,
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: 'var(--gold-400)',
-                        fontWeight: 700,
-                        fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
-                        fontSize: '22px',
-                        lineHeight: 1,
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
-                    </span>
-                  </div>
-
-                  {shouldShowAvatar && (
-                    <img
-                      src={avatarSrc}
-                      alt={firstName}
-                      loading="eager"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        zIndex: 2,
-                        borderRadius: '50%',
-                      }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        setAvatarError(true)
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 8 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(212, 175, 55, 0.72)',
-                  }}
-                >
-                  {isNewUser ? 'Личный кабинет' : 'Личный салон'}
-                </div>
-
-                <div
-                  className={s.userName}
-                  style={{
-                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: isNewUser ? 32 : 38,
-                    lineHeight: 0.9,
-                    letterSpacing: '-0.055em',
-                    textTransform: 'none',
-                  }}
-                >
-                  {firstName}
-                </div>
-
-                {!isNewUser && activityLine && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      alignSelf: 'flex-start',
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      color: 'rgba(255,255,255,0.72)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      lineHeight: 1,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        background: 'rgba(212,175,55,0.95)',
-                        boxShadow: '0 0 12px rgba(212,175,55,0.4)',
-                        flexShrink: 0,
-                      }}
-                    />
-                    {activityLine}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {!isNewUser && (
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={onOpenLounge}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  flexShrink: 0,
-                  padding: '12px 14px',
-                  background: 'rgba(18, 16, 12, 0.72)',
-                  border: '1px solid rgba(212, 175, 55, 0.14)',
-                  borderRadius: 12,
-                  color: 'var(--gold-300)',
-                  fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  backdropFilter: 'blur(16px) saturate(120%)',
-                  boxShadow: '0 16px 28px -24px rgba(0, 0, 0, 0.78)',
-                }}
-              >
-                Клуб
-                <ArrowUpRight size={14} strokeWidth={2.1} />
-              </motion.button>
-            )}
-          </div>
-
-          {hasSummary && summary && (
+            {/* Gold ring */}
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)',
-                gap: 8,
+                position: 'absolute',
+                inset: -2,
+                borderRadius: '50%',
+                background: 'conic-gradient(from 45deg, rgba(212,175,55,0.6), rgba(245,225,160,0.4), rgba(212,175,55,0.6))',
+                mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+                WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+              }}
+            />
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'var(--bg-elevated)',
+                overflow: 'hidden',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <div
+              <span
                 style={{
-                  minWidth: 0,
-                  padding: '16px 16px 14px',
-                  borderRadius: 12,
-                  background: 'linear-gradient(180deg, rgba(212,175,55,0.11) 0%, rgba(255,255,255,0.03) 100%)',
-                  border: '1px solid rgba(212,175,55,0.12)',
+                  color: 'var(--gold-400)',
+                  fontWeight: 700,
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 24,
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 8,
-                  }}
-                >
-                  На счёте
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: 34,
-                    fontWeight: 700,
-                    lineHeight: 0.94,
-                    letterSpacing: '-0.06em',
-                    color: 'var(--gold-200)',
-                    marginBottom: 8,
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {formatMoney(summary.balance)}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                    color: 'rgba(255,255,255,0.56)',
-                  }}
-                >
-                  Доступно для оплаты новых заказов
-                </div>
-              </div>
+                {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
+              </span>
 
-              <div
-                style={{
-                  minWidth: 0,
-                  padding: '16px 16px 14px',
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div
+              {shouldShowAvatar && (
+                <img
+                  src={avatarSrc}
+                  alt={firstName}
+                  loading="eager"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 8,
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    zIndex: 2,
+                    borderRadius: '50%',
                   }}
-                >
-                  Кэшбэк
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 700,
-                    lineHeight: 0.98,
-                    letterSpacing: '-0.05em',
-                    color: 'var(--text-primary)',
-                    marginBottom: 8,
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                    setAvatarError(true)
                   }}
-                >
-                  {summary.cashback}%
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                    color: 'rgba(255,255,255,0.56)',
-                  }}
-                >
-                  На новые заказы
-                </div>
-              </div>
+                />
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Name block */}
+          <div style={{ marginLeft: 14, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                marginBottom: 2,
+                lineHeight: 1.3,
+              }}
+            >
+              {isNewUser ? 'Добро пожаловать' : greeting}
+            </div>
+
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 26,
+                fontWeight: 700,
+                lineHeight: 1.0,
+                letterSpacing: '-0.04em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              {firstName}
+            </div>
+
+            {!isNewUser && activityLine && (
+              <div
+                style={{
+                  marginTop: 6,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: 'rgba(255,255,255,0.56)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: 'rgba(212,175,55,0.95)',
+                    boxShadow: '0 0 10px rgba(212,175,55,0.4)',
+                    flexShrink: 0,
+                  }}
+                />
+                {activityLine}
+              </div>
+            )}
+          </div>
         </div>
+
+        {!isNewUser && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenLounge}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              flexShrink: 0,
+              padding: '10px 14px',
+              background: 'rgba(212, 175, 55, 0.08)',
+              border: '1px solid rgba(212, 175, 55, 0.16)',
+              borderRadius: 12,
+              color: 'var(--gold-300)',
+              fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            Клуб
+            <ArrowUpRight size={14} strokeWidth={2.1} />
+          </motion.button>
+        )}
       </div>
+
+      {/* ─── Finance summary cards ─── */}
+      {hasSummary && summary && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 10,
+          }}
+        >
+          {/* Balance card — hero card with gradient */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '18px 16px 16px',
+              borderRadius: 12,
+              background: 'linear-gradient(145deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 60%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(212,175,55,0.15)',
+            }}
+          >
+            {/* Decorative icon */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'rgba(212,175,55,0.10)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Wallet size={16} color="var(--gold-400)" strokeWidth={1.8} />
+            </div>
+
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.40)',
+                marginBottom: 10,
+              }}
+            >
+              На счёте
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 28,
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: '-0.05em',
+                color: 'var(--gold-200)',
+                marginBottom: 6,
+                wordBreak: 'break-word',
+              }}
+            >
+              {formatMoney(summary.balance)}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                lineHeight: 1.4,
+                color: 'rgba(255,255,255,0.48)',
+              }}
+            >
+              Доступно для оплаты
+            </div>
+          </motion.div>
+
+          {/* Cashback card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '18px 16px 16px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            {/* Decorative icon */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <TrendingUp size={16} color="var(--text-secondary)" strokeWidth={1.8} />
+            </div>
+
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.40)',
+                marginBottom: 10,
+              }}
+            >
+              Кэшбэк
+            </div>
+
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: '-0.04em',
+                color: 'var(--text-primary)',
+                marginBottom: 6,
+              }}
+            >
+              {summary.cashback}%
+            </div>
+
+            <div
+              style={{
+                fontSize: 11,
+                lineHeight: 1.4,
+                color: 'rgba(255,255,255,0.48)',
+              }}
+            >
+              На новые заказы
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.header>
   )
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {

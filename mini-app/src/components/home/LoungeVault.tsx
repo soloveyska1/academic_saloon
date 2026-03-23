@@ -1,7 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles } from 'lucide-react'
+import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { formatMoney } from '../../lib/utils'
 
@@ -30,69 +30,6 @@ interface LoungeVaultProps {
 }
 
 
-function CompactStat({
-  label,
-  value,
-  note,
-  accent = false,
-}: {
-  label: string
-  value: string
-  note: string
-  accent?: boolean
-}) {
-  return (
-    <div
-      style={{
-        minWidth: 0,
-        padding: '16px 15px 14px',
-        borderRadius: 12,
-        background: accent
-          ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.025) 100%)'
-          : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.34)',
-          marginBottom: 8,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          fontSize: 21,
-          fontWeight: 700,
-          lineHeight: 1.05,
-          color: accent ? 'var(--gold-300)' : 'var(--text-primary)',
-          letterSpacing: '-0.04em',
-          marginBottom: 8,
-          wordBreak: 'break-word',
-        }}
-      >
-        {value}
-      </div>
-
-      <div
-        style={{
-          fontSize: 12,
-          lineHeight: 1.4,
-          color: 'var(--text-secondary)',
-        }}
-      >
-        {note}
-      </div>
-    </div>
-  )
-}
-
 export const LoungeVault = memo(function LoungeVault({
   rank,
   bonusBalance,
@@ -106,477 +43,399 @@ export const LoungeVault = memo(function LoungeVault({
   alertPanel,
   bonusPanel,
 }: LoungeVaultProps) {
-  const outerStyle: CSSProperties = {
-    position: 'relative',
-    overflow: 'hidden',
-    padding: 24,
-    borderRadius: 12,
-    background: 'linear-gradient(165deg, rgba(25, 20, 12, 0.98) 0%, rgba(12, 12, 13, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
-    border: '1px solid rgba(212,175,55,0.12)',
-    boxShadow: '0 30px 58px -42px rgba(0,0,0,0.88)',
-  }
-
-  const accessValue = rank.is_max ? 'Высший' : formatMoney(rank.spent_to_next)
-  const accessNote = rank.is_max
-    ? 'Все условия уже активны'
-    : `${rank.progress}% до следующего уровня`
-  const introCopy = rank.is_max
-    ? 'Все условия клуба уже активны.'
-    : `До следующего уровня осталось ${formatMoney(rank.spent_to_next)}.`
-
   return (
     <motion.section
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 16 }}
+      style={{ marginBottom: 20, display: 'grid', gap: 10 }}
     >
-      <div style={outerStyle}>
+      {/* ═══ Bonus Balance — Hero Card ═══ */}
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 12,
+          background: 'linear-gradient(160deg, rgba(25, 20, 10, 0.98) 0%, rgba(12, 12, 13, 0.97) 50%, rgba(8, 8, 10, 1) 100%)',
+          border: '1px solid rgba(212,175,55,0.12)',
+          boxShadow: '0 24px 48px -32px rgba(0,0,0,0.8)',
+        }}
+      >
+        {/* Gold orb */}
         <div
           aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: -74,
-          right: -28,
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.04) 34%, transparent 74%)',
-          pointerEvents: 'none',
-        }}
-      />
+          style={{
+            position: 'absolute',
+            top: -80,
+            right: -40,
+            width: 220,
+            height: 220,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 35%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Top shine */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 1,
+            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.2) 50%, transparent 90%)',
+          }}
+        />
+
+        <div style={{ position: 'relative', zIndex: 1, padding: '24px 20px' }}>
+          {/* Header row */}
           <div
             style={{
               display: 'flex',
-              alignItems: 'flex-start',
+              alignItems: 'center',
               justifyContent: 'space-between',
               gap: 12,
-              marginBottom: 16,
+              marginBottom: 20,
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Sparkles size={15} color="var(--gold-300)" strokeWidth={1.9} />
+              <span
                 style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212, 175, 55, 0.72)',
+                }}
+              >
+                Бонусный баланс
+              </span>
+            </div>
+
+            {rank.is_max ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(212,175,55,0.08)',
+                  border: '1px solid rgba(212,175,55,0.14)',
+                  color: 'var(--gold-300)',
                   fontSize: 10,
                   fontWeight: 700,
-                  letterSpacing: '0.15em',
+                  letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'rgba(212,175,55,0.72)',
-                  marginBottom: 8,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Клуб
-              </div>
-
-              <div
+                <Crown size={12} strokeWidth={1.9} />
+                Высший
+              </span>
+            ) : (
+              <span
                 style={{
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 34,
-                  lineHeight: 0.95,
-                  letterSpacing: '-0.055em',
-                  color: 'var(--text-primary)',
-                  marginBottom: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--gold-300)',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Привилегии
-              </div>
+                {rank.progress}% прогресса
+              </span>
+            )}
+          </div>
 
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  color: 'var(--text-secondary)',
-                  maxWidth: 280,
-                }}
-              >
-                {introCopy}
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '11px 13px',
-                borderRadius: 12,
-                background: 'rgba(18, 16, 12, 0.72)',
-                border: '1px solid rgba(212,175,55,0.14)',
-                color: 'var(--gold-300)',
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                flexShrink: 0,
-              }}
-            >
-              <Percent size={14} strokeWidth={2} />
-              {rank.cashback}% возврат
-            </div>
+          {/* Big balance number */}
+          <div
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 44,
+              lineHeight: 1,
+              letterSpacing: '-0.05em',
+              color: 'var(--text-primary)',
+              marginBottom: 6,
+            }}
+          >
+            {formatMoney(bonusBalance)}
           </div>
 
           <div
             style={{
-              position: 'relative',
-              padding: 24,
-              borderRadius: 12,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(14,12,10,0.62) 100%)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              marginBottom: 12,
-              overflow: 'hidden',
+              fontSize: 13,
+              lineHeight: 1.4,
+              color: 'var(--text-secondary)',
+              marginBottom: 20,
+              maxWidth: 300,
+            }}
+          >
+            Бонусы списываются при оплате новых заказов вместе с кэшбэком клуба.
+          </div>
+
+          {/* Stats row */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
             }}
           >
             <div
-              aria-hidden="true"
               style={{
-                position: 'absolute',
-                right: 16,
-                top: 8,
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 116,
-                lineHeight: 0.82,
-                color: 'rgba(212,175,55,0.05)',
-                letterSpacing: '-0.08em',
-                pointerEvents: 'none',
-                userSelect: 'none',
+                padding: '14px',
+                borderRadius: 12,
+                background: 'rgba(212,175,55,0.06)',
+                border: '1px solid rgba(212,175,55,0.10)',
               }}
             >
-              %
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: 6 }}>
+                Кэшбэк
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Percent size={14} color="var(--gold-300)" strokeWidth={2} />
+                <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold-300)', letterSpacing: '-0.03em' }}>
+                  {rank.cashback}%
+                </span>
+              </div>
             </div>
 
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  color: 'var(--text-primary)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  marginBottom: 12,
-                }}
-              >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  <Sparkles size={15} color="var(--gold-300)" strokeWidth={1.9} />
-                  Бонусный баланс
-                </span>
-
-                {rank.is_max ? (
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '7px 10px',
-                      borderRadius: 999,
-                      background: 'rgba(212,175,55,0.08)',
-                      border: '1px solid rgba(212,175,55,0.14)',
-                      color: 'var(--gold-300)',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <Crown size={13} strokeWidth={1.9} />
-                    Высший уровень
-                  </span>
-                ) : (
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: 'var(--gold-300)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {rank.progress}% доступа
-                  </span>
-                )}
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: 6 }}>
+                {rank.is_max ? 'Уровень' : 'До уровня'}
               </div>
-
-              <div
-                style={{
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 48,
-                  lineHeight: 0.92,
-                  letterSpacing: '-0.06em',
-                  color: 'var(--text-primary)',
-                  marginBottom: 8,
-                }}
-              >
-                {formatMoney(bonusBalance)}
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+                {rank.is_max ? 'Высший' : formatMoney(rank.spent_to_next)}
               </div>
-
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  color: 'var(--text-secondary)',
-                  maxWidth: 300,
-                  marginBottom: 16,
-                }}
-              >
-                Бонусы списываются при оплате новых заказов и работают вместе с кэшбэком клуба.
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: 8,
-                  marginBottom: 12,
-                }}
-              >
-                <CompactStat
-                  label="Кэшбэк"
-                  value={`${rank.cashback}%`}
-                  note="На новые заказы"
-                  accent
-                />
-                <CompactStat
-                  label={rank.is_max ? 'Уровень' : 'До уровня'}
-                  value={accessValue}
-                  note={accessNote}
-                />
-              </div>
-
-              {!rank.is_max && (
-                <div>
-                  <div
-                    style={{
-                      height: 7,
-                      borderRadius: 999,
-                      background: 'rgba(255,255,255,0.06)',
-                      overflow: 'hidden',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.max(4, rank.progress)}%` }}
-                      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                      style={{
-                        height: '100%',
-                        borderRadius: 999,
-                        background: 'linear-gradient(90deg, rgba(212,175,55,0.95), rgba(245,225,160,0.8))',
-                        boxShadow: '0 10px 20px -16px rgba(212,175,55,0.5)',
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      fontSize: 12,
-                      lineHeight: 1.45,
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    <span>Прогресс клуба</span>
-                    <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>{rank.progress}%</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {(alertPanel || bonusPanel) && (
-            <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-              {alertPanel}
-              {bonusPanel}
+          {/* Progress bar */}
+          {!rank.is_max && (
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  height: 5,
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.06)',
+                  overflow: 'hidden',
+                }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(4, rank.progress)}%` }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 999,
+                    background: 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))',
+                    boxShadow: '0 8px 16px -12px rgba(212,175,55,0.4)',
+                  }}
+                />
+              </div>
             </div>
           )}
+        </div>
+      </div>
 
-          <div
-            style={{
-              padding: 24,
-              borderRadius: 12,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}
-          >
+      {/* ═══ Alert + Daily Bonus panels ═══ */}
+      {(alertPanel || bonusPanel) && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {alertPanel}
+          {bonusPanel}
+        </div>
+      )}
+
+      {/* ═══ Referral Card — Separate, lighter card ═══ */}
+      <div
+        style={{
+          padding: '20px',
+          borderRadius: 12,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
             <div
               style={{
                 display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 12,
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 4,
               }}
             >
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Приглашения
-                </div>
-                <div
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Код, ссылка и QR
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  Отправляйте приглашения и открывайте бонусы с новых заказов.
-                </div>
-              </div>
-
-              {(referralsCount > 0 || referralEarnings > 0) && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  {referralsCount > 0 && (
-                    <div
-                      style={{
-                        padding: '7px 10px',
-                        borderRadius: 999,
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: 'var(--text-secondary)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {referralsCount} приглаш.
-                    </div>
-                  )}
-                  {referralEarnings > 0 && (
-                    <div
-                      style={{
-                        padding: '7px 10px',
-                        borderRadius: 999,
-                        background: 'rgba(212,175,55,0.08)',
-                        border: '1px solid rgba(212,175,55,0.14)',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: 'var(--gold-300)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      +{formatMoney(referralEarnings)}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 8, marginBottom: 16 }}>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                onClick={onCopy}
+              <Gift size={14} color="var(--gold-400)" strokeWidth={1.9} />
+              <span
                 style={{
-                  minWidth: 0,
-                  padding: '14px 16px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(212,175,55,0.14)',
-                  background: 'rgba(212,175,55,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  cursor: 'pointer',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
                 }}
               >
-                <span
+                Приглашения
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                lineHeight: 1.45,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              Приглашайте друзей и открывайте бонусы
+            </div>
+          </div>
+
+          {(referralsCount > 0 || referralEarnings > 0) && (
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              {referralsCount > 0 && (
+                <div
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 15,
+                    padding: '5px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    fontSize: 10,
                     fontWeight: 700,
-                    letterSpacing: '0.12em',
-                    color: 'var(--gold-300)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    color: 'var(--text-secondary)',
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {referralCode}
-                </span>
-                {copied ? (
-                  <Check size={18} color="var(--success-text)" strokeWidth={1.9} />
-                ) : (
-                  <Copy size={18} color="var(--text-secondary)" strokeWidth={1.9} />
-                )}
-              </motion.button>
-
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={onTelegramShare}
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 12,
-                  border: '1px solid rgba(212,175,55,0.14)',
-                  background: 'rgba(212,175,55,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: 'var(--gold-300)',
-                }}
-              >
-                <Send size={19} strokeWidth={1.8} />
-              </motion.button>
-
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={onShowQR}
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 12,
-                  border: '1px solid rgba(212,175,55,0.14)',
-                  background: 'rgba(212,175,55,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: 'var(--gold-300)',
-                }}
-              >
-                <QrCode size={20} strokeWidth={1.8} />
-              </motion.button>
+                  {referralsCount} приглаш.
+                </div>
+              )}
+              {referralEarnings > 0 && (
+                <div
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(212,175,55,0.08)',
+                    border: '1px solid rgba(212,175,55,0.14)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: 'var(--gold-300)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  +{formatMoney(referralEarnings)}
+                </div>
+              )}
             </div>
+          )}
+        </div>
 
-            <div
+        {/* Referral code + actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 8, marginBottom: 14 }}>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            onClick={onCopy}
+            style={{
+              minWidth: 0,
+              padding: '12px 14px',
+              borderRadius: 12,
+              border: '1px solid rgba(212,175,55,0.14)',
+              background: 'rgba(212,175,55,0.06)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <span
               style={{
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                paddingTop: 16,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'var(--gold-300)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
-              <PromoCodeSection
-                variant="full"
-                collapsible
-                defaultExpanded={false}
-              />
-            </div>
-          </div>
+              {referralCode}
+            </span>
+            {copied ? (
+              <Check size={16} color="var(--success-text)" strokeWidth={2} />
+            ) : (
+              <Copy size={16} color="var(--text-secondary)" strokeWidth={2} />
+            )}
+          </motion.button>
+
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={onTelegramShare}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <Send size={17} strokeWidth={1.8} />
+          </motion.button>
+
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={onShowQR}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <QrCode size={18} strokeWidth={1.8} />
+          </motion.button>
+        </div>
+
+        {/* Promo code */}
+        <div
+          style={{
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            paddingTop: 14,
+          }}
+        >
+          <PromoCodeSection
+            variant="full"
+            collapsible
+            defaultExpanded={false}
+          />
         </div>
       </div>
     </motion.section>
