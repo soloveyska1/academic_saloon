@@ -264,6 +264,9 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         logger.warning(f"[YooKassa] Order #{order_id} not found for payment {payment_id}")
         return
 
+    payment_phase = "final" if is_followup_payment(order) else "initial"
+    old_status = order.status
+
     # True idempotency: check PaymentLog for duplicate payment_id
     existing_log = await session.execute(
         select(PaymentLog).where(PaymentLog.yookassa_payment_id == payment_id)
@@ -272,10 +275,13 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         logger.info(f"[YooKassa] Payment {payment_id} already processed (PaymentLog), skipping")
         return
 
-    # Also check order status as a secondary safeguard
-    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
-                        OrderStatus.IN_PROGRESS.value, OrderStatus.COMPLETED.value]:
+    # Also check order status as a secondary safeguard.
+    # Final доплата may legitimately arrive while the order is already in paid/in_progress.
+    if order.status in [OrderStatus.PAID_FULL.value, OrderStatus.COMPLETED.value]:
         logger.info(f"[YooKassa] Order #{order_id} already in paid state, skipping")
+        return
+    if payment_phase == "initial" and order.status in [OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]:
+        logger.info(f"[YooKassa] Order #{order_id} already processed for initial payment, skipping")
         return
 
     # Log this payment immediately (before processing)
@@ -304,7 +310,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         await session.commit()
         return
 
-    if is_followup_payment(order):
+    if payment_phase == "final":
         expected_amount = float(remaining_before_payment)
     else:
         expected_amount = float(order.final_price)
@@ -323,7 +329,9 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         return
 
     # Update order status (atomic with bonus deduction)
-    if is_followup_payment(order):
+    current_payment_amount = float(remaining_before_payment) if payment_phase == "final" else amount_value
+
+    if payment_phase == "final":
         order.status = OrderStatus.PAID_FULL.value
         order.paid_amount = order.final_price
     elif order.payment_scheme == "half":
@@ -375,7 +383,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             session=session,
             client_username=user.username,
             client_name=user.fullname,
-            extra_text="✅ Оплата через YooKassa",
+            extra_text="✅ Доплата через YooKassa" if payment_phase == "final" else "✅ Оплата через YooKassa",
         )
     except Exception as e:
         logger.warning(f"[YooKassa] Failed to update live card: {e}")
@@ -387,22 +395,23 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             telegram_id=order.user_id,
             order_id=order.id,
             new_status=order.status,
-            old_status=OrderStatus.WAITING_PAYMENT.value,
+            old_status=old_status,
         )
     except Exception as e:
         logger.warning(f"[YooKassa] Failed to send WS notification: {e}")
 
     # Order bonus (50₽)
     order_bonus = 0
-    try:
-        order_bonus = await BonusService.process_order_bonus(
-            session=session, bot=bot, user_id=order.user_id,
-        )
-    except Exception as e:
-        logger.warning(f"[YooKassa] Failed to process order bonus for order #{order.id}: {e}")
+    if payment_phase == "initial":
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session, bot=bot, user_id=order.user_id,
+            )
+        except Exception as e:
+            logger.warning(f"[YooKassa] Failed to process order bonus for order #{order.id}: {e}")
 
     # Referral bonus
-    if user.referrer_id:
+    if payment_phase == "initial" and user.referrer_id:
         try:
             await BonusService.process_referral_bonus(
                 session=session, bot=bot,
@@ -417,6 +426,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
     if bot:
         try:
             bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
+            payment_label = "Доплата" if payment_phase == "final" else "Оплата"
 
             from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -428,8 +438,8 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
 
             await bot.send_message(
                 order.user_id,
-                f"<b>Оплата прошла успешно</b>\n\n"
-                f"Заказ <b>#{order.id}</b> · {format_price(order.paid_amount)}\n"
+                f"<b>{payment_label} прошла успешно</b>\n\n"
+                f"Заказ <b>#{order.id}</b> · {format_price(current_payment_amount)}\n"
                 f"Приступаем к работе.{bonus_line}",
                 reply_markup=keyboard,
             )
@@ -442,7 +452,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             from bot.texts.payments import build_receipt
             receipt_text = build_receipt(
                 order_id=order.id,
-                amount=order.paid_amount,
+                amount=current_payment_amount,
                 method="YooKassa",
                 work_type=order.work_type_label,
             )
@@ -453,15 +463,17 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
     # Notify admins
     if bot:
         try:
-            for admin_id in settings.ADMIN_IDS:
-                await bot.send_message(
-                    admin_id,
-                    f"💳 <b>YooKassa: оплата получена</b>\n\n"
-                    f"Заказ #{order.id}\n"
-                    f"Клиент: {user.fullname or user.username or order.user_id}\n"
-                    f"Сумма: {format_price(order.paid_amount)}\n"
-                    f"Платёж: <code>{payment_id}</code>",
-                )
+            from bot.services.admin_payment_notifications import send_admin_payment_completed_alert
+            await send_admin_payment_completed_alert(
+                bot=bot,
+                session=session,
+                order=order,
+                user=user,
+                amount=current_payment_amount,
+                payment_method="yookassa",
+                payment_phase=payment_phase,
+                payment_id=payment_id,
+            )
         except Exception as e:
             logger.warning(f"[YooKassa] Failed to notify admins: {e}")
 

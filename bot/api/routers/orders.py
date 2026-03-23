@@ -936,10 +936,26 @@ async def confirm_payment(
             order_id=order.id,
             user_fullname=user.fullname if user else "Unknown",
             amount=amount_to_pay,
-            payment_method=data.payment_method
+            payment_method=data.payment_method,
+            payment_phase=payment_phase,
         )
     except Exception as e:
         logger.warning(f"[Payment] Failed to notify admins about pending payment for order #{order.id}: {e}")
+
+    try:
+        bot = get_bot()
+        from bot.services.admin_payment_notifications import send_admin_payment_pending_alert
+        await send_admin_payment_pending_alert(
+            bot=bot,
+            session=session,
+            order=order,
+            user=user,
+            amount=float(amount_to_pay),
+            payment_method=data.payment_method,
+            payment_phase=payment_phase,
+        )
+    except Exception as e:
+        logger.warning(f"[Payment] Failed to send bot admin alert for order #{order.id}: {e}")
 
     try:
         bot = get_bot()

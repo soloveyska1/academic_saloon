@@ -295,7 +295,13 @@ async def notify_admin_new_order(order_data: dict):
         logger.info(f"[WS Admin] Notified admins {sent_to} about new order #{order_data.get('id')}")
     return len(sent_to) > 0
 
-async def notify_admin_payment_pending(order_id: int, user_fullname: str, amount: float, payment_method: str):
+async def notify_admin_payment_pending(
+    order_id: int,
+    user_fullname: str,
+    amount: float,
+    payment_method: str,
+    payment_phase: str = "initial",
+):
     """
     Notify admins when a payment is pending verification.
     """
@@ -305,6 +311,7 @@ async def notify_admin_payment_pending(order_id: int, user_fullname: str, amount
         "user_fullname": user_fullname,
         "amount": amount,
         "payment_method": payment_method,
+        "payment_phase": payment_phase,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     sent_to = []
