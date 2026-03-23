@@ -142,8 +142,8 @@ export const Navigation = () => {
           <div style={{
             position: 'relative',
             overflow: 'hidden',
-            padding: '8px',
-            borderRadius: 30,
+            padding: '8px 10px 10px',
+            borderRadius: 28,
             background: 'linear-gradient(180deg, rgba(19, 18, 16, 0.96) 0%, rgba(10, 10, 12, 0.98) 100%)',
             backdropFilter: 'blur(28px) saturate(165%)',
             WebkitBackdropFilter: 'blur(28px) saturate(165%)',
@@ -177,9 +177,10 @@ export const Navigation = () => {
               style={{
                 position: 'relative',
                 zIndex: 1,
-                display: 'flex',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                 alignItems: 'stretch',
-                gap: 8,
+                gap: 6,
               }}
             >
             {navItems.map((item) => {
@@ -207,22 +208,23 @@ export const Navigation = () => {
                   style={{
                     position: 'relative',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: isActive ? 'flex-start' : 'center',
-                    gap: isActive ? 12 : 6,
-                    flex: isActive ? '1.38 1 0' : '0.86 1 0',
+                    justifyContent: 'center',
+                    gap: 6,
                     minWidth: 0,
-                    height: 68,
-                    padding: isActive ? '0 18px 0 10px' : '0 10px',
-                    borderRadius: 24,
+                    width: '100%',
+                    height: 74,
+                    padding: '8px 6px 10px',
+                    borderRadius: 22,
                     border: isActive
                       ? '1px solid rgba(212,175,55,0.22)'
-                      : '1px solid rgba(255,255,255,0.02)',
+                      : '1px solid transparent',
                     background: isActive
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.07) 100%)'
+                      ? 'linear-gradient(180deg, rgba(212,175,55,0.17) 0%, rgba(212,175,55,0.07) 100%)'
                       : 'transparent',
                     boxShadow: isActive
-                      ? '0 20px 34px -24px rgba(212,175,55,0.46), inset 0 1px 0 rgba(255,255,255,0.08)'
+                      ? '0 18px 28px -24px rgba(212,175,55,0.44), inset 0 1px 0 rgba(255,255,255,0.08)'
                       : 'none',
                     cursor: 'pointer',
                     overflow: 'hidden',
@@ -248,9 +250,9 @@ export const Navigation = () => {
                     style={{
                       position: 'relative',
                       zIndex: 1,
-                      width: isActive ? 42 : 38,
-                      height: isActive ? 42 : 38,
-                      borderRadius: isActive ? 16 : 14,
+                      width: isActive ? 40 : 38,
+                      height: isActive ? 40 : 38,
+                      borderRadius: 14,
                       background: isActive
                         ? 'linear-gradient(180deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.14) 100%)'
                         : 'rgba(255,255,255,0.04)',
@@ -279,10 +281,10 @@ export const Navigation = () => {
                       zIndex: 1,
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: isActive ? 'flex-start' : 'center',
+                      alignItems: 'center',
                       justifyContent: 'center',
                       minWidth: 0,
-                      gap: isActive ? 2 : 4,
+                      gap: 3,
                     }}
                   >
                     <motion.span
@@ -291,10 +293,13 @@ export const Navigation = () => {
                         opacity: isActive ? 1 : 0.88,
                       }}
                       style={{
-                        fontSize: isActive ? 14 : 12,
+                        fontSize: 12,
                         fontWeight: isActive ? 700 : 600,
-                        letterSpacing: isActive ? '0.01em' : '0',
+                        letterSpacing: isActive ? '0.01em' : '0.005em',
                         whiteSpace: 'nowrap',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
                       {item.label}
@@ -306,16 +311,14 @@ export const Navigation = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 3 }}
                         style={{
-                          fontSize: 10,
+                          width: 18,
+                          height: 3,
+                          borderRadius: 999,
                           fontWeight: 700,
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          color: 'rgba(212,175,55,0.72)',
-                          whiteSpace: 'nowrap',
+                          background: 'linear-gradient(90deg, rgba(212,175,55,0.92), rgba(212,175,55,0.3))',
+                          boxShadow: '0 0 10px rgba(212,175,55,0.32)',
                         }}
-                      >
-                        Сейчас
-                      </motion.span>
+                      />
                     )}
                   </motion.div>
                 </motion.button>
