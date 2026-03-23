@@ -109,11 +109,9 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             transition={{ delay: 0.25 + i * 0.06 }}
             style={{
               padding: 16,
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(12, 12, 10, 0.6)',
-              backdropFilter: 'blur(16px) saturate(120%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-              border: '1px solid rgba(255, 255, 255, 0.04)',
+              borderRadius: 12,
+              background: 'rgba(255, 255, 255, 0.025)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
             }}
           >
             {/* Top row: outcome badge + stars */}

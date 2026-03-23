@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  TRUST STATS STRIP — 3 metrics with count-up.
-//  Compact horizontal strip, unified with design system.
+//  Visually distinct: full-width gold-accent bar
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface StatConfig {
@@ -57,36 +57,38 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.10 }}
+      transition={{ delay: 0.12 }}
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '20px 0',
-        marginBottom: 8,
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 8,
+        marginBottom: 20,
+        padding: '18px 16px',
+        borderRadius: 12,
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      {STATS.map((stat, i) => (
+      {STATS.map((stat) => (
         <div
           key={stat.label}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            flex: 1,
-            position: 'relative',
+            gap: 4,
           }}
         >
           <div
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 22,
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 24,
               fontWeight: 700,
-              letterSpacing: '-0.03em',
-              color: 'var(--text-primary)',
+              letterSpacing: '-0.04em',
+              color: 'var(--gold-200)',
               lineHeight: 1,
-              marginBottom: 4,
             }}
           >
             {stat.prefix}
@@ -99,26 +101,12 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
               fontSize: 11,
               fontWeight: 600,
               color: 'var(--text-muted)',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
             }}
           >
             {stat.label}
           </span>
-
-          {/* Subtle divider */}
-          {i < STATS.length - 1 && (
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: '10%',
-                height: '80%',
-                width: 1,
-                background: 'rgba(255, 255, 255, 0.06)',
-              }}
-            />
-          )}
         </div>
       ))}
     </motion.div>
