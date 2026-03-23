@@ -133,9 +133,10 @@ export const Navigation = () => {
             position: 'fixed',
             bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
             left: '50%',
-            translateX: '-50%',
+            transform: 'translateX(-50%)',
             zIndex: 900,
             width: 'min(calc(100vw - 24px), 392px)',
+            maxWidth: 'calc(100vw - 24px)',
           }}
         >
           <div style={{

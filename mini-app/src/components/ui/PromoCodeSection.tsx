@@ -184,7 +184,7 @@ export function PromoCodeSection({
     : 'Введите для получения скидки'
   const promoToggleLabel = activePromo
     ? `${activePromo.code} • скидка ${activePromo.discount}%`
-    : 'Код скидки'
+    : 'Промокод'
 
   // ═══════════════════════════════════════════════════════════════════════════
   //  COMPACT VARIANT — Small badge/pill showing active promo
