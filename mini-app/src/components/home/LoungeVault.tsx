@@ -32,16 +32,14 @@ function formatMoney(value: number): string {
   return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
 }
 
-function VaultBlock({
+function MetricPanel({
   title,
   value,
-  hint,
   accent,
   icon,
 }: {
   title: string
   value: string
-  hint?: string
   accent?: boolean
   icon: typeof Coins
 }) {
@@ -50,8 +48,8 @@ function VaultBlock({
   return (
     <div
       style={{
-        padding: '16px 16px 15px',
-        borderRadius: 20,
+        padding: '14px 14px 13px',
+        borderRadius: 18,
         background: accent
           ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.03) 100%)'
           : 'rgba(255,255,255,0.03)',
@@ -60,18 +58,18 @@ function VaultBlock({
     >
       <div
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 14,
+          width: 34,
+          height: 34,
+          borderRadius: 12,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           background: accent ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.05)',
           border: `1px solid ${accent ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.06)'}`,
-          marginBottom: 12,
+          marginBottom: 10,
         }}
       >
-        <Icon size={17} color={accent ? 'var(--gold-300)' : 'var(--gold-400)'} strokeWidth={1.9} />
+        <Icon size={16} color={accent ? 'var(--gold-300)' : 'var(--gold-400)'} strokeWidth={1.9} />
       </div>
 
       <div
@@ -94,23 +92,11 @@ function VaultBlock({
           lineHeight: 1.05,
           color: accent ? 'var(--gold-300)' : 'var(--text-primary)',
           letterSpacing: '-0.04em',
-          marginBottom: hint ? 6 : 0,
+          wordBreak: 'break-word',
         }}
       >
         {value}
       </div>
-
-      {hint && (
-        <div
-          style={{
-            fontSize: 12,
-            lineHeight: 1.4,
-            color: 'var(--text-secondary)',
-          }}
-        >
-          {hint}
-        </div>
-      )}
     </div>
   )
 }
@@ -187,14 +173,13 @@ export const LoungeVault = memo(function LoungeVault({
               <div
                 style={{
                   fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 30,
+                  fontSize: 31,
                   lineHeight: 0.95,
                   letterSpacing: '-0.05em',
                   color: 'var(--text-primary)',
-                  marginBottom: 0,
                 }}
               >
-                Привилегии клуба
+                Бонусы и привилегии
               </div>
             </div>
 
@@ -218,7 +203,7 @@ export const LoungeVault = memo(function LoungeVault({
                   marginBottom: 5,
                 }}
               >
-                Ваш статус
+                Статус
               </div>
               <div
                 style={{
@@ -235,76 +220,74 @@ export const LoungeVault = memo(function LoungeVault({
 
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gap: 12,
-              marginBottom: 14,
-            }}
-          >
-            <VaultBlock
-              title="Кэшбэк"
-              value={`${rank.cashback}%`}
-              hint={rank.is_max ? 'Максимальный уровень открыт' : 'На новые заказы'}
-              accent
-              icon={Percent}
-            />
-            <VaultBlock
-              title="Бонусы"
-              value={formatMoney(bonusBalance)}
-              hint={bonusBalance > 0 ? 'Доступны к списанию' : 'Появятся после начислений'}
-              icon={Coins}
-            />
-          </div>
-
-          {alertPanel && (
-            <div style={{ marginBottom: 14 }}>
-              {alertPanel}
-            </div>
-          )}
-
-          <div
-            style={{
-              padding: '16px 16px 15px',
-              borderRadius: 22,
-              background: 'rgba(255,255,255,0.03)',
+              padding: 18,
+              borderRadius: 24,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(16,14,11,0.6) 100%)',
               border: '1px solid rgba(255,255,255,0.05)',
               marginBottom: 14,
             }}
           >
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 12,
+                gap: 8,
+                color: 'var(--text-primary)',
+                fontSize: 14,
+                fontWeight: 700,
+                marginBottom: 8,
               }}
             >
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  color: 'var(--text-primary)',
-                  fontSize: 14,
-                  fontWeight: 700,
-                }}
-              >
-                <Crown size={16} color="var(--gold-300)" strokeWidth={1.8} />
-                Клубный прогресс
-              </div>
+              <Crown size={16} color="var(--gold-300)" strokeWidth={1.8} />
+              Текущий уровень
+            </div>
 
-              {!rank.is_max && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: 'var(--gold-300)',
-                  }}
-                >
-                  {rank.progress}%
-                </div>
-              )}
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 28,
+                lineHeight: 0.95,
+                letterSpacing: '-0.05em',
+                color: 'var(--text-primary)',
+                marginBottom: 8,
+              }}
+            >
+              {rank.emoji} {rank.name}
+            </div>
+
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: 'var(--text-secondary)',
+                maxWidth: 320,
+                marginBottom: 14,
+              }}
+            >
+              {rank.is_max || !rank.next_rank
+                ? 'Максимальный клубный уровень уже открыт.'
+                : `До уровня ${rank.next_rank} осталось ${formatMoney(rank.spent_to_next)}.`}
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <MetricPanel
+                title="Кэшбэк"
+                value={`${rank.cashback}%`}
+                accent
+                icon={Percent}
+              />
+              <MetricPanel
+                title="Бонусы"
+                value={formatMoney(bonusBalance)}
+                icon={Coins}
+              />
             </div>
 
             {rank.is_max || !rank.next_rank ? (
@@ -313,8 +296,8 @@ export const LoungeVault = memo(function LoungeVault({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '10px 12px',
-                  borderRadius: 16,
+                  padding: '12px 14px',
+                  borderRadius: 18,
                   background: 'rgba(212,175,55,0.08)',
                   border: '1px solid rgba(212,175,55,0.14)',
                   color: 'var(--gold-300)',
@@ -326,7 +309,7 @@ export const LoungeVault = memo(function LoungeVault({
                 Максимальный уровень уже открыт
               </div>
             ) : (
-              <>
+              <div>
                 <div
                   style={{
                     height: 8,
@@ -351,62 +334,47 @@ export const LoungeVault = memo(function LoungeVault({
 
                 <div
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
                     fontSize: 13,
                     lineHeight: 1.45,
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  До уровня <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{rank.next_rank}</span> осталось{' '}
-                  <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>{formatMoney(rank.spent_to_next)}</span>
+                  <span>Прогресс до следующего уровня</span>
+                  <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>{rank.progress}%</span>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
-          {bonusPanel && (
-            <div style={{ marginBottom: 14 }}>
+          {(alertPanel || bonusPanel) && (
+            <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
+              {alertPanel}
               {bonusPanel}
             </div>
           )}
 
-          <div style={{ marginBottom: 14 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.34)',
-                marginBottom: 10,
-              }}
-            >
-              Промокоды
-            </div>
-            <PromoCodeSection
-              variant="full"
-              collapsible
-              defaultExpanded={false}
-            />
-          </div>
-
           <div
             style={{
-              padding: '16px 16px 15px',
-              borderRadius: 22,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(13,12,10,0.44) 100%)',
+              padding: 18,
+              borderRadius: 24,
+              background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.05)',
             }}
           >
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 gap: 12,
-                marginBottom: 12,
+                marginBottom: 14,
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 10,
@@ -417,16 +385,16 @@ export const LoungeVault = memo(function LoungeVault({
                     marginBottom: 6,
                   }}
                 >
-                  Приглашения
+                  Скидки и приглашения
                 </div>
                 <div
                   style={{
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: 700,
                     color: 'var(--text-primary)',
                   }}
                 >
-                  Ваш код
+                  Ваш код и промокоды
                 </div>
               </div>
 
@@ -466,6 +434,55 @@ export const LoungeVault = memo(function LoungeVault({
                   )}
                 </div>
               )}
+            </div>
+
+            <PromoCodeSection
+              variant="full"
+              collapsible
+              defaultExpanded={false}
+            />
+
+            <div
+              aria-hidden="true"
+              style={{
+                height: 1,
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 14%, rgba(255,255,255,0.06) 86%, transparent 100%)',
+                margin: '16px 0',
+              }}
+            />
+
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.34)',
+                  marginBottom: 6,
+                }}
+              >
+                Приглашения
+              </div>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: 6,
+                }}
+              >
+                Делитесь кодом и получайте процент с заказов
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                Код можно скопировать, отправить в Telegram или показать как QR.
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 10 }}>

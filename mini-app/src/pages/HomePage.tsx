@@ -420,8 +420,6 @@ export function HomePage({ user, onRefresh }: Props) {
               </>
             )}
 
-            {shouldShowExamBanner && <ExamSeasonBanner />}
-
             <LoungeVault
               rank={user.rank}
               bonusBalance={user.bonus_balance}
@@ -451,6 +449,8 @@ export function HomePage({ user, onRefresh }: Props) {
                 />
               ) : undefined}
             />
+
+            {shouldShowExamBanner && <ExamSeasonBanner />}
 
           </>
         )}

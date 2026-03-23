@@ -3,12 +3,10 @@ import { motion } from 'framer-motion'
 import {
   ArrowRight,
   CheckCircle2,
-  CircleDollarSign,
   Clock3,
   CreditCard,
   FileEdit,
   FolderKanban,
-  Sparkles,
 } from 'lucide-react'
 import { Order } from '../../types'
 import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
@@ -110,6 +108,58 @@ function formatMoney(value: number): string {
   return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
 }
 
+function getFinanceHero(total: number, paid: number, remaining: number, stageSummary: string, deadlineText: string) {
+  if (total <= 0) {
+    return {
+      eyebrow: 'Расчёт',
+      value: 'Уточняется',
+      supporting: 'Стоимость и точный объём покажем после расчёта.',
+      accent: false,
+      details: [
+        { label: 'Этап', value: stageSummary },
+        { label: 'Срок', value: deadlineText },
+      ],
+    }
+  }
+
+  if (paid > 0 && remaining > 0) {
+    return {
+      eyebrow: 'К доплате',
+      value: formatMoney(remaining),
+      supporting: 'Аванс уже принят, заказ движется по плану.',
+      accent: true,
+      details: [
+        { label: 'Внесено', value: formatMoney(paid) },
+        { label: 'Полная сумма', value: formatMoney(total) },
+      ],
+    }
+  }
+
+  if (remaining > 0) {
+    return {
+      eyebrow: 'К оплате',
+      value: formatMoney(remaining),
+      supporting: 'После подтверждения оплаты сразу запускаем следующий этап.',
+      accent: true,
+      details: [
+        { label: 'Полная сумма', value: formatMoney(total) },
+        { label: 'Срок', value: deadlineText },
+      ],
+    }
+  }
+
+  return {
+    eyebrow: 'Оплачено',
+    value: formatMoney(total),
+    supporting: 'Финансовый этап закрыт, дальше только работа по заказу.',
+    accent: false,
+    details: [
+      { label: 'Этап', value: stageSummary },
+      { label: 'Срок', value: deadlineText },
+    ],
+  }
+}
+
 export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   orders,
   onNavigate,
@@ -160,26 +210,12 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   const stageSummary = STAGES[stageIdx]?.label ?? 'Заявка'
   const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
   const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
-  const ledgerItems = [
-    {
-      key: 'total',
-      label: 'Сумма',
-      value: total > 0 ? formatMoney(total) : 'Уточняется',
-      accent: false,
-    },
-    {
-      key: 'paid',
-      label: 'Внесено',
-      value: paid > 0 ? formatMoney(paid) : '0 ₽',
-      accent: paid > 0,
-    },
-    {
-      key: 'remaining',
-      label: remaining > 0 ? 'Осталось' : 'Закрыто',
-      value: total > 0 ? formatMoney(remaining) : 'Уточняется',
-      accent: remaining <= 0 && total > 0,
-    },
-  ]
+  const financeHero = getFinanceHero(total, paid, remaining, stageSummary, deadlineText)
+  const footerHint = otherActiveCount > 0
+    ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе.`
+    : needsAction
+      ? financeSummary
+      : 'Чат, файлы и все статусы собраны внутри заказа.'
 
   return (
     <motion.section
@@ -245,28 +281,63 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 12,
-              marginBottom: 16,
+              marginBottom: 18,
             }}
           >
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                color: 'var(--text-secondary)',
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-              }}
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212, 175, 55, 0.72)',
+                  marginBottom: 8,
+                }}
               >
-                <Sparkles size={12} color="var(--gold-300)" strokeWidth={1.9} />
-                Текущий заказ
+                {workType}
               </div>
+
+              <div
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 31,
+                  lineHeight: 0.96,
+                  letterSpacing: '-0.05em',
+                  color: 'var(--text-primary)',
+                  marginBottom: 10,
+                }}
+              >
+                {headline}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  lineHeight: 1.45,
+                  color: 'var(--text-secondary)',
+                  maxWidth: 320,
+                  marginBottom: 12,
+                }}
+              >
+                {narrative}
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'rgba(255,255,255,0.56)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <Clock3 size={14} color="var(--gold-300)" strokeWidth={1.9} />
+                {deadlineText}
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
               <span
@@ -289,142 +360,176 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               <div
                 style={{
                   fontSize: 11,
-                  fontWeight: 600,
-                  color: 'rgba(255,255,255,0.52)',
+                  fontWeight: 700,
+                  color: 'rgba(255,255,255,0.48)',
                   textAlign: 'right',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
                 }}
               >
-                {deadlineText}
+                Заказ #{activeOrder.id}
               </div>
             </div>
           </div>
 
-          <div style={{ marginBottom: 18 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'rgba(212, 175, 55, 0.72)',
-                marginBottom: 10,
-              }}
-            >
-              {workType}
-            </div>
-
-            <div
-              style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 30,
-                lineHeight: 0.96,
-                letterSpacing: '-0.05em',
-                color: 'var(--text-primary)',
-                marginBottom: 10,
-              }}
-            >
-              {headline}
-            </div>
-
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                lineHeight: 1.45,
-                color: 'var(--text-secondary)',
-                maxWidth: 320,
-              }}
-            >
-              {narrative}
-            </div>
-          </div>
-
           <div
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginBottom: 14,
-            }}
-          >
-            {[
-              { key: 'deadline', icon: Clock3, value: deadlineText },
-              { key: 'stage', icon: CircleDollarSign, value: stageSummary },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <div
-                  key={item.key}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 12px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  <Icon size={14} color="var(--gold-300)" strokeWidth={1.9} />
-                  {item.value}
-                </div>
-              )
-            })}
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: 10,
+              padding: '18px 18px 16px',
+              borderRadius: 24,
+              background: financeHero.accent
+                ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.03) 100%)'
+                : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${financeHero.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
               marginBottom: 16,
             }}
           >
-            {ledgerItems.map((item) => (
-              <div
-                key={item.key}
-                style={{
-                  padding: '15px 14px 14px',
-                  borderRadius: 20,
-                  background: item.accent
-                    ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.03) 100%)'
-                    : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
-                  minWidth: 0,
-                }}
-              >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 10,
                     fontWeight: 700,
-                    letterSpacing: '0.08em',
+                    letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'rgba(255,255,255,0.34)',
                     marginBottom: 8,
                   }}
                 >
-                  {item.label}
+                  {financeHero.eyebrow}
                 </div>
                 <div
                   style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    lineHeight: 1.2,
-                    color: item.accent ? 'var(--gold-300)' : 'var(--text-primary)',
-                    letterSpacing: '-0.03em',
+                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                    fontSize: 34,
+                    lineHeight: 0.92,
+                    letterSpacing: '-0.05em',
+                    color: financeHero.accent ? 'var(--gold-300)' : 'var(--text-primary)',
+                    marginBottom: 6,
                     wordBreak: 'break-word',
                   }}
                 >
-                  {item.value}
+                  {financeHero.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: 'var(--text-secondary)',
+                    maxWidth: 300,
+                  }}
+                >
+                  {financeHero.supporting}
                 </div>
               </div>
-            ))}
+
+              {hasPartialPayment && (
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    background: 'rgba(212,175,55,0.08)',
+                    border: '1px solid rgba(212,175,55,0.14)',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--gold-300)',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  Аванс внесён
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 12,
+              }}
+            >
+              {financeHero.details.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    minWidth: 0,
+                    paddingTop: 12,
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.32)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      lineHeight: 1.25,
+                      color: 'var(--text-primary)',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div style={{ marginBottom: 18 }}>
+          <div
+            style={{
+              padding: '0 2px',
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.32)',
+                }}
+              >
+                Этап заказа
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--gold-300)',
+                }}
+              >
+                {stageSummary}
+              </div>
+            </div>
+
             <div
               style={{
                 display: 'grid',
@@ -477,27 +582,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 12,
-              padding: '14px 14px 14px 16px',
-              borderRadius: 22,
-              background: needsAction
-                ? 'linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(14,12,10,0.44) 100%)'
-                : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${needsAction ? 'rgba(212,175,55,0.13)' : 'rgba(255,255,255,0.05)'}`,
+              paddingTop: 16,
+              borderTop: '1px solid rgba(255,255,255,0.06)',
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.38)',
-                  marginBottom: 8,
-                }}
-              >
-                Далее
-              </div>
               <div
                 style={{
                   fontSize: 15,
@@ -516,9 +605,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   color: 'var(--text-secondary)',
                 }}
               >
-                {otherActiveCount > 0
-                  ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе.`
-                  : needsAction ? financeSummary : 'Чат, файлы и расчёты внутри заказа.'}
+                {footerHint}
               </div>
             </div>
 
