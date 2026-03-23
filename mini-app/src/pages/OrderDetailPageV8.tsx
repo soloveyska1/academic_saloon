@@ -181,10 +181,10 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   waiting_estimation:   { label: 'На оценке',        color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 1 },
   waiting_payment:      { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
   confirmed:            { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
-  verification_pending: { label: 'Проверка оплаты',  color: 'var(--gold-400)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-subtle)', icon: Loader2,      step: 2 },
-  paid:                 { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
-  paid_full:            { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
-  in_progress:          { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
+  verification_pending: { label: 'Проверяем перевод', color: 'var(--gold-400)',       bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-subtle)', icon: Clock,        step: 2 },
+  paid:                 { label: 'Аванс принят',     color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
+  paid_full:            { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
+  in_progress:          { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
   revision:             { label: 'На доработке',     color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 3 },
   review:               { label: 'На проверке',      color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 4 },
   completed:            { label: 'Выполнен',         color: 'var(--success-text)',     bgColor: 'var(--success-glass)',   borderColor: 'var(--success-border)', icon: CheckCircle2, step: 5 },
@@ -219,6 +219,26 @@ const hasSecondPaymentDue = (
   (order.paid_amount || 0) > 0 &&
   getOrderRemainingAmount(order) > 0,
 )
+
+const getClientVisibleStatus = (
+  order: Pick<Order, 'status' | 'final_price' | 'price' | 'paid_amount'> | null | undefined,
+): OrderStatus => {
+  if (!order) return 'pending'
+
+  const paidAmount = Math.max(order.paid_amount || 0, 0)
+  if (paidAmount <= 0) return order.status
+
+  const remainingAmount = getOrderRemainingAmount(order)
+  if (remainingAmount > 0 && ['waiting_payment', 'confirmed', 'verification_pending'].includes(order.status)) {
+    return 'paid'
+  }
+
+  if (remainingAmount <= 0 && ['waiting_payment', 'confirmed', 'verification_pending', 'paid'].includes(order.status)) {
+    return 'paid_full'
+  }
+
+  return order.status
+}
 
 async function copyTextSafely(text: string): Promise<boolean> {
   try {
@@ -462,9 +482,10 @@ interface HeroSummaryProps {
 }
 
 const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryProps) {
-  const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(order.status)
+  const visibleStatus = getClientVisibleStatus(order)
+  const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(visibleStatus)
   const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
-  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const statusConfig = STATUS_CONFIG[visibleStatus] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
   const workTypeRaw = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
   const workTypeLabel = stripEmoji(workTypeRaw)
@@ -486,7 +507,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
       : 'Оплата зафиксирована'
   const paymentHeadline = hasPartialPayment
     ? order.payment_scheme === 'half'
-      ? 'Аванс 50% уже внесён'
+      ? 'Аванс 50% уже зафиксирован'
       : 'Часть суммы уже оплачена'
     : isFullyPaid
       ? 'Оплата зафиксирована полностью'
@@ -498,7 +519,14 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 
   // Dot stepper
   const currentStep = statusConfig.step
-  const STEP_COUNT = 6
+  const STAGE_RAIL = ['Оценка', 'Оплата', 'Работа', 'Сдача']
+  const currentStageIndex = currentStep <= 1
+    ? 0
+    : currentStep === 2
+      ? 1
+      : currentStep === 3
+        ? 2
+        : 3
 
   return (
     <div style={{ padding: '0 20px', marginBottom: 16 }}>
@@ -548,7 +576,6 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             <StatusIcon
               size={11}
               color={statusConfig.color}
-              className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
             />
             <span
               style={{
@@ -702,7 +729,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                   }}
                 >
                   {hasPartialPayment
-                    ? 'Клиентская карточка показывает и внесённый аванс, и остаток к финальной доплате.'
+                    ? 'Клиент видит и уже внесённый аванс, и остаток к финальной доплате без двусмысленности.'
                     : 'Оплата уже подтверждена, заказ можно отслеживать без неясности по финансам.'}
                 </div>
               </div>
@@ -825,7 +852,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           </motion.div>
         )}
 
-        {/* ─── Row 5: Deadline + dot stepper ─── */}
+        {/* ─── Row 5: Deadline + stage rail ─── */}
         {currentStep >= 0 && !['cancelled', 'rejected'].includes(order.status) && (
           <div
             style={{
@@ -847,31 +874,43 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               </div>
             )}
 
-            {/* Dot indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Array.from({ length: STEP_COUNT }).map((_, i) => {
-                const isCompleted = currentStep > i
-                const isCurrent = currentStep === i
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.35 + i * 0.06, duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                    style={{
-                      width: isCurrent ? 16 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      background: isCompleted
-                        ? 'rgba(212,175,55,0.4)'
-                        : isCurrent
-                          ? 'rgba(212,175,55,0.9)'
-                          : 'rgba(255,255,255,0.08)',
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
-                  />
-                )
-              })}
+            {/* Stage rail */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, minWidth: 132 }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.28)',
+                }}
+              >
+                Этап: {STAGE_RAIL[currentStageIndex]}
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, width: '100%' }}>
+                {STAGE_RAIL.map((stage, index) => {
+                  const isCompleted = index < currentStageIndex
+                  const isCurrent = index === currentStageIndex
+                  return (
+                    <motion.div
+                      key={stage}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.32 + index * 0.04, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      style={{
+                        height: isCurrent ? 8 : 6,
+                        borderRadius: 999,
+                        background: isCompleted
+                          ? 'linear-gradient(90deg, rgba(212,175,55,0.55), rgba(212,175,55,0.35))'
+                          : isCurrent
+                            ? 'linear-gradient(90deg, rgba(232,213,163,0.95), rgba(212,175,55,0.8))'
+                            : 'rgba(255,255,255,0.08)',
+                        boxShadow: isCurrent ? '0 0 0 1px rgba(212,175,55,0.12)' : 'none',
+                      }}
+                    />
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -952,19 +991,20 @@ const StickyActionBar = memo(function StickyActionBar({
   onAcceptWork,
   onRequestRevision,
 }: StickyActionBarProps) {
+  const visibleStatus = getClientVisibleStatus(order)
   const remainingAmount = getOrderRemainingAmount(order)
   const needsSecondPayment = hasSecondPaymentDue(order)
 
   // Determine variant based on order status
   const getVariant = (): ActionBarVariant => {
-    if (['cancelled', 'rejected'].includes(order.status)) return 'cancelled'
-    if (needsSecondPayment && ['paid', 'in_progress'].includes(order.status)) return 'payment'
-    if (['waiting_payment', 'confirmed'].includes(order.status)) return 'payment'
-    if (order.status === 'verification_pending') return 'verification'
-    if (order.status === 'revision') return 'revision_in_progress'
-    if (['paid', 'paid_full', 'in_progress'].includes(order.status)) return 'work'
-    if (order.status === 'review') return 'review'
-    if (order.status === 'completed') return 'completed'
+    if (['cancelled', 'rejected'].includes(visibleStatus)) return 'cancelled'
+    if (needsSecondPayment && ['paid', 'in_progress'].includes(visibleStatus)) return 'payment'
+    if (['waiting_payment', 'confirmed'].includes(visibleStatus)) return 'payment'
+    if (visibleStatus === 'verification_pending') return 'verification'
+    if (visibleStatus === 'revision') return 'revision_in_progress'
+    if (['paid', 'paid_full', 'in_progress'].includes(visibleStatus)) return 'work'
+    if (visibleStatus === 'review') return 'review'
+    if (visibleStatus === 'completed') return 'completed'
     return 'work'
   }
 
@@ -1017,8 +1057,8 @@ const StickyActionBar = memo(function StickyActionBar({
     },
     verification: {
       showAmount: false,
-      buttonText: 'Проверяем оплату...',
-      buttonIcon: Loader2,
+      buttonText: 'Подтверждаем перевод',
+      buttonIcon: Clock,
       buttonColor: '#E8D5A3',
       buttonBg: 'rgba(212,175,55,0.08)',
       disabled: true,
@@ -1244,11 +1284,7 @@ const StickyActionBar = memo(function StickyActionBar({
               : 'none',
           }}
         >
-          <ButtonIcon
-            size={20}
-            className={variant === 'verification' ? 'animate-spin' : ''}
-            style={variant === 'verification' ? { animation: 'spin 1s linear infinite' } : undefined}
-          />
+          <ButtonIcon size={20} />
           {config.buttonText}
         </motion.button>
       </div>
@@ -2453,8 +2489,8 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
         margin: '0 20px 16px',
         padding: 16,
         borderRadius: 16,
-        background: 'rgba(212,175,55,0.04)',
-        border: '1px solid rgba(212,175,55,0.08)',
+        background: 'linear-gradient(180deg, rgba(212,175,55,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+        border: '1px solid rgba(212,175,55,0.10)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
@@ -2463,16 +2499,65 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
           background: 'rgba(212,175,55,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Loader2 size={18} color="rgba(212,175,55,0.6)" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+          <Clock size={18} color="rgba(212,175,55,0.72)" />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
-            Платёж на проверке
+            Подтверждаем перевод
           </div>
           <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)' }}>
-            Обычно подтверждаем за {estimatedMinutes} минут и переводим в работу.
+            Обычно это занимает до {estimatedMinutes} минут. Как только поступление подтвердим, заказ автоматически перейдёт дальше.
           </div>
         </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+        {[
+          { label: 'Перевод отправлен', active: true },
+          { label: 'Проверка', active: true, current: true },
+          { label: 'Старт работы', active: false },
+        ].map((item) => (
+          <div
+            key={item.label}
+            style={{
+              padding: '10px 10px 9px',
+              borderRadius: 12,
+              background: item.current
+                ? 'rgba(212,175,55,0.10)'
+                : item.active
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${item.current
+                ? 'rgba(212,175,55,0.16)'
+                : item.active
+                  ? 'rgba(255,255,255,0.07)'
+                  : 'rgba(255,255,255,0.04)'}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+                color: item.current ? '#E8D5A3' : item.active ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.22)',
+                marginBottom: 4,
+              }}
+            >
+              {item.current ? 'Сейчас' : item.active ? 'Готово' : 'Далее'}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                lineHeight: 1.35,
+                fontWeight: 600,
+                color: item.current ? 'rgba(255,255,255,0.88)' : item.active ? 'rgba(255,255,255,0.62)' : 'rgba(255,255,255,0.28)',
+              }}
+            >
+              {item.label}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div style={{
@@ -3203,14 +3288,15 @@ export function OrderDetailPageV8() {
   }, [order, paymentScheme])
 
   const todayAmount = calculateTodayAmount()
+  const clientVisibleStatus = order ? getClientVisibleStatus(order) : null
 
   // Determine if we're in payment flow
   const isPaymentFlow = Boolean(
     order &&
     getOrderRemainingAmount(order) > 0 &&
-    ['waiting_payment', 'confirmed', 'paid', 'in_progress', 'review'].includes(order.status),
+    ['waiting_payment', 'confirmed', 'paid', 'in_progress', 'review'].includes(clientVisibleStatus || order.status),
   )
-  const isVerificationPending = order?.status === 'verification_pending'
+  const isVerificationPending = clientVisibleStatus === 'verification_pending'
   const requestedAction = searchParams.get('action')
 
   useEffect(() => {
