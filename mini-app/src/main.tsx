@@ -25,7 +25,7 @@ function getBootTheme(): 'dark' | 'light' {
 function getBootThemeColors(theme: 'dark' | 'light') {
   return theme === 'light'
     ? { header: '#FAFAF9', background: '#FAFAF9' }
-    : { header: '#050507', background: '#050507' }
+    : { header: '#121212', background: '#0A0A0A' }
 }
 
 // Global error handler for mobile debugging

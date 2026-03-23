@@ -49,7 +49,7 @@ export const GodShell = memo(function GodShell({
         {/* Top Bar */}
         <div className={s.topBar}>
           <div className={s.topBarLogo}>
-            <Crown size={16} color="#0a0a0c" strokeWidth={2.5} />
+            <Crown size={16} color="#121212" strokeWidth={2.5} />
           </div>
           <div className={s.topBarTitle}>God Mode</div>
           <div className={s.topBarActions}>

@@ -103,7 +103,7 @@ export function SuccessScreen({
                 transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.15 }}
                 style={errorCircleStyle}
               >
-                <AlertCircle size={20} color="#050507" strokeWidth={2.5} />
+                <AlertCircle size={20} color="#121212" strokeWidth={2.5} />
               </motion.div>
 
               {/* Title */}
@@ -138,7 +138,7 @@ export function SuccessScreen({
                 >
                   <span>Вернуться на главную</span>
                   <div className={homeStyles.primaryActionArrow}>
-                    <ChevronRight size={18} color="#09090b" strokeWidth={2.6} />
+                    <ChevronRight size={18} color="#121212" strokeWidth={2.6} />
                   </div>
                 </motion.button>
               </div>
@@ -198,7 +198,7 @@ export function SuccessScreen({
               transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.15 }}
               style={goldCircleStyle}
             >
-              <Check size={18} color="#050507" strokeWidth={2.8} />
+              <Check size={18} color="#121212" strokeWidth={2.8} />
             </motion.div>
 
             {/* ─── Order number = HERO ─── */}
@@ -381,7 +381,7 @@ export function SuccessScreen({
                       : 'Перейти к оплате'}
                 </span>
                 <div className={homeStyles.primaryActionArrow}>
-                  <ChevronRight size={18} color="#09090b" strokeWidth={2.6} />
+                  <ChevronRight size={18} color="#121212" strokeWidth={2.6} />
                 </div>
               </motion.button>
 

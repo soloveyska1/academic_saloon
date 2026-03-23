@@ -203,7 +203,7 @@ export function GoldAvatar({ initials, size = 60 }: GoldAvatarProps) {
           width: innerSize,
           height: innerSize,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #141417 0%, #09090b 100%)',
+          background: 'linear-gradient(135deg, #1E1E1E 0%, #121212 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

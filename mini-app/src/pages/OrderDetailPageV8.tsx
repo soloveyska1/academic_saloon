@@ -1822,9 +1822,9 @@ const PaymentSheet = memo(function PaymentSheet({
                 {onlinePaymentLoading ? (
                   <Loader2 size={20} color="rgba(255,255,255,0.4)" className="animate-spin" />
                 ) : paymentMethod === 'online' ? (
-                  <Globe size={18} color="#050507" />
+                  <Globe size={18} color="#121212" />
                 ) : (
-                  <CheckCircle2 size={18} color={hasPaymentInfo ? '#050507' : 'rgba(255,255,255,0.3)'} />
+                  <CheckCircle2 size={18} color={hasPaymentInfo ? '#121212' : 'rgba(255,255,255,0.3)'} />
                 )}
                 <span style={{
                   fontSize: 15,
@@ -1832,7 +1832,7 @@ const PaymentSheet = memo(function PaymentSheet({
                   color: onlinePaymentLoading
                     ? 'rgba(255,255,255,0.4)'
                     : (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo)
-                      ? '#050507'
+                      ? '#121212'
                       : 'rgba(255,255,255,0.3)',
                 }}>
                   {onlinePaymentLoading
@@ -2212,18 +2212,18 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 )}
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={18} color="#050507" className="animate-spin" />
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#050507' }}>
+                    <Loader2 size={18} color="#121212" className="animate-spin" />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#121212' }}>
                       Отправка...
                     </span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck size={17} color={allChecked ? '#050507' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`} />
+                    <ShieldCheck size={17} color={allChecked ? '#121212' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`} />
                     <span style={{
                       fontSize: 15,
                       fontWeight: 700,
-                      color: allChecked ? '#050507' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`,
+                      color: allChecked ? '#121212' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`,
                       transition: 'color 0.35s',
                     }}>
                       Отправить на проверку
@@ -2450,13 +2450,13 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={18} color="#050507" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#050507' }}>Отправка...</span>
+                    <Loader2 size={18} color="#121212" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#121212' }}>Отправка...</span>
                   </>
                 ) : (
                   <>
-                    <Edit3 size={17} color={message.trim() ? '#050507' : 'rgba(255,255,255,0.3)'} />
-                    <span style={{ fontSize: 15, fontWeight: 700, color: message.trim() ? '#050507' : 'rgba(255,255,255,0.3)' }}>
+                    <Edit3 size={17} color={message.trim() ? '#121212' : 'rgba(255,255,255,0.3)'} />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: message.trim() ? '#121212' : 'rgba(255,255,255,0.3)' }}>
                       Отправить на доработку
                     </span>
                   </>
@@ -3418,7 +3418,7 @@ export function OrderDetailPageV8() {
     <div
       className="premium-club-page pb-[140px]"
       style={{
-        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.03) 0%, transparent 60%), var(--bg-main, #050507)',
+        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.03) 0%, transparent 60%), var(--bg-main, #121212)',
       }}
     >
       {/* ─── App Bar ─── */}
@@ -3644,7 +3644,7 @@ export function OrderDetailPageV8() {
                   className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold flex items-center justify-center gap-1.5"
                   style={{
                     background: 'linear-gradient(135deg, #d4af37, #b38728)',
-                    color: '#09090b',
+                    color: '#121212',
                     cursor: archiveLoading ? 'wait' : 'pointer',
                     opacity: archiveLoading ? 0.7 : 1,
                     border: 'none',

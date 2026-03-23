@@ -59,7 +59,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
     }
 
     // Add text
-    ctx.fillStyle = '#09090b'
+    ctx.fillStyle = '#121212'
     ctx.font = 'bold 16px Montserrat, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

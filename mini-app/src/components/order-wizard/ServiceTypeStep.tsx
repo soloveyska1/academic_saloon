@@ -445,7 +445,7 @@ function ServiceCard({
                 flexShrink: 0,
               }}
             >
-              <Check size={12} color="#09090b" strokeWidth={3} />
+              <Check size={12} color="#121212" strokeWidth={3} />
             </motion.div>
           ) : (
             <motion.div
