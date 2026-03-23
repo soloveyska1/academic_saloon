@@ -132,16 +132,20 @@ export const Navigation = () => {
           style={{
             position: 'fixed',
             bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 0,
+            right: 0,
             zIndex: 900,
-            width: 'min(calc(100vw - 24px), 392px)',
-            maxWidth: 'calc(100vw - 24px)',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '0 12px',
+            pointerEvents: 'none',
           }}
         >
           <div style={{
             position: 'relative',
             overflow: 'hidden',
+            width: 'min(100%, 392px)',
+            maxWidth: '100%',
             padding: '8px 10px 10px',
             borderRadius: 28,
             background: 'linear-gradient(180deg, rgba(19, 18, 16, 0.96) 0%, rgba(10, 10, 12, 0.98) 100%)',
@@ -149,6 +153,7 @@ export const Navigation = () => {
             WebkitBackdropFilter: 'blur(28px) saturate(165%)',
             border: '1px solid rgba(255,255,255,0.06)',
             boxShadow: '0 30px 70px -34px rgba(0,0,0,0.88), inset 0 1px 0 rgba(255,255,255,0.05)',
+            pointerEvents: 'auto',
           }}>
             <div
               aria-hidden="true"
