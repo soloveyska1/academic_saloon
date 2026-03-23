@@ -56,6 +56,67 @@ interface Props {
 
 import s from './HomePage.module.css'
 
+function SectionFrame({
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  eyebrow: string
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      style={{ marginBottom: 22 }}
+    >
+      <div style={{ padding: '0 4px', marginBottom: 12 }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'rgba(212, 175, 55, 0.72)',
+            marginBottom: 8,
+          }}
+        >
+          {eyebrow}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-display, 'Playfair Display', serif)",
+            fontSize: 26,
+            lineHeight: 0.98,
+            letterSpacing: '-0.04em',
+            color: 'var(--text-primary)',
+            marginBottom: description ? 8 : 0,
+          }}
+        >
+          {title}
+        </div>
+        {description && (
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--text-secondary)',
+              maxWidth: 320,
+            }}
+          >
+            {description}
+          </div>
+        )}
+      </div>
+      {children}
+    </motion.section>
+  )
+}
+
 export function HomePage({ user, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic, tg, botUsername } = useTelegram()
@@ -291,114 +352,200 @@ export function HomePage({ user, onRefresh }: Props) {
             {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
             {returningUserState === 'active' && (
               <>
-                <ActiveOrderDashboard
-                  orders={user.orders}
-                  onNavigate={navigate}
-                  haptic={haptic}
-                />
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
+                <SectionFrame
+                  eyebrow="Сегодня"
+                  title="Главный фокус"
+                  description="Сначала показываем текущий проект и ближайшее действие, чтобы не растворять главное в мелких карточках."
+                >
+                  <ActiveOrderDashboard
+                    orders={user.orders}
+                    onNavigate={navigate}
                     haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
                   />
-                </div>
+                </SectionFrame>
+
+                <SectionFrame
+                  eyebrow="Следующий шаг"
+                  title="Следующий заказ и бонусы"
+                  description="Второй экран внимания: новый запрос и клубный бонус, когда текущий проект уже под контролем."
+                >
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                    <DailyBonusCard
+                      variant="compact"
+                      dailyAvailable={user.daily_luck_available ?? false}
+                      streak={user.daily_bonus_streak || 0}
+                      haptic={haptic}
+                      onBonusClaimed={handleBonusClaimed}
+                    />
+                  </div>
+                </SectionFrame>
               </>
             )}
 
             {/* ── STATE B: JUST COMPLETED — Celebrate + next order ── */}
             {returningUserState === 'just-completed' && (
               <>
-                {user.orders.length > 0 && (
-                  <QuickReorderCard
-                    lastOrder={user.orders[0]}
-                    onReorder={handleReorder}
-                    haptic={haptic}
-                  />
-                )}
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
-                    haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
-                  />
-                </div>
+                <SectionFrame
+                  eyebrow="Продолжение"
+                  title="Сразу в следующий проект"
+                  description="После завершения заказа главный сценарий должен быть коротким: повторить, создать новый или забрать бонус."
+                >
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {user.orders.length > 0 && (
+                      <QuickReorderCard
+                        lastOrder={user.orders[0]}
+                        onReorder={handleReorder}
+                        haptic={haptic}
+                      />
+                    )}
+                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                    <DailyBonusCard
+                      variant="compact"
+                      dailyAvailable={user.daily_luck_available ?? false}
+                      streak={user.daily_bonus_streak || 0}
+                      haptic={haptic}
+                      onBonusClaimed={handleBonusClaimed}
+                    />
+                  </div>
+                </SectionFrame>
               </>
             )}
 
             {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
             {returningUserState === 'idle' && (
               <>
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
-                    haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
-                  />
-                </div>
-                {user.orders.length > 0 && (
-                  <QuickReorderCard
-                    lastOrder={user.orders[0]}
-                    onReorder={handleReorder}
-                    haptic={haptic}
-                  />
-                )}
+                <SectionFrame
+                  eyebrow="Консьерж"
+                  title="Новая работа без лишнего трения"
+                  description="Если активных заказов нет, страница должна сразу вести к новой заявке и мягко подталкивать к возврату."
+                >
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                    {user.orders.length > 0 && (
+                      <QuickReorderCard
+                        lastOrder={user.orders[0]}
+                        onReorder={handleReorder}
+                        haptic={haptic}
+                      />
+                    )}
+                    <DailyBonusCard
+                      variant="compact"
+                      dailyAvailable={user.daily_luck_available ?? false}
+                      streak={user.daily_bonus_streak || 0}
+                      haptic={haptic}
+                      onBonusClaimed={handleBonusClaimed}
+                    />
+                  </div>
+                </SectionFrame>
               </>
             )}
 
             {/* ── SHARED: Quick tools, gamification, promo, referral ── */}
-            <QuickActionsRow
-              onNavigate={navigate}
-              onOpenModal={(modal: ModalName) => {
-                if (modal === 'cashback') actions.openModal('cashback')
-                else if (modal === 'guarantees') actions.openModal('guarantees')
-              }}
-              onOpenUrgentSheet={() => {
-                haptic('medium')
-                actions.openModal('urgentSheet')
-              }}
-              haptic={haptic}
-              cashbackPercent={user.rank.cashback}
-            />
-
-            <LevelProgressCard
-              rank={user.rank}
-              displayNextRank={user.rank.next_rank}
-            />
-
-            {/* Promo Code Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="mb-4"
+            <SectionFrame
+              eyebrow="Сервисы"
+              title="Сервисный блок"
+              description="Срочные сценарии и гарантии под рукой, без дешёвого ощущения от одинаковых чипов."
             >
-              <PromoCodeSection
-                variant="full"
-                collapsible={true}
-                defaultExpanded={!!activePromo}
+              <QuickActionsRow
+                onNavigate={navigate}
+                onOpenModal={(modal: ModalName) => {
+                  if (modal === 'cashback') actions.openModal('cashback')
+                  else if (modal === 'guarantees') actions.openModal('guarantees')
+                }}
+                onOpenUrgentSheet={() => {
+                  haptic('medium')
+                  actions.openModal('urgentSheet')
+                }}
+                haptic={haptic}
+                cashbackPercent={user.rank.cashback}
               />
-            </motion.div>
+            </SectionFrame>
 
-            {/* Referral Program */}
-            <ReputationCard
-              referralCode={user.referral_code}
-              referralsCount={user.referrals_count}
-              referralEarnings={user.referral_earnings}
-              copied={referralCopied}
-              onCopy={handleCopyReferral}
-              onShowQR={() => { haptic('light'); actions.openModal('qr') }}
-              onTelegramShare={handleTelegramShare}
-            />
+            <SectionFrame
+              eyebrow="Привилегии"
+              title="Клуб и выгода"
+              description="Показываем рост статуса, персональные условия и приватные офферы в одном блоке."
+            >
+              <div style={{ display: 'grid', gap: 14 }}>
+                <LevelProgressCard
+                  rank={user.rank}
+                  displayNextRank={user.rank.next_rank}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  style={{
+                    padding: 18,
+                    borderRadius: 26,
+                    background: 'linear-gradient(160deg, rgba(18, 18, 17, 0.92) 0%, rgba(11, 11, 12, 0.95) 100%)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    boxShadow: '0 22px 34px -30px rgba(0, 0, 0, 0.78)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(212,175,55,0.72)',
+                      marginBottom: 10,
+                    }}
+                  >
+                    Персональное предложение
+                  </div>
+
+                  <div
+                    style={{
+                      fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                      fontSize: 24,
+                      lineHeight: 0.98,
+                      letterSpacing: '-0.04em',
+                      color: 'var(--text-primary)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Персональные скидки и коды
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      color: 'var(--text-secondary)',
+                      marginBottom: 14,
+                    }}
+                  >
+                    Скрыли технический шум и оставили только понятный offer-блок с актуальным промокодом.
+                  </div>
+
+                  <PromoCodeSection
+                    variant="full"
+                    collapsible={true}
+                    defaultExpanded={!!activePromo}
+                  />
+                </motion.div>
+              </div>
+            </SectionFrame>
+
+            <SectionFrame
+              eyebrow="Рекомендации"
+              title="Рекомендации и репутация"
+              description="Партнёрский блок оставлен ближе к низу, чтобы не красть внимание у заказа и основного CTA."
+            >
+              <ReputationCard
+                referralCode={user.referral_code}
+                referralsCount={user.referrals_count}
+                referralEarnings={user.referral_earnings}
+                copied={referralCopied}
+                onCopy={handleCopyReferral}
+                onShowQR={() => { haptic('light'); actions.openModal('qr') }}
+                onTelegramShare={handleTelegramShare}
+              />
+            </SectionFrame>
 
           </>
         )}

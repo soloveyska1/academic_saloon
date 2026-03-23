@@ -204,9 +204,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         position: 'relative',
         width: '100%',
         padding: 22,
-        borderRadius: 24,
+        borderRadius: 28,
         marginBottom: 12,
-        background: 'linear-gradient(160deg, rgba(30, 24, 12, 0.96) 0%, rgba(15, 14, 12, 0.94) 42%, rgba(9, 9, 10, 1) 100%)',
+        background: 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',
         border: '1px solid rgba(212, 175, 55, 0.10)',
@@ -218,10 +218,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         aria-hidden="true"
         style={{
           position: 'absolute',
-          top: -54,
-          right: -28,
-          width: 160,
-          height: 160,
+          top: -60,
+          right: -24,
+          width: 170,
+          height: 170,
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 28%, transparent 72%)',
           pointerEvents: 'none',
@@ -251,37 +251,37 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         <div style={{ flex: 1 }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 700,
-              letterSpacing: '0.12em',
+              letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: 'rgba(212, 175, 55, 0.72)',
               marginBottom: 8,
             }}
           >
-            Новый заказ
+            Новая заявка
           </div>
           <div
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: 800,
-              lineHeight: 0.98,
+              lineHeight: 0.94,
               letterSpacing: '-0.04em',
               color: 'var(--text-primary)',
-              marginBottom: 8,
+              marginBottom: 10,
             }}
           >
-            Запустить новый заказ
+            Запустить новую работу
           </div>
           <div style={{
             fontSize: 13,
             color: 'var(--text-secondary)',
             fontWeight: 500,
             lineHeight: 1.45,
-            marginBottom: 14,
+            marginBottom: 16,
           }}>
-            Быстрый расчёт, мягкий старт и автоматическое списание бонусов в заявке.
+            Быстрый расчёт, понятная стоимость и запуск без лишних шагов прямо из кабинета.
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -295,9 +295,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                   borderRadius: 999,
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.06)',
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 700,
                   color: item === 'от 990 ₽' ? 'var(--gold-300)' : 'var(--text-secondary)',
+                  letterSpacing: '0.03em',
                 }}
               >
                 {item}
@@ -307,9 +308,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         </div>
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 18,
+            width: 52,
+            height: 52,
+            borderRadius: 20,
             background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
             display: 'flex',
             alignItems: 'center',

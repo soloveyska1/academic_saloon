@@ -1,14 +1,8 @@
 import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, Coins, Layers3, Wallet } from 'lucide-react'
+import { ArrowUpRight, Coins, ShieldCheck, Wallet } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  HOME HEADER — Refined Premium Edition
-//  Quieter, more confident. No unnecessary decoration.
-//  Identity on the left, privilege access on the right.
-// ═══════════════════════════════════════════════════════════════════════════
 
 interface HomeHeaderProps {
   user: {
@@ -47,7 +41,6 @@ export const HomeHeader = memo(function HomeHeader({
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
-  // Contextual greeting based on time of day
   const greeting = useMemo(() => {
     const hour = new Date().getHours()
     if (hour < 6) return 'Доброй ночи'
@@ -56,35 +49,39 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Добрый вечер'
   }, [])
 
-  const activityLabel = useMemo(() => {
-    if (!summary || summary.activeOrders <= 0) return 'Клуб привилегий и персональный сервис'
+  const serviceLine = useMemo(() => {
+    if (!summary || summary.activeOrders <= 0) {
+      return isPremiumClub
+        ? 'Премиальный кабинет и персональное сопровождение'
+        : 'Личный кабинет с быстрым доступом к заказам и привилегиям'
+    }
 
     const count = summary.activeOrders
     const noun = count === 1 ? 'заказ' : count < 5 ? 'заказа' : 'заказов'
-    return `${count} ${noun} под контролем`
-  }, [summary])
+    return `${count} ${noun} под контролем • менеджер и прогресс в одном месте`
+  }, [summary, isPremiumClub])
 
-  const metrics = useMemo(() => {
+  const metricRail = useMemo(() => {
     if (!summary || isNewUser) return []
 
     return [
       {
-        label: 'На счету',
+        key: 'balance',
+        label: 'Баланс',
         value: formatMoney(summary.balance),
-        hint: summary.balance > 0 ? 'можно использовать в оплате' : 'пополняется после операций',
         icon: Wallet,
       },
       {
+        key: 'bonus',
         label: 'Бонусы',
         value: formatMoney(summary.bonusBalance),
-        hint: summary.bonusBalance > 0 ? 'спишутся в новом заказе' : 'начислим после оплаты',
         icon: Coins,
       },
       {
-        label: 'В работе',
-        value: String(summary.activeOrders),
-        hint: summary.activeOrders > 0 ? 'отслеживаются в реальном времени' : 'новые заявки появятся здесь',
-        icon: Layers3,
+        key: 'club',
+        label: 'Статус',
+        value: `${summary.cashback}% кэшбэк`,
+        icon: ShieldCheck,
       },
     ]
   }, [summary, isNewUser])
@@ -101,25 +98,25 @@ export const HomeHeader = memo(function HomeHeader({
         style={{
           position: 'relative',
           overflow: 'hidden',
-          padding: isNewUser ? '20px 20px 18px' : '22px 20px 20px',
-          borderRadius: 28,
+          padding: isNewUser ? '22px 20px 18px' : '24px 20px 18px',
+          borderRadius: 30,
           background: isNewUser
-            ? 'linear-gradient(160deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 60%, rgba(8, 8, 9, 1) 100%)'
-            : 'linear-gradient(160deg, rgba(27, 22, 12, 0.98) 0%, rgba(13, 13, 14, 0.96) 42%, rgba(9, 9, 11, 1) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.12)',
-          boxShadow: '0 28px 60px -38px rgba(0, 0, 0, 0.78)',
+            ? 'linear-gradient(160deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
+            : 'linear-gradient(160deg, rgba(30, 24, 13, 0.98) 0%, rgba(15, 15, 16, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
+          border: '1px solid rgba(212, 175, 55, 0.11)',
+          boxShadow: '0 34px 70px -42px rgba(0, 0, 0, 0.86)',
         }}
       >
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: -78,
-            right: -42,
-            width: 220,
-            height: 220,
+            top: -96,
+            right: -58,
+            width: 240,
+            height: 240,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.05) 28%, transparent 72%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.05) 30%, transparent 74%)',
             pointerEvents: 'none',
           }}
         />
@@ -141,33 +138,45 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 14,
-              marginBottom: isNewUser ? 0 : 18,
+              marginBottom: 18,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
               <div
                 className={s.avatarContainer}
                 onClick={onSecretTap}
-                style={{ width: 62, height: 62, flexShrink: 0 }}
+                style={{ width: 68, height: 68, flexShrink: 0 }}
               >
-                <div className={s.avatar} style={{ position: 'relative', background: 'var(--bg-elevated)', width: 58, height: 58 }}>
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                <div
+                  className={s.avatar}
+                  style={{
+                    position: 'relative',
                     background: 'var(--bg-elevated)',
-                    zIndex: 1
-                  }}>
-                    <span style={{
-                      color: 'var(--gold-400)',
-                      fontWeight: 700,
-                      fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
-                      fontSize: '22px',
-                      lineHeight: 1,
-                      textTransform: 'uppercase'
-                    }}>
+                    width: 62,
+                    height: 62,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'var(--bg-elevated)',
+                      zIndex: 1,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--gold-400)',
+                        fontWeight: 700,
+                        fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
+                        fontSize: '22px',
+                        lineHeight: 1,
+                        textTransform: 'uppercase',
+                      }}
+                    >
                       {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
                     </span>
                   </div>
@@ -186,7 +195,7 @@ export const HomeHeader = memo(function HomeHeader({
                         height: '100%',
                         objectFit: 'cover',
                         zIndex: 2,
-                        borderRadius: '50%'
+                        borderRadius: '50%',
                       }}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
@@ -197,7 +206,7 @@ export const HomeHeader = memo(function HomeHeader({
                 </div>
               </div>
 
-              <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 4 }}>
+              <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 6 }}>
                 <div
                   style={{
                     fontSize: 11,
@@ -207,25 +216,31 @@ export const HomeHeader = memo(function HomeHeader({
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
                 >
-                  {isNewUser ? greeting : 'Личный салон'}
+                  {isNewUser ? 'Личный вход' : 'Личный салон'}
                 </div>
+
                 <div
                   className={s.userName}
                   style={{
                     fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: isNewUser ? 28 : 32,
-                    lineHeight: 0.98,
-                    letterSpacing: '-0.04em',
+                    fontSize: isNewUser ? 30 : 34,
+                    lineHeight: 0.95,
+                    letterSpacing: '-0.05em',
                     textTransform: 'none',
                   }}
                 >
                   {isNewUser ? `${greeting}, ${firstName}` : firstName}
                 </div>
-                <div className={s.userStatus} style={{ fontSize: 12, gap: 8, flexWrap: 'wrap' }}>
-                  <div className={s.statusDot} />
-                  {isNewUser
-                    ? 'АКАДЕМИЧЕСКИЙ САЛОН'
-                    : `${isPremiumClub ? 'ПРЕМИУМ КЛУБ' : 'КЛУБ ПРИВИЛЕГИЙ'} · ${activityLabel}${summary ? ` · ${summary.cashback}% кэшбэк` : ''}`}
+
+                <div
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: 'rgba(255,255,255,0.58)',
+                    maxWidth: 250,
+                  }}
+                >
+                  {serviceLine}
                 </div>
               </div>
             </div>
@@ -242,99 +257,78 @@ export const HomeHeader = memo(function HomeHeader({
                   flexShrink: 0,
                   padding: '12px 14px',
                   background: 'rgba(18, 16, 12, 0.72)',
-                  border: '1px solid rgba(212, 175, 55, 0.16)',
+                  border: '1px solid rgba(212, 175, 55, 0.15)',
                   borderRadius: 18,
                   color: 'var(--gold-300)',
                   fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
                   fontSize: '11px',
                   fontWeight: 700,
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                   backdropFilter: 'blur(16px) saturate(150%)',
-                  boxShadow: '0 16px 32px -26px rgba(0, 0, 0, 0.72)',
+                  boxShadow: '0 16px 32px -24px rgba(0, 0, 0, 0.76)',
                 }}
               >
-                Привилегии
+                Клуб
                 <ArrowUpRight size={14} strokeWidth={2.1} />
               </motion.button>
             )}
           </div>
 
-          {!isNewUser && metrics.length > 0 && (
+          {!isNewUser && metricRail.length > 0 && (
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 10,
+                gap: 0,
+                overflow: 'hidden',
+                borderRadius: 20,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(14,12,10,0.44) 100%)',
+                border: '1px solid rgba(255,255,255,0.06)',
               }}
             >
-              {metrics.map((metric) => {
+              {metricRail.map((metric, index) => {
                 const Icon = metric.icon
 
                 return (
                   <div
-                    key={metric.label}
+                    key={metric.key}
                     style={{
-                      padding: '14px 12px',
-                      borderRadius: 18,
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(14,12,10,0.5) 100%)',
-                      border: '1px solid rgba(212, 175, 55, 0.08)',
                       minWidth: 0,
+                      padding: '14px 14px 13px',
+                      borderLeft: index > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                     }}
                   >
                     <div
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 28,
-                        height: 28,
-                        borderRadius: 10,
-                        marginBottom: 10,
-                        background: 'rgba(212, 175, 55, 0.08)',
-                        border: '1px solid rgba(212, 175, 55, 0.10)',
-                      }}
-                    >
-                      <Icon size={15} color="var(--gold-300)" strokeWidth={1.8} />
-                    </div>
-
-                    <div
-                      style={{
+                        gap: 6,
+                        marginBottom: 8,
+                        color: 'rgba(212, 175, 55, 0.72)',
                         fontSize: 10,
                         fontWeight: 700,
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
-                        color: 'var(--text-muted)',
-                        marginBottom: 6,
                       }}
                     >
+                      <Icon size={13} strokeWidth={1.9} />
                       {metric.label}
                     </div>
 
                     <div
                       style={{
-                        fontSize: metric.label === 'В работе' ? 24 : 16,
+                        fontSize: 15,
                         fontWeight: 700,
-                        lineHeight: 1.05,
+                        lineHeight: 1.1,
                         color: 'var(--text-primary)',
                         letterSpacing: '-0.03em',
-                        marginBottom: 6,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                       }}
                     >
                       {metric.value}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 11,
-                        lineHeight: 1.35,
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      {metric.hint}
                     </div>
                   </div>
                 )
