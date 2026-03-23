@@ -37,28 +37,19 @@ export const HomeHeader = memo(function HomeHeader({
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
-  const activityMetric = useMemo(() => {
+  const activityLine = useMemo(() => {
     if (!summary || isNewUser) return null
 
     if (summary.activeOrders > 0) {
-      return {
-        label: 'В работе',
-        value: `${summary.activeOrders}`,
-        hint: summary.activeOrders === 1 ? 'заказ' : summary.activeOrders < 5 ? 'заказа' : 'заказов',
-      }
+      return `${summary.activeOrders} ${summary.activeOrders === 1 ? 'заказ в работе' : summary.activeOrders < 5 ? 'заказа в работе' : 'заказов в работе'}`
     }
 
-    return {
-      label: 'Заказы',
-      value: `${ordersCount}`,
-      hint: ordersCount === 1 ? 'в истории' : 'в истории',
+    if (ordersCount > 0) {
+      return `${ordersCount} ${ordersCount === 1 ? 'заказ оформлен' : ordersCount < 5 ? 'заказа оформлено' : 'заказов оформлено'}`
     }
+
+    return null
   }, [summary, isNewUser, ordersCount])
-
-  const balanceLabel = useMemo(() => {
-    if (!summary) return '0 ₽'
-    return `${Math.max(0, Math.round(summary.balance || 0)).toLocaleString('ru-RU')} ₽`
-  }, [summary])
 
   return (
     <motion.header
@@ -247,6 +238,20 @@ export const HomeHeader = memo(function HomeHeader({
                     )}
                   </div>
                 )}
+
+                {!isNewUser && activityLine && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      color: 'rgba(255,255,255,0.54)',
+                    }}
+                  >
+                    {activityLine}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -279,81 +284,6 @@ export const HomeHeader = memo(function HomeHeader({
               </motion.button>
             )}
           </div>
-
-          {!isNewUser && summary && activityMetric && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 10,
-                marginTop: 18,
-              }}
-            >
-              {[
-                {
-                  key: 'balance',
-                  label: 'Баланс',
-                  value: balanceLabel,
-                  hint: summary.bonusBalance > 0 ? `Бонусов ${Math.round(summary.bonusBalance).toLocaleString('ru-RU')} ₽` : 'Готов к списанию',
-                  accent: true,
-                },
-                {
-                  key: 'activity',
-                  label: activityMetric.label,
-                  value: activityMetric.value,
-                  hint: activityMetric.hint,
-                  accent: false,
-                },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  style={{
-                    padding: '14px 14px 13px',
-                    borderRadius: 20,
-                    background: item.accent
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.04) 100%)'
-                      : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.34)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: item.key === 'balance' ? 20 : 24,
-                      fontWeight: 700,
-                      lineHeight: 1,
-                      letterSpacing: '-0.04em',
-                      color: item.accent ? 'var(--gold-300)' : 'var(--text-primary)',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      lineHeight: 1.35,
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    {item.hint}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </motion.header>

@@ -176,7 +176,8 @@ export function HomePage({ user, onRefresh }: Props) {
     return 'idle' as const
   }, [isNewUser, activeOrders, user])
 
-  const shouldShowDailyBonus = Boolean(user?.daily_luck_available)
+  const shouldShowDailyBonus = Boolean(user?.daily_luck_available || (user?.daily_bonus_streak ?? 0) > 0)
+  const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
 
   if (!user) return null
 
@@ -187,7 +188,7 @@ export function HomePage({ user, onRefresh }: Props) {
       role="main"
       data-scroll-container="true"
       className={`${s.container} bg-void relative`}
-      style={{ paddingBottom: 100, overflowY: 'auto', height: '100vh' }}>
+      style={{ paddingBottom: 'var(--page-padding-bottom)', overflowY: 'auto', height: '100dvh' }}>
       <PullIndicator />
       {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
@@ -224,12 +225,6 @@ export function HomePage({ user, onRefresh }: Props) {
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
-          CONTEXTUAL SEASON BANNER — Both flows
-          Shows during exam periods (Dec-Jan, May-Jun). Urgency without being pushy.
-          ═══════════════════════════════════════════════════════════════════ */}
-        <ExamSeasonBanner />
-
-        {/* ═══════════════════════════════════════════════════════════════════
           NEW USER FLOW — Full conversion funnel:
           Hero → LiveActivity → TrustStats → HowItWorks →
           Testimonials → Guarantees → PricingAnchor → FAQ → Footer
@@ -241,6 +236,8 @@ export function HomePage({ user, onRefresh }: Props) {
             <div ref={heroCTARef as React.RefObject<HTMLDivElement>}>
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
+
+            {shouldShowExamBanner && <ExamSeasonBanner />}
 
             {/* 2. Live Activity Feed — Real-time social proof */}
             <LiveActivityFeed />
@@ -277,15 +274,6 @@ export function HomePage({ user, onRefresh }: Props) {
              C) Idle returning → win-back + quick reorder
              ═══════════════════════════════════════════════════════════════════ */
           <>
-            {/* ── BONUS ALERT — Shows in all returning states ── */}
-            {user.bonus_expiry && (
-              <BonusExpiryAlert
-                bonusExpiry={user.bonus_expiry}
-                bonusBalance={user.bonus_balance}
-                onUseBonus={handleNewOrder}
-              />
-            )}
-
             {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
             {returningUserState === 'active' && (
               <>
@@ -372,6 +360,8 @@ export function HomePage({ user, onRefresh }: Props) {
               </>
             )}
 
+            {shouldShowExamBanner && <ExamSeasonBanner />}
+
             <LoungeVault
               rank={user.rank}
               bonusBalance={user.bonus_balance}
@@ -382,17 +372,25 @@ export function HomePage({ user, onRefresh }: Props) {
               onCopy={handleCopyReferral}
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}
               onTelegramShare={handleTelegramShare}
+              alertPanel={user.bonus_expiry ? (
+                <BonusExpiryAlert
+                  bonusExpiry={user.bonus_expiry}
+                  bonusBalance={user.bonus_balance}
+                  onUseBonus={handleNewOrder}
+                  embedded
+                />
+              ) : undefined}
+              bonusPanel={shouldShowDailyBonus ? (
+                <DailyBonusCard
+                  variant="compact"
+                  embedded
+                  dailyAvailable={user.daily_luck_available ?? false}
+                  streak={user.daily_bonus_streak || 0}
+                  haptic={haptic}
+                  onBonusClaimed={handleBonusClaimed}
+                />
+              ) : undefined}
             />
-
-            {shouldShowDailyBonus && (
-              <DailyBonusCard
-                variant="compact"
-                dailyAvailable={user.daily_luck_available ?? false}
-                streak={user.daily_bonus_streak || 0}
-                haptic={haptic}
-                onBonusClaimed={handleBonusClaimed}
-              />
-            )}
 
           </>
         )}

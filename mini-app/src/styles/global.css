@@ -4,7 +4,7 @@
    Cartier aesthetics + High-end dark mode crypto wallet
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TAILWIND CSS — MUST BE AT THE TOP
@@ -238,11 +238,11 @@ textarea:focus-visible,
   --border-gold-strong: rgba(212, 175, 55, 0.35);
   --card-border: rgba(255, 255, 255, 0.08);
 
-  /* Typography — Two fonts only */
-  --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-serif: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography — Editorial display + restrained sans */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
 
   /* === THE SECRET SAUCE: GOLD GLOW SHADOWS === */

@@ -14,12 +14,14 @@ interface BonusExpiryAlertProps {
   bonusExpiry: BonusExpiryInfo
   bonusBalance: number
   onUseBonus: () => void
+  embedded?: boolean
 }
 
 export const BonusExpiryAlert = memo(function BonusExpiryAlert({
   bonusExpiry,
   bonusBalance,
   onUseBonus,
+  embedded = false,
 }: BonusExpiryAlertProps) {
   const config = useMemo(() => {
     if (!bonusExpiry.has_expiry || !bonusExpiry.days_left) return null
@@ -91,9 +93,9 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         alignItems: 'center',
         gap: 12,
         width: '100%',
-        padding: '14px 16px',
-        marginBottom: 14,
-        borderRadius: 22,
+        padding: embedded ? '13px 14px' : '14px 16px',
+        marginBottom: embedded ? 0 : 14,
+        borderRadius: embedded ? 18 : 22,
         background: config.gradient,
         border: `1px solid ${config.border}`,
         cursor: 'pointer',
@@ -101,7 +103,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         textAlign: 'left',
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 18px 30px -26px rgba(0, 0, 0, 0.72)',
+        boxShadow: embedded ? 'none' : '0 18px 30px -26px rgba(0, 0, 0, 0.72)',
       }}
     >
       <div
@@ -125,7 +127,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         style={{
           width: 40,
           height: 40,
-          borderRadius: 14,
+          borderRadius: embedded ? 12 : 14,
           background: config.iconBg,
           border: `1px solid ${config.iconBorder}`,
           display: 'flex',

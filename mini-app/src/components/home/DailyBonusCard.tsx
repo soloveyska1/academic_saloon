@@ -14,6 +14,7 @@ interface DailyBonusCardProps {
   haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => void
   onBonusClaimed: () => void
   variant?: 'full' | 'compact'
+  embedded?: boolean
 }
 
 const containerVariants = {
@@ -35,6 +36,7 @@ function DailyBonusCardInner({
   haptic,
   onBonusClaimed,
   variant = 'full',
+  embedded = false,
 }: DailyBonusCardProps) {
   const fullCardStyle: React.CSSProperties = {
     background: 'rgba(12, 12, 10, 0.6)',
@@ -48,15 +50,17 @@ function DailyBonusCardInner({
   }
 
   const compactCardStyle: React.CSSProperties = {
-    background: 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
+    background: embedded
+      ? 'rgba(255,255,255,0.03)'
+      : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
     backdropFilter: 'blur(16px) saturate(140%)',
     WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-    border: '1px solid rgba(212, 175, 55, 0.12)',
-    borderRadius: 24,
-    padding: 18,
+    border: embedded ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(212, 175, 55, 0.12)',
+    borderRadius: embedded ? 22 : 24,
+    padding: embedded ? 16 : 18,
     position: 'relative',
     overflow: 'hidden',
-    boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.78)',
+    boxShadow: embedded ? 'none' : '0 24px 40px -34px rgba(0, 0, 0, 0.78)',
   }
 
   const [info, setInfo] = useState<DailyBonusInfo | null>(null)
@@ -174,7 +178,7 @@ function DailyBonusCardInner({
                   marginBottom: 8,
                 }}
               >
-                Клубный бонус
+                Ежедневный бонус
               </div>
 
               <AnimatePresence mode="wait">

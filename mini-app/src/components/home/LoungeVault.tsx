@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Coins, Copy, Crown, Percent, QrCode, Send, Star } from 'lucide-react'
@@ -24,6 +24,8 @@ interface LoungeVaultProps {
   onCopy: () => void
   onShowQR: () => void
   onTelegramShare: () => void
+  alertPanel?: ReactNode
+  bonusPanel?: ReactNode
 }
 
 function formatMoney(value: number): string {
@@ -123,6 +125,8 @@ export const LoungeVault = memo(function LoungeVault({
   onCopy,
   onShowQR,
   onTelegramShare,
+  alertPanel,
+  bonusPanel,
 }: LoungeVaultProps) {
   const outerStyle: CSSProperties = {
     position: 'relative',
@@ -252,6 +256,12 @@ export const LoungeVault = memo(function LoungeVault({
             />
           </div>
 
+          {alertPanel && (
+            <div style={{ marginBottom: 14 }}>
+              {alertPanel}
+            </div>
+          )}
+
           <div
             style={{
               padding: '16px 16px 15px',
@@ -352,6 +362,12 @@ export const LoungeVault = memo(function LoungeVault({
               </>
             )}
           </div>
+
+          {bonusPanel && (
+            <div style={{ marginBottom: 14 }}>
+              {bonusPanel}
+            </div>
+          )}
 
           <div style={{ marginBottom: 14 }}>
             <div
