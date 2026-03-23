@@ -144,15 +144,15 @@ export const Navigation = () => {
           <div style={{
             position: 'relative',
             overflow: 'hidden',
-            width: 'min(100%, 392px)',
+            width: 'min(100%, 382px)',
             maxWidth: '100%',
-            padding: '8px 10px 10px',
-            borderRadius: 28,
-            background: 'linear-gradient(180deg, rgba(19, 18, 16, 0.96) 0%, rgba(10, 10, 12, 0.98) 100%)',
-            backdropFilter: 'blur(28px) saturate(165%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(165%)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 30px 70px -34px rgba(0,0,0,0.88), inset 0 1px 0 rgba(255,255,255,0.05)',
+            padding: '10px 12px 12px',
+            borderRadius: 30,
+            background: 'linear-gradient(180deg, rgba(17, 16, 15, 0.95) 0%, rgba(9, 9, 11, 0.98) 100%)',
+            backdropFilter: 'blur(26px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(26px) saturate(160%)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 54px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04)',
             pointerEvents: 'auto',
           }}>
             <div
@@ -162,19 +162,19 @@ export const Navigation = () => {
                 inset: '0 auto auto 0',
                 width: '100%',
                 height: 1,
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 20%, rgba(255,255,255,0.02) 100%)',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.02) 100%)',
               }}
             />
             <div
               aria-hidden="true"
               style={{
                 position: 'absolute',
-                top: -56,
-                right: -10,
-                width: 158,
-                height: 158,
+                top: -64,
+                right: 18,
+                width: 132,
+                height: 132,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 38%, transparent 72%)',
+                background: 'radial-gradient(circle, rgba(212,175,55,0.11) 0%, rgba(212,175,55,0.03) 42%, transparent 76%)',
                 pointerEvents: 'none',
               }}
             />
@@ -185,7 +185,7 @@ export const Navigation = () => {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                 alignItems: 'stretch',
-                gap: 6,
+                gap: 4,
               }}
             >
             {navItems.map((item) => {
@@ -216,20 +216,20 @@ export const Navigation = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 6,
+                    gap: 7,
                     minWidth: 0,
                     width: '100%',
-                    height: 74,
-                    padding: '8px 6px 10px',
-                    borderRadius: 22,
+                    height: 72,
+                    padding: '8px 4px 9px',
+                    borderRadius: 20,
                     border: isActive
-                      ? '1px solid rgba(212,175,55,0.22)'
+                      ? '1px solid rgba(212,175,55,0.14)'
                       : '1px solid transparent',
                     background: isActive
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.17) 0%, rgba(212,175,55,0.07) 100%)'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(212,175,55,0.05) 100%)'
                       : 'transparent',
                     boxShadow: isActive
-                      ? '0 18px 28px -24px rgba(212,175,55,0.44), inset 0 1px 0 rgba(255,255,255,0.08)'
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
                       : 'none',
                     cursor: 'pointer',
                     overflow: 'hidden',
@@ -242,8 +242,8 @@ export const Navigation = () => {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        borderRadius: 24,
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 34%)',
+                        borderRadius: 20,
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%)',
                         pointerEvents: 'none',
                       }}
                     />
@@ -255,26 +255,28 @@ export const Navigation = () => {
                     style={{
                       position: 'relative',
                       zIndex: 1,
-                      width: isActive ? 40 : 38,
-                      height: isActive ? 40 : 38,
-                      borderRadius: 14,
+                      width: isActive ? 48 : 38,
+                      height: isActive ? 48 : 38,
+                      borderRadius: isActive ? 18 : 14,
                       background: isActive
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.14) 100%)'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'linear-gradient(180deg, rgba(212,175,55,0.28) 0%, rgba(212,175,55,0.12) 100%)'
+                        : 'rgba(255,255,255,0.035)',
                       border: isActive
                         ? '1px solid rgba(212,175,55,0.26)'
                         : '1px solid rgba(255,255,255,0.05)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: isActive ? '0 10px 22px -16px rgba(212,175,55,0.6)' : 'none',
+                      boxShadow: isActive
+                        ? '0 16px 24px -18px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.09)'
+                        : 'none',
                       flexShrink: 0,
                     }}
                   >
                     <Icon
-                      size={isActive ? 21 : 20}
+                      size={isActive ? 22 : 19}
                       strokeWidth={isActive ? 2.1 : 1.95}
-                      color={isActive ? 'var(--gold-200)' : 'var(--text-secondary)'}
+                      color={isActive ? 'var(--gold-100)' : 'var(--text-secondary)'}
                     />
                   </motion.div>
 
@@ -294,13 +296,13 @@ export const Navigation = () => {
                   >
                     <motion.span
                       animate={{
-                        color: isActive ? 'var(--gold-200)' : 'var(--text-secondary)',
-                        opacity: isActive ? 1 : 0.88,
+                        color: isActive ? 'var(--gold-200)' : 'rgba(255,255,255,0.7)',
+                        opacity: isActive ? 1 : 0.82,
                       }}
                       style={{
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: isActive ? 700 : 600,
-                        letterSpacing: isActive ? '0.01em' : '0.005em',
+                        letterSpacing: isActive ? '0.01em' : '0.01em',
                         whiteSpace: 'nowrap',
                         maxWidth: '100%',
                         overflow: 'hidden',
@@ -316,12 +318,11 @@ export const Navigation = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 3 }}
                         style={{
-                          width: 18,
-                          height: 3,
+                          width: 16,
+                          height: 2,
                           borderRadius: 999,
-                          fontWeight: 700,
-                          background: 'linear-gradient(90deg, rgba(212,175,55,0.92), rgba(212,175,55,0.3))',
-                          boxShadow: '0 0 10px rgba(212,175,55,0.32)',
+                          background: 'linear-gradient(90deg, rgba(212,175,55,0.92), rgba(255,248,214,0.7))',
+                          boxShadow: '0 0 12px rgba(212,175,55,0.28)',
                         }}
                       />
                     )}
