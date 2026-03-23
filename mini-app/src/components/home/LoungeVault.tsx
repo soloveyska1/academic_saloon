@@ -190,7 +190,7 @@ export const LoungeVault = memo(function LoungeVault({
                   marginBottom: 0,
                 }}
               >
-                Клуб и бонусы
+                Привилегии клуба
               </div>
             </div>
 
@@ -214,7 +214,7 @@ export const LoungeVault = memo(function LoungeVault({
                   marginBottom: 5,
                 }}
               >
-                Статус клуба
+                Ваш статус
               </div>
               <div
                 style={{

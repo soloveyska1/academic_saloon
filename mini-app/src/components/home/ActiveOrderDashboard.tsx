@@ -160,7 +160,26 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   const stageSummary = STAGES[stageIdx]?.label ?? 'Заявка'
   const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
   const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
-  const highlightAmount = hasPartialPayment ? formatMoney(remaining) : remaining > 0 && visibleStatus === 'waiting_payment' ? formatMoney(remaining) : null
+  const ledgerItems = [
+    {
+      key: 'total',
+      label: 'Сумма',
+      value: total > 0 ? formatMoney(total) : 'Уточняется',
+      accent: false,
+    },
+    {
+      key: 'paid',
+      label: 'Внесено',
+      value: paid > 0 ? formatMoney(paid) : '0 ₽',
+      accent: paid > 0,
+    },
+    {
+      key: 'remaining',
+      label: remaining > 0 ? 'Осталось' : 'Закрыто',
+      value: total > 0 ? formatMoney(remaining) : 'Уточняется',
+      accent: remaining <= 0 && total > 0,
+    },
+  ]
 
   return (
     <motion.section
@@ -223,10 +242,10 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 12,
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           >
             <div
@@ -249,22 +268,35 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 Текущий заказ
               </div>
 
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '8px 12px',
-                borderRadius: 999,
-                background: statusInfo?.bg ?? 'var(--gold-glass-medium)',
-                border: `1px solid ${statusInfo?.border ?? 'var(--gold-glass-strong)'}`,
-                color: statusInfo?.color ?? 'var(--gold-300)',
-                fontSize: 11,
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  borderRadius: 999,
+                  background: statusInfo?.bg ?? 'var(--gold-glass-medium)',
+                  border: `1px solid ${statusInfo?.border ?? 'var(--gold-glass-strong)'}`,
+                  color: statusInfo?.color ?? 'var(--gold-300)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {statusInfo?.label ?? visibleStatus}
               </span>
+
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.52)',
+                  textAlign: 'right',
+                }}
+              >
+                {deadlineText}
+              </div>
+            </div>
           </div>
 
           <div style={{ marginBottom: 18 }}>
@@ -309,171 +341,87 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
           <div
             style={{
-              padding: '16px 16px 15px',
-              borderRadius: 22,
-              marginBottom: 16,
-              background: needsAction
-                ? 'linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(14,12,10,0.44) 100%)'
-                : 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(14,12,10,0.44) 100%)',
-              border: `1px solid ${needsAction ? 'rgba(212,175,55,0.13)' : 'rgba(255,255,255,0.05)'}`,
-              }}
-            >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ minWidth: 0 }}>
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              marginBottom: 14,
+            }}
+          >
+            {[
+              { key: 'deadline', icon: Clock3, value: deadlineText },
+              { key: 'stage', icon: CircleDollarSign, value: stageSummary },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
                 <div
+                  key={item.key}
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.38)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Далее
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    lineHeight: 1.1,
-                    color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
-                    letterSpacing: '-0.03em',
-                  }}
-                >
-                  {primaryAction}
-                </div>
-              </div>
-
-              {highlightAmount && (
-                <div
-                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
                     padding: '10px 12px',
-                    borderRadius: 16,
+                    borderRadius: 999,
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.06)',
-                    textAlign: 'right',
-                    flexShrink: 0,
+                    color: 'var(--text-secondary)',
+                    fontSize: 12,
+                    fontWeight: 600,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.32)',
-                  marginBottom: 4,
-                }}
-              >
-                  {hasPartialPayment ? 'Остаток' : 'Сумма'}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: 'var(--gold-300)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {highlightAmount}
-                  </div>
+                  <Icon size={14} color="var(--gold-300)" strokeWidth={1.9} />
+                  {item.value}
                 </div>
-              )}
-            </div>
+              )
+            })}
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gap: 12,
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 10,
               marginBottom: 16,
             }}
           >
-            {[
-              {
-                label: 'Срок',
-                value: deadlineText,
-                hint: `Этап: ${stageSummary.toLowerCase()}`,
-                icon: Clock3,
-              },
-              {
-                label: hasPartialPayment ? 'Оплата' : remaining > 0 ? 'Финансы' : 'Оплата',
-                value: hasPartialPayment ? `Аванс ${formatMoney(paid)}` : financeSummary,
-                hint: hasPartialPayment
-                  ? `Осталось ${formatMoney(remaining)}`
-                  : total > 0 ? `Общая сумма ${formatMoney(total)}` : 'Сумма уточняется',
-                icon: CircleDollarSign,
-              },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
+            {ledgerItems.map((item) => (
+              <div
+                key={item.key}
+                style={{
+                  padding: '15px 14px 14px',
+                  borderRadius: 20,
+                  background: item.accent
+                    ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.03) 100%)'
+                    : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
+                  minWidth: 0,
+                }}
+              >
                 <div
-                  key={item.label}
                   style={{
-                    padding: '16px 14px 14px',
-                    borderRadius: 22,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    minWidth: 0,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.35)',
+                    marginBottom: 8,
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      borderRadius: 12,
-                      marginBottom: 12,
-                      background: 'rgba(212,175,55,0.08)',
-                      border: '1px solid rgba(212,175,55,0.10)',
-                    }}
-                  >
-                    <Icon size={16} color="var(--gold-300)" strokeWidth={1.9} />
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.35)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      lineHeight: 1.35,
-                      color: 'var(--text-primary)',
-                      marginBottom: 6,
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {item.value}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    {item.hint}
-                  </div>
+                  {item.label}
                 </div>
-              )
-            })}
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    color: item.accent ? 'var(--gold-300)' : 'var(--text-primary)',
+                    letterSpacing: '-0.03em',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {item.value}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div style={{ marginBottom: 18 }}>
@@ -531,21 +479,35 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               gap: 12,
               padding: '14px 14px 14px 16px',
               borderRadius: 22,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              background: needsAction
+                ? 'linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(14,12,10,0.44) 100%)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${needsAction ? 'rgba(212,175,55,0.13)' : 'rgba(255,255,255,0.05)'}`,
             }}
           >
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.38)',
+                  marginBottom: 8,
+                }}
+              >
+                Далее
+              </div>
+              <div
+                style={{
                   fontSize: 15,
                   fontWeight: 700,
                   lineHeight: 1.2,
-                  color: 'var(--text-primary)',
+                  color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
                   marginBottom: 4,
                 }}
               >
-                Открыть заказ
+                {primaryAction}
               </div>
               <div
                 style={{
@@ -556,7 +518,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               >
                 {otherActiveCount > 0
                   ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе.`
-                  : 'Чат, файлы и расчёты внутри заказа.'}
+                  : needsAction ? financeSummary : 'Чат, файлы и расчёты внутри заказа.'}
               </div>
             </div>
 

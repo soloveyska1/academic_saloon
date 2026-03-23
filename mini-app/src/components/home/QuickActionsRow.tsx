@@ -72,14 +72,14 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             onClick={() => handleClick(action)}
             style={{
               minWidth: 0,
-              minHeight: isPrimary ? 150 : 132,
-              padding: isPrimary ? '18px 16px 16px' : '16px 15px 14px',
+              minHeight: isPrimary ? 142 : 118,
+              padding: isPrimary ? '18px 16px 16px' : '16px 15px',
               borderRadius: 26,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
-              gap: 16,
+              gap: 12,
               cursor: 'pointer',
               textAlign: 'left',
               background: isPrimary
@@ -170,19 +170,6 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 }}
               >
                 {action.subtitle}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: isPrimary ? 'rgba(212,175,55,0.72)' : 'rgba(255,255,255,0.3)',
-                }}
-              >
-                {isPrimary ? '5 минут' : 'Открыть'}
               </div>
             </div>
           </motion.button>
