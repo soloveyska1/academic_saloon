@@ -6,6 +6,7 @@ interface NewTaskCTAProps {
   onClick: () => void
   haptic?: (style: 'light' | 'medium' | 'heavy') => void
   variant?: 'first-order' | 'repeat-order'
+  embedded?: boolean
 }
 
 const PROOF_ITEMS = [
@@ -18,6 +19,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   onClick,
   haptic,
   variant = 'repeat-order',
+  embedded = false,
 }: NewTaskCTAProps) {
   const handleClick = () => {
     haptic?.('heavy')
@@ -203,30 +205,32 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       style={{
         position: 'relative',
         width: '100%',
-        padding: 22,
-        borderRadius: 28,
+        padding: embedded ? 0 : 22,
+        borderRadius: embedded ? 0 : 28,
         marginBottom: 0,
-        background: 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
-        backdropFilter: 'blur(16px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-        border: '1px solid rgba(212, 175, 55, 0.10)',
+        background: embedded ? 'transparent' : 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
+        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
+        border: embedded ? 'none' : '1px solid rgba(212, 175, 55, 0.10)',
         overflow: 'hidden',
-        boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
+        boxShadow: embedded ? 'none' : '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: -60,
-          right: -24,
-          width: 170,
-          height: 170,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 28%, transparent 72%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {!embedded && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -60,
+            right: -24,
+            width: 170,
+            height: 170,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 28%, transparent 72%)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       <motion.button
         type="button"
@@ -255,37 +259,37 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontWeight: 700,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: 'rgba(212, 175, 55, 0.72)',
+              color: embedded ? 'rgba(255,255,255,0.32)' : 'rgba(212, 175, 55, 0.72)',
               marginBottom: 8,
             }}
           >
-            Новая заявка
+            Новая работа
           </div>
           <div
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 28,
+              fontSize: embedded ? 25 : 28,
               fontWeight: 800,
-              lineHeight: 0.94,
+              lineHeight: embedded ? 1 : 0.94,
               letterSpacing: '-0.04em',
               color: 'var(--text-primary)',
-              marginBottom: 10,
+              marginBottom: embedded ? 8 : 10,
             }}
           >
-            Оформить ещё одну работу
+            Оформить новый заказ
           </div>
           <div style={{
             fontSize: 13,
             color: 'var(--text-secondary)',
             fontWeight: 500,
             lineHeight: 1.45,
-            marginBottom: 16,
+            marginBottom: embedded ? 12 : 16,
           }}>
             Расчёт за 5 минут, стоимость известна до оплаты.
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {['от 990 ₽', '5 минут', 'в чате'].map((item) => (
+            {(embedded ? ['5 минут', 'без звонков'] : ['от 990 ₽', '5 минут', 'в чате']).map((item) => (
               <span
                 key={item}
                 style={{
@@ -308,9 +312,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         </div>
         <div
           style={{
-            width: 52,
-            height: 52,
-            borderRadius: 20,
+            width: embedded ? 46 : 52,
+            height: embedded ? 46 : 52,
+            borderRadius: embedded ? 18 : 20,
             background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
             display: 'flex',
             alignItems: 'center',

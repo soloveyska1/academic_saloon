@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useState, lazy, Suspense } from 'react'
+import { useCallback, useRef, useMemo, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
@@ -52,6 +52,56 @@ interface Props {
 }
 
 import s from './HomePage.module.css'
+
+function ActionDeck({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        marginBottom: 18,
+        padding: 18,
+        borderRadius: 30,
+        background: 'linear-gradient(160deg, rgba(18, 16, 12, 0.95) 0%, rgba(11, 11, 12, 0.97) 48%, rgba(8, 8, 10, 1) 100%)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        boxShadow: '0 28px 50px -38px rgba(0,0,0,0.82)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -72,
+          right: -24,
+          width: 180,
+          height: 180,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 28%, transparent 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 16 }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function DeckDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        height: 1,
+        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 12%, rgba(255,255,255,0.06) 88%, transparent 100%)',
+      }}
+    />
+  )
+}
 
 export function HomePage({ user, onRefresh }: Props) {
   const navigate = useNavigate()
@@ -283,8 +333,9 @@ export function HomePage({ user, onRefresh }: Props) {
                   haptic={haptic}
                 />
 
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <ActionDeck>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
+                  <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
                     onOpenModal={(modal: ModalName) => {
@@ -297,23 +348,27 @@ export function HomePage({ user, onRefresh }: Props) {
                     }}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
+                    embedded
                   />
-                </div>
+                </ActionDeck>
               </>
             )}
 
             {/* ── STATE B: JUST COMPLETED — Celebrate + next order ── */}
             {returningUserState === 'just-completed' && (
               <>
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                <ActionDeck>
                   {user.orders.length > 0 && (
                     <QuickReorderCard
                       lastOrder={user.orders[0]}
                       onReorder={handleReorder}
                       haptic={haptic}
+                      embedded
                     />
                   )}
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DeckDivider />
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
+                  <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
                     onOpenModal={(modal: ModalName) => {
@@ -326,23 +381,27 @@ export function HomePage({ user, onRefresh }: Props) {
                     }}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
+                    embedded
                   />
-                </div>
+                </ActionDeck>
               </>
             )}
 
             {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
             {returningUserState === 'idle' && (
               <>
-                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <ActionDeck>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
+                  {user.orders.length > 0 && <DeckDivider />}
                   {user.orders.length > 0 && (
                     <QuickReorderCard
                       lastOrder={user.orders[0]}
                       onReorder={handleReorder}
                       haptic={haptic}
+                      embedded
                     />
                   )}
+                  <DeckDivider />
                   <QuickActionsRow
                     onNavigate={navigate}
                     onOpenModal={(modal: ModalName) => {
@@ -355,8 +414,9 @@ export function HomePage({ user, onRefresh }: Props) {
                     }}
                     haptic={haptic}
                     cashbackPercent={user.rank.cashback}
+                    embedded
                   />
-                </div>
+                </ActionDeck>
               </>
             )}
 

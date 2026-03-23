@@ -12,6 +12,7 @@ interface QuickReorderCardProps {
   lastOrder: Order
   onReorder: (orderId: number) => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
+  embedded?: boolean
 }
 
 // Work type labels mapping
@@ -33,6 +34,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
   lastOrder,
   onReorder,
   haptic,
+  embedded = false,
 }: QuickReorderCardProps) {
   // Only show if last order was completed
   if (lastOrder.status !== 'completed') return null
@@ -53,30 +55,32 @@ export const QuickReorderCard = memo(function QuickReorderCard({
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 28,
-        padding: 22,
+        borderRadius: embedded ? 22 : 28,
+        padding: embedded ? 0 : 22,
         marginBottom: 0,
-        background: 'linear-gradient(160deg, rgba(25, 21, 13, 0.96) 0%, rgba(13, 13, 14, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
-        border: '1px solid rgba(212,175,55,0.10)',
-        backdropFilter: 'blur(16px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        background: embedded ? 'transparent' : 'linear-gradient(160deg, rgba(25, 21, 13, 0.96) 0%, rgba(13, 13, 14, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
+        border: embedded ? 'none' : '1px solid rgba(212,175,55,0.10)',
+        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
         cursor: 'pointer',
-        boxShadow: '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
+        boxShadow: embedded ? 'none' : '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: -56,
-          right: -24,
-          width: 160,
-          height: 160,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 30%, transparent 72%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {!embedded && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -56,
+            right: -24,
+            width: 160,
+            height: 160,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 30%, transparent 72%)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div
@@ -105,17 +109,18 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             </div>
             <span
               style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                color: 'rgba(212,175,55,0.72)',
-                textTransform: 'uppercase',
-              }}
-            >
-              Повтор
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              color: embedded ? 'rgba(255,255,255,0.32)' : 'rgba(212,175,55,0.72)',
+              textTransform: 'uppercase',
+            }}
+          >
+              Повтор заказа
             </span>
           </div>
 
+          {!embedded && (
           <div
             style={{
               display: 'flex',
@@ -137,6 +142,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               1 касание
             </span>
           </div>
+          )}
         </div>
 
         <div style={{ marginBottom: 18 }}>
@@ -146,7 +152,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.68)',
+              color: embedded ? 'rgba(255,255,255,0.36)' : 'rgba(212,175,55,0.68)',
               marginBottom: 8,
             }}
           >
@@ -155,14 +161,14 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           <div
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 28,
-              lineHeight: 0.95,
+              fontSize: embedded ? 24 : 28,
+              lineHeight: embedded ? 1 : 0.95,
               letterSpacing: '-0.05em',
               color: 'var(--text-primary)',
               marginBottom: 8,
             }}
           >
-            Повторить похожую работу
+            Повторить похожий заказ
           </div>
           <div
             style={{
@@ -194,13 +200,13 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             }}
           >
             <Clock size={13} strokeWidth={1.7} color="var(--gold-300)" />
-            <span>Параметры подтянутся автоматически</span>
+            <span>{embedded ? 'Исходные данные подтянутся автоматически' : 'Параметры подтянутся автоматически'}</span>
           </div>
 
           <div
             style={{
-              width: 46,
-              height: 46,
+              width: embedded ? 42 : 46,
+              height: embedded ? 42 : 46,
               borderRadius: 18,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
               color: 'var(--text-on-gold)',
