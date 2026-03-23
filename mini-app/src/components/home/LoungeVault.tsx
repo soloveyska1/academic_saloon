@@ -3,6 +3,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Coins, Copy, Crown, Percent, QrCode, Send, Star } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
+import { formatMoney } from '../../lib/utils'
 
 interface Rank {
   name: string
@@ -28,9 +29,6 @@ interface LoungeVaultProps {
   bonusPanel?: ReactNode
 }
 
-function formatMoney(value: number): string {
-  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
-}
 
 function MetricPanel({
   title,

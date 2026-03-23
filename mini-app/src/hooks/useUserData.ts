@@ -50,14 +50,14 @@ export function useUserData() {
     loadUserData()
   }, [])
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     try {
       const data = await fetchUserData()
       setRawUserData(data)
     } catch {
       // Silent refetch failure - user data stays unchanged
     }
-  }
+  }, [])
 
   const userData = useMemo(() => {
     if (!rawUserData) return null
@@ -109,7 +109,20 @@ const BOT_USERNAME = 'Kladovaya_GIPSR_bot'
 
 export function useTelegram() {
   // Memoize tg reference - stable across renders
-  const tg = useMemo(() => window.Telegram?.WebApp, [])
+  const [tg, setTg] = useState(() => window.Telegram?.WebApp)
+
+  // Re-check if Telegram SDK was injected after initial render
+  useEffect(() => {
+    if (tg) return
+    const timer = setInterval(() => {
+      const webApp = window.Telegram?.WebApp
+      if (webApp) {
+        setTg(webApp)
+        clearInterval(timer)
+      }
+    }, 100)
+    return () => clearInterval(timer)
+  }, [tg])
   const [botUsername, setBotUsername] = useState(BOT_USERNAME)
 
   // Load config on mount

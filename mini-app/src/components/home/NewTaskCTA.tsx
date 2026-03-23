@@ -235,7 +235,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 fontWeight: 700,
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.32)',
+                color: 'rgba(255,255,255,0.56)',
                 marginBottom: 8,
               }}
             >
@@ -359,7 +359,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontWeight: 700,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: embedded ? 'rgba(255,255,255,0.32)' : 'rgba(212, 175, 55, 0.72)',
+              color: embedded ? 'rgba(255,255,255,0.56)' : 'rgba(212, 175, 55, 0.72)',
               marginBottom: 8,
             }}
           >

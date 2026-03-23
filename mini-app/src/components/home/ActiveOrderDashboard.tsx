@@ -11,6 +11,7 @@ import {
 import { Order } from '../../types'
 import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
+import { formatMoney } from '../../lib/utils'
 
 interface ActiveOrderDashboardProps {
   orders: Order[]
@@ -104,9 +105,6 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
   }
 }
 
-function formatMoney(value: number): string {
-  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
-}
 
 function getFinanceHero(total: number, paid: number, remaining: number, stageSummary: string, deadlineText: string) {
   if (total <= 0) {
@@ -471,7 +469,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                       fontWeight: 700,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.32)',
+                      color: 'rgba(255,255,255,0.56)',
                       marginBottom: 6,
                     }}
                   >
@@ -514,7 +512,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.32)',
+                  color: 'rgba(255,255,255,0.56)',
                 }}
               >
                 Этап заказа
