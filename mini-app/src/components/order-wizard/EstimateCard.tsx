@@ -20,18 +20,18 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
       style={{
-        marginTop: 20,
+        marginTop: 24,
         padding: '20px 24px',
         background: 'var(--gold-glass-medium)',
         border: '2px solid var(--border-gold)',
-        borderRadius: 20,
+        borderRadius: 12,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
               Ориентировочно
             </span>
@@ -77,7 +77,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
             animate={{ scale: 1, opacity: 1 }}
             style={{
               fontSize: 24,
-              fontWeight: 800,
+              fontWeight: 700,
               color: activePromo || hasLoyaltyDiscount ? 'var(--success-text)' : 'var(--gold-400)',
               fontFamily: "'JetBrains Mono', monospace",
             }}
@@ -93,7 +93,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              gap: 6,
+              gap: 8,
             }}>
               {activePromo ? (
                 <>

@@ -56,8 +56,8 @@ function HeroCard({ user }: { user: UserData }) {
         position: 'relative',
         width: '100%',
         padding: '26px 22px 22px',
-        borderRadius: 28,
-        marginBottom: 22,
+        borderRadius: 12,
+        marginBottom: 24,
         overflow: 'hidden',
         border: '1px solid var(--border-gold)',
         isolation: 'isolate',
@@ -85,7 +85,7 @@ function HeroCard({ user }: { user: UserData }) {
             letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
             color: 'var(--gold-200)',
-            marginBottom: 18,
+            marginBottom: 16,
           }}
         >
           <span
@@ -107,9 +107,9 @@ function HeroCard({ user }: { user: UserData }) {
           style={{
             fontFamily: "'Manrope', sans-serif",
             fontSize: 'clamp(36px, 9vw, 48px)',
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1,
-            marginBottom: 6,
+            marginBottom: 8,
           }}
         >
           {cashback}%
@@ -120,8 +120,8 @@ function HeroCard({ user }: { user: UserData }) {
             opacity: 0.7,
             fontFamily: "'Manrope', sans-serif",
             fontSize: 14,
-            fontWeight: 500,
-            marginBottom: 20,
+            fontWeight: 600,
+            marginBottom: 24,
           }}
         >
           кэшбэк с каждого заказа
@@ -236,17 +236,17 @@ function ReferralBlock({ user }: { user: UserData }) {
       className={homeStyles.voidGlass}
       style={{
         padding: '22px 20px',
-        borderRadius: 24,
+        borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 22,
+        marginBottom: 24,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div
           style={{
             width: 44,
             height: 44,
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'var(--gold-glass-medium)',
             border: '1px solid var(--border-gold)',
             display: 'flex',
@@ -267,7 +267,7 @@ function ReferralBlock({ user }: { user: UserData }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.97 }}
@@ -275,7 +275,7 @@ function ReferralBlock({ user }: { user: UserData }) {
           style={{
             flex: 1,
             padding: '13px 16px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: copied
               ? 'rgba(34,197,94,0.15)'
               : 'var(--gold-glass-subtle)',
@@ -304,7 +304,7 @@ function ReferralBlock({ user }: { user: UserData }) {
           style={{
             flex: 1,
             padding: '13px 16px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'var(--gold-glass-medium)',
             border: '1px solid var(--gold-glass-strong)',
             color: 'var(--gold-200)',
@@ -334,13 +334,13 @@ function ReferralBlock({ user }: { user: UserData }) {
           style={{
             flex: 1,
             padding: '12px 14px',
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--border-subtle)',
             border: '1px solid var(--border-default)',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
             {user.referrals_count || 0}
           </div>
           <div style={{ fontSize: 11, color: 'var(--gold-200)', opacity: 0.45, marginTop: 2 }}>
@@ -351,13 +351,13 @@ function ReferralBlock({ user }: { user: UserData }) {
           style={{
             flex: 1,
             padding: '12px 14px',
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--border-subtle)',
             border: '1px solid var(--border-default)',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
             {formatMoney(user.referral_earnings || 0)}
           </div>
           <div style={{ fontSize: 11, color: 'var(--gold-200)', opacity: 0.45, marginTop: 2 }}>
@@ -389,9 +389,9 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         className={homeStyles.voidGlass}
         style={{
           padding: '28px 20px',
-          borderRadius: 24,
+          borderRadius: 12,
           border: '1px solid var(--surface-hover)',
-          marginBottom: 22,
+          marginBottom: 24,
           textAlign: 'center',
           fontFamily: "'Manrope', sans-serif",
           display: 'flex',
@@ -400,14 +400,14 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
           gap: 0,
         }}
       >
-        <Receipt size={40} color="var(--gold-400)" style={{ opacity: 0.3, marginBottom: 14 }} />
+        <Receipt size={40} color="var(--gold-400)" style={{ opacity: 0.3, marginBottom: 12 }} />
         <div
           style={{
             fontSize: 14,
             fontWeight: 600,
             color: 'var(--gold-200)',
             opacity: 0.65,
-            marginBottom: 6,
+            marginBottom: 8,
           }}
         >
           Пока нет операций
@@ -419,7 +419,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
             opacity: 0.35,
             lineHeight: 1.5,
             maxWidth: 220,
-            marginBottom: 18,
+            marginBottom: 16,
           }}
         >
           Совершите заказ — и здесь появится история бонусов
@@ -431,7 +431,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
           style={{
             height: 40,
             padding: '0 22px',
-            borderRadius: 14,
+            borderRadius: 12,
             border: 'none',
             background: 'var(--gold-metallic)',
             color: 'var(--text-on-gold)',
@@ -456,9 +456,9 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
       className={homeStyles.voidGlass}
       style={{
         padding: '18px 16px',
-        borderRadius: 24,
+        borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 22,
+        marginBottom: 24,
       }}
     >
       <div
@@ -467,7 +467,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
           fontWeight: 700,
           color: 'var(--gold-200)',
           fontFamily: "'Manrope', sans-serif",
-          marginBottom: 14,
+          marginBottom: 12,
           padding: '0 4px',
         }}
       >
@@ -542,7 +542,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: 8,
             cursor: 'pointer',
           }}
         >
@@ -572,7 +572,7 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
       <div className={homeStyles.sectionTitle}>КАК ЭТО РАБОТАЕТ</div>
 
       {/* 3 steps */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
         {[
           { num: '1', title: 'Заказывай', desc: 'Каждый оплаченный заказ приносит кэшбэк на бонусный баланс' },
           { num: '2', title: 'Получай кэшбэк', desc: 'Чем больше потрачено — тем выше ранг и процент кэшбэка' },
@@ -583,11 +583,11 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
             className={homeStyles.voidGlass}
             style={{
               padding: '16px 18px',
-              borderRadius: 20,
+              borderRadius: 12,
               border: '1px solid var(--surface-hover)',
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
+              gap: 12,
             }}
           >
             <div
@@ -601,7 +601,7 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 15,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: 'var(--gold-400)',
                 flexShrink: 0,
                 fontFamily: "'Manrope', sans-serif",
@@ -635,13 +635,13 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
               className={homeStyles.voidGlass}
               style={{
                 padding: '16px 18px',
-                borderRadius: 20,
+                borderRadius: 12,
                 border: isCurrent
                   ? '1px solid var(--gold-glass-strong)'
                   : '1px solid var(--surface-hover)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 14,
+                gap: 12,
                 opacity: isLocked ? 0.5 : 1,
               }}
             >
@@ -649,7 +649,7 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
                 style={{
                   width: 42,
                   height: 42,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   background: isCurrent
                     ? 'var(--gold-glass-medium)'
                     : 'var(--bg-glass)',
@@ -690,7 +690,7 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
                         color: 'var(--gold-400)',
                         background: 'var(--gold-glass-subtle)',
                         padding: '3px 8px',
-                        borderRadius: 6,
+                        borderRadius: 4,
                         textTransform: 'uppercase' as const,
                         letterSpacing: '0.05em',
                       }}
@@ -707,7 +707,7 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
               <div
                 style={{
                   fontSize: 18,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: isCurrent ? 'var(--gold-400)' : 'var(--gold-200)',
                   opacity: isCurrent ? 1 : 0.4,
                   fontFamily: "'Manrope', sans-serif",
@@ -738,7 +738,7 @@ function ClubPage({ user }: ClubPageProps) {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
               <GoldSkeleton width={80} height={80} borderRadius={24} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
               <Skeleton width={200} height={24} borderRadius={8} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -775,7 +775,7 @@ function ClubPage({ user }: ClubPageProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 12,
-            marginBottom: 18,
+            marginBottom: 16,
           }}
         >
           <motion.button
@@ -785,7 +785,7 @@ function ClubPage({ user }: ClubPageProps) {
             style={{
               width: 42,
               height: 42,
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'var(--border-default)',
               border: '1px solid var(--border-strong)',
               display: 'flex',
@@ -817,7 +817,7 @@ function ClubPage({ user }: ClubPageProps) {
               style={{
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 26,
-                fontWeight: 800,
+                fontWeight: 700,
                 lineHeight: 1.05,
               }}
             >

@@ -48,16 +48,16 @@ export function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSect
             transition={{ delay: 0.28 }}
             style={{
                 background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-                borderRadius: 20,
+                borderRadius: 12,
                 border: '1px solid rgba(212,175,55,0.3)',
-                padding: 20,
+                padding: 24,
                 marginBottom: 16,
             }}
         >
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 marginBottom: 16,
             }}>
                 <Star size={18} color="#d4af37" fill="#d4af37" />
@@ -117,7 +117,7 @@ export function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSect
                 style={{
                     width: '100%',
                     minHeight: 100,
-                    padding: 14,
+                    padding: 16,
                     background: 'var(--bg-glass)',
                     border: '1px solid var(--border-strong)',
                     borderRadius: 12,
@@ -151,7 +151,7 @@ export function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSect
                         ? 'rgba(255,255,255,0.1)'
                         : 'linear-gradient(135deg, #d4af37, #b48e26)',
                     border: 'none',
-                    borderRadius: 14,
+                    borderRadius: 12,
                     color: '#fff',
                     fontSize: 15,
                     fontWeight: 600,

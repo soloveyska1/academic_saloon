@@ -65,7 +65,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
         padding: '10px 14px',
         marginBottom: 8,
         borderRadius: 'var(--radius-sm)',
@@ -100,7 +100,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               fontSize: 12,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-secondary)',
             }}
           >
@@ -109,7 +109,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
         </AnimatePresence>
       </div>
 
-      <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-muted)', flexShrink: 0, opacity: 0.7 }}>
+      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0, opacity: 0.7 }}>
         {event.timeAgo}
       </span>
     </motion.div>

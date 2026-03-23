@@ -124,7 +124,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
-        borderRadius: 20,
+        borderRadius: 12,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.05)',
         overflow: 'hidden',
@@ -206,7 +206,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
                 >
                   {item.type}
                   <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 5px' }}>·</span>
-                  <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
+                  <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>
                     {item.subject}
                   </span>
                 </span>
@@ -214,7 +214,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
               <span
                 style={{
                   fontSize: 10,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: 'rgba(255,255,255,0.2)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
@@ -242,7 +242,7 @@ const HowItWorks = memo(function HowItWorks() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.28 }}
       style={{
-        borderRadius: 20,
+        borderRadius: 12,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.05)',
         padding: '14px 16px',
@@ -255,7 +255,7 @@ const HowItWorks = memo(function HowItWorks() {
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
           color: 'rgba(255,255,255,0.3)',
-          marginBottom: 14,
+          marginBottom: 12,
         }}
       >
         Как это работает
@@ -307,7 +307,7 @@ const HowItWorks = memo(function HowItWorks() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 9,
-                    fontWeight: 800,
+                    fontWeight: 700,
                     color: 'rgba(212,175,55,0.9)',
                   }}
                 >
@@ -331,7 +331,7 @@ const HowItWorks = memo(function HowItWorks() {
                 <div
                   style={{
                     fontSize: 12,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: 'rgba(255,255,255,0.35)',
                     lineHeight: 1.3,
                   }}

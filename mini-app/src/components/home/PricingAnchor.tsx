@@ -69,8 +69,8 @@ export const PricingAnchor = memo(function PricingAnchor({
                 padding: 16,
                 borderRadius: 'var(--radius-md)',
                 background: 'rgba(12, 12, 10, 0.6)',
-                backdropFilter: 'blur(16px) saturate(140%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+                backdropFilter: 'blur(16px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
                 border: '1px solid rgba(255, 255, 255, 0.04)',
                 cursor: 'pointer',
                 appearance: 'none',
@@ -86,7 +86,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 10,
+                  marginBottom: 8,
                 }}
               >
                 <Icon size={15} color="var(--gold-400)" strokeWidth={1.8} />
@@ -97,16 +97,16 @@ export const PricingAnchor = memo(function PricingAnchor({
                 fontSize: 15,
                 fontWeight: 700,
                 color: 'var(--text-primary)',
-                marginBottom: 6,
+                marginBottom: 8,
                 lineHeight: 1.2,
               }}>
                 {item.workType}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{
                   fontSize: 11,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: 'var(--text-muted)',
                   textDecoration: 'line-through',
                   opacity: 0.6,
@@ -115,7 +115,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                 </span>
                 <span style={{
                   fontSize: 14,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: 'var(--gold-400)',
                 }}>
                   {item.ourPrice} ₽
@@ -126,7 +126,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                 size={13}
                 color="var(--text-muted)"
                 strokeWidth={2}
-                style={{ position: 'absolute', bottom: 14, right: 14, opacity: 0.25 }}
+                style={{ position: 'absolute', bottom: 16, right: 16, opacity: 0.25 }}
               />
             </motion.button>
           )
@@ -136,7 +136,7 @@ export const PricingAnchor = memo(function PricingAnchor({
       <div style={{
         marginTop: 8,
         fontSize: 11,
-        fontWeight: 500,
+        fontWeight: 600,
         color: 'var(--text-muted)',
         textAlign: 'center',
         opacity: 0.6,

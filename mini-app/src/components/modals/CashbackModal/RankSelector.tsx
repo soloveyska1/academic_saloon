@@ -24,8 +24,8 @@ const containerStyle: React.CSSProperties = {
 const lineStyle: React.CSSProperties = {
   position: 'absolute',
   top: '50%',
-  left: 20,
-  right: 20,
+  left: 24,
+  right: 24,
   height: 2,
   background: 'var(--surface-active)',
   zIndex: 0,
@@ -80,7 +80,7 @@ const RankNode = memo(function RankNode({
   const nodeStyle = useMemo<React.CSSProperties>(() => ({
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

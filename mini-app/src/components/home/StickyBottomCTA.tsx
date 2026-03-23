@@ -27,7 +27,7 @@ export const StickyBottomCTA = memo(function FooterCTA({ onClick }: FooterCTAPro
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 10,
+          gap: 8,
           width: '100%',
           height: 52,
           padding: '0 20px',
@@ -51,7 +51,7 @@ export const StickyBottomCTA = memo(function FooterCTA({ onClick }: FooterCTAPro
         style={{
           marginTop: 8,
           fontSize: 11,
-          fontWeight: 500,
+          fontWeight: 600,
           color: 'var(--text-muted)',
           textAlign: 'center' as const,
           opacity: 0.6,

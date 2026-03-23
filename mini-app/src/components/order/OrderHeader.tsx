@@ -36,7 +36,7 @@ export function OrderHeader({ order, statusConfig, onBack }: OrderHeaderProps) {
                 style={{
                     width: 46,
                     height: 46,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     background: 'var(--bg-card-solid)',
                     border: '1px solid var(--border-default)',
                     display: 'flex',
@@ -79,7 +79,7 @@ export function OrderHeader({ order, statusConfig, onBack }: OrderHeaderProps) {
                 gap: 8,
                 padding: '10px 16px',
                 background: statusConfig.bgColor,
-                borderRadius: 14,
+                borderRadius: 12,
             }}>
                 <StatusIcon size={16} color={statusConfig.color} />
                 <span style={{

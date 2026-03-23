@@ -9,8 +9,8 @@ export const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'rgba(12, 12, 10, 0.6)',
-  backdropFilter: 'blur(16px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  backdropFilter: 'blur(16px) saturate(120%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(120%)',
   border: '1px solid rgba(255, 255, 255, 0.04)',
   boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
 }
@@ -19,8 +19,8 @@ export const glassGoldStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'rgba(12, 12, 10, 0.6)',
-  backdropFilter: 'blur(16px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  backdropFilter: 'blur(16px) saturate(120%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(120%)',
   border: '1px solid rgba(201, 162, 39, 0.08)',
   boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
 }

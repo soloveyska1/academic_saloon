@@ -200,7 +200,7 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
       transition={{ delay: 0.1 }}
       style={{
         padding: 24,
-        borderRadius: 24,
+        borderRadius: 12,
         background: `linear-gradient(135deg, ${info.bgColor} 0%, rgba(20, 20, 23, 0.9) 100%)`,
         border: `1px solid ${info.borderColor}`,
         boxShadow: `0 10px 40px -10px ${info.glowColor}`,
@@ -228,7 +228,7 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
             <div style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 12,
               background: info.bgColor,
               border: `1px solid ${info.borderColor}`,
               display: 'flex',
@@ -317,7 +317,7 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
               <info.action.icon size={16} />
@@ -384,9 +384,9 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
         <div style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 10,
-          padding: 14,
-          borderRadius: 14,
+          gap: 8,
+          padding: 16,
+          borderRadius: 12,
           background: 'var(--border-subtle)',
           border: '1px solid var(--border-default)',
         }}>

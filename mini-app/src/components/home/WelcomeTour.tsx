@@ -176,7 +176,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
             right: 16,
             padding: '10px 18px',
             minHeight: 44,
-            borderRadius: 20,
+            borderRadius: 12,
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-strong)',
             color: 'var(--text-muted)',
@@ -227,13 +227,13 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               style={{
                 width: 56,
                 height: 56,
-                borderRadius: 16,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
                 border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 20,
+                marginBottom: 24,
                 boxShadow: '0 8px 32px -8px var(--gold-glass-strong)',
               }}
             >
@@ -260,9 +260,9 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               fontSize: 13,
               color: 'var(--text-muted)',
               lineHeight: 1.55,
-              marginBottom: 20,
+              marginBottom: 24,
               maxWidth: 280,
-              fontWeight: 500,
+              fontWeight: 600,
             }}>
               {slide.subtitle}
             </p>
@@ -284,9 +284,9 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 10,
+                    gap: 8,
                     padding: '10px 14px',
-                    borderRadius: 14,
+                    borderRadius: 12,
                     background: 'var(--border-subtle)',
                     border: '1px solid var(--surface-hover)',
                   }}
@@ -301,7 +301,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                   <span style={{
                     fontFamily: "'Manrope', sans-serif",
                     fontSize: 13,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: 'var(--text-secondary)',
                     lineHeight: 1.5,
                   }}>
@@ -354,7 +354,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
           style={{
             width: '100%',
             padding: '15px 24px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: isLast
               ? 'var(--gold-metallic)'
               : 'var(--bg-glass)',

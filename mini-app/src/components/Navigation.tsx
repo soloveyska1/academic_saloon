@@ -147,10 +147,10 @@ export const Navigation = () => {
             width: 'min(100%, 382px)',
             maxWidth: '100%',
             padding: '10px 12px 12px',
-            borderRadius: 30,
+            borderRadius: 12,
             background: 'linear-gradient(180deg, rgba(17, 16, 15, 0.95) 0%, rgba(9, 9, 11, 0.98) 100%)',
-            backdropFilter: 'blur(26px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(26px) saturate(160%)',
+            backdropFilter: 'blur(16px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(120%)',
             border: '1px solid rgba(255,255,255,0.05)',
             boxShadow: '0 24px 54px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04)',
             pointerEvents: 'auto',
@@ -170,7 +170,7 @@ export const Navigation = () => {
               style={{
                 position: 'absolute',
                 top: -64,
-                right: 18,
+                right: 16,
                 width: 132,
                 height: 132,
                 borderRadius: '50%',
@@ -221,7 +221,7 @@ export const Navigation = () => {
                     width: '100%',
                     height: 72,
                     padding: '8px 4px 9px',
-                    borderRadius: 20,
+                    borderRadius: 12,
                     border: isActive
                       ? '1px solid rgba(212,175,55,0.14)'
                       : '1px solid transparent',
@@ -242,7 +242,7 @@ export const Navigation = () => {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        borderRadius: 20,
+                        borderRadius: 12,
                         background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%)',
                         pointerEvents: 'none',
                       }}

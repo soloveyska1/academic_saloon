@@ -430,7 +430,7 @@ export function OrderChatPage() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleBack}
-          className="w-9 h-9 rounded-[10px] bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer"
+          className="w-9 h-9 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer"
         >
           <ArrowLeft size={18} color="var(--text-main)" />
         </motion.button>
@@ -438,7 +438,7 @@ export function OrderChatPage() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="w-9 h-9 rounded-[10px] flex items-center justify-center shadow-gold-glow"
+          className="w-9 h-9 rounded-[8px] flex items-center justify-center shadow-gold-glow"
           style={{ background: 'var(--gold-metallic)' }}
         >
           <MessageCircle size={18} color="var(--text-on-gold)" />
@@ -514,7 +514,7 @@ export function OrderChatPage() {
                     className="text-[15px] leading-[1.4]"
                     style={{
                       padding: msg.file_type === 'photo' ? 4 : '12px 16px',
-                      borderRadius: 18,
+                      borderRadius: 12,
                       borderTopRightRadius: isMe ? 4 : 18,
                       borderTopLeftRadius: !isMe ? 4 : 18,
                       background: isMe
@@ -532,7 +532,7 @@ export function OrderChatPage() {
                       <img
                         src={msg.file_url}
                         alt={msg.file_name || 'Фото'}
-                        className="max-w-full max-h-[300px] rounded-[14px] block"
+                        className="max-w-full max-h-[300px] rounded-[12px] block"
                       />
                     )}
 
@@ -578,7 +578,7 @@ export function OrderChatPage() {
                       >
                         <FileIcon size={24} color={isMe ? 'var(--text-on-gold)' : 'var(--gold-400)'} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                          <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
                             {msg.file_name || 'Файл'}
                           </div>
                           <div className="text-[11px] opacity-70">
@@ -613,7 +613,7 @@ export function OrderChatPage() {
             <div className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center">
               <span className="text-[14px] font-bold text-gold-400">С</span>
             </div>
-            <div className="px-4 py-3 rounded-[18px] rounded-tl bg-white/5 border border-white/10">
+            <div className="px-4 py-3 rounded-[12px] rounded-tl bg-white/5 border border-white/10">
               <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <motion.div

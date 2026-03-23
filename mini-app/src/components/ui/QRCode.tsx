@@ -171,7 +171,7 @@ export function QRCodeModal({
       accentColor="var(--gold-400)"
     >
       <div style={{ padding: '24px 22px 22px', textAlign: 'center' }}>
-        <div style={{ marginTop: 6, marginBottom: 20 }}>
+        <div style={{ marginTop: 8, marginBottom: 24 }}>
           <div
             style={{
               fontSize: 10,
@@ -208,9 +208,9 @@ export function QRCodeModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 18,
-            padding: 18,
-            borderRadius: 26,
+            marginBottom: 16,
+            padding: 16,
+            borderRadius: 12,
             background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(16,14,11,0.58) 100%)',
             border: '1px solid rgba(255,255,255,0.05)',
             overflow: 'hidden',
@@ -231,7 +231,7 @@ export function QRCodeModal({
           />
 
           {assetState.loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
               <Loader2 size={28} color="var(--gold-400)" style={{ animation: 'spin 1s linear infinite' }} />
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Готовим QR-код…</span>
             </div>
@@ -255,7 +255,7 @@ export function QRCodeModal({
                 width: '100%',
                 maxWidth: 280,
                 padding: '22px 20px',
-                borderRadius: 20,
+                borderRadius: 12,
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 color: 'var(--text-secondary)',
@@ -271,8 +271,8 @@ export function QRCodeModal({
         <div
           style={{
             padding: '14px 16px',
-            marginBottom: 18,
-            borderRadius: 18,
+            marginBottom: 16,
+            borderRadius: 12,
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.05)',
             textAlign: 'left',
@@ -285,7 +285,7 @@ export function QRCodeModal({
               letterSpacing: '0.12em',
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
             Код приглашения
@@ -305,14 +305,14 @@ export function QRCodeModal({
           </code>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 8 }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleDownload}
             disabled={downloading || !visibleImageUrl}
             style={{
               minHeight: 50,
-              borderRadius: 16,
+              borderRadius: 12,
               border: '1px solid rgba(255,255,255,0.06)',
               background: 'rgba(255,255,255,0.04)',
               color: downloaded ? 'var(--success-text)' : 'var(--text-primary)',
@@ -322,7 +322,7 @@ export function QRCodeModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
+              gap: 8,
               opacity: visibleImageUrl ? 1 : 0.5,
             }}
           >
@@ -336,7 +336,7 @@ export function QRCodeModal({
             disabled={sharing || !value}
             style={{
               minHeight: 50,
-              borderRadius: 16,
+              borderRadius: 12,
               border: 'none',
               background: 'var(--gold-metallic)',
               color: 'var(--text-on-gold)',
@@ -346,7 +346,7 @@ export function QRCodeModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
+              gap: 8,
               opacity: value ? 1 : 0.5,
             }}
           >
@@ -362,7 +362,7 @@ export function QRCodeModal({
           style={{
             width: '100%',
             minHeight: 50,
-            borderRadius: 16,
+            borderRadius: 12,
             border: '1px solid rgba(212,175,55,0.16)',
             background: 'rgba(212,175,55,0.08)',
             color: 'var(--gold-400)',
@@ -372,7 +372,7 @@ export function QRCodeModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: 8,
             opacity: value ? 1 : 0.5,
           }}
         >

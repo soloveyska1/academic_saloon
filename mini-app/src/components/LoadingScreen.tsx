@@ -42,7 +42,7 @@ export function LoadingScreen() {
       />
 
       {/* Seal loader */}
-      <div style={{ position: 'relative', width: 120, height: 120, marginBottom: 36 }}>
+      <div style={{ position: 'relative', width: 120, height: 120, marginBottom: 32 }}>
         {/* Outer breathing ring */}
         <motion.div
           animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.5, 0.3] }}

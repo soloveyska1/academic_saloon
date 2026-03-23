@@ -46,7 +46,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
         style={{
           width: 36,
           height: 36,
-          borderRadius: 10,
+          borderRadius: 8,
           background: enabled
             ? `linear-gradient(135deg, ${color}, ${color}aa)`
             : 'var(--border-default)',
@@ -101,7 +101,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
           style={{
             width: 20,
             height: 20,
-            borderRadius: 10,
+            borderRadius: 8,
             background: enabled ? 'var(--bg-void)' : 'var(--text-muted)',
           }}
         />
@@ -197,8 +197,8 @@ export function AdminPanel() {
                 width: 320,
                 maxWidth: '85vw',
                 background: 'linear-gradient(180deg, rgba(20, 20, 23, 0.98) 0%, rgba(10, 10, 12, 0.99) 100%)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 borderLeft: '1px solid var(--border-gold)',
                 overflow: 'hidden',
                 boxShadow: `
@@ -219,7 +219,7 @@ export function AdminPanel() {
                   background: 'rgba(212, 175, 55, 0.05)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div
                     style={{
                       width: 32,
@@ -282,7 +282,7 @@ export function AdminPanel() {
                     padding: 16,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 10,
+                    gap: 8,
                   }}
                 >
                   <ToggleItem
@@ -448,7 +448,7 @@ export function AdminPanel() {
                       padding: 12,
                       background: 'rgba(168, 85, 247, 0.05)',
                       border: '1px solid rgba(168, 85, 247, 0.2)',
-                      borderRadius: 10,
+                      borderRadius: 8,
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 10,
                       color: 'var(--text-secondary)',

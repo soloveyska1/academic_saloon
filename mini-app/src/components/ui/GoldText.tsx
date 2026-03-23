@@ -124,7 +124,7 @@ export function GoldBadge({ children, className = '' }: GoldBadgeProps) {
         position: 'relative',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         padding: '5px 14px',
         borderRadius: 9999,
         background: 'transparent',
@@ -261,7 +261,7 @@ export function LiquidGoldButton({
         background: LIQUID_GOLD_GRADIENT,
         backgroundSize: '200% 200%',
         border: 'none',
-        borderRadius: 16,
+        borderRadius: 12,
         cursor: 'pointer',
         overflow: 'hidden',
         boxShadow: `

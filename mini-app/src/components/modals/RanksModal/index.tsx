@@ -76,7 +76,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             style={{
               width: 84,
               height: 84,
-              borderRadius: 26,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
               border: '1.5px solid var(--gold-glass-medium)',
               display: 'flex',
@@ -99,12 +99,12 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             transition={{ delay: 0.2 }}
             style={{
               fontSize: 26,
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: 1.15,
               letterSpacing: '-0.025em',
               fontFamily: "'Manrope', sans-serif",
               color: 'var(--gold-200)',
-              marginBottom: 10,
+              marginBottom: 8,
             }}
           >
             Ваш путь в Салоне
@@ -117,7 +117,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             style={{
               fontSize: 14,
               color: 'var(--text-secondary)',
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             Сейчас вы —{' '}
@@ -131,7 +131,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
         </m.div>
 
         {/* ═══════ RANK CARDS ═══════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {RANKS.map((rank, index) => {
             const Icon = rank.icon
             const isActive = index === currentRankIndex
@@ -151,7 +151,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                 }}
                 style={{
                   padding: isActive ? '20px 18px' : '16px 18px',
-                  borderRadius: 18,
+                  borderRadius: 12,
                   background: isActive
                     ? `linear-gradient(135deg, ${rank.color}12 0%, ${rank.color}04 100%)`
                     : isPassed
@@ -173,8 +173,8 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: 20,
-                      right: 20,
+                      left: 24,
+                      right: 24,
                       height: 1.5,
                       background: `linear-gradient(90deg, transparent, ${rank.color}40, transparent)`,
                     }}
@@ -254,7 +254,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                       </div>
                       <div style={{
                         fontSize: isActive ? 20 : 16,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         color: isLocked
                           ? 'var(--text-muted)'
                           : isActive
@@ -285,7 +285,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                       transition={{ delay: 0.4 + index * 0.08, type: 'spring', damping: 12 }}
                       style={{
                         padding: '5px 10px',
-                        borderRadius: 100,
+                        borderRadius: 12,
                         background: 'var(--gold-glass-subtle)',
                         border: '1px solid var(--border-gold)',
                       }}
@@ -332,7 +332,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 6,
+                      gap: 8,
                     }}>
                       {flavor.perks.map(perk => (
                         <div
@@ -343,7 +343,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                             gap: 8,
                             fontSize: 13,
                             color: 'var(--text-secondary)',
-                            fontWeight: 500,
+                            fontWeight: 600,
                           }}
                         >
                           <div style={{
@@ -371,9 +371,9 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
             style={{
-              marginTop: 20,
+              marginTop: 24,
               padding: '18px 18px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'var(--gold-glass-subtle)',
               border: '1px solid var(--gold-glass-subtle)',
             }}
@@ -403,7 +403,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             {/* Progress bar */}
             <div style={{
               height: 6,
-              borderRadius: 99,
+              borderRadius: 12,
               background: 'var(--surface-hover)',
               overflow: 'hidden',
               marginBottom: 8,
@@ -414,7 +414,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                 transition={{ delay: 0.7, duration: 0.8, ease: 'easeOut' }}
                 style={{
                   height: '100%',
-                  borderRadius: 99,
+                  borderRadius: 12,
                   background: 'linear-gradient(90deg, var(--gold-glass-strong), var(--gold-400))',
                 }}
               />
@@ -423,7 +423,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             <div style={{
               fontSize: 12,
               color: 'var(--text-muted)',
-              fontWeight: 500,
+              fontWeight: 600,
             }}>
               {progress}% пройдено — кэшбэк вырастет до {nextRank.cashback}%
             </div>
@@ -437,9 +437,9 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6, type: 'spring' }}
             style={{
-              marginTop: 20,
+              marginTop: 24,
               padding: '22px 18px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, var(--gold-glass-subtle), transparent)',
               border: '1px solid var(--gold-glass-medium)',
               textAlign: 'center',
@@ -449,7 +449,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               fontSize: 16,
               fontWeight: 700,
               color: 'var(--gold-200)',
-              marginBottom: 6,
+              marginBottom: 8,
             }}>
               Вы на вершине
             </div>
@@ -469,7 +469,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            style={{ marginTop: 20 }}
+            style={{ marginTop: 24 }}
           >
             <m.button
               type="button"
@@ -478,7 +478,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               style={{
                 width: '100%',
                 padding: '16px 20px',
-                borderRadius: 16,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
                 border: '1px solid var(--border-gold)',
                 cursor: 'pointer',

@@ -162,7 +162,7 @@ export function OtherComposer({
       <div
         style={{
           display: 'flex',
-          gap: 6,
+          gap: 8,
           flexWrap: 'wrap',
         }}
       >
@@ -203,7 +203,7 @@ export function OtherComposer({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
-          borderRadius: 14,
+          borderRadius: 12,
           border: '1px solid var(--border-strong)',
           background: 'var(--border-subtle)',
           padding: '10px 14px',
@@ -215,7 +215,7 @@ export function OtherComposer({
             fontSize: 11,
             fontWeight: 600,
             color: 'var(--text-muted)',
-            marginBottom: 6,
+            marginBottom: 8,
             letterSpacing: '0.03em',
           }}
         >
@@ -234,7 +234,7 @@ export function OtherComposer({
             width: '100%',
             fontSize: 16,
             lineHeight: 1.4,
-            fontWeight: 500,
+            fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
             color: 'var(--text-main)',
             background: 'transparent',
@@ -251,7 +251,7 @@ export function OtherComposer({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         style={{
-          borderRadius: 18,
+          borderRadius: 12,
           border: '1px solid var(--border-strong)',
           background: 'var(--border-subtle)',
           overflow: 'hidden',
@@ -275,7 +275,7 @@ export function OtherComposer({
               maxHeight: '40vh',
               fontSize: 16,
               lineHeight: 1.55,
-              fontWeight: 500,
+              fontWeight: 600,
               fontFamily: "'Manrope', sans-serif",
               color: 'var(--text-main)',
               background: 'transparent',
@@ -297,7 +297,7 @@ export function OtherComposer({
               padding: '8px 14px',
               display: 'flex',
               flexWrap: 'wrap',
-              gap: 6,
+              gap: 8,
             }}
           >
             {files.map((file, i) => (
@@ -327,7 +327,7 @@ export function OtherComposer({
             style={{
               margin: '0 12px 8px',
               padding: '8px 10px',
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'rgba(245, 158, 11, 0.08)',
               border: '1px solid rgba(245, 158, 11, 0.18)',
               display: 'flex',
@@ -450,7 +450,7 @@ function FileChip({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         padding: '5px 8px',
         borderRadius: 8,
         background: 'var(--gold-glass-subtle)',

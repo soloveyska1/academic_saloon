@@ -95,7 +95,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <Star size={11} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}>4.8</span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>· 2 400+</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>· 2 400+</span>
         </div>
       </div>
 
@@ -111,8 +111,8 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               padding: 16,
               borderRadius: 'var(--radius-md)',
               background: 'rgba(12, 12, 10, 0.6)',
-              backdropFilter: 'blur(16px) saturate(140%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+              backdropFilter: 'blur(16px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(120%)',
               border: '1px solid rgba(255, 255, 255, 0.04)',
             }}
           >
@@ -137,10 +137,10 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             <p
               style={{
                 fontSize: 13,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: 'var(--text-secondary)',
                 lineHeight: 1.55,
-                marginBottom: 10,
+                marginBottom: 8,
               }}
             >
               «{t.text}»

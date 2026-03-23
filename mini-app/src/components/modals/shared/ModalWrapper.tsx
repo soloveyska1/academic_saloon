@@ -165,7 +165,7 @@ export function ModalWrapper({
     display: 'flex',
     flexDirection: 'column',
     background: 'linear-gradient(180deg, rgba(24, 20, 13, 0.98) 0%, rgba(12, 12, 13, 0.98) 26%, rgba(8, 8, 10, 1) 100%)',
-    borderRadius: '30px 30px 0 0',
+    borderRadius: '12px 12px 0 0',
     border: '1px solid rgba(255,255,255,0.05)',
     boxShadow: '0 -28px 80px rgba(0,0,0,0.48)',
     zIndex: 2001,
@@ -190,8 +190,8 @@ export function ModalWrapper({
                 position: 'fixed',
                 inset: 0,
                 background: 'rgba(6, 6, 8, 0.78)',
-                backdropFilter: 'blur(18px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+                backdropFilter: 'blur(16px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
                 zIndex: 2000,
               }}
               aria-hidden="true"
@@ -285,7 +285,7 @@ export function ModalWrapper({
                   right: 16,
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 12,
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex',
@@ -357,7 +357,7 @@ export function LuxuryCard({
     position: 'relative',
     background: gradient,
     border: `1px solid ${borderColor}`,
-    borderRadius: 20,
+    borderRadius: 12,
     overflow: 'hidden',
     cursor: onClick ? 'pointer' : undefined,
     boxShadow: glowColor && isActive

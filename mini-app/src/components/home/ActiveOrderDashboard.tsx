@@ -220,7 +220,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 18 }}
+      style={{ marginBottom: 16 }}
     >
       <motion.button
         type="button"
@@ -234,7 +234,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           display: 'block',
           width: '100%',
           padding: '24px 20px 20px',
-          borderRadius: 30,
+          borderRadius: 12,
           background: needsAction
             ? 'linear-gradient(160deg, rgba(35, 28, 14, 0.98) 0%, rgba(16, 16, 16, 0.96) 46%, rgba(8, 8, 10, 1) 100%)'
             : 'linear-gradient(160deg, rgba(24, 21, 14, 0.96) 0%, rgba(14, 14, 15, 0.98) 48%, rgba(8, 8, 10, 1) 100%)',
@@ -277,7 +277,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             aria-hidden="true"
             style={{
               position: 'absolute',
-              right: 6,
+              right: 8,
               top: -8,
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               fontSize: 110,
@@ -297,7 +297,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 12,
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           >
             <div style={{ minWidth: 0 }}>
@@ -321,7 +321,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   lineHeight: 0.96,
                   letterSpacing: '-0.05em',
                   color: 'var(--text-primary)',
-                  marginBottom: 10,
+                  marginBottom: 8,
                 }}
               >
                 {headline}
@@ -330,7 +330,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               <div
                 style={{
                   fontSize: 14,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   lineHeight: 1.45,
                   color: 'var(--text-secondary)',
                   maxWidth: 320,
@@ -396,7 +396,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               padding: '16px 0 18px',
               borderTop: '1px solid rgba(255,255,255,0.06)',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           >
             <div
@@ -478,7 +478,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
                       color: 'rgba(255,255,255,0.56)',
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
                     {item.label}
@@ -511,7 +511,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                marginBottom: 10,
+                marginBottom: 8,
               }}
             >
               <div
@@ -619,7 +619,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               style={{
                 width: 46,
                 height: 46,
-                borderRadius: 18,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
                 color: 'var(--text-on-gold)',
                 display: 'flex',

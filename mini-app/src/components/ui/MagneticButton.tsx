@@ -186,7 +186,7 @@ export function MagneticButton({
             borderRadius: 'inherit',
             background: 'radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 70%)',
             opacity: glowIntensity,
-            filter: 'blur(20px)',
+            filter: 'blur(16px)',
             pointerEvents: 'none',
           }}
         />
@@ -257,7 +257,7 @@ export function PremiumMagneticButton({
       style={{
         width: '100%',
         padding: '20px 26px',
-        borderRadius: 18,
+        borderRadius: 12,
         background: config.background,
         backgroundSize: '200% 200%',
         boxShadow: config.shadow,
@@ -294,7 +294,7 @@ export function PremiumMagneticButton({
           <div
             style={{
               fontSize: 16,
-              fontWeight: 800,
+              fontWeight: 700,
               color: config.color,
               fontFamily: 'var(--font-serif)',
               letterSpacing: '0.1em',

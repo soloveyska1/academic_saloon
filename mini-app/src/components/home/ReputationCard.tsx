@@ -26,8 +26,8 @@ export const ReputationCard = memo(function ReputationCard({
     position: 'relative',
     overflow: 'hidden',
     background: 'linear-gradient(135deg, rgba(201, 162, 39, 0.06) 0%, rgba(12, 12, 10, 0.6) 40%, rgba(201,162,39,0.04) 100%)',
-    backdropFilter: 'blur(16px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    backdropFilter: 'blur(16px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: '1px solid rgba(255,255,255,0.04)',
   }
 
@@ -50,8 +50,8 @@ export const ReputationCard = memo(function ReputationCard({
       transition={{ delay: 0.32 }}
       style={{
         ...glassGoldStyle,
-        borderRadius: 16,
-        padding: 20,
+        borderRadius: 12,
+        padding: 24,
         marginBottom: 16,
         transition: 'transform 0.2s ease-out',
       }}
@@ -60,7 +60,7 @@ export const ReputationCard = memo(function ReputationCard({
         {/* Header */}
         <div
           aria-hidden="true"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
@@ -129,7 +129,7 @@ export const ReputationCard = memo(function ReputationCard({
           style={{
             fontSize: 12,
             color: 'var(--text-secondary)',
-            marginBottom: 14,
+            marginBottom: 12,
             lineHeight: 1.5,
           }}
         >
@@ -166,7 +166,7 @@ export const ReputationCard = memo(function ReputationCard({
               padding: '12px 14px',
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 16,
+              borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -207,11 +207,11 @@ export const ReputationCard = memo(function ReputationCard({
               padding: '12px 16px',
               background: 'var(--gold-glass-medium)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 16,
+              borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
             }}
           >
             <Send size={14} color="var(--gold-400)" strokeWidth={1.5} />
@@ -233,7 +233,7 @@ export const ReputationCard = memo(function ReputationCard({
               height: 46,
               background: 'var(--gold-glass-medium)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 16,
+              borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',

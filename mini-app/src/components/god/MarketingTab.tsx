@@ -186,13 +186,13 @@ const PromosSection = memo(function PromosSection() {
               {p.new_users_only && <span className={s.tagBlue}>Новые</span>}
             </div>
 
-            <div className={`${s.flexRow} ${s.gap8}`} style={{ marginTop: 6 }}>
+            <div className={`${s.flexRow} ${s.gap8}`} style={{ marginTop: 8 }}>
               <span className={s.mutedSmall}>Исп: {p.current_uses}{p.max_uses ? `/${p.max_uses}` : ''}</span>
               {p.total_savings > 0 && <span className={s.mutedSmall}>Сэкон: {formatMoney(p.total_savings)}</span>}
               {p.valid_until && <span className={s.mutedSmall}>до {formatDateTime(p.valid_until)}</span>}
             </div>
 
-            <div className={`${s.flexRow} ${s.gap4}`} style={{ marginTop: 6 }}>
+            <div className={`${s.flexRow} ${s.gap4}`} style={{ marginTop: 8 }}>
               <button type="button" className={s.ghostBtn} onClick={() => handleToggle(p.id)}>
                 {p.is_active ? <ToggleRight size={16} color="var(--success-text)" /> : <ToggleLeft size={16} color="#6b7280" />}
               </button>

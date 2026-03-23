@@ -391,17 +391,17 @@ const OrderAppBar = memo(function OrderAppBar({
     <>
       {/* Main AppBar — minimal, just order number */}
       <div
-        className="flex items-center gap-3 px-4 py-[14px] sticky top-0 z-[100] backdrop-blur-[18px]"
+        className="flex items-center gap-3 px-4 py-[14px] sticky top-0 z-[100] backdrop-blur-[16px]"
         style={{
           background: 'var(--bg-void)',
-          WebkitBackdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(16px)',
         }}
       >
         {/* Back Button */}
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={onBack}
-          className="w-10 h-10 rounded-[14px] flex items-center justify-center cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
           style={{ background: 'transparent', border: 'none' }}
         >
           <ArrowLeft size={20} color="rgba(255,255,255,0.5)" />
@@ -418,7 +418,7 @@ const OrderAppBar = memo(function OrderAppBar({
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={() => setMenuOpen(true)}
-          className="w-10 h-10 rounded-[14px] flex items-center justify-center cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
           style={{ background: 'transparent', border: 'none' }}
         >
           <MoreHorizontal size={20} color="rgba(255,255,255,0.4)" />
@@ -538,7 +538,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         style={{
           position: 'relative',
           padding: '28px 24px 24px',
-          borderRadius: 24,
+          borderRadius: 12,
           background: 'linear-gradient(165deg, rgba(212,175,55,0.04) 0%, rgba(20,20,23,0.6) 35%, rgba(20,20,23,0.6) 100%)',
           border: '1px solid rgba(255,255,255,0.06)',
           overflow: 'hidden',
@@ -558,7 +558,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         />
 
         {/* ─── Row 1: Status pill + Work type ─── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -568,7 +568,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               alignItems: 'center',
               gap: 5,
               padding: '5px 12px',
-              borderRadius: 100,
+              borderRadius: 12,
               background: statusConfig.bgColor,
               border: `1px solid ${statusConfig.borderColor}`,
             }}
@@ -613,7 +613,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           <div
             style={{
               fontSize: 26,
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: 1.15,
               color: 'rgba(255,255,255,0.92)',
               letterSpacing: '-0.02em',
@@ -623,7 +623,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             {headline}
           </div>
           {subject && subject !== headline && (
-            <div style={{ marginTop: 6, fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>
+            <div style={{ marginTop: 8, fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>
               {subject}
             </div>
           )}
@@ -667,8 +667,8 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 
         {/* ─── Row 3 alt: Price for non-payment statuses ─── */}
         {!isAwaitingPayment && totalPrice > 0 && (
-          <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+          <div style={{ marginTop: 24, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
               {hasPaymentRecorded ? 'Общая стоимость' : 'Стоимость'}
             </span>
             <span
@@ -693,7 +693,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             style={{
               marginTop: 16,
               padding: '16px 16px 14px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, rgba(255,255,255,0.02) 100%)',
               border: '1px solid rgba(212,175,55,0.10)',
             }}
@@ -703,7 +703,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 10,
+                gap: 8,
                 marginBottom: 12,
               }}
             >
@@ -757,7 +757,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               style={{
                 display: 'grid',
                 gridTemplateColumns: hasPartialPayment ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
-                gap: 10,
+                gap: 8,
               }}
             >
               {[
@@ -775,7 +775,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                   key={item.label}
                   style={{
                     padding: '12px 12px 11px',
-                    borderRadius: 14,
+                    borderRadius: 12,
                     background: item.accent ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
                     border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
                     minWidth: 0,
@@ -788,7 +788,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
                       color: 'rgba(255,255,255,0.35)',
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
                     {item.label}
@@ -821,7 +821,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Clock size={14} color={urgencyColor} />
-              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
                 {paymentExpired ? 'Срок оплаты истёк' : 'Время на оплату'}
               </span>
               {!paymentExpired && (
@@ -856,7 +856,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         {currentStep >= 0 && !['cancelled', 'rejected'].includes(order.status) && (
           <div
             style={{
-              marginTop: 20,
+              marginTop: 24,
               paddingTop: 16,
               borderTop: '1px solid rgba(255,255,255,0.04)',
               display: 'flex',
@@ -866,9 +866,9 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           >
             {/* Deadline */}
             {order.deadline && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={13} color="rgba(255,255,255,0.25)" />
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>
                   Срок: {formatOrderDeadlineRu(order.deadline)}
                 </span>
               </div>
@@ -943,7 +943,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
                   alignItems: 'center',
@@ -953,7 +953,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               >
                 <g.icon size={15} color="rgba(212,175,55,0.45)" />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>
                 {g.text}
               </span>
             </div>
@@ -1139,7 +1139,7 @@ const StickyActionBar = memo(function StickyActionBar({
           {revisionCount > 0 && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 6, marginBottom: 8,
+              gap: 8, marginBottom: 8,
             }}>
               <Edit3 size={12} color="rgba(212,175,55,0.5)" />
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
@@ -1154,7 +1154,7 @@ const StickyActionBar = memo(function StickyActionBar({
           {/* Half-payment notice */}
           {needsSecondPayment && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
+              display: 'flex', alignItems: 'center', gap: 8,
               padding: '8px 12px', borderRadius: 8, marginBottom: 8,
               background: 'rgba(212,175,55,0.06)',
               border: '1px solid rgba(212,175,55,0.1)',
@@ -1179,11 +1179,11 @@ const StickyActionBar = memo(function StickyActionBar({
                 flex: '0 0 auto',
                 height: 50,
                 padding: '0 16px',
-                borderRadius: 14,
+                borderRadius: 12,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: 8,
                 cursor: 'pointer',
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -1203,7 +1203,7 @@ const StickyActionBar = memo(function StickyActionBar({
               style={{
                 flex: 1,
                 height: 50,
-                borderRadius: 14,
+                borderRadius: 12,
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -1419,7 +1419,7 @@ const PaymentSheet = memo(function PaymentSheet({
           }
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {options?.toggleVisibility && (
           <motion.div
             whileTap={{ scale: 0.85 }}
@@ -1532,11 +1532,11 @@ const PaymentSheet = memo(function PaymentSheet({
                 {isSecondPayment ? (
                   <div style={{
                     padding: '16px 18px',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
                     border: '1.5px solid rgba(212,175,55,0.28)',
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: 8 }}>
                       Финальная доплата
                     </div>
                     <div style={{
@@ -1544,7 +1544,7 @@ const PaymentSheet = memo(function PaymentSheet({
                       fontWeight: 700,
                       fontFamily: "'JetBrains Mono', monospace",
                       color: '#E8D5A3',
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}>
                       {formatPrice(remainingAmount)} ₽
                     </div>
@@ -1561,7 +1561,7 @@ const PaymentSheet = memo(function PaymentSheet({
                       style={{
                         flex: 1,
                         padding: '14px 16px',
-                        borderRadius: 16,
+                        borderRadius: 12,
                         cursor: 'pointer',
                         textAlign: 'left' as const,
                         background: paymentScheme === 'full'
@@ -1592,7 +1592,7 @@ const PaymentSheet = memo(function PaymentSheet({
                       style={{
                         flex: 1,
                         padding: '14px 16px',
-                        borderRadius: 16,
+                        borderRadius: 12,
                         cursor: 'pointer',
                         textAlign: 'left' as const,
                         background: paymentScheme === 'half'
@@ -1630,7 +1630,7 @@ const PaymentSheet = memo(function PaymentSheet({
                   Способ оплаты
                 </div>
 
-                <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(255,255,255,0.03)' }}>
                   {(['online', 'card', 'sbp'] as PaymentMethod[]).map((method) => {
                     const isActive = paymentMethod === method
                     const label = method === 'online' ? 'Онлайн' : method === 'card' ? 'Карта' : 'СБП'
@@ -1643,12 +1643,12 @@ const PaymentSheet = memo(function PaymentSheet({
                         style={{
                           flex: 1,
                           padding: '10px 8px',
-                          borderRadius: 10,
+                          borderRadius: 8,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: 6,
+                          gap: 8,
                           background: isActive ? 'rgba(212,175,55,0.1)' : 'transparent',
                           border: isActive ? '1px solid rgba(212,175,55,0.2)' : '1px solid transparent',
                           transition: 'all 0.2s',
@@ -1674,13 +1674,13 @@ const PaymentSheet = memo(function PaymentSheet({
                   /* ── Online: minimal, just amount + security note ── */
                   <div style={{
                     padding: '20px',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.06)',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <ShieldCheck size={18} color="rgba(212,175,55,0.5)" />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>
                         Безопасная оплата через ЮKassa
                       </span>
                     </div>
@@ -1701,7 +1701,7 @@ const PaymentSheet = memo(function PaymentSheet({
                 ) : paymentMethod === 'card' ? (
                   /* ── Card: grouped fields ── */
                   <div style={{
-                    borderRadius: 16,
+                    borderRadius: 12,
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.06)',
                     padding: '0 16px',
@@ -1722,7 +1722,7 @@ const PaymentSheet = memo(function PaymentSheet({
                 ) : (
                   /* ── SBP: grouped fields ── */
                   <div style={{
-                    borderRadius: 16,
+                    borderRadius: 12,
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.06)',
                     padding: '0 16px',
@@ -1804,7 +1804,7 @@ const PaymentSheet = memo(function PaymentSheet({
                 style={{
                   width: '100%',
                   height: 52,
-                  borderRadius: 16,
+                  borderRadius: 12,
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
@@ -1981,7 +1981,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             className="w-full max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col"
             style={{
               background: DS.colors.bgSurface,
-              borderRadius: '20px 20px 0 0',
+              borderRadius: '12px 12px 0 0',
             }}
           >
             {/* ─── Header ─── */}
@@ -2004,7 +2004,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
                 style={{
-                  width: 32, height: 32, borderRadius: 10,
+                  width: 32, height: 32, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', background: 'transparent', border: 'none',
                 }}
@@ -2017,12 +2017,12 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             <div className="flex-1 overflow-y-auto" style={{ padding: '14px 20px' }}>
               {/* Checklist — single grouped surface */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.01em', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.01em', marginBottom: 8 }}>
                   Проверьте перед отправкой
                 </div>
 
                 <div style={{
-                  borderRadius: 14,
+                  borderRadius: 12,
                   overflow: 'hidden',
                   background: 'rgba(255,255,255,0.025)',
                   border: '1px solid rgba(255,255,255,0.06)',
@@ -2039,7 +2039,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 10,
+                        gap: 8,
                         textAlign: 'left' as const,
                         background: item.checked ? 'rgba(34,197,94,0.05)' : 'transparent',
                         border: 'none',
@@ -2049,7 +2049,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                     >
                       {/* Rounded-square checkbox */}
                       <div style={{
-                        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: item.checked ? 'rgba(34,197,94,0.9)' : 'transparent',
                         border: `1.5px solid ${item.checked ? 'rgba(34,197,94,0.9)' : 'rgba(255,255,255,0.18)'}`,
@@ -2067,7 +2067,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       </div>
                       <span style={{
                         fontSize: 13,
-                        fontWeight: 500,
+                        fontWeight: 600,
                         color: item.checked ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
                         flex: 1,
                         transition: 'color 0.2s',
@@ -2081,7 +2081,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
               {/* Screenshot Upload — visually demoted */}
               <div style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
                   Скриншот оплаты{' '}
                   <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>(необязательно)</span>
                 </div>
@@ -2099,7 +2099,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       onClick={removeScreenshot}
                       style={{
                         position: 'absolute', top: 8, right: 8,
-                        width: 28, height: 28, borderRadius: 7,
+                        width: 28, height: 28, borderRadius: 8,
                         background: 'rgba(0,0,0,0.7)', border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer',
@@ -2111,7 +2111,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       position: 'absolute', bottom: 0, left: 0, right: 0,
                       padding: '6px 10px',
                       background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
-                      display: 'flex', alignItems: 'center', gap: 6,
+                      display: 'flex', alignItems: 'center', gap: 8,
                     }}>
                       <FileImage size={11} color="rgba(34,197,94,0.7)" />
                       <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
@@ -2123,7 +2123,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                   <label style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '10px 14px',
-                    borderRadius: 10,
+                    borderRadius: 8,
                     cursor: 'pointer',
                     background: 'transparent',
                     border: '1px dashed rgba(255,255,255,0.08)',
@@ -2136,7 +2136,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                     />
                     <Upload size={16} color="rgba(255,255,255,0.2)" />
                     <div>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
                         Загрузить скриншот
                       </div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', marginTop: 1 }}>
@@ -2157,11 +2157,11 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             }}>
               {/* Timing note */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
+                display: 'flex', alignItems: 'center', gap: 8,
                 padding: '8px 12px', borderRadius: 8,
                 background: 'rgba(212,175,55,0.04)',
                 border: '1px solid rgba(212,175,55,0.06)',
-                marginBottom: 10,
+                marginBottom: 8,
               }}>
                 <Timer size={13} color="rgba(212,175,55,0.45)" />
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
@@ -2178,7 +2178,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 style={{
                   width: '100%',
                   height: 50,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   border: allChecked ? 'none' : `1px solid rgba(212,175,55,${0.06 + 0.04 * checkedCount})`,
                   display: 'flex',
                   alignItems: 'center',
@@ -2319,7 +2319,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
             className="w-full max-w-[480px] overflow-hidden flex flex-col"
             style={{
               background: DS.colors.bgSurface,
-              borderRadius: '20px 20px 0 0',
+              borderRadius: '12px 12px 0 0',
             }}
           >
             {/* Header */}
@@ -2340,7 +2340,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
                 style={{
-                  width: 32, height: 32, borderRadius: 10,
+                  width: 32, height: 32, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', background: 'transparent', border: 'none',
                 }}
@@ -2353,7 +2353,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
             <div style={{ padding: '16px 20px' }}>
               {/* Revision counter visual */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16,
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
               }}>
                 {[1, 2, 3].map((n) => (
                   <div
@@ -2377,7 +2377,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
               {isPaid && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+                  padding: '10px 14px', borderRadius: 8, marginBottom: 16,
                   background: 'rgba(239,68,68,0.08)',
                   border: '1px solid rgba(239,68,68,0.15)',
                 }}>
@@ -2390,7 +2390,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
 
               {/* Text input */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
                   Опишите, что нужно исправить
                 </div>
                 <textarea
@@ -2432,7 +2432,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                 style={{
                   width: '100%',
                   height: 50,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   border: message.trim() ? 'none' : '1px solid rgba(255,255,255,0.06)',
                   display: 'flex',
                   alignItems: 'center',
@@ -2488,14 +2488,14 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
       style={{
         margin: '0 20px 16px',
         padding: 16,
-        borderRadius: 16,
+        borderRadius: 12,
         background: 'linear-gradient(180deg, rgba(212,175,55,0.05) 0%, rgba(255,255,255,0.02) 100%)',
         border: '1px solid rgba(212,175,55,0.10)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
           background: 'rgba(212,175,55,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -2562,7 +2562,7 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', borderRadius: 10,
+        padding: '8px 12px', borderRadius: 8,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.04)',
       }}>
@@ -2711,7 +2711,7 @@ const FilesSection = memo(function FilesSection({
   return (
     <div style={{ padding: '0 20px', marginBottom: 16 }}>
       {/* Section Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <FileText size={16} color="rgba(212,175,55,0.5)" />
           <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
@@ -2719,7 +2719,7 @@ const FilesSection = memo(function FilesSection({
           </span>
           {hasFiles && (
             <span style={{
-              padding: '2px 8px', borderRadius: 6,
+              padding: '2px 8px', borderRadius: 4,
               background: 'rgba(212,175,55,0.1)',
               fontSize: 11, fontWeight: 600, color: '#E8D5A3',
             }}>
@@ -2734,7 +2734,7 @@ const FilesSection = memo(function FilesSection({
             onClick={() => { haptic?.('light'); onDownloadAll() }}
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
-              padding: '6px 12px', borderRadius: 10,
+              padding: '6px 12px', borderRadius: 8,
               background: 'transparent', cursor: 'pointer',
               border: '1px solid rgba(212,175,55,0.15)',
             }}
@@ -2747,7 +2747,7 @@ const FilesSection = memo(function FilesSection({
 
       {hasFiles ? (
         /* File rows */
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
           {files.map((file) => {
             const FileIcon = getFileIcon(file.type)
             const fileColor = getFileColor(file.type)
@@ -2759,7 +2759,7 @@ const FilesSection = memo(function FilesSection({
                 style={{
                   width: '100%',
                   padding: '12px 14px',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -2770,7 +2770,7 @@ const FilesSection = memo(function FilesSection({
                 }}
               >
                 <div style={{
-                  width: 40, height: 40, borderRadius: 10,
+                  width: 40, height: 40, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: `${fileColor}15`, flexShrink: 0,
                 }}>
@@ -2801,12 +2801,12 @@ const FilesSection = memo(function FilesSection({
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 16px',
-          borderRadius: 14,
+          borderRadius: 12,
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.04)',
         }}>
           <div style={{
-            width: 36, height: 36, borderRadius: 10,
+            width: 36, height: 36, borderRadius: 8,
             background: 'rgba(255,255,255,0.04)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
@@ -2814,7 +2814,7 @@ const FilesSection = memo(function FilesSection({
             <FileText size={18} color="rgba(255,255,255,0.2)" />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>
               Файлы появятся здесь
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>
@@ -2846,7 +2846,7 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
         style={{
           width: '100%',
           padding: '16px 20px',
-          borderRadius: 16,
+          borderRadius: 12,
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.04)',
           cursor: 'pointer',
@@ -3517,7 +3517,7 @@ export function OrderDetailPageV8() {
               border: 'none',
               color: 'rgba(255,255,255,0.2)',
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 600,
               cursor: 'pointer',
               padding: '12px 24px',
             }}
@@ -3548,7 +3548,7 @@ export function OrderDetailPageV8() {
                 border: `1px solid ${DS.colors.borderLight}`,
               }}
             >
-              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-[12px] bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
                 <XCircle size={24} color={DS.colors.error} strokeWidth={1.5} />
               </div>
               <h3 className="text-[16px] font-bold text-text-primary mb-2">
@@ -3610,7 +3610,7 @@ export function OrderDetailPageV8() {
                 border: `1px solid ${DS.colors.borderLight}`,
               }}
             >
-              <div className="w-12 h-12 rounded-[14px] bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-[12px] bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center mx-auto mb-4">
                 <Archive size={24} color="#d4af37" strokeWidth={1.5} />
               </div>
               <h3 className="text-[16px] font-bold text-text-primary mb-2">
@@ -3727,14 +3727,14 @@ export function OrderDetailPageV8() {
               style={{
                 width: '100%',
                 maxWidth: 340,
-                borderRadius: 20,
+                borderRadius: 12,
                 background: DS.colors.bgSurface,
                 padding: 24,
                 textAlign: 'center' as const,
               }}
             >
               <div style={{
-                width: 48, height: 48, borderRadius: 14, margin: '0 auto 16px',
+                width: 48, height: 48, borderRadius: 12, margin: '0 auto 16px',
                 background: 'rgba(34,197,94,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>

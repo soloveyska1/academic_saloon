@@ -72,7 +72,7 @@ export function AnimatedBarChart({
               style={{
                 width: '100%',
                 background: `linear-gradient(180deg, ${color}, ${color}80)`,
-                borderRadius: '6px 6px 2px 2px',
+                borderRadius: '4px 4px 2px 2px',
                 minHeight: 4,
                 boxShadow: `0 0 15px ${color}40`,
               }}
@@ -86,7 +86,7 @@ export function AnimatedBarChart({
               style={{
                 fontSize: 9,
                 color: 'var(--text-muted)',
-                marginTop: 6,
+                marginTop: 8,
                 textAlign: 'center',
                 maxWidth: '100%',
                 overflow: 'hidden',
@@ -421,7 +421,7 @@ export function StatTrendCard({
       style={{
         background: 'rgba(20, 20, 23, 0.7)',
         border: '1px solid var(--border-default)',
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 16,
         position: 'relative',
         overflow: 'hidden',
@@ -443,7 +443,7 @@ export function StatTrendCard({
         <div style={{
           width: 36,
           height: 36,
-          borderRadius: 10,
+          borderRadius: 8,
           background: `${color}15`,
           border: `1px solid ${color}30`,
           display: 'flex',
@@ -461,7 +461,7 @@ export function StatTrendCard({
             padding: '4px 8px',
             background: isPositive ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
             border: `1px solid ${isPositive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-            borderRadius: 6,
+            borderRadius: 4,
             fontSize: 11,
             fontWeight: 600,
             color: isPositive ? 'var(--success-text)' : 'var(--error-text)',

@@ -34,23 +34,23 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
       initial={prefersReducedMotion ? {} : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.20, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 20 }}
+      style={{ marginBottom: 24 }}
     >
       <div className={s.sectionTitle}>Бонусы</div>
 
-      <div className={s.voidGlass} style={{ padding: 18, borderRadius: 24 }}>
+      <div className={s.voidGlass} style={{ padding: 16, borderRadius: 12 }}>
         {/* Balance header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 10,
-          marginBottom: 14,
+          gap: 8,
+          marginBottom: 12,
         }}>
           <div>
             <div style={{
               fontSize: 24,
-              fontWeight: 800,
+              fontWeight: 700,
               color: 'var(--gold-200)',
               fontFamily: "'Manrope', sans-serif",
               marginBottom: 2,
@@ -65,7 +65,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
           <div style={{
             width: 44,
             height: 44,
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--gold-glass-subtle)',
             border: '1px solid var(--border-gold)',
             display: 'flex',
@@ -81,7 +81,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 8,
             padding: '6px 10px',
             borderRadius: 999,
             background: 'var(--warning-glass)',
@@ -89,7 +89,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             color: 'var(--warning-text)',
             fontSize: 11.5,
             fontWeight: 700,
-            marginBottom: 14,
+            marginBottom: 12,
           }}>
             <Clock3 size={12} />
             {formatExpiryHint(user.bonus_expiry!.days_left!)}
@@ -111,7 +111,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
 
         {/* Transaction list */}
         {latestTransactions.length > 0 ? (
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 12 }}>
             {latestTransactions.map((tx) => (
               <TransactionRow key={tx.id} transaction={tx} onTap={onOpenTransactions} />
             ))}

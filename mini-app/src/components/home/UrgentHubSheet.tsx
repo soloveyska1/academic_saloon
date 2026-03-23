@@ -35,18 +35,18 @@ function ActionOption({
       onClick={onClick}
       style={{
         width: '100%',
-        padding: 18,
-        borderRadius: 18,
+        padding: 16,
+        borderRadius: 12,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.04)',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 14,
+        gap: 12,
         textAlign: 'left',
       }}
     >
       <div style={{
-        width: 44, height: 44, borderRadius: 14,
+        width: 44, height: 44, borderRadius: 12,
         background: 'rgba(212,175,55,0.06)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
@@ -65,7 +65,7 @@ function ActionOption({
           <span style={{
             fontSize: 11, fontWeight: 600,
             color: 'rgba(212,175,55,0.6)',
-            padding: '2px 7px', borderRadius: 6,
+            padding: '2px 7px', borderRadius: 4,
             background: 'rgba(212,175,55,0.06)',
           }}>
             {tag}
@@ -80,7 +80,7 @@ function ActionOption({
       </div>
 
       <div style={{
-        width: 32, height: 32, borderRadius: 10,
+        width: 32, height: 32, borderRadius: 8,
         background: 'rgba(212,175,55,0.06)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, marginTop: 4,
@@ -126,7 +126,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 14, delay: 0.1 }}
             style={{
-              width: 72, height: 72, borderRadius: 22,
+              width: 72, height: 72, borderRadius: 12,
               background: 'linear-gradient(145deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
               border: '1px solid rgba(212,175,55,0.10)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -138,8 +138,8 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           </m.div>
 
           <div style={{
-            fontSize: 26, fontWeight: 800, lineHeight: 1.1,
-            letterSpacing: '-0.02em', marginBottom: 10,
+            fontSize: 26, fontWeight: 700, lineHeight: 1.1,
+            letterSpacing: '-0.02em', marginBottom: 8,
             fontFamily: "'Manrope', sans-serif",
             color: '#E8D5A3',
           }}>
@@ -147,7 +147,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           </div>
           <div style={{
             fontSize: 14, lineHeight: 1.6,
-            color: 'rgba(255,255,255,0.42)', fontWeight: 500,
+            color: 'rgba(255,255,255,0.42)', fontWeight: 600,
             maxWidth: 260, margin: '0 auto',
           }}>
             Выберите удобный способ — заполнить заявку или просто прислать фото
@@ -156,12 +156,12 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
 
         {/* Divider */}
         <div aria-hidden="true" style={{
-          height: 1, marginBottom: 20,
+          height: 1, marginBottom: 24,
           background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
         }} />
 
         {/* Options */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
           <m.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -198,10 +198,10 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           transition={{ delay: 0.4 }}
           style={{
             padding: '14px 16px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'rgba(212,175,55,0.03)',
             border: '1px solid rgba(212,175,55,0.06)',
-            display: 'flex', alignItems: 'flex-start', gap: 10,
+            display: 'flex', alignItems: 'flex-start', gap: 8,
           }}
         >
           <Shield size={15} color="rgba(212,175,55,0.45)" style={{ marginTop: 1, flexShrink: 0 }} />

@@ -81,8 +81,8 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
                 padding: 16,
                 borderRadius: 'var(--radius-md)',
                 background: 'rgba(12, 12, 10, 0.6)',
-                backdropFilter: 'blur(16px) saturate(140%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+                backdropFilter: 'blur(16px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
                 border: '1px solid rgba(255, 255, 255, 0.04)',
               }}
             >
@@ -95,7 +95,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 10,
+                  marginBottom: 8,
                 }}
               >
                 <Icon size={16} color="var(--gold-400)" strokeWidth={1.8} />
@@ -115,7 +115,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
               <div
                 style={{
                   fontSize: 12,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: 'var(--text-secondary)',
                   lineHeight: 1.45,
                 }}

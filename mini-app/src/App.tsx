@@ -59,11 +59,11 @@ function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         padding: '6px 10px',
         background: isConnected ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
         border: `1px solid ${isConnected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-        borderRadius: 20,
+        borderRadius: 12,
         cursor: 'pointer',
         backdropFilter: 'blur(10px)',
       }}
@@ -139,7 +139,7 @@ function NotFoundPage() {
         style={{
           width: 80,
           height: 80,
-          borderRadius: 24,
+          borderRadius: 12,
           background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
           border: '1px solid var(--gold-glass-strong)',
           display: 'flex',
@@ -191,11 +191,11 @@ function NotFoundPage() {
           color: 'var(--text-on-gold)',
           background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
           border: 'none',
-          borderRadius: 14,
+          borderRadius: 12,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 8,
           boxShadow: 'var(--glow-gold)',
         }}
       >
@@ -389,7 +389,7 @@ function AppContent() {
               style={{
                 width: 80,
                 height: 80,
-                borderRadius: 24,
+                borderRadius: 12,
                 background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
                 border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
@@ -407,7 +407,7 @@ function AppContent() {
                 right: 0,
                 height: 1,
                 background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
               }} />
               <AlertTriangle size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
             </motion.div>
@@ -455,11 +455,11 @@ function AppContent() {
                 color: 'var(--text-on-gold)',
                 background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
                 border: 'none',
-                borderRadius: 14,
+                borderRadius: 12,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 boxShadow: 'var(--glow-gold)',
                 letterSpacing: '0.02em',
                 position: 'relative',
@@ -477,7 +477,7 @@ function AppContent() {
               transition={{ delay: 0.4 }}
               style={{
                 position: 'absolute',
-                bottom: 40,
+                bottom: 48,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,

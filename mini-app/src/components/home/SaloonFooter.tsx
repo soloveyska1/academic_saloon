@@ -31,7 +31,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           fontFamily: "'Manrope', sans-serif",
           color: 'var(--gold-400)',
           letterSpacing: '0.10em',
-          fontWeight: 500,
+          fontWeight: 600,
           textTransform: 'uppercase',
         }}>
           АКАДЕМИЧЕСКИЙ САЛОН
@@ -44,7 +44,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           fontSize: 10,
           color: 'var(--text-muted)',
           letterSpacing: '0.10em',
-          fontWeight: 500,
+          fontWeight: 600,
         }}>
           с 2020
         </span>

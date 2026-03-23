@@ -39,7 +39,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: Prom
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'var(--bg-elevated)',
-              borderRadius: 28,
+              borderRadius: 12,
               padding: '32px 28px',
               maxWidth: 380,
               width: '100%',
@@ -66,7 +66,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: Prom
               fontWeight: 700,
               color: 'var(--text-primary)',
               textAlign: 'center',
-              marginBottom: 14,
+              marginBottom: 12,
             }}>
               Промокод недействителен
             </h3>
@@ -76,7 +76,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: Prom
               color: 'var(--text-secondary)',
               textAlign: 'center',
               lineHeight: 1.7,
-              marginBottom: 28,
+              marginBottom: 32,
             }}>
               {reason || 'Промокод больше не действителен.'}
               {' '}Вы можете создать заказ без скидки или вернуться и ввести другой промокод.
@@ -94,7 +94,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: Prom
                   color: '#050505',
                   background: 'linear-gradient(135deg, #d4af37, #b8962e)',
                   border: 'none',
-                  borderRadius: 16,
+                  borderRadius: 12,
                   cursor: 'pointer',
                 }}
               >
@@ -112,7 +112,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: Prom
                   color: 'var(--gold-400)',
                   background: 'var(--gold-glass-subtle)',
                   border: '1.5px solid var(--border-gold)',
-                  borderRadius: 16,
+                  borderRadius: 12,
                   cursor: 'pointer',
                 }}
               >

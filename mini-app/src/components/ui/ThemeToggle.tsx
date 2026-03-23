@@ -30,7 +30,7 @@ export function ThemeToggle({
         {showLabel && (
           <span style={{
             fontSize: size === 'sm' ? 12 : 14,
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'var(--text-secondary)',
           }}>
             {isDark ? 'Тёмная' : 'Светлая'}
@@ -458,13 +458,13 @@ export function ThemeToggle({
         onClick={toggleTheme}
         style={{
           position: 'relative',
-          padding: 20,
+          padding: 24,
           background: isDark
             ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(18, 18, 21, 0.9) 50%, rgba(212, 175, 55, 0.04) 100%)'
             : 'linear-gradient(135deg, rgba(180, 142, 38, 0.08) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(180, 142, 38, 0.04) 100%)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(16px)',
           border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(180, 142, 38, 0.2)'}`,
-          borderRadius: 16,
+          borderRadius: 12,
           cursor: 'pointer',
           boxShadow: isDark
             ? '0 20px 50px -15px rgba(0, 0, 0, 0.5), 0 0 60px -20px rgba(212, 175, 55, 0.1)'
@@ -503,7 +503,7 @@ export function ThemeToggle({
               style={{
                 width: 48,
                 height: 48,
-                borderRadius: 14,
+                borderRadius: 12,
                 background: isDark
                   ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
                   : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
@@ -555,7 +555,7 @@ export function ThemeToggle({
                 color: 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}>
                 <Sparkles size={12} color={isDark ? 'var(--gold-400)' : 'var(--gold-600)'} />
                 {isDark ? 'Тёмная тема активна' : 'Светлая тема активна'}
@@ -574,7 +574,7 @@ export function ThemeToggle({
                 ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
                 : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
               border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(180, 142, 38, 0.3)'}`,
-              borderRadius: 13,
+              borderRadius: 12,
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
@@ -635,11 +635,11 @@ function ThemePreviewChip({ active, label, dark }: { active: boolean; label: str
           ? (dark ? 'rgba(212, 175, 55, 0.4)' : 'rgba(180, 142, 38, 0.4)')
           : 'transparent'
         }`,
-        borderRadius: 10,
+        borderRadius: 8,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
+        gap: 8,
       }}
     >
       {dark ? (

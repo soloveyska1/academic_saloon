@@ -7,11 +7,11 @@ import React from 'react'
 export const glassStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 12,
+    padding: 24,
     background: 'var(--bg-card)',
-    backdropFilter: 'blur(24px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+    backdropFilter: 'blur(16px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: '1px solid var(--card-border)',
     boxShadow: 'var(--card-shadow)',
 }
@@ -19,11 +19,11 @@ export const glassStyle: React.CSSProperties = {
 export const glassGoldStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 12,
+    padding: 24,
     background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-    backdropFilter: 'blur(24px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+    backdropFilter: 'blur(16px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: '1px solid var(--border-gold)',
     boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
 }

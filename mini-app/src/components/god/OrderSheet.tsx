@@ -92,7 +92,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
       onTabChange={setTab}
     >
       {loading && !order ? (
-        <div className={s.mutedSmall} style={{ padding: 20, textAlign: 'center' }}>Загрузка...</div>
+        <div className={s.mutedSmall} style={{ padding: 24, textAlign: 'center' }}>Загрузка...</div>
       ) : order ? (
         <>
           {/* ═══════ INFO TAB ═══════ */}
@@ -119,7 +119,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                     {user.fullname || 'Без имени'} {user.username ? `@${user.username}` : ''}
                   </div>
-                  <div className={`${s.flexRow} ${s.gap8} ${s.flexWrap}`} style={{ marginTop: 6 }}>
+                  <div className={`${s.flexRow} ${s.gap8} ${s.flexWrap}`} style={{ marginTop: 8 }}>
                     <span className={s.tagGold}>{formatMoney(user.balance)}</span>
                     <span className={s.tagMuted}>{user.orders_count} заказов</span>
                     <span className={s.tagMuted}>{formatMoney(user.total_spent)} потрачено</span>
@@ -248,7 +248,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
           {tab === 'chat' && (
             <div className={`${s.flexCol} ${s.gap6}`}>
               {messages.length === 0 ? (
-                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 20 }}>Нет сообщений</div>
+                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 24 }}>Нет сообщений</div>
               ) : (
                 messages.map((msg) => {
                   const isAdmin = msg.sender_type === 'admin'
@@ -257,7 +257,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                       alignSelf: isAdmin ? 'flex-end' : 'flex-start',
                       maxWidth: '85%',
                       padding: '8px 10px',
-                      borderRadius: 10,
+                      borderRadius: 8,
                       background: isAdmin ? 'var(--gold-glass-subtle)' : 'var(--bg-glass)',
                       border: `1px solid ${isAdmin ? 'var(--border-gold)' : 'var(--surface-hover)'}`,
                     }}>
@@ -294,7 +294,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
               <div className={s.timelineItem}>
                 <div className={s.timelineDot} />
                 <div className={s.timelineContent}>
-                  <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Текущий статус: {cfg?.label}</div>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Текущий статус: {cfg?.label}</div>
                   <div className={s.timelineTime}>{cfg?.emoji}</div>
                 </div>
               </div>

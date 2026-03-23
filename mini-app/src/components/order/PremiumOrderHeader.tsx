@@ -20,7 +20,7 @@ export function PremiumOrderHeader({ order, statusConfig, onBack }: PremiumOrder
     const StatusIcon = statusConfig.icon
 
     return (
-        <div style={{ marginBottom: 40, padding: '0 8px' }}>
+        <div style={{ marginBottom: 48, padding: '0 8px' }}>
 
             {/* Top Row: Back Button & ID */}
             <div style={{
@@ -33,7 +33,7 @@ export function PremiumOrderHeader({ order, statusConfig, onBack }: PremiumOrder
                     onClick={onBack}
                     style={{
                         width: 44, height: 44,
-                        borderRadius: 14,
+                        borderRadius: 12,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: 0,
                         background: 'rgba(255,255,255,0.05)',
@@ -47,13 +47,13 @@ export function PremiumOrderHeader({ order, statusConfig, onBack }: PremiumOrder
 
                 <div style={{
                     padding: '8px 16px',
-                    borderRadius: 20,
+                    borderRadius: 12,
                     background: 'rgba(0,0,0,0.4)',
                     border: '1px solid rgba(255,255,255,0.05)',
                     backdropFilter: 'blur(10px)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6
+                    gap: 8
                 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.05em' }}>ID</span>
                     <span style={{ fontSize: 13, color: 'var(--text-main)', fontWeight: 700, fontFamily: 'monospace' }}>
@@ -93,14 +93,14 @@ export function PremiumOrderHeader({ order, statusConfig, onBack }: PremiumOrder
                     <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 10,
+                        gap: 8,
                         padding: '10px 18px',
                         background: `linear-gradient(90deg, ${statusConfig.bgColor} 0%, rgba(0,0,0,0) 100%)`,
                         borderLeft: `2px solid ${statusConfig.color}`,
                         borderRadius: '0 12px 12px 0',
                     }}>
                         <div style={{
-                            padding: 6,
+                            padding: 8,
                             borderRadius: '50%',
                             background: `${statusConfig.color}20`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center'

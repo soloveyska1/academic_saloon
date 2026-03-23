@@ -79,7 +79,7 @@ export const ClientsTab = memo(function ClientsTab() {
           <div key={u.id} className={s.cardClickable} onClick={() => setSelectedUser(u.telegram_id)}>
             <div className={`${s.flexRow} ${s.gap8}`}>
               <div style={{
-                width: 36, height: 36, borderRadius: 10,
+                width: 36, height: 36, borderRadius: 8,
                 background: 'var(--gold-glass-subtle)', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
               }}>

@@ -14,8 +14,8 @@ const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'var(--bg-card)',
-  backdropFilter: 'blur(12px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+  backdropFilter: 'blur(12px) saturate(120%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(120%)',
   border: '1px solid var(--card-border)',
   boxShadow: 'var(--card-shadow)',
 }
@@ -52,7 +52,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 20,
+            marginBottom: 24,
           }}>
           <div
             aria-hidden="true"
@@ -90,11 +90,11 @@ export const OrderStatsCard = memo(function OrderStatsCard({
         </div>
 
         {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {/* Active */}
           <div style={{
             padding: 16,
-            borderRadius: 14,
+            borderRadius: 12,
             background: activeOrders > 0
               ? 'linear-gradient(145deg, var(--gold-glass-medium), var(--gold-glass-subtle))'
               : 'linear-gradient(145deg, var(--bg-glass), rgba(255,255,255,0.02))',
@@ -103,14 +103,14 @@ export const OrderStatsCard = memo(function OrderStatsCard({
           }}>
             <div style={{
               fontSize: 38,
-              fontWeight: 800,
+              fontWeight: 700,
               fontFamily: "'Manrope', sans-serif",
               background: activeOrders > 0
                 ? 'linear-gradient(180deg, var(--gold-150), var(--gold-400))'
                 : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              marginBottom: 6,
+              marginBottom: 8,
             }}>
               {activeOrders}
             </div>
@@ -146,19 +146,19 @@ export const OrderStatsCard = memo(function OrderStatsCard({
           {/* Completed */}
           <div style={{
             padding: 16,
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))',
             border: '1px solid rgba(34,197,94,0.2)',
             textAlign: 'center',
           }}>
             <div style={{
               fontSize: 38,
-              fontWeight: 800,
+              fontWeight: 700,
               fontFamily: "'Manrope', sans-serif",
               background: 'linear-gradient(180deg, rgba(74,222,128,0.9), rgba(34,197,94,0.8))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              marginBottom: 6,
+              marginBottom: 8,
             }}>
               {completedOrders}
             </div>

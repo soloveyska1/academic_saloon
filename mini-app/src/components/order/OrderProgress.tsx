@@ -26,7 +26,7 @@ export function OrderProgress({ activeStep }: OrderProgressProps) {
             {/* Connector Line */}
             <div style={{
                 position: 'absolute',
-                top: 20,
+                top: 24,
                 left: 24,
                 right: 24,
                 height: 2,

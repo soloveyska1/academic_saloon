@@ -128,8 +128,8 @@ export function PhotoTaskComposer({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 10,
-            borderRadius: 24,
+            gap: 8,
+            borderRadius: 12,
             border: '1.5px dashed rgba(201, 162, 39, 0.15)',
             background: 'rgba(201, 162, 39, 0.02)',
             cursor: disabled ? 'not-allowed' : 'pointer',
@@ -155,7 +155,7 @@ export function PhotoTaskComposer({
           <span
             style={{
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-muted)',
             }}
           >
@@ -168,7 +168,7 @@ export function PhotoTaskComposer({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           style={{
-            borderRadius: 20,
+            borderRadius: 12,
             border: '1px solid var(--border-strong)',
             background: 'var(--border-subtle)',
             overflow: 'hidden',
@@ -192,7 +192,7 @@ export function PhotoTaskComposer({
                   position: 'relative',
                   width: 110,
                   height: 110,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   overflow: 'hidden',
                   flexShrink: 0,
                   background: 'var(--bg-glass)',
@@ -288,7 +288,7 @@ export function PhotoTaskComposer({
               style={{
                 width: 110,
                 height: 110,
-                borderRadius: 14,
+                borderRadius: 12,
                 border: '1.5px dashed rgba(201, 162, 39, 0.12)',
                 background: 'rgba(201, 162, 39, 0.02)',
                 display: 'flex',
@@ -330,7 +330,7 @@ export function PhotoTaskComposer({
             exit={{ opacity: 0, height: 0 }}
             style={{
               padding: '8px 10px',
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'rgba(245, 158, 11, 0.08)',
               border: '1px solid rgba(245, 158, 11, 0.18)',
               display: 'flex',
@@ -354,7 +354,7 @@ export function PhotoTaskComposer({
       <div
         style={{
           display: 'flex',
-          gap: 6,
+          gap: 8,
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
@@ -397,7 +397,7 @@ export function PhotoTaskComposer({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         style={{
-          borderRadius: 14,
+          borderRadius: 12,
           border: '1px solid var(--border-strong)',
           background: 'var(--border-subtle)',
           padding: '10px 14px',
@@ -420,7 +420,7 @@ export function PhotoTaskComposer({
             maxHeight: 100,
             fontSize: 16,
             lineHeight: 1.4,
-            fontWeight: 500,
+            fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
             color: 'var(--text-main)',
             background: 'transparent',

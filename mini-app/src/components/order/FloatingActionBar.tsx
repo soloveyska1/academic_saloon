@@ -171,12 +171,12 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
     >
       <div style={{
         display: 'flex',
-        gap: 10,
+        gap: 8,
         padding: 8,
-        borderRadius: 22,
+        borderRadius: 12,
         background: 'var(--bg-card)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid var(--surface-active)',
         boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(212, 175, 55, 0.1)',
       }}>
@@ -194,7 +194,7 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
               style={{
                 position: 'relative',
                 padding: action.primary ? '12px 20px' : '12px 16px',
-                borderRadius: 16,
+                borderRadius: 12,
                 background: action.primary
                   ? `linear-gradient(135deg, ${action.color}30, ${action.color}10)`
                   : action.bgColor,
@@ -220,7 +220,7 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    borderRadius: 16,
+                    borderRadius: 12,
                     pointerEvents: 'none',
                   }}
                 />
@@ -249,7 +249,7 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
                     right: -4,
                     minWidth: 18,
                     height: 18,
-                    borderRadius: 9,
+                    borderRadius: 8,
                     background: 'var(--error-text)',
                     border: '2px solid var(--bg-card)',
                     display: 'flex',

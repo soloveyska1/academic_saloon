@@ -142,7 +142,7 @@ export function PremiumSplashScreen({
           style={{
             fontFamily: "'Manrope', sans-serif",
             fontSize: 'clamp(8px, 2.2vw, 11px)',
-            fontWeight: 500,
+            fontWeight: 600,
             letterSpacing: '0.35em',
             color: G.primary,
             textTransform: 'uppercase',
@@ -162,7 +162,7 @@ export function PremiumSplashScreen({
           position: 'absolute',
           bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
           fontFamily: "'Manrope', sans-serif",
-          fontSize: 10, fontWeight: 500,
+          fontSize: 10, fontWeight: 600,
           letterSpacing: '0.2em', color: G.primary,
           textTransform: 'uppercase',
         }}

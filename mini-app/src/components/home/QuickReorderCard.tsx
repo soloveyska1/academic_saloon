@@ -148,7 +148,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           style={{
             width: 46,
             height: 46,
-            borderRadius: 18,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
             color: 'var(--text-on-gold)',
             display: 'flex',
@@ -182,8 +182,8 @@ export const QuickReorderCard = memo(function QuickReorderCard({
         marginBottom: 0,
         background: embedded ? 'transparent' : 'linear-gradient(160deg, rgba(25, 21, 13, 0.96) 0%, rgba(13, 13, 14, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
         border: embedded ? 'none' : '1px solid rgba(212,175,55,0.10)',
-        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
-        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
+        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
+        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
         cursor: 'pointer',
         boxShadow: embedded ? 'none' : '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
       }}
@@ -214,12 +214,12 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             marginBottom: 16,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'rgba(212,175,55,0.10)',
                 border: '1px solid rgba(212,175,55,0.16)',
                 display: 'flex',
@@ -247,7 +247,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               padding: '8px 12px',
               background: 'rgba(255,255,255,0.04)',
               borderRadius: 999,
@@ -267,7 +267,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           )}
         </div>
 
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 16 }}>
           <div
             style={{
               fontSize: 11,
@@ -316,7 +316,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               fontSize: 12,
               color: 'var(--text-secondary)',
             }}
@@ -329,7 +329,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             style={{
               width: embedded ? 42 : 46,
               height: embedded ? 42 : 46,
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
               color: 'var(--text-on-gold)',
               display: 'flex',

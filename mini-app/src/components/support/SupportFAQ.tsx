@@ -124,7 +124,7 @@ export const SupportFAQ = memo(function SupportFAQ({
       }}>
         <div style={{
           position: 'absolute',
-          left: 14,
+          left: 16,
           top: '50%',
           transform: 'translateY(-50%)',
           pointerEvents: 'none',
@@ -143,12 +143,12 @@ export const SupportFAQ = memo(function SupportFAQ({
           style={{
             width: '100%',
             padding: '13px 40px 13px 42px',
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--surface-hover)',
             border: '1px solid var(--surface-active)',
             color: 'var(--text-main, #f0f0f0)',
             fontSize: 14.5,
-            fontWeight: 500,
+            fontWeight: 600,
             outline: 'none',
             boxSizing: 'border-box',
             transition: 'border-color 0.2s ease',
@@ -168,7 +168,7 @@ export const SupportFAQ = memo(function SupportFAQ({
             onClick={clearSearch}
             style={{
               position: 'absolute',
-              right: 10,
+              right: 8,
               top: '50%',
               transform: 'translateY(-50%)',
               width: 28,
@@ -198,7 +198,7 @@ export const SupportFAQ = memo(function SupportFAQ({
             transition={{ duration: 0.25 }}
             style={{
               padding: 16,
-              borderRadius: 16,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, var(--gold-glass-subtle), rgba(212,175,55,0.02))',
               border: '1px solid var(--border-gold)',
             }}
@@ -207,7 +207,7 @@ export const SupportFAQ = memo(function SupportFAQ({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              marginBottom: 10,
+              marginBottom: 8,
             }}>
               <Sparkles size={15} color="var(--gold-400)" />
               <span style={{
@@ -231,7 +231,7 @@ export const SupportFAQ = memo(function SupportFAQ({
 
             {/* Related questions */}
             {aiResult!.related.length > 0 && (
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 12 }}>
                 <div style={{
                   fontSize: 11.5,
                   fontWeight: 600,
@@ -252,7 +252,7 @@ export const SupportFAQ = memo(function SupportFAQ({
                       textAlign: 'left',
                       padding: '8px 12px',
                       marginBottom: 4,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       background: 'var(--bg-glass)',
                       border: '1px solid var(--surface-hover)',
                       cursor: 'pointer',
@@ -279,7 +279,7 @@ export const SupportFAQ = memo(function SupportFAQ({
                   justifyContent: 'center',
                   gap: 8,
                   width: '100%',
-                  marginTop: 14,
+                  marginTop: 12,
                   padding: '11px 16px',
                   borderRadius: 12,
                   background: 'var(--gold-glass-medium)',
@@ -306,7 +306,7 @@ export const SupportFAQ = memo(function SupportFAQ({
             exit={{ opacity: 0 }}
             style={{
               padding: 16,
-              borderRadius: 16,
+              borderRadius: 12,
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-strong)',
               textAlign: 'center',

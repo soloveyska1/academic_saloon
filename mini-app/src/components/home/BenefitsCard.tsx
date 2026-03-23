@@ -83,12 +83,12 @@ export const BenefitsCard = memo(function BenefitsCard({
   const glassGoldStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     background:
       'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-    backdropFilter: 'blur(12px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+    backdropFilter: 'blur(12px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%)',
     border: '1px solid var(--border-gold)',
     boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
   }
@@ -96,11 +96,11 @@ export const BenefitsCard = memo(function BenefitsCard({
   const glassStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     background: 'var(--bg-card)',
-    backdropFilter: 'blur(12px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+    backdropFilter: 'blur(12px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%)',
     border: '1px solid var(--card-border)',
     boxShadow: 'var(--card-shadow)',
   }
@@ -141,10 +141,10 @@ export const BenefitsCard = memo(function BenefitsCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 10,
+              marginBottom: 8,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <CreditCard size={12} color="var(--gold-400)" strokeWidth={1.5} aria-hidden="true" />
               <span
                 style={{
@@ -166,7 +166,7 @@ export const BenefitsCard = memo(function BenefitsCard({
           <div
             style={{
               fontSize: 26,
-              fontWeight: 800,
+              fontWeight: 700,
               fontFamily: "'Manrope', sans-serif",
               color: 'var(--text-main)',
               display: 'flex',
@@ -191,7 +191,7 @@ export const BenefitsCard = memo(function BenefitsCard({
           {/* Cashback Badge */}
           <div
             style={{
-              marginTop: 10,
+              marginTop: 8,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
@@ -202,7 +202,7 @@ export const BenefitsCard = memo(function BenefitsCard({
               border: rank.is_max
                 ? '1px solid rgba(212,175,55,0.5)'
                 : '1px solid var(--success-border)',
-              borderRadius: 100,
+              borderRadius: 12,
             }}
           >
             {rank.is_max && <span style={{ fontSize: 10 }}>&#x1F451;</span>}
@@ -231,7 +231,7 @@ export const BenefitsCard = memo(function BenefitsCard({
                 marginTop: 8,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 padding: '6px 10px',
                 background: bonusExpiry.days_left <= 2
                   ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.1) 100%)'
@@ -239,7 +239,7 @@ export const BenefitsCard = memo(function BenefitsCard({
                 border: bonusExpiry.days_left <= 2
                   ? '1px solid rgba(239,68,68,0.4)'
                   : '1px solid rgba(249,115,22,0.4)',
-                borderRadius: 10,
+                borderRadius: 8,
               }}
             >
               <motion.span
@@ -291,11 +291,11 @@ export const BenefitsCard = memo(function BenefitsCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 10,
+              marginBottom: 8,
               color: 'var(--text-muted)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Crown size={12} strokeWidth={1.5} aria-hidden="true" />
               <span style={{ fontSize: 11, letterSpacing: '0.1em', fontWeight: 700 }}>
                 УРОВЕНЬ
@@ -330,7 +330,7 @@ export const BenefitsCard = memo(function BenefitsCard({
                 padding: '4px 10px',
                 background:
                   'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.1) 100%)',
-                borderRadius: 100,
+                borderRadius: 12,
                 border: '1px solid rgba(212,175,55,0.4)',
                 width: 'fit-content',
               }}
@@ -358,7 +358,7 @@ export const BenefitsCard = memo(function BenefitsCard({
               style={{
                 height: 5,
                 background: 'var(--bg-glass)',
-                borderRadius: 100,
+                borderRadius: 12,
                 overflow: 'hidden',
                 border: '1px solid var(--border-subtle)',
               }}
@@ -371,7 +371,7 @@ export const BenefitsCard = memo(function BenefitsCard({
                 aria-hidden="true"
                 style={{
                   height: '100%',
-                  borderRadius: 100,
+                  borderRadius: 12,
                   boxShadow: '0 0 10px rgba(212,175,55,0.4)',
                 }}
               />
@@ -384,7 +384,7 @@ export const BenefitsCard = memo(function BenefitsCard({
               fontSize: 11,
               color: 'var(--text-muted)',
               marginTop: 8,
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             {rank.bonus || `Уровень ${rank.level}`}

@@ -82,7 +82,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 22,
-              fontWeight: 800,
+              fontWeight: 700,
               letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
               lineHeight: 1,
@@ -97,7 +97,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
           <span
             style={{
               fontSize: 11,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-muted)',
               letterSpacing: '0.02em',
             }}

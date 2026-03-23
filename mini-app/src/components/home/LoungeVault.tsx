@@ -46,7 +46,7 @@ function CompactStat({
       style={{
         minWidth: 0,
         padding: '16px 15px 14px',
-        borderRadius: 20,
+        borderRadius: 12,
         background: accent
           ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.025) 100%)'
           : 'rgba(255,255,255,0.03)',
@@ -73,7 +73,7 @@ function CompactStat({
           lineHeight: 1.05,
           color: accent ? 'var(--gold-300)' : 'var(--text-primary)',
           letterSpacing: '-0.04em',
-          marginBottom: 6,
+          marginBottom: 8,
           wordBreak: 'break-word',
         }}
       >
@@ -109,8 +109,8 @@ export const LoungeVault = memo(function LoungeVault({
   const outerStyle: CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    padding: 22,
-    borderRadius: 32,
+    padding: 24,
+    borderRadius: 12,
     background: 'linear-gradient(165deg, rgba(25, 20, 12, 0.98) 0%, rgba(12, 12, 13, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
     border: '1px solid rgba(212,175,55,0.12)',
     boxShadow: '0 30px 58px -42px rgba(0,0,0,0.88)',
@@ -129,7 +129,7 @@ export const LoungeVault = memo(function LoungeVault({
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 18 }}
+      style={{ marginBottom: 16 }}
     >
       <div style={outerStyle}>
         <div
@@ -152,8 +152,8 @@ export const LoungeVault = memo(function LoungeVault({
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
-              gap: 14,
-              marginBottom: 18,
+              gap: 12,
+              marginBottom: 16,
             }}
           >
             <div style={{ minWidth: 0 }}>
@@ -201,7 +201,7 @@ export const LoungeVault = memo(function LoungeVault({
                 alignItems: 'center',
                 gap: 8,
                 padding: '11px 13px',
-                borderRadius: 20,
+                borderRadius: 12,
                 background: 'rgba(18, 16, 12, 0.72)',
                 border: '1px solid rgba(212,175,55,0.14)',
                 color: 'var(--gold-300)',
@@ -220,11 +220,11 @@ export const LoungeVault = memo(function LoungeVault({
           <div
             style={{
               position: 'relative',
-              padding: 20,
-              borderRadius: 26,
+              padding: 24,
+              borderRadius: 12,
               background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(14,12,10,0.62) 100%)',
               border: '1px solid rgba(255,255,255,0.05)',
-              marginBottom: 14,
+              marginBottom: 12,
               overflow: 'hidden',
             }}
           >
@@ -232,8 +232,8 @@ export const LoungeVault = memo(function LoungeVault({
               aria-hidden="true"
               style={{
                 position: 'absolute',
-                right: 18,
-                top: 10,
+                right: 16,
+                top: 8,
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
                 fontSize: 116,
                 lineHeight: 0.82,
@@ -269,7 +269,7 @@ export const LoungeVault = memo(function LoungeVault({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 8,
                       padding: '7px 10px',
                       borderRadius: 999,
                       background: 'rgba(212,175,55,0.08)',
@@ -328,8 +328,8 @@ export const LoungeVault = memo(function LoungeVault({
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: 10,
-                  marginBottom: 14,
+                  gap: 8,
+                  marginBottom: 12,
                 }}
               >
                 <CompactStat
@@ -353,7 +353,7 @@ export const LoungeVault = memo(function LoungeVault({
                       borderRadius: 999,
                       background: 'rgba(255,255,255,0.06)',
                       overflow: 'hidden',
-                      marginBottom: 10,
+                      marginBottom: 8,
                     }}
                   >
                     <motion.div
@@ -389,7 +389,7 @@ export const LoungeVault = memo(function LoungeVault({
           </div>
 
           {(alertPanel || bonusPanel) && (
-            <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
               {alertPanel}
               {bonusPanel}
             </div>
@@ -397,8 +397,8 @@ export const LoungeVault = memo(function LoungeVault({
 
           <div
             style={{
-              padding: 20,
-              borderRadius: 26,
+              padding: 24,
+              borderRadius: 12,
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.05)',
             }}
@@ -409,7 +409,7 @@ export const LoungeVault = memo(function LoungeVault({
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 gap: 12,
-                marginBottom: 14,
+                marginBottom: 12,
               }}
             >
               <div style={{ minWidth: 0 }}>
@@ -420,7 +420,7 @@ export const LoungeVault = memo(function LoungeVault({
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 6,
+                    marginBottom: 8,
                   }}
                 >
                   Приглашения
@@ -430,7 +430,7 @@ export const LoungeVault = memo(function LoungeVault({
                     fontSize: 16,
                     fontWeight: 700,
                     color: 'var(--text-primary)',
-                    marginBottom: 6,
+                    marginBottom: 8,
                   }}
                 >
                   Код, ссылка и QR
@@ -484,7 +484,7 @@ export const LoungeVault = memo(function LoungeVault({
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 8, marginBottom: 16 }}>
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.98 }}
@@ -492,13 +492,13 @@ export const LoungeVault = memo(function LoungeVault({
                 style={{
                   minWidth: 0,
                   padding: '14px 16px',
-                  borderRadius: 20,
+                  borderRadius: 12,
                   border: '1px solid rgba(212,175,55,0.14)',
                   background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 10,
+                  gap: 8,
                   cursor: 'pointer',
                 }}
               >
@@ -530,7 +530,7 @@ export const LoungeVault = memo(function LoungeVault({
                 style={{
                   width: 56,
                   height: 56,
-                  borderRadius: 20,
+                  borderRadius: 12,
                   border: '1px solid rgba(212,175,55,0.14)',
                   background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
@@ -550,7 +550,7 @@ export const LoungeVault = memo(function LoungeVault({
                 style={{
                   width: 56,
                   height: 56,
-                  borderRadius: 20,
+                  borderRadius: 12,
                   border: '1px solid rgba(212,175,55,0.14)',
                   background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
@@ -567,7 +567,7 @@ export const LoungeVault = memo(function LoungeVault({
             <div
               style={{
                 borderTop: '1px solid rgba(255,255,255,0.06)',
-                paddingTop: 14,
+                paddingTop: 16,
               }}
             >
               <PromoCodeSection

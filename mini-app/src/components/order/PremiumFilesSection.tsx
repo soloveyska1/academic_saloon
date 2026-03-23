@@ -92,10 +92,10 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
         transition={{ delay: 0.1 }}
         style={{
           padding: 24,
-          borderRadius: 24,
+          borderRadius: 12,
           background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
           border: '1px solid var(--border-strong)',
-          marginBottom: 20,
+          marginBottom: 24,
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -113,7 +113,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             style={{
               width: 56,
               height: 56,
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, rgba(107,114,128,0.15), rgba(107,114,128,0.08))',
               border: '1px solid rgba(107,114,128,0.2)',
               display: 'flex',
@@ -129,7 +129,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               fontSize: 16,
               fontWeight: 700,
               color: 'var(--text-main)',
-              marginBottom: 6,
+              marginBottom: 8,
               fontFamily: 'var(--font-serif)',
             }}>
               Файлы заказа
@@ -155,7 +155,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
           style={{
             marginTop: 16,
             padding: '14px 16px',
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.05))',
             border: '1px solid rgba(59,130,246,0.2)',
             display: 'flex',
@@ -166,7 +166,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
           <div style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 8,
             background: 'rgba(59,130,246,0.15)',
             display: 'flex',
             alignItems: 'center',
@@ -193,12 +193,12 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
       style={{
-        borderRadius: 24,
+        borderRadius: 12,
         background: `linear-gradient(145deg, ${accentColor}15 0%, rgba(20,20,23,0.98) 100%)`,
         border: `1.5px solid ${accentColor}35`,
         boxShadow: `0 12px 40px -10px ${accentColor}25`,
         overflow: 'hidden',
-        marginBottom: 20,
+        marginBottom: 24,
         position: 'relative',
       }}
     >
@@ -237,7 +237,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
         position: 'relative',
         zIndex: 1,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <motion.div
             animate={{
               boxShadow: [
@@ -250,7 +250,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             style={{
               width: 52,
               height: 52,
-              borderRadius: 16,
+              borderRadius: 12,
               background: `linear-gradient(135deg, ${accentColor}25, ${accentColor}10)`,
               border: `1.5px solid ${accentColor}35`,
               display: 'flex',
@@ -275,7 +275,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               color: accentColor,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               fontWeight: 600,
             }}>
               <CheckCircle2 size={14} />
@@ -318,7 +318,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
           }}
           style={{
             padding: 16,
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-strong)',
             cursor: 'pointer',
@@ -327,11 +327,11 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.1))',
               border: '1px solid rgba(59,130,246,0.3)',
               display: 'flex',
@@ -364,7 +364,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'var(--surface-hover)',
               border: '1px solid var(--surface-active)',
               display: 'flex',
@@ -399,7 +399,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
           style={{
             width: '100%',
             padding: '18px 24px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: `linear-gradient(135deg, ${accentColor} 0%, ${isCompleted ? '#16a34a' : '#7c3aed'} 100%)`,
             border: 'none',
             color: 'var(--text-primary)',
@@ -409,7 +409,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 10,
+            gap: 8,
           }}
         >
           <Download size={20} />
@@ -422,7 +422,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
         padding: '16px 24px',
         borderTop: '1px solid var(--surface-hover)',
         display: 'flex',
-        gap: 10,
+        gap: 8,
         justifyContent: 'center',
         flexWrap: 'wrap',
         position: 'relative',
@@ -441,9 +441,9 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               padding: '8px 14px',
-              borderRadius: 10,
+              borderRadius: 8,
               background: `${badge.color}15`,
               border: `1px solid ${badge.color}30`,
             }}

@@ -43,7 +43,7 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
       className={s.bannerCard}
       style={{
         width: '100%',
-        marginBottom: 20,
+        marginBottom: 24,
         textAlign: 'left',
         borderLeftColor: meta.color,
         borderLeftWidth: 3,
@@ -57,12 +57,12 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          marginBottom: 10,
+          marginBottom: 8,
         }}>
           <div style={{
             width: 42,
             height: 42,
-            borderRadius: 14,
+            borderRadius: 12,
             background: `${meta.color}20`,
             border: `1px solid ${meta.color}40`,
             display: 'flex',
@@ -76,7 +76,7 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontSize: 15.5,
-              fontWeight: 800,
+              fontWeight: 700,
               color: 'var(--text-primary)',
               marginBottom: 2,
             }}>

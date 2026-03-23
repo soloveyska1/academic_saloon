@@ -40,11 +40,11 @@ function DailyBonusCardInner({
 }: DailyBonusCardProps) {
   const fullCardStyle: React.CSSProperties = {
     background: 'rgba(12, 12, 10, 0.6)',
-    backdropFilter: 'blur(16px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    backdropFilter: 'blur(16px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: '1px solid rgba(255,255,255,0.04)',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 24,
     position: 'relative',
     overflow: 'hidden',
   }
@@ -53,8 +53,8 @@ function DailyBonusCardInner({
     background: embedded
       ? 'rgba(255,255,255,0.03)'
       : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
-    backdropFilter: 'blur(16px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    backdropFilter: 'blur(16px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: embedded ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(212, 175, 55, 0.12)',
     borderRadius: embedded ? 22 : 24,
     padding: embedded ? 16 : 18,
@@ -196,7 +196,7 @@ function DailyBonusCardInner({
                         lineHeight: 0.95,
                         letterSpacing: '-0.05em',
                         color: 'var(--gold-300)',
-                        marginBottom: 6,
+                        marginBottom: 8,
                       }}
                     >
                       +{claimedAmount} ₽
@@ -216,8 +216,8 @@ function DailyBonusCardInner({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 10,
-                        marginBottom: 6,
+                        gap: 8,
+                        marginBottom: 8,
                       }}
                     >
                       <span
@@ -257,7 +257,7 @@ function DailyBonusCardInner({
                     alignItems: 'center',
                     gap: 8,
                     padding: '12px 14px',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     border: 'none',
                     background: claiming ? 'rgba(212,175,55,0.16)' : 'var(--gold-metallic)',
                     color: claiming ? 'var(--gold-200)' : 'var(--text-on-gold)',
@@ -294,7 +294,7 @@ function DailyBonusCardInner({
                     alignItems: 'center',
                     gap: 8,
                     padding: '11px 12px',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.06)',
                     color: 'var(--text-secondary)',
@@ -313,7 +313,7 @@ function DailyBonusCardInner({
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-              gap: 6,
+              gap: 8,
             }}
           >
             {bonuses.map((bonus, index) => {
@@ -326,7 +326,7 @@ function DailyBonusCardInner({
                   key={`${bonus}-${index}`}
                   style={{
                     padding: '10px 6px 8px',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     textAlign: 'center',
                     background: isClaimed
                       ? 'linear-gradient(180deg, rgba(212,175,55,0.96) 0%, rgba(180,141,36,0.88) 100%)'
@@ -342,7 +342,7 @@ function DailyBonusCardInner({
                       fontSize: 11,
                       fontWeight: 700,
                       color: isClaimed ? 'var(--text-on-gold)' : isCurrent ? 'var(--gold-200)' : 'var(--text-muted)',
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
                     {index + 1}
@@ -365,7 +365,7 @@ function DailyBonusCardInner({
           {error && (
             <div
               style={{
-                marginTop: 10,
+                marginTop: 8,
                 fontSize: 12,
                 fontWeight: 600,
                 color: 'var(--error-text)',
@@ -413,7 +413,7 @@ function DailyBonusCardInner({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 marginBottom: 16,
               }}
             >
@@ -433,7 +433,7 @@ function DailyBonusCardInner({
                   <span style={{
                     fontFamily: "'Manrope', sans-serif",
                     fontSize: 11,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: 'var(--text-muted)',
                     marginLeft: 4,
                   }}>
@@ -450,8 +450,8 @@ function DailyBonusCardInner({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            gap: 6,
-            marginBottom: 20,
+            gap: 8,
+            marginBottom: 24,
           }}
         >
           {bonuses.map((bonus, index) => {
@@ -490,7 +490,7 @@ function DailyBonusCardInner({
                 <div style={{
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 20,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: 'var(--gold-400)',
                   letterSpacing: '-0.02em',
                 }}>
@@ -499,7 +499,7 @@ function DailyBonusCardInner({
                 <div style={{
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 13,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: 'var(--text-muted)',
                   marginTop: 4,
                 }}>
@@ -519,7 +519,7 @@ function DailyBonusCardInner({
                 style={{
                   width: '100%',
                   padding: '14px 20px',
-                  borderRadius: 16,
+                  borderRadius: 12,
                   border: 'none',
                   cursor: claiming ? 'not-allowed' : 'pointer',
                   background: claiming
@@ -600,7 +600,7 @@ function DailyBonusCardInner({
                 marginTop: 8,
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: 'var(--error-text)',
                 textAlign: 'center',
               }}

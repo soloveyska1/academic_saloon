@@ -75,9 +75,9 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                 zIndex: 1000,
                 background: `linear-gradient(135deg, ${alert.color}15 0%, ${alert.color}10 100%)`,
                 border: `1px solid ${alert.color}40`,
-                borderRadius: 16,
+                borderRadius: 12,
                 padding: 16,
-                backdropFilter: 'blur(20px)',
+                backdropFilter: 'blur(16px)',
                 boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 40px ${alert.color}20`,
             }}
         >
@@ -89,7 +89,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                     style={{
                         width: 48,
                         height: 48,
-                        borderRadius: 14,
+                        borderRadius: 12,
                         background: `linear-gradient(135deg, ${alert.color} 0%, ${alert.color}cc 100%)`,
                         display: 'flex',
                         alignItems: 'center',

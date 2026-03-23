@@ -139,7 +139,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             onNavigate(nextAction.route)
           }}
           style={{
-            borderRadius: '20px',
+            borderRadius: '12px',
             padding: '2px',
             cursor: 'pointer',
             background: `linear-gradient(135deg, ${nextAction.color}36, var(--border-default))`,
@@ -149,7 +149,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
         >
           <div style={{
             background: 'var(--bg-surface)',
-            borderRadius: '18px',
+            borderRadius: '12px',
             padding: '18px',
             display: 'flex',
             alignItems: 'flex-start',
@@ -167,7 +167,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
 
             <div style={{ flex: 1 }}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8
               }}>
                 <div style={{
                   width: 6, height: 6, borderRadius: '50%', background: nextAction.color,
@@ -187,14 +187,14 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
                 fontSize: '13px',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.5,
-                marginBottom: 10,
+                marginBottom: 8,
               }}>
                 {nextAction.subtitle}
               </div>
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 padding: '7px 10px',
                 borderRadius: '999px',
                 background: 'var(--bg-glass)',
@@ -207,7 +207,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               </div>
             </div>
 
-            <ChevronRight size={20} color="#52525b" style={{ marginTop: 14 }} />
+            <ChevronRight size={20} color="#52525b" style={{ marginTop: 12 }} />
           </div>
         </motion.div>
       </AnimatePresence>

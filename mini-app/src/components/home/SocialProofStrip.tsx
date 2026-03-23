@@ -121,7 +121,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
           <span
             style={{
               fontSize: 11,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-muted)',
               letterSpacing: '0.03em',
               textTransform: 'uppercase',

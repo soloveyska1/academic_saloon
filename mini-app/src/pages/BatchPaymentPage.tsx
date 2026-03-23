@@ -200,14 +200,14 @@ export function BatchPaymentPage() {
           animate={{ opacity: 1, scale: 1 }}
           style={{
             background: 'var(--bg-card-solid)',
-            borderRadius: 24,
+            borderRadius: 12,
             border: '1px solid var(--gold-glass-strong)',
-            padding: 40,
+            padding: 48,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 20,
+            gap: 24,
             maxWidth: 400,
             width: '100%',
           }}
@@ -276,7 +276,7 @@ export function BatchPaymentPage() {
     <div style={{
       minHeight: '100vh',
       background: 'var(--bg-main)',
-      paddingBottom: 40,
+      paddingBottom: 48,
     }}>
       {/* Header */}
       <div style={{
@@ -337,7 +337,7 @@ export function BatchPaymentPage() {
           animate={{ opacity: 1, y: 0 }}
           style={{
             background: 'var(--bg-card-solid)',
-            borderRadius: 24,
+            borderRadius: 12,
             border: '1px solid var(--gold-glass-strong)',
             overflow: 'hidden',
           }}
@@ -360,7 +360,7 @@ export function BatchPaymentPage() {
               <div style={{
                 width: 48,
                 height: 48,
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
                 border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
@@ -393,10 +393,10 @@ export function BatchPaymentPage() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               padding: '8px 12px',
               background: 'rgba(245, 158, 11, 0.1)',
-              borderRadius: 10,
+              borderRadius: 8,
               border: '1px solid rgba(245, 158, 11, 0.2)',
             }}>
               <Timer size={14} color="var(--warning-text)" />
@@ -422,7 +422,7 @@ export function BatchPaymentPage() {
             }}>
               Заказы к оплате
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {paymentInfo?.orders.map((order) => (
                 <div
                   key={order.id}
@@ -440,7 +440,7 @@ export function BatchPaymentPage() {
                     <div style={{
                       width: 36,
                       height: 36,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       background: 'var(--gold-glass-medium)',
                       display: 'flex',
                       alignItems: 'center',
@@ -484,7 +484,7 @@ export function BatchPaymentPage() {
           {/* Main Content */}
           <div style={{ padding: 24 }}>
             {/* Big Price */}
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <p style={{
                 fontSize: 12,
                 color: 'var(--text-muted)',
@@ -522,7 +522,7 @@ export function BatchPaymentPage() {
                     marginTop: 12,
                     padding: '8px 16px',
                     background: 'rgba(212,175,55,0.1)',
-                    borderRadius: 10,
+                    borderRadius: 8,
                     border: '1px solid var(--border-gold)',
                     display: 'inline-block',
                   }}
@@ -543,7 +543,7 @@ export function BatchPaymentPage() {
             </div>
 
             {/* Payment Scheme Selector */}
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 24 }}>
               <p style={{
                 fontSize: 11,
                 fontWeight: 700,
@@ -567,7 +567,7 @@ export function BatchPaymentPage() {
                     border: paymentScheme === 'full'
                       ? '2px solid rgba(212,175,55,0.5)'
                       : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     cursor: 'pointer',
                   }}
                 >
@@ -597,7 +597,7 @@ export function BatchPaymentPage() {
                     border: paymentScheme === 'half'
                       ? '2px solid rgba(212,175,55,0.5)'
                       : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     cursor: 'pointer',
                   }}
                 >
@@ -643,7 +643,7 @@ export function BatchPaymentPage() {
                     border: paymentMethod === 'card'
                       ? '2px solid rgba(59,130,246,0.5)'
                       : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     cursor: 'pointer',
                   }}
                 >
@@ -673,7 +673,7 @@ export function BatchPaymentPage() {
                     border: paymentMethod === 'sbp'
                       ? '2px solid rgba(139,92,246,0.5)'
                       : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     cursor: 'pointer',
                   }}
                 >
@@ -704,9 +704,9 @@ export function BatchPaymentPage() {
                   exit={{ opacity: 0, height: 0 }}
                   style={{
                     background: 'rgba(59,130,246,0.05)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     border: '1px solid rgba(59,130,246,0.2)',
-                    padding: 20,
+                    padding: 24,
                     marginBottom: 24,
                   }}
                 >
@@ -774,9 +774,9 @@ export function BatchPaymentPage() {
                   exit={{ opacity: 0, height: 0 }}
                   style={{
                     background: 'rgba(139,92,246,0.05)',
-                    borderRadius: 16,
+                    borderRadius: 12,
                     border: '1px solid rgba(139,92,246,0.2)',
-                    padding: 20,
+                    padding: 24,
                     marginBottom: 24,
                   }}
                 >
@@ -876,7 +876,7 @@ export function BatchPaymentPage() {
                   ? 'var(--surface-active)'
                   : 'var(--liquid-gold)',
                 border: 'none',
-                borderRadius: 16,
+                borderRadius: 12,
                 cursor: processing ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',

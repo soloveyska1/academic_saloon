@@ -93,9 +93,9 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
         padding: '14px 16px',
         background: config.gradient,
         border: `1px solid ${config.border}`,
-        borderRadius: 16,
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 12,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         boxShadow: `
           0 10px 40px -10px rgba(0, 0, 0, 0.5),
           0 0 20px -5px ${config.border}
@@ -197,13 +197,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         role="status"
         style={{
           position: 'fixed',
-          top: 20,
+          top: 24,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 10000,
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 8,
           padding: '0 16px',
           width: '100%',
           maxWidth: 380,

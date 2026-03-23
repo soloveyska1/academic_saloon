@@ -127,7 +127,7 @@ export function SuccessScreen({
               </motion.p>
 
               {/* Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
                 <motion.button
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -357,7 +357,7 @@ export function SuccessScreen({
             )}
 
             {/* ─── CTAs ─── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
               {/* Primary CTA */}
               <motion.button
                 initial={{ opacity: 0, y: 10 }}
@@ -419,7 +419,7 @@ export function SuccessScreen({
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const PAGE_STYLE: React.CSSProperties = {
-  padding: 20,
+  padding: 24,
   paddingBottom: 100,
   minHeight: '100vh',
   height: '100dvh',
@@ -439,7 +439,7 @@ const CARD_STYLE: React.CSSProperties = {
   width: '100%',
   maxWidth: 420,
   padding: '32px 24px 24px',
-  borderRadius: 28,
+  borderRadius: 12,
   overflow: 'hidden',
 }
 
@@ -473,7 +473,7 @@ const errorCircleStyle: React.CSSProperties = {
 const ORDER_NUMBER_STYLE: React.CSSProperties = {
   fontFamily: "'Manrope', sans-serif",
   fontSize: 56,
-  fontWeight: 800,
+  fontWeight: 700,
   letterSpacing: '-0.03em',
   lineHeight: 1,
   textAlign: 'center',
@@ -505,7 +505,7 @@ const SUBTITLE_STYLE: React.CSSProperties = {
 // ─── Receipt card ───
 const RECEIPT_CARD: React.CSSProperties = {
   padding: 16,
-  borderRadius: 16,
+  borderRadius: 12,
   background: 'rgba(255, 255, 255, 0.04)',
   border: '1px solid rgba(255, 255, 255, 0.06)',
   marginBottom: 16,
@@ -535,7 +535,7 @@ const RECEIPT_LABEL_BOLD: React.CSSProperties = {
 
 const RECEIPT_VALUE: React.CSSProperties = {
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 600,
   color: 'rgba(255, 255, 255, 0.75)',
   fontFamily: "'Manrope', sans-serif",
   textAlign: 'right',
@@ -575,7 +575,7 @@ const RECEIPT_TOTAL_VALUE: React.CSSProperties = {
 // ─── Timeline ───
 const TIMELINE_CONTAINER: React.CSSProperties = {
   padding: '14px 16px',
-  borderRadius: 14,
+  borderRadius: 12,
   background: 'rgba(212, 175, 55, 0.04)',
   border: '1px solid rgba(212, 175, 55, 0.08)',
   marginBottom: 4,
@@ -584,7 +584,7 @@ const TIMELINE_CONTAINER: React.CSSProperties = {
 const TIMELINE_ROW: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 10,
+  gap: 8,
 }
 
 const TIMELINE_DOT_ACTIVE: React.CSSProperties = {
@@ -620,7 +620,7 @@ const TIMELINE_TEXT_ACTIVE: React.CSSProperties = {
 
 const TIMELINE_TEXT_PENDING: React.CSSProperties = {
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 600,
   color: 'rgba(255, 255, 255, 0.4)',
   flex: 1,
 }
@@ -646,7 +646,7 @@ const REASSURANCE_STYLE: React.CSSProperties = {
 const SECONDARY_BUTTON: React.CSSProperties = {
   minHeight: 48,
   padding: '0 18px',
-  borderRadius: 14,
+  borderRadius: 12,
   border: 'none',
   background: 'transparent',
   color: 'rgba(212, 212, 216, 0.45)',
@@ -659,7 +659,7 @@ const SECONDARY_BUTTON: React.CSSProperties = {
 const HELP_TEXT_STYLE: React.CSSProperties = {
   width: '100%',
   maxWidth: 420,
-  marginTop: 14,
+  marginTop: 12,
   fontSize: 12.5,
   lineHeight: 1.6,
   color: 'var(--text-muted)',

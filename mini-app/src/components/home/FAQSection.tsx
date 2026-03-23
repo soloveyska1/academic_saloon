@@ -42,8 +42,8 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
       style={{
         borderRadius: 'var(--radius-md)',
         background: isOpen ? 'rgba(201, 162, 39, 0.04)' : 'rgba(12, 12, 10, 0.6)',
-        backdropFilter: 'blur(16px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        backdropFilter: 'blur(16px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(120%)',
         border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(255, 255, 255, 0.04)'}`,
         overflow: 'hidden',
         transition: 'background 0.2s, border-color 0.2s',
@@ -97,7 +97,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
             <div style={{
               padding: '0 16px 16px',
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-secondary)',
               lineHeight: 1.55,
             }}>
@@ -147,7 +147,7 @@ export const FAQSection = memo(function FAQSection() {
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {FAQ_ITEMS.map((item, i) => (
           <FAQAccordionItem
             key={i}

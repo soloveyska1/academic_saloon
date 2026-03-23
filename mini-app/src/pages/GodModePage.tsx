@@ -54,7 +54,7 @@ export function GodModePage() {
   if (!accessResolved) {
     return (
       <div className={s.loadingScreen}>
-        <div className={s.mutedSmall} style={{ padding: 40, textAlign: 'center' }}>Проверка доступа…</div>
+        <div className={s.mutedSmall} style={{ padding: 48, textAlign: 'center' }}>Проверка доступа…</div>
       </div>
     )
   }
