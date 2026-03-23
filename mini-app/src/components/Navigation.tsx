@@ -6,77 +6,11 @@ import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
 import { isNavigationItemActive, shouldHideBottomNavigation } from '../utils/navigation'
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM ISLAND NAVIGATION — "The Floating Command Center"
-//  Features: Dynamic Island animations, Deep Glassmorphism, Perfect Z-Index
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM NAVIGATION - "FLOATING GLASS COMMAND CENTER"
-//  Features: Magnetic Buttons, Spotlight Active State, Smart Hide
-// ═══════════════════════════════════════════════════════════════════════════
-
 interface NavItem {
   id: string
   path: string
   icon: LucideIcon
   label: string
-}
-
-function MagneticItem({
-  children,
-  onClick,
-  isActive,
-  label,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  isActive: boolean
-  label: string
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const { clientX, clientY } = e
-    const { left, top, width, height } = ref.current!.getBoundingClientRect()
-    const x = (clientX - (left + width / 2)) * 0.3 // Pull strength
-    const y = (clientY - (top + height / 2)) * 0.3
-    setPosition({ x, y })
-  }
-
-  const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 })
-  }
-
-  return (
-    <motion.div
-      role="button"
-      aria-label={label}
-      aria-current={isActive ? 'page' : undefined}
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onClick={onClick}
-      animate={{ x: position.x, y: position.y }}
-      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 60,
-        height: 60,
-        cursor: 'pointer',
-        position: 'relative',
-        zIndex: 2,
-        // Small tap shrink
-      }}
-      whileTap={{ scale: 0.9 }}
-    >
-      {children}
-    </motion.div>
-  )
 }
 
 export const Navigation = () => {
@@ -182,11 +116,6 @@ export const Navigation = () => {
 
   if (shouldHideNav && !isVisible) return null
 
-  // Theme-aware colors
-  const goldAccent = 'var(--gold-400)'
-  const inactiveIconColor = 'var(--text-muted)'
-  const inactiveLabelColor = 'var(--text-secondary)'
-
   return (
     <AnimatePresence>
       {isVisible && (
@@ -203,99 +132,205 @@ export const Navigation = () => {
           style={{
             position: 'fixed',
             bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
-            left: '50%',
-            translateX: '-50%',
+            left: 0,
+            right: 0,
             zIndex: 900,
-            width: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '0 12px',
+            pointerEvents: 'none',
           }}
         >
-          {/* Dynamic Island Capsule */}
           <div style={{
-            background: 'var(--nav-capsule-bg)',
-            backdropFilter: 'blur(24px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-            borderRadius: '100px',
-            padding: '6px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 4,
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            width: 'min(100%, 382px)',
+            maxWidth: '100%',
+            padding: '10px 12px 12px',
+            borderRadius: 30,
+            background: 'linear-gradient(180deg, rgba(17, 16, 15, 0.95) 0%, rgba(9, 9, 11, 0.98) 100%)',
+            backdropFilter: 'blur(26px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(26px) saturate(160%)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 54px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04)',
+            pointerEvents: 'auto',
           }}>
-
-
-
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: '0 auto auto 0',
+                width: '100%',
+                height: 1,
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.02) 100%)',
+              }}
+            />
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: -64,
+                right: 18,
+                width: 132,
+                height: 132,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(212,175,55,0.11) 0%, rgba(212,175,55,0.03) 42%, transparent 76%)',
+                pointerEvents: 'none',
+              }}
+            />
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                alignItems: 'stretch',
+                gap: 4,
+              }}
+            >
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
 
               return (
-                <div key={item.id} style={{ position: 'relative' }}>
-                  {/* Active Spotlight (The "Pill") */}
+                <motion.button
+                  key={item.id}
+                  type="button"
+                  layout
+                  aria-label={item.label}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => {
+                    haptic(isActive ? 'soft' : 'light')
+                    if (isActive && location.pathname === item.path) {
+                      scrollToTop()
+                      return
+                    }
+
+                    navigate(item.path)
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    minWidth: 0,
+                    width: '100%',
+                    height: 72,
+                    padding: '8px 4px 9px',
+                    borderRadius: 20,
+                    border: isActive
+                      ? '1px solid rgba(212,175,55,0.14)'
+                      : '1px solid transparent',
+                    background: isActive
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(212,175,55,0.05) 100%)'
+                      : 'transparent',
+                    boxShadow: isActive
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                      : 'none',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                  }}
+                >
                   {isActive && (
                     <motion.div
-                      layoutId="navPill"
+                      layoutId="navActiveSurface"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
                       style={{
                         position: 'absolute',
-                        inset: 6,
-                        borderRadius: '50px',
-                        background: 'var(--nav-pill-bg)',
-                        boxShadow: 'var(--nav-glow)',
-                        border: 'none',
-                        zIndex: 0
+                        inset: 0,
+                        borderRadius: 20,
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%)',
+                        pointerEvents: 'none',
                       }}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
 
-                  <MagneticItem
-                    isActive={isActive}
-                    label={item.label}
-                    onClick={() => {
-                      haptic(isActive ? 'soft' : 'light')
-                      if (isActive && location.pathname === item.path) {
-                        scrollToTop()
-                        return
-                      }
-
-                      navigate(item.path)
+                  <motion.div
+                    layout
+                    transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                    style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      width: isActive ? 48 : 38,
+                      height: isActive ? 48 : 38,
+                      borderRadius: isActive ? 18 : 14,
+                      background: isActive
+                        ? 'linear-gradient(180deg, rgba(212,175,55,0.28) 0%, rgba(212,175,55,0.12) 100%)'
+                        : 'rgba(255,255,255,0.035)',
+                      border: isActive
+                        ? '1px solid rgba(212,175,55,0.26)'
+                        : '1px solid rgba(255,255,255,0.05)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: isActive
+                        ? '0 16px 24px -18px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.09)'
+                        : 'none',
+                      flexShrink: 0,
                     }}
                   >
-                    <motion.div
-                      animate={{
-                        scale: isActive ? 1.05 : 1,
-                        color: isActive ? goldAccent : inactiveIconColor
-                      }}
-                    >
-                      <Icon
-                        size={24}
-                        strokeWidth={isActive ? 2.2 : 1.8}
-                        fill="none"
-                      />
-                    </motion.div>
+                    <Icon
+                      size={isActive ? 22 : 19}
+                      strokeWidth={isActive ? 2.1 : 1.95}
+                      color={isActive ? 'var(--gold-100)' : 'var(--text-secondary)'}
+                    />
+                  </motion.div>
 
+                  <motion.div
+                    layout
+                    transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                    style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      gap: 3,
+                    }}
+                  >
                     <motion.span
                       animate={{
-                        opacity: isActive ? 1 : 0.72,
-                        y: isActive ? 0 : 1,
-                        color: isActive ? goldAccent : inactiveLabelColor
+                        color: isActive ? 'var(--gold-200)' : 'rgba(255,255,255,0.7)',
+                        opacity: isActive ? 1 : 0.82,
                       }}
                       style={{
-                        fontSize: 10,
-                        fontWeight: isActive ? 600 : 500,
-                        letterSpacing: '0.02em',
-                        marginTop: 3,
+                        fontSize: 11,
+                        fontWeight: isActive ? 700 : 600,
+                        letterSpacing: isActive ? '0.01em' : '0.01em',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
                       {item.label}
                     </motion.span>
-                  </MagneticItem>
-                </div>
+
+                    {isActive && (
+                      <motion.span
+                        initial={{ opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 3 }}
+                        style={{
+                          width: 16,
+                          height: 2,
+                          borderRadius: 999,
+                          background: 'linear-gradient(90deg, rgba(212,175,55,0.92), rgba(255,248,214,0.7))',
+                          boxShadow: '0 0 12px rgba(212,175,55,0.28)',
+                        }}
+                      />
+                    )}
+                  </motion.div>
+                </motion.button>
               )
             })}
+            </div>
           </div>
         </motion.nav>
       )}

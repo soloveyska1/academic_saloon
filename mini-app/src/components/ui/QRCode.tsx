@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, Download, ExternalLink, Loader2, Share2, X } from 'lucide-react'
+import { Check, Download, ExternalLink, Loader2, Share2 } from 'lucide-react'
 import { API_BASE_URL, getAuthHeaders } from '../../api/userApi'
 import { CenteredModalWrapper } from '../modals/shared'
 
@@ -168,49 +168,68 @@ export function QRCodeModal({
       onClose={onClose}
       modalId="qr-code-modal"
       title={title}
-      hideCloseButton
+      accentColor="var(--gold-400)"
     >
-      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: 'var(--surface-hover)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-muted)',
-          }}
-        >
-          <X size={16} />
-        </motion.button>
-
-        <div style={{ marginTop: 8, marginBottom: 18 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+      <div style={{ padding: '24px 22px 22px', textAlign: 'center' }}>
+        <div style={{ marginTop: 6, marginBottom: 20 }}>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(212,175,55,0.72)',
+              marginBottom: 8,
+            }}
+          >
+            Приглашение
+          </div>
+          <h3
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 32,
+              lineHeight: 0.96,
+              letterSpacing: '-0.05em',
+              color: 'var(--text-primary)',
+              margin: '0 0 8px 0',
+            }}
+          >
             {title}
           </h3>
-          <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
             {subtitle}
           </p>
         </div>
 
         <div
           style={{
-            minHeight: 220,
+            position: 'relative',
+            minHeight: 236,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 16,
+            marginBottom: 18,
+            padding: 18,
+            borderRadius: 26,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(16,14,11,0.58) 100%)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            overflow: 'hidden',
           }}
         >
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: -54,
+              right: -26,
+              width: 150,
+              height: 150,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 28%, transparent 72%)',
+              pointerEvents: 'none',
+            }}
+          />
+
           {assetState.loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
               <Loader2 size={28} color="var(--gold-400)" style={{ animation: 'spin 1s linear infinite' }} />
@@ -224,8 +243,10 @@ export function QRCodeModal({
               style={{
                 width: '100%',
                 maxWidth: assetState.cardUrl ? 320 : 220,
-                borderRadius: assetState.cardUrl ? 18 : 16,
-                boxShadow: '0 16px 36px rgba(0,0,0,0.35)',
+                borderRadius: assetState.cardUrl ? 22 : 18,
+                boxShadow: '0 20px 42px rgba(0,0,0,0.4)',
+                position: 'relative',
+                zIndex: 1,
               }}
             />
           ) : (
@@ -234,9 +255,9 @@ export function QRCodeModal({
                 width: '100%',
                 maxWidth: 280,
                 padding: '22px 20px',
-                borderRadius: 18,
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--surface-hover)',
+                borderRadius: 20,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.6,
                 fontSize: 13,
@@ -250,10 +271,11 @@ export function QRCodeModal({
         <div
           style={{
             padding: '14px 16px',
-            marginBottom: 16,
-            borderRadius: 14,
-            background: 'var(--bg-glass)',
-            border: '1px solid var(--border-default)',
+            marginBottom: 18,
+            borderRadius: 18,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            textAlign: 'left',
           }}
         >
           <div
@@ -283,19 +305,19 @@ export function QRCodeModal({
           </code>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleDownload}
             disabled={downloading || !visibleImageUrl}
             style={{
-              minHeight: 48,
-              borderRadius: 14,
-              border: '1px solid var(--border-strong)',
-              background: 'var(--border-default)',
+              minHeight: 50,
+              borderRadius: 16,
+              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.04)',
               color: downloaded ? 'var(--success-text)' : 'var(--text-primary)',
               fontSize: 12.5,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: downloading || !visibleImageUrl ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -313,8 +335,8 @@ export function QRCodeModal({
             onClick={handleShare}
             disabled={sharing || !value}
             style={{
-              minHeight: 48,
-              borderRadius: 14,
+              minHeight: 50,
+              borderRadius: 16,
               border: 'none',
               background: 'var(--gold-metallic)',
               color: 'var(--text-on-gold)',
@@ -331,31 +353,32 @@ export function QRCodeModal({
             {sharing ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Share2 size={15} />}
             Поделиться
           </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleOpenLink}
-            disabled={!value}
-            style={{
-              minHeight: 48,
-              borderRadius: 14,
-              border: '1px solid rgba(212,175,55,0.18)',
-              background: 'rgba(212,175,55,0.1)',
-              color: 'var(--gold-400)',
-              fontSize: 12.5,
-              fontWeight: 700,
-              cursor: value ? 'pointer' : 'default',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              opacity: value ? 1 : 0.5,
-            }}
-          >
-            <ExternalLink size={15} />
-            Открыть
-          </motion.button>
         </div>
+
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleOpenLink}
+          disabled={!value}
+          style={{
+            width: '100%',
+            minHeight: 50,
+            borderRadius: 16,
+            border: '1px solid rgba(212,175,55,0.16)',
+            background: 'rgba(212,175,55,0.08)',
+            color: 'var(--gold-400)',
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: value ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            opacity: value ? 1 : 0.5,
+          }}
+        >
+          <ExternalLink size={15} />
+          Открыть ссылку
+        </motion.button>
 
         <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, margin: '14px 4px 0' }}>
           Если QR не сканируется с экрана, можно скачать карточку или сразу открыть ссылку в Telegram.

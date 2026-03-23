@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {/* Error Message */}
           <div style={{ textAlign: 'center', maxWidth: 320, zIndex: 1 }}>
             <h2 style={{
-              fontFamily: "'Cinzel', serif",
+              fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: 28,
               fontWeight: 700,
               background: 'linear-gradient(180deg, var(--text-primary) 0%, var(--gold-400) 100%)',

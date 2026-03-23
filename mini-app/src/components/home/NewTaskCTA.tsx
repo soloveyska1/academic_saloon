@@ -260,20 +260,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 color: 'var(--text-secondary)',
                 fontWeight: 500,
                 lineHeight: 1.45,
-                marginBottom: 10,
+                marginBottom: 0,
               }}
             >
               Расчёт за 5 минут, стоимость известна до оплаты.
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: 'rgba(255,255,255,0.56)',
-              }}
-            >
-              Без звонков · всё в чате
             </div>
           </div>
 

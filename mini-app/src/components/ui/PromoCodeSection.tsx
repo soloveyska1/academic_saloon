@@ -73,7 +73,9 @@ export function PromoCodeSection({
       }
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {})
-    } catch {}
+    } catch {
+      return
+    }
   }
 
   // Generate confetti particles
@@ -110,12 +112,12 @@ export function PromoCodeSection({
 
   // Show success animation when promo is applied
   useEffect(() => {
-    if (activePromo && !showSuccess) {
-      setShowSuccess(true)
-      const timer = setTimeout(() => setShowSuccess(false), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [activePromo])
+    if (!activePromo || showSuccess) return
+
+    setShowSuccess(true)
+    const timer = setTimeout(() => setShowSuccess(false), 2000)
+    return () => clearTimeout(timer)
+  }, [activePromo, showSuccess])
 
   useEffect(() => {
     if (collapsible && (activePromo || validationError)) {
@@ -175,6 +177,14 @@ export function PromoCodeSection({
   const savings = basePrice && activePromo
     ? Math.round(basePrice * (activePromo.discount / 100))
     : 0
+
+  const promoCardTitle = collapsible ? 'Введите код' : 'Есть промокод?'
+  const promoCardDescription = collapsible
+    ? 'Проверим скидку до подтверждения оплаты'
+    : 'Введите для получения скидки'
+  const promoToggleLabel = activePromo
+    ? `${activePromo.code} • скидка ${activePromo.discount}%`
+    : 'Промокод'
 
   // ═══════════════════════════════════════════════════════════════════════════
   //  COMPACT VARIANT — Small badge/pill showing active promo
@@ -735,13 +745,13 @@ export function PromoCodeSection({
                   fontWeight: 600,
                   color: 'var(--text-main)',
                 }}>
-                  Есть промокод?
+                  {promoCardTitle}
                 </div>
                 <div style={{
                   fontSize: 12,
                   color: 'var(--text-muted)',
                 }}>
-                  Введите для получения скидки
+                  {promoCardDescription}
                 </div>
               </div>
             </div>
@@ -939,7 +949,7 @@ export function PromoCodeSection({
               fontWeight: 600,
               color: activePromo ? 'var(--success-text)' : 'var(--text-secondary)',
             }}>
-              {activePromo ? `${activePromo.code} (-${activePromo.discount}%)` : 'Есть промокод?'}
+              {promoToggleLabel}
             </span>
           </div>
           {isExpanded ? (

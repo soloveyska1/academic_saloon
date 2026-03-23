@@ -52,7 +52,7 @@ export const LuxuryLoader = () => {
             />
             <text
               style={{
-                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontFamily: "'Playfair Display', Georgia, serif",
                 fontSize: '12px',
                 fontWeight: 600,
                 letterSpacing: '0.25em',
@@ -87,7 +87,7 @@ export const LuxuryLoader = () => {
           />
           <span
             style={{
-              fontFamily: "'Cinzel', 'Playfair Display', serif",
+              fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: 32,
               fontWeight: 700,
               letterSpacing: '0.12em',

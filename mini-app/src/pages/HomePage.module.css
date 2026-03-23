@@ -3,10 +3,13 @@
 /* Subtraction > Addition. Whitespace = confidence. */
 
 .container {
+  width: 100%;
+  max-width: 100%;
   padding-left: var(--page-padding-x);
   padding-right: var(--page-padding-x);
   padding-top: var(--page-padding-top);
   min-height: 100vh;
+  overflow-x: clip;
   animation: pageEnter 0.4s ease-out forwards;
 }
 

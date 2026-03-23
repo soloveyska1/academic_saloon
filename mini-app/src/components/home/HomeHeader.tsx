@@ -51,25 +51,7 @@ export const HomeHeader = memo(function HomeHeader({
 
     return null
   }, [summary, isNewUser, ordersCount])
-
-  const controlItems = useMemo(() => {
-    if (!summary || isNewUser) return []
-
-    return [
-      {
-        label: 'На счёте',
-        value: formatMoney(summary.balance),
-        accent: true,
-      },
-      {
-        label: summary.activeOrders > 0 ? 'В работе' : 'Оформлено',
-        value: summary.activeOrders > 0
-          ? `${summary.activeOrders} ${summary.activeOrders === 1 ? 'заказ' : summary.activeOrders < 5 ? 'заказа' : 'заказов'}`
-          : `${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`,
-        accent: false,
-      },
-    ]
-  }, [summary, isNewUser, ordersCount])
+  const hasSummary = Boolean(summary && !isNewUser)
 
   return (
     <motion.header
@@ -83,25 +65,25 @@ export const HomeHeader = memo(function HomeHeader({
         style={{
           position: 'relative',
           overflow: 'hidden',
-          padding: isNewUser ? '22px 20px 18px' : '22px 20px 18px',
-          borderRadius: 30,
+          padding: isNewUser ? '22px 20px 18px' : '24px 20px 20px',
+          borderRadius: 32,
           background: isNewUser
-            ? 'linear-gradient(160deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
-            : 'linear-gradient(160deg, rgba(30, 24, 13, 0.98) 0%, rgba(15, 15, 16, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.11)',
-          boxShadow: '0 34px 70px -42px rgba(0, 0, 0, 0.86)',
+            ? 'linear-gradient(165deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
+            : 'linear-gradient(165deg, rgba(24, 20, 12, 0.98) 0%, rgba(14, 13, 14, 0.97) 44%, rgba(8, 8, 10, 1) 100%)',
+          border: '1px solid rgba(212, 175, 55, 0.10)',
+          boxShadow: '0 34px 64px -42px rgba(0, 0, 0, 0.88)',
         }}
       >
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: -96,
-            right: -58,
-            width: 240,
-            height: 240,
+            top: -82,
+            right: -44,
+            width: 210,
+            height: 210,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.05) 30%, transparent 74%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.04) 34%, transparent 74%)',
             pointerEvents: 'none',
           }}
         />
@@ -122,23 +104,43 @@ export const HomeHeader = memo(function HomeHeader({
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
-              gap: 14,
-              marginBottom: !isNewUser && controlItems.length > 0 ? 18 : 0,
+              gap: 16,
+              marginBottom: hasSummary ? 18 : 0,
             }}
           >
+            {!isNewUser && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: 22,
+                  top: 28,
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 118,
+                  lineHeight: 0.82,
+                  color: 'rgba(212,175,55,0.035)',
+                  letterSpacing: '-0.09em',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                {(firstName && firstName.trim().length > 0 ? firstName : 'S').charAt(0)}
+              </div>
+            )}
+
             <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
               <div
                 className={s.avatarContainer}
                 onClick={onSecretTap}
-                style={{ width: 68, height: 68, flexShrink: 0 }}
+                style={{ width: 72, height: 72, flexShrink: 0 }}
               >
                 <div
                   className={s.avatar}
                   style={{
                     position: 'relative',
                     background: 'var(--bg-elevated)',
-                    width: 62,
-                    height: 62,
+                    width: 66,
+                    height: 66,
                   }}
                 >
                   <div
@@ -194,9 +196,9 @@ export const HomeHeader = memo(function HomeHeader({
               <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 6 }}>
                 <div
                   style={{
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: 700,
-                    letterSpacing: '0.14em',
+                    letterSpacing: '0.16em',
                     textTransform: 'uppercase',
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
@@ -208,68 +210,43 @@ export const HomeHeader = memo(function HomeHeader({
                   className={s.userName}
                   style={{
                     fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: isNewUser ? 30 : 34,
-                    lineHeight: 0.95,
-                    letterSpacing: '-0.05em',
+                    fontSize: isNewUser ? 32 : 38,
+                    lineHeight: 0.9,
+                    letterSpacing: '-0.055em',
                     textTransform: 'none',
                   }}
                 >
                   {firstName}
                 </div>
 
-                {!isNewUser && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginTop: 8,
-                    }}
-                  >
-                    {user.rank.is_max && (
-                      <div
-                        style={{
-                          padding: '7px 11px',
-                          borderRadius: 999,
-                          background: 'rgba(212,175,55,0.08)',
-                          border: '1px solid rgba(212,175,55,0.14)',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          color: 'var(--gold-300)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Премиум-клуб
-                      </div>
-                    )}
-
-                    {!user.rank.is_max && summary && summary.cashback > 0 && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          lineHeight: 1.35,
-                          color: 'rgba(255,255,255,0.58)',
-                        }}
-                      >
-                        Кэшбэк {summary.cashback}%
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {!isNewUser && activityLine && (
                   <div
                     style={{
-                      marginTop: 6,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      lineHeight: 1.4,
-                      color: 'rgba(255,255,255,0.54)',
+                      marginTop: 10,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      alignSelf: 'flex-start',
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      color: 'rgba(255,255,255,0.72)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      lineHeight: 1,
                     }}
                   >
+                    <span
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: 'rgba(212,175,55,0.95)',
+                        boxShadow: '0 0 12px rgba(212,175,55,0.4)',
+                        flexShrink: 0,
+                      }}
+                    />
                     {activityLine}
                   </div>
                 )}
@@ -288,16 +265,16 @@ export const HomeHeader = memo(function HomeHeader({
                   flexShrink: 0,
                   padding: '12px 14px',
                   background: 'rgba(18, 16, 12, 0.72)',
-                  border: '1px solid rgba(212, 175, 55, 0.15)',
-                  borderRadius: 18,
+                  border: '1px solid rgba(212, 175, 55, 0.14)',
+                  borderRadius: 20,
                   color: 'var(--gold-300)',
                   fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: 700,
-                  letterSpacing: '0.1em',
+                  letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                   backdropFilter: 'blur(16px) saturate(150%)',
-                  boxShadow: '0 16px 32px -24px rgba(0, 0, 0, 0.76)',
+                  boxShadow: '0 16px 28px -24px rgba(0, 0, 0, 0.78)',
                 }}
               >
                 Клуб
@@ -306,57 +283,108 @@ export const HomeHeader = memo(function HomeHeader({
             )}
           </div>
 
-          {!isNewUser && controlItems.length > 0 && (
+          {hasSummary && summary && (
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 0,
-                borderRadius: 22,
-                overflow: 'hidden',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)',
+                gap: 10,
               }}
             >
-              {controlItems.map((item, index) => (
+              <div
+                style={{
+                  minWidth: 0,
+                  padding: '16px 16px 14px',
+                  borderRadius: 22,
+                  background: 'linear-gradient(180deg, rgba(212,175,55,0.11) 0%, rgba(255,255,255,0.03) 100%)',
+                  border: '1px solid rgba(212,175,55,0.12)',
+                }}
+              >
                 <div
-                  key={item.label}
                   style={{
-                    minWidth: 0,
-                    padding: '14px 16px',
-                    borderLeft: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                    background: item.accent
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-                      : 'transparent',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.34)',
+                    marginBottom: 8,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.56)',
-                      marginBottom: 7,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 17,
-                      fontWeight: 700,
-                      lineHeight: 1.2,
-                      letterSpacing: '-0.03em',
-                      color: item.accent ? 'var(--gold-300)' : 'var(--text-primary)',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {item.value}
-                  </div>
+                  На счёте
                 </div>
-              ))}
+                <div
+                  style={{
+                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                    fontSize: 34,
+                    fontWeight: 700,
+                    lineHeight: 0.94,
+                    letterSpacing: '-0.06em',
+                    color: 'var(--gold-200)',
+                    marginBottom: 6,
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {formatMoney(summary.balance)}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: 'rgba(255,255,255,0.56)',
+                  }}
+                >
+                  Доступно для оплаты новых заказов
+                </div>
+              </div>
+
+              <div
+                style={{
+                  minWidth: 0,
+                  padding: '16px 16px 14px',
+                  borderRadius: 22,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.34)',
+                    marginBottom: 10,
+                  }}
+                >
+                  Кэшбэк
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 700,
+                    lineHeight: 0.98,
+                    letterSpacing: '-0.05em',
+                    color: 'var(--text-primary)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {summary.cashback}%
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: 'rgba(255,255,255,0.56)',
+                  }}
+                >
+                  На новые заказы
+                </div>
+              </div>
             </div>
           )}
         </div>

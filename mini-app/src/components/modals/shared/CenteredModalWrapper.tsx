@@ -14,9 +14,9 @@ const STYLES = {
   backdrop: {
     position: 'fixed' as const,
     inset: 0,
-    background: 'var(--overlay-bg)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    background: 'rgba(6, 6, 8, 0.8)',
+    backdropFilter: 'blur(22px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(22px) saturate(180%)',
     zIndex: 2000,
     display: 'flex',
     alignItems: 'center',
@@ -26,31 +26,32 @@ const STYLES = {
   dialog: {
     position: 'relative' as const,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 430,
     maxHeight: '90vh',
     overflowY: 'auto' as const,
     overflowX: 'hidden' as const,
     overscrollBehavior: 'contain' as const,
     WebkitOverflowScrolling: 'touch' as const,
-    background: 'var(--bg-elevated)',
-    borderRadius: 28,
-    boxShadow: 'var(--modal-shadow)',
+    background: 'linear-gradient(180deg, rgba(24, 20, 13, 0.98) 0%, rgba(12, 12, 13, 0.98) 30%, rgba(8, 8, 10, 1) 100%)',
+    borderRadius: 30,
+    boxShadow: '0 34px 90px rgba(0,0,0,0.5)',
     zIndex: 2001,
   },
   closeButton: {
     position: 'absolute' as const,
     top: 16,
     right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    background: 'var(--surface-hover)',
-    border: '1px solid var(--border-strong)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     zIndex: 10,
+    boxShadow: '0 12px 24px -20px rgba(0,0,0,0.7)',
   },
 }
 
@@ -91,7 +92,7 @@ export function CenteredModalWrapper({
   children,
   modalId,
   title,
-  accentColor: _accentColor = '#D4AF37',
+  accentColor = '#D4AF37',
   hideCloseButton = false,
 }: CenteredModalWrapperProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -137,10 +138,10 @@ export function CenteredModalWrapper({
 
   const dialogStyle = useMemo(() => ({
     ...STYLES.dialog,
-    border: '1px solid var(--border-gold)',
+    border: '1px solid rgba(255,255,255,0.05)',
   }), [])
 
-  const closeIconColor = 'var(--text-muted)'
+  const closeIconColor = 'rgba(255,255,255,0.72)'
 
   return createPortal(
     <LazyMotion features={domAnimation}>
@@ -176,6 +177,43 @@ export function CenteredModalWrapper({
                 aria-labelledby={`${modalId}-title`}
                 tabIndex={-1}
               >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 16%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: -96,
+                    right: -42,
+                    width: 220,
+                    height: 220,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 30%, transparent 72%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 1,
+                    background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+                    opacity: 0.5,
+                  }}
+                />
+
                 {/* Close Button */}
                 {!hideCloseButton && (
                   <m.button
@@ -192,7 +230,9 @@ export function CenteredModalWrapper({
                 <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
 
                 {/* Content */}
-                {children}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  {children}
+                </div>
               </m.div>
             </m.div>
           </>

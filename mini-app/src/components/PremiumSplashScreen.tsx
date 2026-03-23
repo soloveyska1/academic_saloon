@@ -108,7 +108,7 @@ export function PremiumSplashScreen({
           animate={phase >= 3 ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
           transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{
-            fontFamily: "'Cinzel', 'Playfair Display', serif",
+            fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 'clamp(16px, 4.8vw, 24px)',
             fontWeight: 600,
             letterSpacing: '0.22em',
@@ -269,7 +269,7 @@ function Seal({ phase }: { phase: number }) {
           initial={{ opacity: 0 }}
           animate={phase >= 2 ? { opacity: 1 } : {}}
           transition={{ duration: 0.6 }}
-          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", fontSize: 52, fontWeight: 700, letterSpacing: '0.12em' }}
+          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 52, fontWeight: 700, letterSpacing: '0.12em' }}
           fill="url(#sg1)"
         >
           АС
@@ -295,7 +295,7 @@ function Seal({ phase }: { phase: number }) {
                 fill="none"
               />
             </defs>
-            <text style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.22em' }}>
+            <text style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.22em' }}>
               <textPath href="#trp" startOffset="0%" fill={G.primary} opacity="0.5">
                 АКАДЕМИЧЕСКИЙ • САЛОН • АКАДЕМИЧЕСКИЙ • САЛОН •
               </textPath>

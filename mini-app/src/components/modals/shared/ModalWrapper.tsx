@@ -59,7 +59,7 @@ export function ModalWrapper({
   children,
   modalId,
   title,
-  accentColor: _accentColor = '#D4AF37',
+  accentColor = '#D4AF37',
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -164,9 +164,10 @@ export function ModalWrapper({
     maxHeight: '92vh',
     display: 'flex',
     flexDirection: 'column',
-    background: 'var(--bg-void)',
-    borderRadius: '24px 24px 0 0',
-    boxShadow: 'var(--modal-shadow)',
+    background: 'linear-gradient(180deg, rgba(24, 20, 13, 0.98) 0%, rgba(12, 12, 13, 0.98) 26%, rgba(8, 8, 10, 1) 100%)',
+    borderRadius: '30px 30px 0 0',
+    border: '1px solid rgba(255,255,255,0.05)',
+    boxShadow: '0 -28px 80px rgba(0,0,0,0.48)',
     zIndex: 2001,
     outline: 'none',
     overflow: 'hidden',
@@ -188,9 +189,9 @@ export function ModalWrapper({
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'var(--overlay-bg)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
+                background: 'rgba(6, 6, 8, 0.78)',
+                backdropFilter: 'blur(18px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
                 zIndex: 2000,
               }}
               aria-hidden="true"
@@ -213,13 +214,39 @@ export function ModalWrapper({
               aria-labelledby={`${modalId}-title`}
               tabIndex={-1}
             >
-              {/* Premium gold top highlight */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 16%)',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                }}
+              />
+
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: -96,
+                  right: -36,
+                  width: 220,
+                  height: 220,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 30%, transparent 72%)',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                }}
+              />
+
+              {/* Premium top highlight */}
               <div style={{
                 position: 'absolute',
                 top: 0, left: 0, right: 0,
                 height: 1,
-                background: 'linear-gradient(90deg, transparent, var(--gold-glass-medium), transparent)',
-                opacity: 0.6,
+                background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+                opacity: 0.5,
                 zIndex: 5,
               }} />
 
@@ -230,19 +257,21 @@ export function ModalWrapper({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '14px 0 10px',
+                  padding: '15px 0 10px',
                   cursor: 'grab',
                   touchAction: 'none',
+                  position: 'relative',
+                  zIndex: 2,
                 }}
                 onTouchStart={onHandleTouchStart}
                 onTouchMove={onHandleTouchMove}
                 onTouchEnd={onHandleTouchEnd}
               >
                 <div style={{
-                  width: 36,
-                  height: 4,
-                  borderRadius: 2,
-                  background: 'var(--gold-glass-strong)',
+                  width: 42,
+                  height: 5,
+                  borderRadius: 999,
+                  background: 'linear-gradient(90deg, rgba(255,255,255,0.1), rgba(212,175,55,0.35), rgba(255,255,255,0.1))',
                 }} />
               </div>
 
@@ -252,22 +281,23 @@ export function ModalWrapper({
                 whileTap={{ scale: 0.9 }}
                 style={{
                   position: 'absolute',
-                  top: 14,
+                  top: 16,
                   right: 16,
-                  width: 34,
-                  height: 34,
-                  borderRadius: 17,
-                  background: 'var(--surface-hover)',
-                  border: '1px solid var(--border-strong)',
+                  width: 38,
+                  height: 38,
+                  borderRadius: 19,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                   zIndex: 10,
+                  boxShadow: '0 12px 24px -20px rgba(0,0,0,0.7)',
                 }}
                 aria-label="Закрыть"
               >
-                <X size={16} color="var(--text-muted)" />
+                <X size={16} color="rgba(255,255,255,0.7)" />
               </m.button>
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
@@ -284,6 +314,8 @@ export function ModalWrapper({
                   overscrollBehavior: 'contain',
                   touchAction: 'pan-y',
                   paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+                  position: 'relative',
+                  zIndex: 1,
                 }}
                 data-scroll-container="true"
               >

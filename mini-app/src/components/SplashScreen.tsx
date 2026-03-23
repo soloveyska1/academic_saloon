@@ -234,7 +234,7 @@ const SealEmblem = ({ phase }: { phase: string }) => {
           }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           style={{
-            fontFamily: "'Cinzel', 'Playfair Display', serif",
+            fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 42,
             fontWeight: 700,
             letterSpacing: '0.12em',
@@ -279,7 +279,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => (
     <h1
       className="text-2xl font-bold tracking-[0.3em]"
       style={{
-        fontFamily: "'Cinzel', 'Playfair Display', serif",
+        fontFamily: "'Playfair Display', Georgia, serif",
         color: 'var(--text-on-gold)',
         textShadow: '0 4px 20px rgba(0,0,0,0.8)',
       }}
@@ -289,7 +289,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => (
     <motion.h1
       className="absolute inset-0 text-2xl font-bold tracking-[0.3em]"
       style={{
-        fontFamily: "'Cinzel', 'Playfair Display', serif",
+        fontFamily: "'Playfair Display', Georgia, serif",
         background: `linear-gradient(90deg, var(--gold-700) 0%, var(--gold-700) 30%, ${GOLD.shine} 50%, var(--gold-700) 70%, var(--gold-700) 100%)`,
         backgroundSize: '250% 100%',
         WebkitBackgroundClip: 'text',
@@ -379,7 +379,7 @@ const QuickMonogram = () => (
       <span
         className="text-3xl font-bold"
         style={{
-          fontFamily: "'Cinzel', serif",
+          fontFamily: "'Playfair Display', Georgia, serif",
           background: `linear-gradient(135deg, ${GOLD.shine}, ${GOLD.primary}, var(--gold-700))`,
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',

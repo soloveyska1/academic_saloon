@@ -282,7 +282,7 @@ function SectionFallbackCard({
 }) {
   return (
     <div
-      className="mx-4 mb-4 p-4 rounded-[20px] border border-white/[0.08]"
+      className="mx-4 mb-4 p-4 rounded-xl border border-white/[0.08]"
       style={{ background: DS.colors.bgCard }}
     >
       <div className="text-[15px] font-bold text-text-primary mb-2">
@@ -2915,7 +2915,7 @@ function LoadingState() {
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 gap-5">
-      <div className="w-20 h-20 rounded-[20px] bg-red-500/15 border border-red-500/25 flex items-center justify-center">
+      <div className="w-20 h-20 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center">
         <XCircle size={40} color={DS.colors.error} />
       </div>
       <p className="text-[18px] font-semibold text-text-primary text-center m-0">
@@ -3542,7 +3542,7 @@ export function OrderDetailPageV8() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-[320px] rounded-[20px] p-5 text-center"
+              className="w-full max-w-[320px] rounded-xl p-5 text-center"
               style={{
                 background: DS.colors.bgCard,
                 border: `1px solid ${DS.colors.borderLight}`,
@@ -3604,7 +3604,7 @@ export function OrderDetailPageV8() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-[320px] rounded-[20px] p-5 text-center"
+              className="w-full max-w-[320px] rounded-xl p-5 text-center"
               style={{
                 background: DS.colors.bgCard,
                 border: `1px solid ${DS.colors.borderLight}`,
