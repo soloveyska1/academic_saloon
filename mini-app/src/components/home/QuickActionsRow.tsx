@@ -23,13 +23,13 @@ export const QuickActionsRow = memo(function QuickActionsRow({
       if (action.id === 'cashback' && cashbackPercent != null && cashbackPercent > 0) {
         return {
           ...action,
-          subtitle: `ваш уровень даёт ${cashbackPercent}%`,
+          subtitle: `${cashbackPercent}% на новые заказы`,
         }
       }
       if (action.id === 'urgent') {
         return {
           ...action,
-          subtitle: 'экспресс-расчёт и приоритетная сборка',
+          subtitle: 'оценка за 5 минут и приоритетный поток',
         }
       }
       return action
@@ -72,7 +72,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             onClick={() => handleClick(action)}
             style={{
               minWidth: 0,
-              minHeight: isPrimary ? 144 : 132,
+              minHeight: isPrimary ? 150 : 132,
               padding: isPrimary ? '18px 16px 16px' : '16px 15px 14px',
               borderRadius: 26,
               display: 'flex',
@@ -148,21 +148,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             <div style={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: isPrimary ? 'rgba(212,175,55,0.72)' : 'rgba(255,255,255,0.38)',
-                  marginBottom: 8,
-                }}
-              >
-                {isPrimary ? 'Приоритет' : 'Сервис'}
-              </div>
-
-              <div
-                style={{
                   fontFamily: isPrimary ? "var(--font-display, 'Playfair Display', serif)" : "var(--font-sans, 'Manrope', sans-serif)",
-                  fontSize: isPrimary ? 26 : 16,
+                  fontSize: isPrimary ? 28 : 17,
                   fontWeight: 700,
                   lineHeight: isPrimary ? 0.98 : 1.15,
                   letterSpacing: isPrimary ? '-0.04em' : '-0.02em',
@@ -183,6 +170,19 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 }}
               >
                 {action.subtitle}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: isPrimary ? 'rgba(212,175,55,0.72)' : 'rgba(255,255,255,0.3)',
+                }}
+              >
+                {isPrimary ? 'Priority Access' : 'Открыть'}
               </div>
             </div>
           </motion.button>

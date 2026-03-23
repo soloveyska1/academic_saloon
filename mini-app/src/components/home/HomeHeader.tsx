@@ -23,10 +23,6 @@ interface HomeHeaderProps {
   isNewUser?: boolean
 }
 
-function formatMoney(value: number): string {
-  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
-}
-
 export const HomeHeader = memo(function HomeHeader({
   user,
   summary,
@@ -58,22 +54,15 @@ export const HomeHeader = memo(function HomeHeader({
       })
     }
 
-    if ((summary.cashback || 0) > 0) {
+    if (user.rank.is_max) {
       chips.push({
-        key: 'cashback',
-        value: `${summary.cashback}% кэшбэк`,
+        key: 'club',
+        value: 'Премиум клуб',
       })
     }
 
-    if ((summary.bonusBalance || 0) > 0) {
-      chips.push({
-        key: 'bonus',
-        value: `Бонусы ${formatMoney(summary.bonusBalance)}`,
-      })
-    }
-
-    return chips.slice(0, 3)
-  }, [summary, isNewUser, ordersCount])
+    return chips.slice(0, 2)
+  }, [summary, isNewUser, ordersCount, user.rank.is_max])
 
   return (
     <motion.header

@@ -259,7 +259,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 8,
             }}
           >
-            Новая заявка
+            Новый проект
           </div>
           <div
             style={{
@@ -281,11 +281,11 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             lineHeight: 1.45,
             marginBottom: 16,
           }}>
-            Быстрый расчёт, понятная стоимость и запуск без лишних шагов прямо из кабинета.
+            Быстрый расчёт, ясная стоимость и запуск в один маршрут.
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {['от 990 ₽', 'ответ за 5 мин', 'без звонков'].map((item) => (
+            {['от 990 ₽', '5 минут', 'без звонков'].map((item) => (
               <span
                 key={item}
                 style={{

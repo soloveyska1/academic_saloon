@@ -5,8 +5,6 @@ import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
-import { PromoCodeSection } from '../components/ui/PromoCodeSection'
-import { usePromo } from '../contexts/PromoContext'
 import { Confetti } from '../components/ui/Confetti'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
@@ -36,8 +34,7 @@ import {
   ExamSeasonBanner,
   BonusExpiryAlert,
   ActiveOrderDashboard,
-  LevelProgressCard,
-  ReputationCard,
+  LoungeVault,
   PricingAnchor,
   FAQSection,
 } from '../components/home'
@@ -109,7 +106,6 @@ export function HomePage({ user, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic, tg, botUsername } = useTelegram()
   const admin = useAdmin()
-  const { activePromo } = usePromo()
   const capability = useCapability()
 
   const { containerRef, PullIndicator } = usePullToRefresh({
@@ -346,74 +342,62 @@ export function HomePage({ user, onRefresh }: Props) {
                   haptic={haptic}
                 />
 
-                <SectionFrame
-                  title="Новая заявка"
-                >
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                    <DailyBonusCard
-                      variant="compact"
-                      dailyAvailable={user.daily_luck_available ?? false}
-                      streak={user.daily_bonus_streak || 0}
-                      haptic={haptic}
-                      onBonusClaimed={handleBonusClaimed}
-                    />
-                  </div>
-                </SectionFrame>
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
               </>
             )}
 
             {/* ── STATE B: JUST COMPLETED — Celebrate + next order ── */}
             {returningUserState === 'just-completed' && (
               <>
-                <SectionFrame
-                  title="Продолжить"
-                >
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    {user.orders.length > 0 && (
-                      <QuickReorderCard
-                        lastOrder={user.orders[0]}
-                        onReorder={handleReorder}
-                        haptic={haptic}
-                      />
-                    )}
-                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                    <DailyBonusCard
-                      variant="compact"
-                      dailyAvailable={user.daily_luck_available ?? false}
-                      streak={user.daily_bonus_streak || 0}
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  {user.orders.length > 0 && (
+                    <QuickReorderCard
+                      lastOrder={user.orders[0]}
+                      onReorder={handleReorder}
                       haptic={haptic}
-                      onBonusClaimed={handleBonusClaimed}
                     />
-                  </div>
-                </SectionFrame>
+                  )}
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
               </>
             )}
 
             {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
             {returningUserState === 'idle' && (
               <>
-                <SectionFrame
-                  title="Новая заявка"
-                >
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                    {user.orders.length > 0 && (
-                      <QuickReorderCard
-                        lastOrder={user.orders[0]}
-                        onReorder={handleReorder}
-                        haptic={haptic}
-                      />
-                    )}
-                    <DailyBonusCard
-                      variant="compact"
-                      dailyAvailable={user.daily_luck_available ?? false}
-                      streak={user.daily_bonus_streak || 0}
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  {user.orders.length > 0 && (
+                    <QuickReorderCard
+                      lastOrder={user.orders[0]}
+                      onReorder={handleReorder}
                       haptic={haptic}
-                      onBonusClaimed={handleBonusClaimed}
                     />
-                  </div>
-                </SectionFrame>
+                  )}
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
               </>
             )}
 
@@ -436,75 +420,17 @@ export function HomePage({ user, onRefresh }: Props) {
               />
             </SectionFrame>
 
-            <SectionFrame
-              title="Привилегии"
-            >
-              <div style={{ display: 'grid', gap: 14 }}>
-                <LevelProgressCard
-                  rank={user.rank}
-                  displayNextRank={user.rank.next_rank}
-                />
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                  style={{
-                    padding: 18,
-                    borderRadius: 26,
-                    background: 'linear-gradient(160deg, rgba(18, 18, 17, 0.92) 0%, rgba(11, 11, 12, 0.95) 100%)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    boxShadow: '0 22px 34px -30px rgba(0, 0, 0, 0.78)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(212,175,55,0.72)',
-                      marginBottom: 10,
-                    }}
-                  >
-                    Предложения
-                  </div>
-
-                  <div
-                    style={{
-                      fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                      fontSize: 24,
-                      lineHeight: 0.98,
-                      letterSpacing: '-0.04em',
-                      color: 'var(--text-primary)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    Промокоды и специальные условия
-                  </div>
-
-                  <PromoCodeSection
-                    variant="full"
-                    collapsible={true}
-                    defaultExpanded={!!activePromo}
-                  />
-                </motion.div>
-              </div>
-            </SectionFrame>
-
-            <SectionFrame
-              title="Партнёрская программа"
-            >
-              <ReputationCard
-                referralCode={user.referral_code}
-                referralsCount={user.referrals_count}
-                referralEarnings={user.referral_earnings}
-                copied={referralCopied}
-                onCopy={handleCopyReferral}
-                onShowQR={() => { haptic('light'); actions.openModal('qr') }}
-                onTelegramShare={handleTelegramShare}
-              />
-            </SectionFrame>
+            <LoungeVault
+              rank={user.rank}
+              bonusBalance={user.bonus_balance}
+              referralCode={user.referral_code}
+              referralsCount={user.referrals_count}
+              referralEarnings={user.referral_earnings}
+              copied={referralCopied}
+              onCopy={handleCopyReferral}
+              onShowQR={() => { haptic('light'); actions.openModal('qr') }}
+              onTelegramShare={handleTelegramShare}
+            />
 
           </>
         )}
