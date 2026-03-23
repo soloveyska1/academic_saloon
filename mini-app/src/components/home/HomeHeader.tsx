@@ -62,6 +62,16 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Доброй ночи'
   }, [])
 
+  // Adaptive balance font size based on digit count
+  const balanceFontSize = useMemo(() => {
+    if (!summary) return 24
+    const formatted = formatMoney(summary.balance)
+    const len = formatted.length
+    if (len > 10) return 18
+    if (len > 7) return 20
+    return 24
+  }, [summary])
+
   return (
     <motion.header
       className={s.header}
@@ -75,141 +85,142 @@ export const HomeHeader = memo(function HomeHeader({
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: hasSummary ? 24 : 0,
+          gap: 12,
+          marginBottom: hasSummary ? 16 : 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-          {/* Avatar — larger, with premium ring */}
+        {/* Avatar with gold ring */}
+        <div
+          onClick={onSecretTap}
+          style={{
+            position: 'relative',
+            width: 48,
+            height: 48,
+            flexShrink: 0,
+            cursor: 'pointer',
+          }}
+        >
           <div
-            onClick={onSecretTap}
             style={{
+              position: 'absolute',
+              inset: -2,
+              borderRadius: '50%',
+              background: 'conic-gradient(from 45deg, rgba(212,175,55,0.6), rgba(245,225,160,0.4), rgba(212,175,55,0.6))',
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+            }}
+          />
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'var(--bg-elevated)',
+              overflow: 'hidden',
               position: 'relative',
-              width: 56,
-              height: 56,
-              flexShrink: 0,
-              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {/* Gold ring */}
-            <div
+            <span
               style={{
-                position: 'absolute',
-                inset: -2,
-                borderRadius: '50%',
-                background: 'conic-gradient(from 45deg, rgba(212,175,55,0.6), rgba(245,225,160,0.4), rgba(212,175,55,0.6))',
-                mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-                WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-              }}
-            />
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                background: 'var(--bg-elevated)',
-                overflow: 'hidden',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
-                style={{
-                  color: 'var(--gold-400)',
-                  fontWeight: 700,
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 24,
-                  lineHeight: 1,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
-              </span>
-
-              {shouldShowAvatar && (
-                <img
-                  src={avatarSrc}
-                  alt={firstName}
-                  loading="eager"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    zIndex: 2,
-                    borderRadius: '50%',
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                    setAvatarError(true)
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Name block */}
-          <div style={{ marginLeft: 14, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                marginBottom: 2,
-                lineHeight: 1.3,
-              }}
-            >
-              {isNewUser ? 'Добро пожаловать' : greeting}
-            </div>
-
-            <div
-              style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 26,
+                color: 'var(--gold-400)',
                 fontWeight: 700,
-                lineHeight: 1.0,
-                letterSpacing: '-0.04em',
-                color: 'var(--text-primary)',
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 20,
+                lineHeight: 1,
+                textTransform: 'uppercase',
               }}
             >
-              {firstName}
-            </div>
+              {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
+            </span>
 
-            {!isNewUser && activityLine && (
-              <div
+            {shouldShowAvatar && (
+              <img
+                src={avatarSrc}
+                alt={firstName}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
                 style={{
-                  marginTop: 6,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: 'rgba(255,255,255,0.56)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  lineHeight: 1,
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 2,
+                  borderRadius: '50%',
                 }}
-              >
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: 'rgba(212,175,55,0.95)',
-                    boxShadow: '0 0 10px rgba(212,175,55,0.4)',
-                    flexShrink: 0,
-                  }}
-                />
-                {activityLine}
-              </div>
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  setAvatarError(true)
+                }}
+              />
             )}
           </div>
         </div>
 
+        {/* Name + activity */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: 1,
+              lineHeight: 1.3,
+            }}
+          >
+            {isNewUser ? 'Добро пожаловать' : greeting}
+          </div>
+
+          <div
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 24,
+              fontWeight: 700,
+              lineHeight: 1.05,
+              letterSpacing: '-0.04em',
+              color: 'var(--text-primary)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {firstName}
+          </div>
+
+          {!isNewUser && activityLine && (
+            <div
+              style={{
+                marginTop: 4,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                color: 'rgba(255,255,255,0.56)',
+                fontSize: 11,
+                fontWeight: 600,
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  background: 'rgba(212,175,55,0.95)',
+                  boxShadow: '0 0 10px rgba(212,175,55,0.4)',
+                  flexShrink: 0,
+                }}
+              />
+              {activityLine}
+            </div>
+          )}
+        </div>
+
+        {/* Club button — compact */}
         {!isNewUser && (
           <motion.button
             type="button"
@@ -218,15 +229,15 @@ export const HomeHeader = memo(function HomeHeader({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
               flexShrink: 0,
-              padding: '10px 14px',
+              padding: '8px 12px',
               background: 'rgba(212, 175, 55, 0.08)',
               border: '1px solid rgba(212, 175, 55, 0.16)',
               borderRadius: 12,
               color: 'var(--gold-300)',
               fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
@@ -234,7 +245,7 @@ export const HomeHeader = memo(function HomeHeader({
             }}
           >
             Клуб
-            <ArrowUpRight size={14} strokeWidth={2.1} />
+            <ArrowUpRight size={12} strokeWidth={2.2} />
           </motion.button>
         )}
       </div>
@@ -244,50 +255,43 @@ export const HomeHeader = memo(function HomeHeader({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 10,
+            gridTemplateColumns: '1.2fr 0.8fr',
+            gap: 8,
           }}
         >
-          {/* Balance card — hero card with gradient */}
+          {/* Balance card */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.15, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'relative',
               overflow: 'hidden',
-              padding: '18px 16px 16px',
+              padding: '14px 14px 12px',
               borderRadius: 12,
-              background: 'linear-gradient(145deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 60%, rgba(255,255,255,0.02) 100%)',
-              border: '1px solid rgba(212,175,55,0.15)',
+              background: 'linear-gradient(145deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.03) 60%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(212,175,55,0.14)',
             }}
           >
-            {/* Decorative icon */}
             <div
               style={{
                 position: 'absolute',
-                top: 14,
-                right: 14,
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'rgba(212,175,55,0.10)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                top: 12,
+                right: 12,
+                opacity: 0.5,
               }}
             >
-              <Wallet size={16} color="var(--gold-400)" strokeWidth={1.8} />
+              <Wallet size={14} color="var(--gold-400)" strokeWidth={1.8} />
             </div>
 
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.12em',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.40)',
-                marginBottom: 10,
+                color: 'rgba(255,255,255,0.38)',
+                marginBottom: 8,
               }}
             >
               На счёте
@@ -295,22 +299,24 @@ export const HomeHeader = memo(function HomeHeader({
             <div
               style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 28,
+                fontSize: balanceFontSize,
                 fontWeight: 700,
-                lineHeight: 1,
-                letterSpacing: '-0.05em',
+                lineHeight: 1.1,
+                letterSpacing: '-0.04em',
                 color: 'var(--gold-200)',
-                marginBottom: 6,
-                wordBreak: 'break-word',
+                marginBottom: 4,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {formatMoney(summary.balance)}
             </div>
             <div
               style={{
-                fontSize: 11,
-                lineHeight: 1.4,
-                color: 'rgba(255,255,255,0.48)',
+                fontSize: 10,
+                lineHeight: 1.3,
+                color: 'rgba(255,255,255,0.42)',
               }}
             >
               Доступно для оплаты
@@ -319,44 +325,37 @@ export const HomeHeader = memo(function HomeHeader({
 
           {/* Cashback card */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.2, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'relative',
               overflow: 'hidden',
-              padding: '18px 16px 16px',
+              padding: '14px 14px 12px',
               borderRadius: 12,
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
             }}
           >
-            {/* Decorative icon */}
             <div
               style={{
                 position: 'absolute',
-                top: 14,
-                right: 14,
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'rgba(255,255,255,0.04)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                top: 12,
+                right: 12,
+                opacity: 0.4,
               }}
             >
-              <TrendingUp size={16} color="var(--text-secondary)" strokeWidth={1.8} />
+              <TrendingUp size={14} color="var(--text-secondary)" strokeWidth={1.8} />
             </div>
 
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.12em',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.40)',
-                marginBottom: 10,
+                color: 'rgba(255,255,255,0.38)',
+                marginBottom: 8,
               }}
             >
               Кэшбэк
@@ -364,12 +363,13 @@ export const HomeHeader = memo(function HomeHeader({
 
             <div
               style={{
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: 700,
-                lineHeight: 1,
-                letterSpacing: '-0.04em',
+                lineHeight: 1.1,
+                letterSpacing: '-0.03em',
                 color: 'var(--text-primary)',
-                marginBottom: 6,
+                marginBottom: 4,
+                whiteSpace: 'nowrap',
               }}
             >
               {summary.cashback}%
@@ -377,9 +377,9 @@ export const HomeHeader = memo(function HomeHeader({
 
             <div
               style={{
-                fontSize: 11,
-                lineHeight: 1.4,
-                color: 'rgba(255,255,255,0.48)',
+                fontSize: 10,
+                lineHeight: 1.3,
+                color: 'rgba(255,255,255,0.42)',
               }}
             >
               На новые заказы
