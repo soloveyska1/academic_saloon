@@ -37,6 +37,7 @@ export const HomeHeader = memo(function HomeHeader({
 }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
+  const ordersCount = user.orders_count ?? 0
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
@@ -50,10 +51,10 @@ export const HomeHeader = memo(function HomeHeader({
         key: 'active',
         value: `${summary.activeOrders} ${summary.activeOrders === 1 ? 'активный заказ' : summary.activeOrders < 5 ? 'активных заказа' : 'активных заказов'}`,
       })
-    } else if ((user.orders_count || 0) > 0) {
+    } else if (ordersCount > 0) {
       chips.push({
         key: 'orders',
-        value: `${user.orders_count} ${user.orders_count === 1 ? 'заказ' : user.orders_count < 5 ? 'заказа' : 'заказов'}`,
+        value: `${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`,
       })
     }
 
@@ -72,7 +73,7 @@ export const HomeHeader = memo(function HomeHeader({
     }
 
     return chips.slice(0, 3)
-  }, [summary, isNewUser, user.orders_count])
+  }, [summary, isNewUser, ordersCount])
 
   return (
     <motion.header
