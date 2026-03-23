@@ -197,6 +197,106 @@ export const NewTaskCTA = memo(function NewTaskCTA({
     )
   }
 
+  if (embedded) {
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          position: 'relative',
+          width: '100%',
+          padding: 0,
+          marginBottom: 0,
+          background: 'transparent',
+        }}
+      >
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.985 }}
+          onClick={handleClick}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            width: '100%',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            appearance: 'none' as const,
+            textAlign: 'left' as const,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.32)',
+                marginBottom: 8,
+              }}
+            >
+              Новый заказ
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 24,
+                fontWeight: 800,
+                lineHeight: 0.98,
+                letterSpacing: '-0.04em',
+                color: 'var(--text-primary)',
+                marginBottom: 8,
+              }}
+            >
+              Оформить новую работу
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                fontWeight: 500,
+                lineHeight: 1.45,
+                marginBottom: 10,
+              }}
+            >
+              Расчёт за 5 минут, стоимость известна до оплаты.
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                color: 'rgba(255,255,255,0.56)',
+              }}
+            >
+              Без звонков · всё в чате
+            </div>
+          </div>
+
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 18,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.5)',
+            }}
+          >
+            <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
+          </div>
+        </motion.button>
+      </motion.section>
+    )
+  }
+
   // ── Returning user: compact CTA ──
   return (
     <motion.section

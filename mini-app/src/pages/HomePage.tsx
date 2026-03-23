@@ -65,9 +65,9 @@ function ActionDeck({
         marginBottom: 18,
         padding: 18,
         borderRadius: 30,
-        background: 'linear-gradient(160deg, rgba(18, 16, 12, 0.95) 0%, rgba(11, 11, 12, 0.97) 48%, rgba(8, 8, 10, 1) 100%)',
+        background: 'linear-gradient(165deg, rgba(17, 15, 11, 0.94) 0%, rgba(10, 10, 11, 0.97) 54%, rgba(8, 8, 10, 1) 100%)',
         border: '1px solid rgba(255,255,255,0.05)',
-        boxShadow: '0 28px 50px -38px rgba(0,0,0,0.82)',
+        boxShadow: '0 26px 48px -38px rgba(0,0,0,0.82)',
         overflow: 'hidden',
       }}
     >
@@ -75,16 +75,25 @@ function ActionDeck({
         aria-hidden="true"
         style={{
           position: 'absolute',
-          top: -72,
-          right: -24,
-          width: 180,
-          height: 180,
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 22%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -66,
+          right: -28,
+          width: 164,
+          height: 164,
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 28%, transparent 72%)',
           pointerEvents: 'none',
         }}
       />
-      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 16 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 14 }}>
         {children}
       </div>
     </div>

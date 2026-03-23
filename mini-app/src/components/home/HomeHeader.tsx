@@ -23,6 +23,10 @@ interface HomeHeaderProps {
   isNewUser?: boolean
 }
 
+function formatMoney(value: number): string {
+  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
+}
+
 export const HomeHeader = memo(function HomeHeader({
   user,
   summary,
@@ -49,6 +53,25 @@ export const HomeHeader = memo(function HomeHeader({
     }
 
     return null
+  }, [summary, isNewUser, ordersCount])
+
+  const controlItems = useMemo(() => {
+    if (!summary || isNewUser) return []
+
+    return [
+      {
+        label: 'На счёте',
+        value: formatMoney(summary.balance),
+        accent: true,
+      },
+      {
+        label: summary.activeOrders > 0 ? 'В работе' : 'Оформлено',
+        value: summary.activeOrders > 0
+          ? `${summary.activeOrders} ${summary.activeOrders === 1 ? 'заказ' : summary.activeOrders < 5 ? 'заказа' : 'заказов'}`
+          : `${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`,
+        accent: false,
+      },
+    ]
   }, [summary, isNewUser, ordersCount])
 
   return (
@@ -103,6 +126,7 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 14,
+              marginBottom: !isNewUser && controlItems.length > 0 ? 18 : 0,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
@@ -180,7 +204,7 @@ export const HomeHeader = memo(function HomeHeader({
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
                 >
-                  {isNewUser ? 'Личный кабинет' : 'Академический салон'}
+                  {isNewUser ? 'Личный кабинет' : 'Личный салон'}
                 </div>
 
                 <div
@@ -279,11 +303,65 @@ export const HomeHeader = memo(function HomeHeader({
                   boxShadow: '0 16px 32px -24px rgba(0, 0, 0, 0.76)',
                 }}
               >
-                Привилегии
+                Клуб
                 <ArrowUpRight size={14} strokeWidth={2.1} />
               </motion.button>
             )}
           </div>
+
+          {!isNewUser && controlItems.length > 0 && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 0,
+                borderRadius: 22,
+                overflow: 'hidden',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
+              {controlItems.map((item, index) => (
+                <div
+                  key={item.label}
+                  style={{
+                    minWidth: 0,
+                    padding: '14px 16px',
+                    borderLeft: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                    background: item.accent
+                      ? 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+                      : 'transparent',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.32)',
+                      marginBottom: 7,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.03em',
+                      color: item.accent ? 'var(--gold-300)' : 'var(--text-primary)',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </motion.header>

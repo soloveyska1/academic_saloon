@@ -42,6 +42,128 @@ export const QuickReorderCard = memo(function QuickReorderCard({
   const workTypeLabel = lastOrder.work_type_label || WORK_TYPE_LABELS[lastOrder.work_type] || lastOrder.work_type
   const subject = lastOrder.subject || 'Предмет не указан'
 
+  if (embedded) {
+    return (
+      <motion.button
+        type="button"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        whileTap={{ scale: 0.985 }}
+        onClick={() => {
+          haptic('medium')
+          onReorder(lastOrder.id)
+        }}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          padding: 0,
+          marginBottom: 0,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              color: 'rgba(255,255,255,0.32)',
+              textTransform: 'uppercase',
+              marginBottom: 8,
+            }}
+          >
+            Повтор заказа
+          </div>
+
+          <div
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 24,
+              lineHeight: 0.98,
+              letterSpacing: '-0.04em',
+              color: 'var(--text-primary)',
+              marginBottom: 8,
+            }}
+          >
+            Повторить похожую работу
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <span
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--text-secondary)',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {workTypeLabel}
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.48)',
+              }}
+            >
+              Исходные данные подтянутся автоматически
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {subject}
+          </div>
+        </div>
+
+        <div
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
+            color: 'var(--text-on-gold)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.48)',
+          }}
+        >
+          <ArrowRight size={18} strokeWidth={2.2} />
+        </div>
+      </motion.button>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
