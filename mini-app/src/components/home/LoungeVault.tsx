@@ -118,9 +118,9 @@ export const LoungeVault = memo(function LoungeVault({
     boxShadow: '0 30px 56px -40px rgba(0,0,0,0.86)',
   }
 
-  const accessValue = rank.is_max ? 'Открыт' : formatMoney(rank.spent_to_next)
+  const accessValue = rank.is_max ? 'Полный' : formatMoney(rank.spent_to_next)
   const accessNote = rank.is_max
-    ? 'Все привилегии уже доступны'
+    ? 'Все привилегии активны'
     : 'До следующего доступа'
 
   return (
@@ -191,7 +191,7 @@ export const LoungeVault = memo(function LoungeVault({
                 }}
               >
                 {rank.is_max
-                  ? 'Максимальный доступ уже открыт.'
+                  ? 'Все привилегии уже доступны.'
                   : `До следующего доступа осталось ${formatMoney(rank.spent_to_next)}.`}
               </div>
             </div>
@@ -325,7 +325,7 @@ export const LoungeVault = memo(function LoungeVault({
                   }}
                 >
                   <Crown size={15} strokeWidth={1.9} />
-                  Максимальный доступ уже открыт
+                  Полный доступ активен
                 </div>
               ) : (
                 <div>

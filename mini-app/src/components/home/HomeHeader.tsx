@@ -132,12 +132,12 @@ export const HomeHeader = memo(function HomeHeader({
                 aria-hidden="true"
                 style={{
                   position: 'absolute',
-                  right: 26,
-                  top: 30,
+                  right: 34,
+                  top: 42,
                   fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 128,
-                  lineHeight: 0.82,
-                  color: 'rgba(212,175,55,0.05)',
+                  fontSize: 96,
+                  lineHeight: 0.86,
+                  color: 'rgba(212,175,55,0.04)',
                   letterSpacing: '-0.08em',
                   pointerEvents: 'none',
                   userSelect: 'none',
