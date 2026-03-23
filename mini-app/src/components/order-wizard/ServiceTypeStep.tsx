@@ -162,7 +162,7 @@ export function ServiceTypeStep({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
+              gap: 8,
               padding: `${SPACING.md}px`,
               background: 'none',
               border: 'none',
@@ -173,7 +173,7 @@ export function ServiceTypeStep({
           >
             <span style={{
               fontSize: FONT.size.sm,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-muted)',
               letterSpacing: '0.01em',
             }}>
@@ -241,7 +241,7 @@ export function ServiceTypeStep({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
+        gap: 8,
         padding: `${SPACING.lg}px ${SPACING.md}px ${SPACING.sm}px`,
         fontSize: FONT.size['2xs'],
         color: 'var(--text-muted)',
@@ -286,7 +286,7 @@ function ServiceCard({
         damping: 28,
       }
 
-  const backdropFilter = canUseBlur ? 'blur(16px) saturate(140%)' : 'none'
+  const backdropFilter = canUseBlur ? 'blur(16px) saturate(120%)' : 'none'
   const cardBg = canUseBlur ? COLORS.card.bg : 'rgba(12, 12, 10, 0.92)'
 
   // Premium gradient border (subtle distinction for diploma/masters)
@@ -395,7 +395,7 @@ function ServiceCard({
           {isCustomPrice ? (
             <span style={{
               fontSize: FONT.size.xs,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-muted)',
               whiteSpace: 'nowrap',
             }}>
@@ -474,7 +474,7 @@ function ServiceCard({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               marginTop: SPACING.sm,
               paddingTop: SPACING.sm,
               borderTop: '1px solid rgba(201,162,39,0.08)',

@@ -23,7 +23,7 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
       initial={prefersReducedMotion ? {} : { opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 20 }}
+      style={{ marginBottom: 24 }}
     >
       {/* Top row: label + admin button */}
       <div style={{
@@ -56,12 +56,12 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
       </div>
 
       {/* Identity row: avatar + info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Avatar with gold ring */}
         <div style={{
           width: 56,
           height: 56,
-          borderRadius: 18,
+          borderRadius: 12,
           overflow: 'hidden',
           flexShrink: 0,
           background: 'var(--gold-glass-subtle)',
@@ -87,9 +87,9 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
             margin: 0,
             fontSize: 24,
             lineHeight: 1.1,
-            fontWeight: 800,
+            fontWeight: 700,
             fontFamily: "'Manrope', sans-serif",
-            marginBottom: 6,
+            marginBottom: 8,
           }}>
             {user.fullname}
           </h1>
@@ -104,7 +104,7 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
           </div>
 
           {/* Rank + discount + cashback pills */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <span className={`${s.metaPill} ${s.metaPillGold}`}>
               <Crown size={12} />
               {displayRankName}

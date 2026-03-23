@@ -31,8 +31,8 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                 <div style={{
                     position: 'absolute',
                     top: '50%',
-                    left: 10,
-                    right: 18, // Adjust for center of circles
+                    left: 8,
+                    right: 16, // Adjust for center of circles
                     height: 4,
                     transform: 'translateY(-50%)',
                     zIndex: 0,
@@ -50,7 +50,7 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                             backgroundSize: '200% 100%',
                             boxShadow: '0 0 20px rgba(212,175,55,0.4)',
                             position: 'relative',
-                            borderRadius: 10,
+                            borderRadius: 8,
                         }}
                     >
                         {/* Shimmer Effect on Bar */}

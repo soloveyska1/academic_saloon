@@ -45,8 +45,8 @@ export function SkeletonCard() {
   return (
     <div style={{
       background: 'rgba(255,255,255,0.05)',
-      borderRadius: 16,
-      padding: 20,
+      borderRadius: 12,
+      padding: 24,
       border: '1px solid rgba(255,255,255,0.1)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -65,12 +65,12 @@ export function SkeletonHomePage() {
   return (
     <div style={{ padding: '24px 20px 120px', background: '#121212', minHeight: '100vh' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Skeleton width={52} height={52} borderRadius={26} />
           <div>
             <Skeleton width={80} height={12} borderRadius={4} />
-            <div style={{ marginTop: 6 }}>
+            <div style={{ marginTop: 8 }}>
               <Skeleton width={120} height={18} borderRadius={4} />
             </div>
           </div>
@@ -136,18 +136,18 @@ export function SkeletonOrderCard() {
   return (
     <div
       style={{
-        padding: 18,
+        padding: 16,
         background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.9) 0%, rgba(15, 15, 18, 0.95) 100%)',
         border: '1px solid rgba(255, 255, 255, 0.05)',
-        borderRadius: 18,
+        borderRadius: 12,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
         <Skeleton width={80} height={24} borderRadius={8} />
         <Skeleton width={100} height={24} borderRadius={8} />
       </div>
       <Skeleton width="85%" height={18} borderRadius={6} />
-      <div style={{ marginTop: 10 }}>
+      <div style={{ marginTop: 8 }}>
         <Skeleton width="60%" height={14} borderRadius={4} />
       </div>
       <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
@@ -170,7 +170,7 @@ export function SkeletonProfileHeader() {
       <div style={{ marginTop: 16 }}>
         <Skeleton width={160} height={24} borderRadius={8} />
       </div>
-      <div style={{ marginTop: 10 }}>
+      <div style={{ marginTop: 8 }}>
         <GoldSkeleton width={120} height={20} borderRadius={10} />
       </div>
     </div>
@@ -194,7 +194,7 @@ export function SkeletonStatsGrid() {
             padding: 16,
             background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.8) 0%, rgba(15, 15, 18, 0.9) 100%)',
             border: '1px solid rgba(255, 255, 255, 0.05)',
-            borderRadius: 16,
+            borderRadius: 12,
             textAlign: 'center',
           }}
         >
@@ -238,7 +238,7 @@ export function SkeletonPage() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <GoldSkeleton width={80} height={80} borderRadius={24} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <Skeleton width={200} height={28} borderRadius={8} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'center' }}>

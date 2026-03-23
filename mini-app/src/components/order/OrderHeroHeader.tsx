@@ -288,9 +288,9 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: 'relative',
-        marginBottom: 20,
-        padding: 20,
-        borderRadius: 28,
+        marginBottom: 24,
+        padding: 24,
+        borderRadius: 12,
         background: 'linear-gradient(145deg, rgba(28,28,32,0.98), rgba(18,18,22,0.99))',
         border: `1.5px solid ${needsPayment ? 'var(--border-gold-strong)' : isCompleted ? 'var(--success-border)' : 'var(--border-strong)'}`,
         overflow: 'hidden',
@@ -344,7 +344,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           style={{
             width: 44,
             height: 44,
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--border-default)',
             border: '1px solid var(--surface-active)',
             display: 'flex',
@@ -358,14 +358,14 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         </motion.button>
 
         {/* Work type emoji + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           <motion.div
             animate={isInProgress ? { rotate: [0, 360] } : {}}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 12,
               background: `linear-gradient(135deg, ${typeConfig.color}20, ${typeConfig.color}08)`,
               border: `1.5px solid ${typeConfig.color}40`,
               display: 'flex',
@@ -417,7 +417,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         >
           <span style={{
             fontSize: 14,
-            fontWeight: 800,
+            fontWeight: 700,
             fontFamily: 'var(--font-mono)',
             background: 'linear-gradient(135deg, var(--gold-100), var(--gold-400))',
             WebkitBackgroundClip: 'text',
@@ -432,7 +432,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
       {order.subject && (
         <div style={{
           padding: '12px 16px',
-          borderRadius: 14,
+          borderRadius: 12,
           background: 'var(--border-subtle)',
           border: '1px solid var(--surface-hover)',
           marginBottom: 16,
@@ -472,7 +472,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           style={{
             flex: 1,
             padding: '14px 16px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: statusConfig.bgColor,
             border: `1px solid ${statusConfig.borderColor}`,
             display: 'flex',
@@ -581,7 +581,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             transition={{ duration: 1.5, repeat: Infinity }}
             style={{
               padding: '14px 16px',
-              borderRadius: 16,
+              borderRadius: 12,
               background: `${urgencyConfig.color}12`,
               border: `1px solid ${urgencyConfig.color}30`,
               display: 'flex',
@@ -594,7 +594,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             <UrgencyIcon size={18} color={urgencyConfig.color} style={{ marginBottom: 4 }} />
             <span style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 700,
               fontFamily: 'var(--font-mono)',
               color: urgencyConfig.color,
             }}>
@@ -627,7 +627,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         {/* Price section */}
         <div>
           {finalPrice > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               {/* Promo discount badge */}
               {order.promo_code && order.promo_discount && (
                 <motion.div
@@ -652,7 +652,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                   <Zap size={12} color="var(--success-text)" fill="var(--success-text)" />
                   <span style={{
                     fontSize: 11,
-                    fontWeight: 800,
+                    fontWeight: 700,
                     color: 'var(--success-text)',
                     fontFamily: 'var(--font-mono)',
                   }}>
@@ -671,7 +671,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                 transition={{ duration: 2, repeat: Infinity }}
                 style={{
                   fontSize: 26,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontFamily: 'var(--font-mono)',
                   background: order.promo_code
                     ? 'linear-gradient(135deg, var(--success-text), var(--success-text))'
@@ -711,7 +711,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
               marginTop: 4,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
             }}>
               <TrendingUp size={12} />
               Оплачено {paidAmount.toLocaleString('ru-RU')} ₽ • Осталось {remainingAmount.toLocaleString('ru-RU')} ₽
@@ -724,7 +724,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
               marginTop: 4,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
             }}>
               <CheckCircle2 size={12} />
               Полностью оплачено
@@ -748,7 +748,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             transition={{ duration: 2, repeat: Infinity }}
             style={{
               padding: '14px 24px',
-              borderRadius: 14,
+              borderRadius: 12,
               background: needsPayment
                 ? 'var(--gold-metallic)'
                 : `linear-gradient(135deg, ${primaryAction.color}, ${primaryAction.color}cc)`,
@@ -777,7 +777,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           style={{
             marginTop: 16,
             padding: '12px 16px',
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, var(--success-glass), var(--success-glass))',
             border: '1px solid var(--success-border)',
             display: 'flex',

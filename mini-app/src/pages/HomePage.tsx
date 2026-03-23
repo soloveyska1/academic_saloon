@@ -62,9 +62,9 @@ function ActionDeck({
     <div
       style={{
         position: 'relative',
-        marginBottom: 18,
-        padding: 18,
-        borderRadius: 30,
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: 12,
         background: 'linear-gradient(165deg, rgba(17, 15, 11, 0.94) 0%, rgba(10, 10, 11, 0.97) 54%, rgba(8, 8, 10, 1) 100%)',
         border: '1px solid rgba(255,255,255,0.05)',
         boxShadow: '0 26px 48px -38px rgba(0,0,0,0.82)',
@@ -93,7 +93,7 @@ function ActionDeck({
           pointerEvents: 'none',
         }}
       />
-      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 14 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 12 }}>
         {children}
       </div>
     </div>
@@ -260,17 +260,17 @@ export function HomePage({ user, onRefresh }: Props) {
     <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))' }}>
       <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '0' }}>
         {/* Header skeleton */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, padding: '12px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 0' }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--surface-hover)' }} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ width: 120, height: 18, borderRadius: 8, background: 'var(--surface-hover)' }} />
-            <div style={{ width: 80, height: 12, borderRadius: 6, background: 'var(--surface-hover)', opacity: 0.6 }} />
+            <div style={{ width: 80, height: 12, borderRadius: 4, background: 'var(--surface-hover)', opacity: 0.6 }} />
           </div>
         </div>
         {/* CTA skeleton */}
-        <div style={{ height: 180, borderRadius: 24, background: 'var(--surface-hover)', opacity: 0.5 }} />
+        <div style={{ height: 180, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.5 }} />
         {/* Actions skeleton */}
-        <div style={{ height: 120, borderRadius: 20, background: 'var(--surface-hover)', opacity: 0.3 }} />
+        <div style={{ height: 120, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.3 }} />
       </div>
     </main>
   )

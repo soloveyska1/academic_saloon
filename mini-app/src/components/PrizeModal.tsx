@@ -60,7 +60,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
         touchAction: 'none',
       }}
     >
@@ -75,7 +75,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
           width: '100%',
           maxWidth: 340,
           padding: '40px 32px 32px',
-          borderRadius: 24,
+          borderRadius: 12,
           background: 'linear-gradient(180deg, rgba(25,25,30,0.98) 0%, rgba(15,15,18,0.99) 100%)',
           border: '1px solid rgba(212,175,55,0.3)',
           boxShadow: '0 30px 100px rgba(0,0,0,0.7), 0 0 60px rgba(212,175,55,0.2)',
@@ -91,7 +91,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
           transition={{ delay: 0.2, type: 'spring', stiffness: 400 }}
           style={{
             fontSize: 64,
-            marginBottom: 20,
+            marginBottom: 24,
             filter: 'drop-shadow(0 0 20px rgba(212,175,55,0.4))',
           }}
         >
@@ -142,7 +142,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
           style={{
             fontSize: 14,
             color: 'rgba(255, 255, 255, 0.6)',
-            marginBottom: 28,
+            marginBottom: 32,
             lineHeight: 1.5,
           }}
         >
@@ -164,7 +164,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
             color: 'var(--text-on-gold)',
             background: 'linear-gradient(135deg, var(--gold-400), var(--gold-150))',
             border: 'none',
-            borderRadius: 14,
+            borderRadius: 12,
             cursor: 'pointer',
             boxShadow: '0 8px 24px rgba(212,175,55,0.3)',
           }}
@@ -178,7 +178,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
           inset: 0,
           overflow: 'hidden',
           pointerEvents: 'none',
-          borderRadius: 24,
+          borderRadius: 12,
         }}>
           {Array.from({ length: 20 }).map((_, i) => (
             <motion.div

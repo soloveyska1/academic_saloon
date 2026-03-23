@@ -105,7 +105,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
         gap: 12,
-        marginBottom: 20,
+        marginBottom: 24,
       }}
     >
       {/* 1. Guarantees Card */}
@@ -115,8 +115,8 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         style={{
           gridColumn: 'span 1',
-          padding: 18,
-          borderRadius: 20,
+          padding: 16,
+          borderRadius: 12,
           background: 'linear-gradient(145deg, rgba(34, 197, 94, 0.12) 0%, rgba(20, 20, 23, 0.95) 100%)',
           border: '1px solid rgba(34, 197, 94, 0.25)',
           boxShadow: '0 8px 30px -8px rgba(34, 197, 94, 0.15)',
@@ -148,14 +148,14 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           color: 'rgba(34, 197, 94, 0.8)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          marginBottom: 6,
+          marginBottom: 8,
         }}>
           Гарантии
         </div>
 
         <div style={{
           fontSize: 22,
-          fontWeight: 800,
+          fontWeight: 700,
           background: 'linear-gradient(135deg, var(--success-text), var(--success-text))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -179,8 +179,8 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         style={{
           gridColumn: 'span 1',
-          padding: 18,
-          borderRadius: 20,
+          padding: 16,
+          borderRadius: 12,
           background: 'linear-gradient(145deg, rgba(139, 92, 246, 0.12) 0%, rgba(20, 20, 23, 0.95) 100%)',
           border: '1px solid rgba(139, 92, 246, 0.25)',
           boxShadow: '0 8px 30px -8px rgba(139, 92, 246, 0.15)',
@@ -212,7 +212,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           color: 'rgba(139, 92, 246, 0.8)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          marginBottom: 6,
+          marginBottom: 8,
         }}>
           Правки
         </div>
@@ -220,8 +220,8 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          marginBottom: 6,
+          gap: 8,
+          marginBottom: 8,
         }}>
           {Array.from({ length: maxFreeRevisions }).map((_, i) => (
             <RevisionToken key={i} used={i < revisionCount} index={i} />
@@ -255,7 +255,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           style={{
             gridColumn: 'span 2',
             padding: '16px 20px',
-            borderRadius: 18,
+            borderRadius: 12,
             background: 'linear-gradient(145deg, rgba(212, 175, 55, 0.1) 0%, rgba(20, 20, 23, 0.95) 100%)',
             border: '1px solid rgba(212, 175, 55, 0.2)',
             boxShadow: '0 8px 25px -8px rgba(212, 175, 55, 0.15)',
@@ -323,7 +323,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
             <div style={{
               padding: '5px 10px',
               borderRadius: 8,
@@ -353,7 +353,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
               transition={{ duration: 2, repeat: Infinity }}
               style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
                 background: 'linear-gradient(135deg, var(--gold-100), var(--gold-400))',
                 WebkitBackgroundClip: 'text',

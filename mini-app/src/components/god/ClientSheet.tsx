@@ -92,7 +92,7 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
       onTabChange={setTab}
     >
       {loading && !user ? (
-        <div className={s.mutedSmall} style={{ padding: 20, textAlign: 'center' }}>Загрузка...</div>
+        <div className={s.mutedSmall} style={{ padding: 24, textAlign: 'center' }}>Загрузка...</div>
       ) : user ? (
         <>
           {/* ═══════ PROFILE TAB ═══════ */}
@@ -155,7 +155,7 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
                     <Minus size={12} />
                   </button>
                 </div>
-                <select value={balReason} onChange={(e) => setBalReason(e.target.value)} className={s.filterSelect} style={{ width: '100%', marginTop: 6 }}>
+                <select value={balReason} onChange={(e) => setBalReason(e.target.value)} className={s.filterSelect} style={{ width: '100%', marginTop: 8 }}>
                   <option value="admin_adjustment">Ручная корректировка</option>
                   <option value="compensation">Компенсация</option>
                   <option value="coupon">Купон</option>
@@ -191,7 +191,7 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
           {tab === 'orders' && (
             <div className={`${s.flexCol} ${s.gap6}`}>
               {orders.length === 0 ? (
-                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 20 }}>Нет заказов</div>
+                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 24 }}>Нет заказов</div>
               ) : orders.map((o) => {
                 const cfg = STATUS_CONFIG[o.status]
                 return (
@@ -214,7 +214,7 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
           {tab === 'finance' && (
             <div className={`${s.flexCol} ${s.gap4}`}>
               {transactions.length === 0 ? (
-                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 20 }}>Нет транзакций</div>
+                <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 24 }}>Нет транзакций</div>
               ) : transactions.map((tx) => (
                 <div key={tx.id} className={`${s.flexRow} ${s.gap8}`} style={{ padding: '6px 0', borderBottom: '1px solid var(--border-default)' }}>
                   <div className={s.flex1}>

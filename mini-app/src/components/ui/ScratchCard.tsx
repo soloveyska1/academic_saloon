@@ -198,13 +198,13 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0, 0, 0, 0.9)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
-          padding: 20,
+          padding: 24,
         }}
       >
         <motion.div
@@ -215,7 +215,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
           style={{
             background: 'linear-gradient(180deg, rgba(212,175,55,0.2) 0%, rgba(20,20,23,0.98) 30%)',
             border: '2px solid rgba(212,175,55,0.4)',
-            borderRadius: 28,
+            borderRadius: 12,
             padding: 24,
             width: '100%',
             maxWidth: 340,
@@ -234,8 +234,8 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
               right: 16,
               background: 'var(--surface-active)',
               border: 'none',
-              borderRadius: 10,
-              padding: 10,
+              borderRadius: 8,
+              padding: 8,
               cursor: 'pointer',
               color: 'var(--text-muted)',
               zIndex: 10,
@@ -251,7 +251,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
             style={{
               width: 70,
               height: 70,
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, #d4af37, #b38728)',
               display: 'flex',
               alignItems: 'center',
@@ -265,9 +265,9 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
 
           <h2 style={{
             fontSize: 22,
-            fontWeight: 800,
+            fontWeight: 700,
             color: 'var(--text-primary)',
-            marginBottom: 6,
+            marginBottom: 8,
             fontFamily: "'Playfair Display', serif",
           }}>
             Скретч-Карта
@@ -276,7 +276,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
           <p style={{
             fontSize: 13,
             color: 'var(--text-secondary)',
-            marginBottom: 20,
+            marginBottom: 24,
           }}>
             Сотри покрытие и узнай свой приз!
           </p>
@@ -287,7 +287,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
             width: WIDTH,
             height: HEIGHT,
             margin: '0 auto 20px',
-            borderRadius: 16,
+            borderRadius: 12,
             overflow: 'hidden',
             boxShadow: '0 10px 40px rgba(0,0,0,0.4), inset 0 0 0 2px rgba(212,175,55,0.3)',
           }}>
@@ -322,7 +322,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                 transition={{ delay: 0.1, duration: 0.4 }}
                 style={{
                   fontSize: 36,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: revealed ? 'var(--success-text)' : 'var(--gold-400)',
                   fontFamily: "'Manrope', sans-serif",
                   textShadow: revealed ? '0 0 20px rgba(34,197,94,0.5)' : 'none',
@@ -372,7 +372,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
               background: 'var(--surface-active)',
               borderRadius: 2,
               overflow: 'hidden',
-              marginBottom: 6,
+              marginBottom: 8,
             }}>
               <motion.div
                 initial={{ width: 0 }}
@@ -412,7 +412,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                   padding: '16px',
                   background: 'linear-gradient(90deg, #22c55e, #16a34a)',
                   border: 'none',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   color: 'var(--text-primary)',
                   fontSize: 16,
                   fontWeight: 700,

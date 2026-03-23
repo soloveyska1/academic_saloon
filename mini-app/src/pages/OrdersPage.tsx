@@ -359,7 +359,7 @@ function FilterChip({
         flexShrink: 0,
         height: 36,
         padding: '0 14px',
-        borderRadius: 99,
+        borderRadius: 12,
         border: `1px solid ${active
           ? 'var(--gold-glass-strong)'
           : 'var(--surface-hover)'}`,
@@ -372,7 +372,7 @@ function FilterChip({
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         fontSize: 13,
         fontWeight: 600,
       }}
@@ -411,14 +411,14 @@ function ActionBanner({
           width: '100%',
           padding: '14px 16px',
           marginBottom: 16,
-          borderRadius: 16,
+          borderRadius: 12,
           background: 'var(--gold-glass-subtle)',
           border: '1px solid var(--border-gold)',
           cursor: 'pointer',
           textAlign: 'left',
           display: 'flex',
           alignItems: 'center',
-          gap: 14,
+          gap: 12,
         }}
       >
         <div style={{
@@ -464,14 +464,14 @@ function ActionBanner({
         width: '100%',
         padding: '14px 16px',
         marginBottom: 16,
-        borderRadius: 16,
+        borderRadius: 12,
         background: 'var(--gold-glass-subtle)',
         border: '1px solid var(--border-gold)',
         cursor: 'pointer',
         textAlign: 'left',
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
+        gap: 12,
       }}
     >
       <div style={{
@@ -499,7 +499,7 @@ function ActionBanner({
         </div>
       </div>
       <div style={{
-        height: 32, padding: '0 12px', borderRadius: 10,
+        height: 32, padding: '0 12px', borderRadius: 8,
         background: 'var(--gold-metallic)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, fontSize: 12, fontWeight: 700,
@@ -540,7 +540,7 @@ const OrderCard = memo(function OrderCard({
       style={{
         width: '100%',
         padding: '18px',
-        borderRadius: 20,
+        borderRadius: 12,
         background: meta.needsAction
           ? 'var(--gold-glass-subtle)'
           : 'var(--bg-card)',
@@ -549,7 +549,7 @@ const OrderCard = memo(function OrderCard({
           : 'var(--border-default)'}`,
         cursor: 'pointer',
         textAlign: 'left',
-        marginBottom: 10,
+        marginBottom: 8,
         position: 'relative',
         overflow: 'hidden',
         boxShadow: 'var(--card-shadow)',
@@ -585,11 +585,11 @@ const OrderCard = memo(function OrderCard({
 
       {/* Row 1: Icon + Title + Price */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', gap: 14,
+        display: 'flex', alignItems: 'flex-start', gap: 12,
         marginBottom: 12,
       }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 14,
+          width: 44, height: 44, borderRadius: 12,
           background: 'var(--gold-glass-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -642,7 +642,7 @@ const OrderCard = memo(function OrderCard({
       }} />
 
       {/* Row 2: Status + Deadline + Arrow */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {/* Status badge */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 5,
@@ -661,7 +661,7 @@ const OrderCard = memo(function OrderCard({
 
         {/* Deadline */}
         <span style={{
-          fontSize: 12.5, fontWeight: 500,
+          fontSize: 12.5, fontWeight: 600,
           color: isOverdue
             ? 'var(--error-text)'
             : isUrgent
@@ -693,7 +693,7 @@ const SectionHeader = memo(function SectionHeader({ title, count }: { title: str
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
-      marginBottom: 10, marginTop: 4,
+      marginBottom: 8, marginTop: 4,
     }}>
       <span style={{
         fontSize: 14, fontWeight: 700,
@@ -731,7 +731,7 @@ function EmptyState({
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
         <div style={{
-          width: 56, height: 56, borderRadius: 18,
+          width: 56, height: 56, borderRadius: 12,
           margin: '0 auto 20px',
           background: 'var(--gold-glass-subtle)',
           border: '1px solid var(--border-gold)',
@@ -760,13 +760,13 @@ function EmptyState({
           : 'Когда создадите первый заказ, он появится здесь.'}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={onCreateOrder}
           style={{
-            height: 44, padding: '0 20px', borderRadius: 14,
+            height: 44, padding: '0 20px', borderRadius: 12,
             border: 'none',
             background: 'var(--gold-metallic)',
             color: 'var(--text-on-gold)',
@@ -782,7 +782,7 @@ function EmptyState({
             whileTap={{ scale: 0.97 }}
             onClick={onReset}
             style={{
-              height: 44, padding: '0 20px', borderRadius: 14,
+              height: 44, padding: '0 20px', borderRadius: 12,
               border: '1px solid var(--border-strong)',
               background: 'transparent',
               color: 'var(--text-secondary)',
@@ -933,13 +933,13 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           style={{
             display: 'flex', alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 20,
+            marginBottom: 24,
           }}
         >
           <h1 style={{
             margin: 0,
             fontSize: 24,
-            fontWeight: 800,
+            fontWeight: 700,
             color: 'var(--gold-200)',
             fontFamily: "'Manrope', sans-serif",
             letterSpacing: '-0.02em',
@@ -952,7 +952,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             whileTap={{ scale: 0.92 }}
             onClick={handleCreateOrder}
             style={{
-              width: 42, height: 42, borderRadius: 14,
+              width: 42, height: 42, borderRadius: 12,
               background: 'var(--gold-glass-subtle)',
               border: '1px solid var(--border-gold)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -972,7 +972,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
               display: 'flex', alignItems: 'center', gap: 12,
               marginBottom: 16,
               padding: '12px 16px',
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'var(--bg-card)',
               border: '1px solid var(--border-default)',
               boxShadow: 'var(--card-shadow)',
@@ -1012,9 +1012,9 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
 
         {/* ═══════ Search ═══════ */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
+          display: 'flex', alignItems: 'center', gap: 8,
           padding: '10px 14px',
-          borderRadius: 14,
+          borderRadius: 12,
           background: 'var(--bg-card)',
           border: '1px solid var(--border-default)',
           marginBottom: 12,
@@ -1040,7 +1040,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           display: 'flex', gap: 8,
           overflowX: 'auto', paddingBottom: 4,
           scrollbarWidth: 'none',
-          marginBottom: 20,
+          marginBottom: 24,
         }}>
           {filterItems.map(item => (
             <FilterChip
@@ -1066,7 +1066,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           />
         ) : (
           sections.map(section => (
-            <section key={section.key} style={{ marginBottom: 20 }}>
+            <section key={section.key} style={{ marginBottom: 24 }}>
               <SectionHeader title={section.title} count={section.orders.length} />
               {section.orders.map((order, i) => (
                 <OrderCard

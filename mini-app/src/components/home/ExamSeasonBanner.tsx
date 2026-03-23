@@ -141,7 +141,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
         position: 'relative',
         marginBottom: 16,
         padding: '14px 16px',
-        borderRadius: 16,
+        borderRadius: 12,
         background: season.gradient,
         border: `1px solid ${season.borderColor}`,
         boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',

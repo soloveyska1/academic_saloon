@@ -97,7 +97,7 @@ function HorizontalTracker({ status }: { status: string }) {
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          marginBottom: 20,
+          marginBottom: 24,
         }}
       >
         <motion.div
@@ -106,7 +106,7 @@ function HorizontalTracker({ status }: { status: string }) {
           style={{
             width: 48,
             height: 48,
-            borderRadius: 14,
+            borderRadius: 12,
             background: `linear-gradient(135deg, ${currentConfig.color}30, ${currentConfig.color}10)`,
             border: `2px solid ${currentConfig.color}`,
             display: 'flex',
@@ -215,7 +215,7 @@ function HorizontalTracker({ status }: { status: string }) {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 flex: 1,
               }}
             >
@@ -281,7 +281,7 @@ function VerticalTracker({ status }: { status: string }) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              marginRight: 14,
+              marginRight: 12,
             }}>
               {/* Icon Circle */}
               <motion.div
@@ -394,7 +394,7 @@ function CompactTracker({ status }: { status: string }) {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 10,
+      gap: 8,
       padding: '10px 14px',
       background: `${config.color}10`,
       border: `1px solid ${config.color}30`,
@@ -468,7 +468,7 @@ export function OrderTracker({ status, variant = 'horizontal' }: Props) {
         <div style={{
           width: 40,
           height: 40,
-          borderRadius: 10,
+          borderRadius: 8,
           background: 'rgba(239,68,68,0.2)',
           display: 'flex',
           alignItems: 'center',
@@ -507,12 +507,12 @@ export function DeliveryTracker({ status }: { status: string }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        padding: 20,
+        padding: 24,
         background: isCompleted
           ? 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))'
           : 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
         border: `1px solid ${isCompleted ? 'rgba(34,197,94,0.3)' : 'rgba(212,175,55,0.3)'}`,
-        borderRadius: 20,
+        borderRadius: 12,
         textAlign: 'center',
       }}
     >
@@ -522,7 +522,7 @@ export function DeliveryTracker({ status }: { status: string }) {
         style={{
           width: 70,
           height: 70,
-          borderRadius: 20,
+          borderRadius: 12,
           background: isCompleted
             ? 'linear-gradient(135deg, #22c55e, #16a34a)'
             : 'linear-gradient(135deg, #d4af37, #b38728)',
@@ -546,7 +546,7 @@ export function DeliveryTracker({ status }: { status: string }) {
         fontSize: 18,
         fontWeight: 700,
         color: 'var(--text-primary)',
-        marginBottom: 6,
+        marginBottom: 8,
       }}>
         {isCompleted ? 'Заказ готов!' : 'Заказ в работе'}
       </h3>
@@ -569,7 +569,7 @@ export function DeliveryTracker({ status }: { status: string }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: 8,
             marginTop: 16,
             color: 'var(--success-text)',
             fontSize: 13,

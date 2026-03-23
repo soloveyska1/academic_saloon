@@ -115,7 +115,7 @@ export function FastComposer({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         style={{
-          borderRadius: 18,
+          borderRadius: 12,
           border: `1px solid ${focused ? 'var(--gold-glass-strong)' : 'var(--border-strong)'}`,
           background: 'var(--border-subtle)',
           opacity: disabled ? 0.6 : 1,
@@ -140,7 +140,7 @@ export function FastComposer({
               maxHeight: '45vh',
               fontSize: 16, // Prevents iOS zoom
               lineHeight: 1.55,
-              fontWeight: 500,
+              fontWeight: 600,
               fontFamily: "'Manrope', sans-serif",
               color: 'var(--text-main)',
               background: 'transparent',
@@ -162,7 +162,7 @@ export function FastComposer({
               padding: '8px 16px',
               display: 'flex',
               flexWrap: 'wrap',
-              gap: 6,
+              gap: 8,
             }}
           >
             {files.map((file, i) => (
@@ -192,7 +192,7 @@ export function FastComposer({
             style={{
               margin: '0 12px 8px',
               padding: '8px 10px',
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'rgba(245, 158, 11, 0.08)',
               border: '1px solid rgba(245, 158, 11, 0.18)',
               display: 'flex',
@@ -319,7 +319,7 @@ function FileChip({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         padding: '5px 8px',
         borderRadius: 8,
         background: 'var(--gold-glass-subtle)',

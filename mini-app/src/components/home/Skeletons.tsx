@@ -56,35 +56,35 @@ export const BenefitsCardSkeleton = memo(function BenefitsCardSkeleton() {
       {/* Balance Card */}
       <div
         style={{
-          borderRadius: 16,
+          borderRadius: 12,
           padding: 16,
           background: 'var(--bg-card)',
           border: '1px solid rgba(212,175,55,0.1)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <SkeletonBar width={12} height={12} style={{ borderRadius: 4 }} />
           <SkeletonBar width={40} height={10} />
         </div>
         <SkeletonBar width="80%" height={28} style={{ marginBottom: 12 }} />
-        <SkeletonBar width={80} height={24} style={{ borderRadius: 100 }} />
+        <SkeletonBar width={80} height={24} style={{ borderRadius: 12 }} />
       </div>
 
       {/* Level Card */}
       <div
         style={{
-          borderRadius: 16,
+          borderRadius: 12,
           padding: 16,
           background: 'var(--bg-card)',
           border: '1px solid var(--card-border)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <SkeletonBar width={12} height={12} style={{ borderRadius: 4 }} />
           <SkeletonBar width={50} height={10} />
         </div>
-        <SkeletonBar width="70%" height={18} style={{ marginBottom: 10 }} />
-        <SkeletonBar width="100%" height={5} style={{ borderRadius: 100, marginBottom: 10 }} />
+        <SkeletonBar width="70%" height={18} style={{ marginBottom: 8 }} />
+        <SkeletonBar width="100%" height={5} style={{ borderRadius: 12, marginBottom: 8 }} />
         <SkeletonBar width={60} height={10} />
       </div>
     </div>
@@ -96,7 +96,7 @@ export const OrderStatsCardSkeleton = memo(function OrderStatsCardSkeleton() {
   return (
     <div
       style={{
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 16,
         marginBottom: 16,
         background: 'var(--bg-card)',
@@ -105,15 +105,15 @@ export const OrderStatsCardSkeleton = memo(function OrderStatsCardSkeleton() {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <SkeletonBar width={100} height={12} />
-        <SkeletonBar width={60} height={20} style={{ borderRadius: 100 }} />
+        <SkeletonBar width={60} height={20} style={{ borderRadius: 12 }} />
       </div>
       <div style={{ display: 'flex', gap: 24 }}>
         <div style={{ flex: 1 }}>
-          <SkeletonBar width={40} height={38} style={{ marginBottom: 6 }} />
+          <SkeletonBar width={40} height={38} style={{ marginBottom: 8 }} />
           <SkeletonBar width={70} height={10} />
         </div>
         <div style={{ flex: 1 }}>
-          <SkeletonBar width={40} height={38} style={{ marginBottom: 6 }} />
+          <SkeletonBar width={40} height={38} style={{ marginBottom: 8 }} />
           <SkeletonBar width={80} height={10} />
         </div>
       </div>
@@ -126,19 +126,19 @@ export const LastOrderCardSkeleton = memo(function LastOrderCardSkeleton() {
   return (
     <div
       style={{
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 16,
         marginBottom: 16,
         background: 'var(--bg-card)',
         border: '1px solid var(--card-border)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <SkeletonBar width={48} height={48} style={{ borderRadius: 12, flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <SkeletonBar width="60%" height={14} style={{ marginBottom: 8 }} />
-          <SkeletonBar width="40%" height={11} style={{ marginBottom: 6 }} />
-          <SkeletonBar width={70} height={20} style={{ borderRadius: 100 }} />
+          <SkeletonBar width="40%" height={11} style={{ marginBottom: 8 }} />
+          <SkeletonBar width={70} height={20} style={{ borderRadius: 12 }} />
         </div>
         <SkeletonBar width={14} height={14} style={{ borderRadius: 4 }} />
       </div>
@@ -151,14 +151,14 @@ export const AchievementsSkeleton = memo(function AchievementsSkeleton() {
   return (
     <div
       style={{
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 16,
         marginBottom: 16,
         background: 'var(--bg-card)',
         border: '1px solid var(--card-border)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <SkeletonBar width={100} height={10} />
         <SkeletonBar width={50} height={10} />
       </div>
@@ -185,7 +185,7 @@ export const SocialProofStripSkeleton = memo(function SocialProofStripSkeleton()
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 20,
+        marginBottom: 24,
         padding: '8px 12px',
         background: 'var(--bg-card)',
         borderRadius: 12,
@@ -217,10 +217,10 @@ export const HomePageSkeleton = memo(function HomePageSkeleton() {
     <div style={{ padding: '24px 20px' }}>
       {/* Header skeleton */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <SkeletonBar width={48} height={48} style={{ borderRadius: '50%' }} />
           <div>
-            <SkeletonBar width={80} height={11} style={{ marginBottom: 6 }} />
+            <SkeletonBar width={80} height={11} style={{ marginBottom: 8 }} />
             <SkeletonBar width={100} height={20} />
           </div>
         </div>
@@ -234,7 +234,7 @@ export const HomePageSkeleton = memo(function HomePageSkeleton() {
       <BenefitsCardSkeleton />
 
       {/* CTA placeholder */}
-      <SkeletonBar width="100%" height={56} style={{ borderRadius: 16, marginBottom: 16 }} />
+      <SkeletonBar width="100%" height={56} style={{ borderRadius: 12, marginBottom: 16 }} />
 
       {/* Last Order */}
       <LastOrderCardSkeleton />

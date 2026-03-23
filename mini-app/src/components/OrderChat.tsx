@@ -469,11 +469,11 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               padding: '8px 12px',
               background: 'var(--gold-glass-medium)',
               border: '1px solid var(--gold-glass-strong)',
-              borderRadius: 20,
+              borderRadius: 12,
               cursor: 'pointer',
             }}
           >
@@ -516,7 +516,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 8,
             padding: '10px 14px',
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-default)',
@@ -527,7 +527,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
           <div style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 8,
             background: 'var(--gold-glass-medium)',
             display: 'flex',
             alignItems: 'center',
@@ -538,7 +538,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
           <div style={{ flex: 1 }}>
             <div style={{
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-main)',
               marginBottom: 2,
               overflow: 'hidden',
@@ -589,7 +589,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
             // Deep Luxury Gold Gradient (Hero Button Style)
             background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
             border: '1px solid rgba(212,175,55,0.3)',
-            borderRadius: 18,
+            borderRadius: 12,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -629,11 +629,11 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
             <div style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -656,7 +656,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
               <div style={{
                 fontSize: 12,
                 color: 'rgba(212,175,55,0.8)',
-                fontWeight: 500,
+                fontWeight: 600,
               }}>
                 {unreadCount > 0 ? (
                   <span style={{ color: 'var(--success-text)', fontWeight: 700 }}>{unreadCount} новых сообщений</span>
@@ -692,8 +692,8 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
       animate={{ opacity: 1, y: 0 }}
       style={{
         background: 'var(--bg-card-solid)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: 20,
+        backdropFilter: 'blur(16px)',
+        borderRadius: 12,
         border: '1px solid var(--border-default)',
         overflow: 'hidden',
         marginTop: 16,
@@ -872,7 +872,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6,
+                          gap: 8,
                           marginBottom: 4,
                           padding: msg.file_type && !msg.message_text ? '0 6px' : 0,
                         }}>
@@ -918,11 +918,11 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                     >
                       <div style={{
                         padding: '4px 8px',
-                        borderRadius: '16px 16px 16px 4px',
+                        borderRadius: '12px 12px 12px 4px',
                         background: 'var(--bg-glass)',
                         border: '1px solid var(--border-default)',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                           <Headphones size={12} color="var(--gold-400)" />
                           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--gold-400)' }}>
                             Менеджер
@@ -955,7 +955,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 8,
                       marginBottom: 8,
                     }}>
                       <Loader size={16} color="var(--gold-400)" className="animate-spin" />
@@ -1001,7 +1001,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                       justifyContent: 'space-between',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <motion.div
                         animate={{ opacity: [1, 0.3, 1] }}
                         transition={{ repeat: Infinity, duration: 1 }}
@@ -1012,7 +1012,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                           background: 'var(--error-text)',
                         }}
                       />
-                      <span style={{ fontSize: 14, color: 'var(--error-text)', fontWeight: 500 }}>
+                      <span style={{ fontSize: 14, color: 'var(--error-text)', fontWeight: 600 }}>
                         Запись {formatDuration(recordingDuration)}
                       </span>
                     </div>
@@ -1023,7 +1023,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                         style={{
                           width: 36,
                           height: 36,
-                          borderRadius: 18,
+                          borderRadius: 12,
                           background: 'var(--bg-glass)',
                           border: 'none',
                           display: 'flex',
@@ -1040,7 +1040,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                         style={{
                           width: 36,
                           height: 36,
-                          borderRadius: 18,
+                          borderRadius: 12,
                           background: 'var(--error-text)',
                           border: 'none',
                           display: 'flex',
@@ -1066,7 +1066,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                     marginBottom: 12,
                     background: 'rgba(239, 68, 68, 0.1)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
-                    borderRadius: 10,
+                    borderRadius: 8,
                     fontSize: 12,
                     color: 'var(--error-text)',
                     display: 'flex',

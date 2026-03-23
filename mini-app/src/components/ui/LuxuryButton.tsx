@@ -30,7 +30,7 @@ export const LuxuryButton = ({
     };
 
     // Styles based on variant
-    const baseStyles = "relative overflow-hidden rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyles = "relative overflow-hidden rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
         primary: "bg-gradient-to-r from-[var(--r-gold-400)] to-[var(--r-gold-600)] text-black shadow-lg shadow-[var(--r-gold-500)]/20 hover:shadow-[var(--r-gold-500)]/40 border border-[var(--r-gold-300)]",

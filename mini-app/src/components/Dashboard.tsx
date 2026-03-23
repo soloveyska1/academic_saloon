@@ -89,10 +89,10 @@ function GlassCard({
       style={{
         gridColumn: span === 2 ? 'span 2' : 'span 1',
         ...variants[variant],
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: 18,
-        padding: 18,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: 12,
+        padding: 16,
         position: 'relative',
         overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
@@ -158,7 +158,7 @@ export function Dashboard({ user }: DashboardProps) {
               fontSize: 13,
               color: 'var(--text-secondary)',
               marginBottom: 4,
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           >
             Добро пожаловать,
@@ -169,7 +169,7 @@ export function Dashboard({ user }: DashboardProps) {
               fontSize: 20,
               fontWeight: 700,
               letterSpacing: '0.02em',
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
             {firstName}
@@ -211,12 +211,12 @@ export function Dashboard({ user }: DashboardProps) {
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 10,
+                borderRadius: 8,
                 background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05))',
                 display: 'flex',
                 alignItems: 'center',
@@ -248,12 +248,12 @@ export function Dashboard({ user }: DashboardProps) {
             CARD 2: STATUS / PRIVILEGE
             ═══════════════════════════════════════════════════════════════════ */}
         <GlassCard variant="default" delay={0.15}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 10,
+                borderRadius: 8,
                 background: 'rgba(255, 255, 255, 0.05)',
                 display: 'flex',
                 alignItems: 'center',
@@ -295,7 +295,7 @@ export function Dashboard({ user }: DashboardProps) {
               style={{
                 height: 4,
                 background: 'rgba(255,255,255,0.05)',
-                borderRadius: 100,
+                borderRadius: 12,
                 overflow: 'hidden',
               }}
             >
@@ -306,14 +306,14 @@ export function Dashboard({ user }: DashboardProps) {
                 style={{
                   height: '100%',
                   background: 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061)',
-                  borderRadius: 100,
+                  borderRadius: 12,
                   boxShadow: '0 0 10px rgba(212, 175, 55, 0.4)',
                 }}
               />
             </div>
             <div
               style={{
-                marginTop: 6,
+                marginTop: 8,
                 fontSize: 10,
                 color: 'var(--text-muted)',
               }}
@@ -344,7 +344,7 @@ export function Dashboard({ user }: DashboardProps) {
               marginTop: 8,
               fontSize: 12,
               color: 'var(--text-muted)',
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           >
             Приоритетная поддержка
@@ -364,7 +364,7 @@ export function Dashboard({ user }: DashboardProps) {
               bottom: 0,
               width: 16,
               background: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.25) 8px, rgba(0,0,0,0.25) 16px)',
-              borderRadius: '18px 0 0 18px',
+              borderRadius: '12px 0 0 12px',
             }}
           />
 
@@ -390,8 +390,8 @@ export function Dashboard({ user }: DashboardProps) {
                 style={{
                   fontSize: 12,
                   color: 'var(--text-secondary)',
-                  marginBottom: 14,
-                  fontWeight: 300,
+                  marginBottom: 12,
+                  fontWeight: 400,
                   lineHeight: 1.5,
                 }}
               >
@@ -436,7 +436,7 @@ export function Dashboard({ user }: DashboardProps) {
                 alignItems: 'center',
                 padding: 16,
                 background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))',
-                borderRadius: 16,
+                borderRadius: 12,
               }}
             >
               <GoldText size="xl" weight={800} variant="static">
@@ -475,7 +475,7 @@ export function Dashboard({ user }: DashboardProps) {
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.15em',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 Заказов
@@ -510,7 +510,7 @@ export function Dashboard({ user }: DashboardProps) {
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.15em',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 Скидка

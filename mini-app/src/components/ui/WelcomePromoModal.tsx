@@ -102,7 +102,7 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
         position: 'relative',
         padding: 24,
         marginBottom: 24,
-        borderRadius: 20,
+        borderRadius: 12,
         background: 'linear-gradient(145deg, var(--border-gold), var(--gold-glass-subtle))',
         border: '2px solid rgba(212,175,55,0.5)',
         boxShadow: '0 0 60px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.1)',
@@ -125,11 +125,11 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           padding: '8px 16px',
           marginBottom: 16,
           background: 'var(--liquid-gold)',
-          borderRadius: 100,
+          borderRadius: 12,
         }}
       >
         <Sparkles size={16} color="var(--text-on-gold)" />
@@ -153,7 +153,7 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
         transition={{ duration: 2, repeat: Infinity }}
         style={{
           fontSize: 40,
-          fontWeight: 800,
+          fontWeight: 700,
           fontFamily: "var(--font-mono)",
           letterSpacing: '0.15em',
           background: 'var(--gold-text-shine)',
@@ -304,7 +304,7 @@ export function WelcomePromoModal({
               justifyContent: 'center',
               width: 100,
               height: 100,
-              borderRadius: 28,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, var(--border-gold), var(--gold-glass-subtle))',
               border: '2px solid rgba(212,175,55,0.4)',
               boxShadow: '0 0 50px rgba(212,175,55,0.3)',
@@ -321,7 +321,7 @@ export function WelcomePromoModal({
               style={{
                 position: 'absolute',
                 inset: -10,
-                borderRadius: 32,
+                borderRadius: 12,
                 border: '2px solid rgba(212,175,55,0.3)',
               }}
             />
@@ -382,7 +382,7 @@ export function WelcomePromoModal({
               style={{
                 fontSize: 14,
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: 28,
+                marginBottom: 32,
                 lineHeight: 1.5,
               }}
             >
@@ -406,7 +406,7 @@ export function WelcomePromoModal({
                 display: 'flex',
                 justifyContent: 'center',
                 gap: 24,
-                marginBottom: 28,
+                marginBottom: 32,
               }}
             >
               {[
@@ -418,7 +418,7 @@ export function WelcomePromoModal({
                   <div style={{
                     width: 44,
                     height: 44,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     background: 'rgba(212,175,55,0.1)',
                     border: '1px solid var(--border-gold)',
                     display: 'flex',
@@ -447,7 +447,7 @@ export function WelcomePromoModal({
                 padding: '18px 28px',
                 background: 'var(--liquid-gold)',
                 border: 'none',
-                borderRadius: 16,
+                borderRadius: 12,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',

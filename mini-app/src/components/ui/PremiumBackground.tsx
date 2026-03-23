@@ -165,7 +165,7 @@ const AnimatedBlob = memo(function AnimatedBlob({
         height: `${size}%`,
         borderRadius: '50%',
         background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-        filter: 'blur(40px)',
+        filter: 'blur(16px)',
         pointerEvents: 'none',
         willChange: 'transform',
       }}
@@ -223,7 +223,7 @@ const InteractiveSpotlight = memo(function InteractiveSpotlight({
         x: '-50%',
         y: '-50%',
         background: `radial-gradient(circle, ${color} 0%, transparent 60%)`,
-        filter: 'blur(60px)',
+        filter: 'blur(16px)',
         pointerEvents: 'none',
         opacity: 0.6,
         willChange: 'left, top',

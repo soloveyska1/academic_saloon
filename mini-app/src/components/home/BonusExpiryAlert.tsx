@@ -160,7 +160,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         <div
           style={{
             fontSize: 11,
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'var(--text-muted)',
             lineHeight: 1.3,
           }}

@@ -18,8 +18,8 @@
 /* ═══════ GLASS SURFACE ═══════ */
 .voidGlass {
   background: rgba(15, 13, 8, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
   border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow:
     inset 0 1px 0 var(--bg-glass),
@@ -30,7 +30,7 @@
 .glassCard {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 12px;
   background:
     radial-gradient(circle at top right, rgba(212, 175, 55, 0.08), transparent 36%),
     linear-gradient(180deg, rgba(19, 18, 24, 0.97), rgba(10, 10, 16, 0.96));
@@ -72,7 +72,7 @@
 /* ═══════ STAT CARD ═══════ */
 .statCard {
   padding: 14px;
-  border-radius: 22px;
+  border-radius: 12px;
   background: var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -151,7 +151,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 8px;
-  border-radius: 20px;
+  border-radius: 12px;
   background: var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -164,7 +164,7 @@
 .quickActionIcon {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +193,7 @@
 .transactionIcon {
   width: 38px;
   height: 38px;
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +233,7 @@
 .goldButton {
   min-height: 42px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.10);
   color: var(--gold-300);
@@ -246,7 +246,7 @@
 .miniButton {
   min-height: 56px;
   padding: 10px 12px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--surface-hover);
   background: rgba(255, 255, 255, 0.035);
   color: var(--text-primary);
@@ -274,7 +274,7 @@
 .bannerCard {
   position: relative;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: 12px;
   padding: 18px;
   background:
     radial-gradient(circle at 80% -5%, rgba(212, 175, 55, 0.14), transparent 40%),
@@ -335,7 +335,7 @@
 /* ═══════ LINK DISPLAY ═══════ */
 .linkBox {
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--border-default);
   font-size: 12.5px;

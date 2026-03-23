@@ -33,7 +33,7 @@ function RankTimelineComponent({ userCashback }: RankTimelineProps) {
   const currentRankIndex = getRankIndexByCashback(userCashback)
 
   return (
-    <div style={{ position: 'relative', paddingLeft: 32, marginBottom: 28 }}>
+    <div style={{ position: 'relative', paddingLeft: 32, marginBottom: 32 }}>
       {/* Vertical gradient line */}
       <m.div
         initial={{ height: 0 }}
@@ -109,7 +109,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
   const iconContainerStyle = useMemo<React.CSSProperties>(() => ({
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 12,
     background: isPassed || isActive ? rank.gradient : 'rgba(60,60,60,0.4)',
     display: 'flex',
     alignItems: 'center',
@@ -155,9 +155,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
         borderColor={isActive ? `${rank.color}45` : 'var(--surface-hover)'}
         glowColor={isActive ? rank.color : undefined}
         isActive={isActive}
-        style={{ padding: 18 }}
+        style={{ padding: 16 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Icon */}
           <m.div
             animate={isActive ? { rotate: [0, 5, -5, 0] } : undefined}
@@ -173,7 +173,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
                 right: 0,
                 height: '50%',
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
-                borderRadius: '16px 16px 50% 50%',
+                borderRadius: '12px 12px 50% 50%',
               }} />
             )}
             <Icon
@@ -210,7 +210,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
               style={{
                 padding: '6px 12px',
                 background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
-                borderRadius: 100,
+                borderRadius: 12,
                 border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',

@@ -97,7 +97,7 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
   }, [])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Hint */}
       <div style={{
         fontSize: 13,
@@ -110,7 +110,7 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
       </div>
 
       {/* Sections */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {sections.map((section, sectionIndex) => (
           <DeadlineSection
             key={section.category}
@@ -177,7 +177,7 @@ function DeadlineSection({
 
       {/* Rows inside bordered card */}
       <div style={{
-        borderRadius: 14,
+        borderRadius: 12,
         overflow: 'hidden',
         border: `1px solid ${section.accentBorder}`,
         background: 'rgba(255, 255, 255, 0.015)',
@@ -263,7 +263,7 @@ function DeadlineRow({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
       }}>
         {/* Label + popular badge */}
         <div style={{

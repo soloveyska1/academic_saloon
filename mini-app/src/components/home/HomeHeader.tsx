@@ -66,7 +66,7 @@ export const HomeHeader = memo(function HomeHeader({
           position: 'relative',
           overflow: 'hidden',
           padding: isNewUser ? '22px 20px 18px' : '24px 20px 20px',
-          borderRadius: 32,
+          borderRadius: 12,
           background: isNewUser
             ? 'linear-gradient(165deg, rgba(18, 16, 12, 0.96) 0%, rgba(11, 11, 12, 0.98) 58%, rgba(8, 8, 9, 1) 100%)'
             : 'linear-gradient(165deg, rgba(24, 20, 12, 0.98) 0%, rgba(14, 13, 14, 0.97) 44%, rgba(8, 8, 10, 1) 100%)',
@@ -113,8 +113,8 @@ export const HomeHeader = memo(function HomeHeader({
                 aria-hidden="true"
                 style={{
                   position: 'absolute',
-                  right: 22,
-                  top: 28,
+                  right: 24,
+                  top: 32,
                   fontFamily: "var(--font-display, 'Playfair Display', serif)",
                   fontSize: 118,
                   lineHeight: 0.82,
@@ -193,7 +193,7 @@ export const HomeHeader = memo(function HomeHeader({
                 </div>
               </div>
 
-              <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 6 }}>
+              <div className={s.userInfo} style={{ marginLeft: 16, minWidth: 0, gap: 8 }}>
                 <div
                   style={{
                     fontSize: 10,
@@ -222,7 +222,7 @@ export const HomeHeader = memo(function HomeHeader({
                 {!isNewUser && activityLine && (
                   <div
                     style={{
-                      marginTop: 10,
+                      marginTop: 8,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 8,
@@ -266,14 +266,14 @@ export const HomeHeader = memo(function HomeHeader({
                   padding: '12px 14px',
                   background: 'rgba(18, 16, 12, 0.72)',
                   border: '1px solid rgba(212, 175, 55, 0.14)',
-                  borderRadius: 20,
+                  borderRadius: 12,
                   color: 'var(--gold-300)',
                   fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
                   fontSize: '10px',
                   fontWeight: 700,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  backdropFilter: 'blur(16px) saturate(150%)',
+                  backdropFilter: 'blur(16px) saturate(120%)',
                   boxShadow: '0 16px 28px -24px rgba(0, 0, 0, 0.78)',
                 }}
               >
@@ -288,14 +288,14 @@ export const HomeHeader = memo(function HomeHeader({
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)',
-                gap: 10,
+                gap: 8,
               }}
             >
               <div
                 style={{
                   minWidth: 0,
                   padding: '16px 16px 14px',
-                  borderRadius: 22,
+                  borderRadius: 12,
                   background: 'linear-gradient(180deg, rgba(212,175,55,0.11) 0%, rgba(255,255,255,0.03) 100%)',
                   border: '1px solid rgba(212,175,55,0.12)',
                 }}
@@ -320,7 +320,7 @@ export const HomeHeader = memo(function HomeHeader({
                     lineHeight: 0.94,
                     letterSpacing: '-0.06em',
                     color: 'var(--gold-200)',
-                    marginBottom: 6,
+                    marginBottom: 8,
                     wordBreak: 'break-word',
                   }}
                 >
@@ -341,7 +341,7 @@ export const HomeHeader = memo(function HomeHeader({
                 style={{
                   minWidth: 0,
                   padding: '16px 16px 14px',
-                  borderRadius: 22,
+                  borderRadius: 12,
                   background: 'rgba(255,255,255,0.03)',
                   border: '1px solid rgba(255,255,255,0.05)',
                   display: 'flex',
@@ -356,7 +356,7 @@ export const HomeHeader = memo(function HomeHeader({
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
                     color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   Кэшбэк
@@ -369,7 +369,7 @@ export const HomeHeader = memo(function HomeHeader({
                     lineHeight: 0.98,
                     letterSpacing: '-0.05em',
                     color: 'var(--text-primary)',
-                    marginBottom: 6,
+                    marginBottom: 8,
                   }}
                 >
                   {summary.cashback}%

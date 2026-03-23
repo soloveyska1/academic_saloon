@@ -107,7 +107,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
           fontFamily: "'Manrope', sans-serif",
           color: 'rgba(255,255,255,0.35)',
           fontSize: 12,
-          fontWeight: 500,
+          fontWeight: 600,
           marginTop: 16,
         }}>
           Проверка сессии...
@@ -165,11 +165,11 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
 
         {/* Icon — gold glass */}
         <div style={{
-          width: 56, height: 56, borderRadius: 16,
+          width: 56, height: 56, borderRadius: 12,
           background: 'linear-gradient(135deg, var(--gold-glass-medium), rgba(212,175,55,0.05))',
           border: '1px solid rgba(212,175,55,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 20,
+          marginBottom: 24,
           boxShadow: '0 8px 32px -8px rgba(212,175,55,0.2)',
         }}>
           <Shield size={24} color="var(--gold-400)" strokeWidth={1.5} />
@@ -187,8 +187,8 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
         <p style={{
           fontFamily: "'Manrope', sans-serif",
           fontSize: 13, color: 'rgba(255,255,255,0.35)',
-          textAlign: 'center', lineHeight: 1.55, marginBottom: 28,
-          maxWidth: 260, fontWeight: 500,
+          textAlign: 'center', lineHeight: 1.55, marginBottom: 32,
+          maxWidth: 260, fontWeight: 600,
         }}>
           {phase === 'send'
             ? 'Для доступа к God Mode отправим 6-значный код в Telegram'
@@ -222,7 +222,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             disabled={loading}
             whileTap={{ scale: 0.97 }}
             style={{
-              width: '100%', padding: '15px 24px', borderRadius: 16,
+              width: '100%', padding: '15px 24px', borderRadius: 12,
               background: 'var(--gold-metallic)',
               border: '1px solid rgba(212,175,55,0.4)',
               color: 'var(--text-on-gold)',
@@ -248,7 +248,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             <div style={{
               width: '100%',
               padding: '20px 16px',
-              borderRadius: 20,
+              borderRadius: 12,
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid var(--surface-hover)',
               marginBottom: 16,
@@ -264,7 +264,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
                 autoComplete="one-time-code"
                 style={{
                   width: '100%', padding: '14px 16px',
-                  borderRadius: 14, fontSize: 26, fontWeight: 700,
+                  borderRadius: 12, fontSize: 26, fontWeight: 700,
                   textAlign: 'center', letterSpacing: '0.3em',
                   background: 'rgba(255,255,255,0.03)',
                   border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'var(--gold-glass-medium)'}`,
@@ -296,7 +296,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
               disabled={loading || code.length !== 6}
               whileTap={{ scale: 0.97 }}
               style={{
-                width: '100%', padding: '15px 24px', borderRadius: 16,
+                width: '100%', padding: '15px 24px', borderRadius: 12,
                 background: code.length === 6
                   ? 'var(--gold-metallic)'
                   : 'var(--bg-glass)',

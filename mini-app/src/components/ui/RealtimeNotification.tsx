@@ -123,7 +123,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
     bg: isBonus
       ? 'var(--notification-bonus-bg, linear-gradient(135deg, rgba(20, 20, 23, 0.98) 0%, rgba(13, 33, 13, 0.98) 100%))'
       : 'var(--bg-card)',
-    backdrop: 'blur(25px)',
+    backdrop: 'blur(16px)',
     border: isBonus
       ? '1px solid rgba(34, 197, 94, 0.3)'
       : '1px solid var(--border-strong)',
@@ -171,7 +171,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
               backdropFilter: theme.backdrop,
               WebkitBackdropFilter: theme.backdrop,
               border: theme.border,
-              borderRadius: 20, // More rounded for modern feel
+              borderRadius: 12, // More rounded for modern feel
               padding: '16px 18px',
               cursor: notification.action ? 'pointer' : 'default',
               boxShadow: theme.shadow,
@@ -187,10 +187,10 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
               height: '60%',
               background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
               pointerEvents: 'none',
-              borderRadius: '20px 20px 0 0',
+              borderRadius: '12px 12px 0 0',
             }} />
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               {/* Premium Icon Container */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -199,7 +199,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   background: theme.iconBg,
                   border: `1px solid ${theme.iconBorder}`,
                   display: 'flex',
@@ -220,7 +220,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      borderRadius: 14,
+                      borderRadius: 12,
                       border: `1px solid ${color}`,
                     }}
                   />
@@ -251,7 +251,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                       color: color,
                       background: `${color}15`,
                       padding: '2px 6px',
-                      borderRadius: 6,
+                      borderRadius: 4,
                       marginLeft: 8,
                     }}>
                       #{notification.order_id}
@@ -275,7 +275,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
 
                 {/* Progress Bar */}
                 {notification.type === 'progress_update' && notification.progress !== undefined && (
-                  <div style={{ marginTop: 10, height: 4, background: 'var(--surface-active)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ marginTop: 8, height: 4, background: 'var(--surface-active)', borderRadius: 2, overflow: 'hidden' }}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${notification.progress}%` }}
@@ -321,18 +321,18 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                 transition={{ delay: 0.4 }}
                 style={{
                   marginTop: 12,
-                  paddingTop: 10,
+                  paddingTop: 8,
                   borderTop: '1px solid var(--border-default)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
+                  gap: 8,
                 }}
               >
                 <span style={{
                   fontSize: 12,
                   color: theme.actionText,
-                  fontWeight: 500
+                  fontWeight: 600
                 }}>
                   Нажмите, чтобы открыть
                 </span>

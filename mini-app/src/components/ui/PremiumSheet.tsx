@@ -242,7 +242,7 @@ export const PremiumSheet = memo(function PremiumSheet({
                     <div style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 14,
+                      borderRadius: 12,
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.08)',
                       display: 'flex',

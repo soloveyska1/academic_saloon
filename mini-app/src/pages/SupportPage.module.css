@@ -15,7 +15,7 @@
 .backButton {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--border-default);
   border: 1px solid var(--border-strong);
   display: flex;
@@ -59,7 +59,7 @@
 .telegramButton {
   min-height: 44px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.1);
   color: var(--gold-400);
@@ -75,7 +75,7 @@
 
 /* ═══════ HERO CARD ═══════ */
 .heroCard {
-  border-radius: 24px;
+  border-radius: 12px;
   padding: 18px;
   margin-bottom: 16px;
   background:
@@ -94,7 +94,7 @@
 .heroIcon {
   width: 48px;
   height: 48px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid rgba(212, 175, 55, 0.18);
   display: flex;
@@ -127,7 +127,7 @@
 .topicCard {
   width: 100%;
   padding: 14px 14px 15px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--surface-hover);
   text-align: left;
@@ -145,7 +145,7 @@
 .topicIcon {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(212, 175, 55, 0.1);
   border: 1px solid rgba(212, 175, 55, 0.16);
   display: flex;
@@ -177,7 +177,7 @@
   flex: 1;
   min-height: 46px;
   padding: 0 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--surface-hover);
   background: var(--border-subtle);
   color: var(--text-secondary);
@@ -201,7 +201,7 @@
 /* ═══════ FAQ ITEMS ═══════ */
 .faqItem {
   width: 100%;
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--surface-hover);
@@ -226,7 +226,7 @@
 .faqIcon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(212, 175, 55, 0.1);
   border: 1px solid rgba(212, 175, 55, 0.15);
   display: flex;
@@ -255,7 +255,7 @@
 
 /* ═══════ "NOT FOUND" CTA ═══════ */
 .notFoundCard {
-  border-radius: 24px;
+  border-radius: 12px;
   padding: 18px;
   background: rgba(12, 12, 15, 0.88);
   border: 1px solid var(--surface-hover);
@@ -284,7 +284,7 @@
 
 .primaryButton {
   min-height: 48px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: none;
   background: var(--gold-metallic);
   color: var(--text-on-gold);
@@ -296,7 +296,7 @@
 
 .secondaryButton {
   min-height: 48px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--border-strong);
   background: var(--bg-glass);
   color: var(--text-primary);
@@ -310,7 +310,7 @@
 .chatContainer {
   flex: 1;
   min-height: 0;
-  border-radius: 26px;
+  border-radius: 12px;
   overflow: hidden;
   background: rgba(12, 12, 15, 0.9);
   border: 1px solid var(--surface-hover);
@@ -414,7 +414,7 @@
 .supportAvatar {
   width: 28px;
   height: 28px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid rgba(212, 175, 55, 0.18);
   display: flex;
@@ -436,7 +436,7 @@
 .bubbleClient {
   max-width: 84%;
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--gold-300) 0%, var(--gold-400) 55%, var(--gold-700) 100%);
   color: var(--text-on-gold);
   box-shadow: 0 8px 22px rgba(212, 175, 55, 0.18);
@@ -445,7 +445,7 @@
 .bubbleAdmin {
   max-width: 84%;
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--border-default);
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
@@ -475,7 +475,7 @@
 .emptyChat {
   margin-top: 8px;
   padding: 20px 18px;
-  border-radius: 22px;
+  border-radius: 12px;
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(18, 18, 22, 0.96) 100%);
   border: 1px solid rgba(212, 175, 55, 0.16);
 }
@@ -483,7 +483,7 @@
 .emptyChatIcon {
   width: 52px;
   height: 52px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid rgba(212, 175, 55, 0.18);
   display: flex;
@@ -509,7 +509,7 @@
 .emptyChatButton {
   min-height: 46px;
   padding: 0 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border-strong);
   background: var(--bg-glass);
   color: var(--text-primary);
@@ -526,7 +526,7 @@
 .errorCard {
   margin-top: 20px;
   padding: 20px 18px;
-  border-radius: 20px;
+  border-radius: 12px;
   background: var(--border-subtle);
   border: 1px solid var(--surface-hover);
   text-align: center;
@@ -554,7 +554,7 @@
 
 .retryButton {
   min-height: 44px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border-strong);
   background: var(--bg-glass);
   color: var(--text-primary);
@@ -570,7 +570,7 @@
 
 .telegramAltButton {
   min-height: 44px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.1);
   color: var(--gold-400);
@@ -589,8 +589,8 @@
   padding: 12px 16px 16px;
   border-top: 1px solid var(--surface-hover);
   background: rgba(15, 15, 18, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .composerInner {
@@ -598,7 +598,7 @@
   align-items: flex-end;
   gap: 10px;
   padding: 10px 10px 10px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--bg-glass);
   border: 1px solid var(--surface-hover);
 }
@@ -624,7 +624,7 @@
 .sendButton {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: none;
   display: flex;
   align-items: center;

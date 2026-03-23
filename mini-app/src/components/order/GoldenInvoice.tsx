@@ -65,10 +65,10 @@ function DecorativeCorner({ position, color = '#D4AF37' }: {
     color?: string
 }) {
     const positionStyles: Record<string, React.CSSProperties> = {
-        'top-left': { top: 0, left: 0, borderTop: `2px solid ${color}50`, borderLeft: `2px solid ${color}50`, borderRadius: '16px 0 0 0' },
-        'top-right': { top: 0, right: 0, borderTop: `2px solid ${color}50`, borderRight: `2px solid ${color}50`, borderRadius: '0 16px 0 0' },
-        'bottom-left': { bottom: 0, left: 0, borderBottom: `2px solid ${color}50`, borderLeft: `2px solid ${color}50`, borderRadius: '0 0 0 16px' },
-        'bottom-right': { bottom: 0, right: 0, borderBottom: `2px solid ${color}50`, borderRight: `2px solid ${color}50`, borderRadius: '0 0 16px 0' },
+        'top-left': { top: 0, left: 0, borderTop: `2px solid ${color}50`, borderLeft: `2px solid ${color}50`, borderRadius: '12px 0 0 0' },
+        'top-right': { top: 0, right: 0, borderTop: `2px solid ${color}50`, borderRight: `2px solid ${color}50`, borderRadius: '0 12px 0 0' },
+        'bottom-left': { bottom: 0, left: 0, borderBottom: `2px solid ${color}50`, borderLeft: `2px solid ${color}50`, borderRadius: '0 0 0 12px' },
+        'bottom-right': { bottom: 0, right: 0, borderBottom: `2px solid ${color}50`, borderRight: `2px solid ${color}50`, borderRadius: '0 0 12px 0' },
     }
 
     return (
@@ -118,7 +118,7 @@ function AnimatedTimer() {
                 gap: 8,
                 padding: '10px 14px',
                 background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))',
-                borderRadius: 14,
+                borderRadius: 12,
                 border: '1px solid rgba(245,158,11,0.3)',
             }}
         >
@@ -157,8 +157,8 @@ function PriceBreakdown({ order }: { order: Order }) {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             style={{
-                marginBottom: 20,
-                borderRadius: 16,
+                marginBottom: 24,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))',
                 border: '1px solid rgba(34,197,94,0.2)',
                 overflow: 'hidden',
@@ -178,11 +178,11 @@ function PriceBreakdown({ order }: { order: Order }) {
                     justifyContent: 'space-between',
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{
                         width: 32,
                         height: 32,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         background: 'rgba(34,197,94,0.15)',
                         display: 'flex',
                         alignItems: 'center',
@@ -199,7 +199,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                         </div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
                         fontSize: 16,
                         fontWeight: 700,
@@ -278,7 +278,7 @@ function PremiumSuccessScreen() {
             animate={{ opacity: 1 }}
             style={{
                 background: 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(20,20,23,0.98))',
-                borderRadius: 28,
+                borderRadius: 12,
                 border: '1px solid rgba(34,197,94,0.3)',
                 padding: '48px 32px',
                 display: 'flex',
@@ -320,7 +320,7 @@ function PremiumSuccessScreen() {
                 style={{
                     width: 100,
                     height: 100,
-                    borderRadius: 30,
+                    borderRadius: 12,
                     background: 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(34,197,94,0.1))',
                     border: '2px solid rgba(34,197,94,0.5)',
                     display: 'flex',
@@ -341,7 +341,7 @@ function PremiumSuccessScreen() {
                     style={{
                         position: 'absolute',
                         inset: -4,
-                        borderRadius: 34,
+                        borderRadius: 12,
                     }}
                 />
                 <motion.div
@@ -494,7 +494,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             style={{
-                borderRadius: 28,
+                borderRadius: 12,
                 background: 'linear-gradient(145deg, var(--gold-glass-subtle) 0%, rgba(20,20,23,0.98) 100%)',
                 border: '1px solid var(--border-gold)',
                 boxShadow: '0 20px 60px -15px var(--border-gold)',
@@ -537,7 +537,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                 position: 'relative',
                 zIndex: 1,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <motion.div
                         animate={{
                             boxShadow: [
@@ -550,7 +550,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         style={{
                             width: 52,
                             height: 52,
-                            borderRadius: 16,
+                            borderRadius: 12,
                             background: 'linear-gradient(135deg, var(--border-gold), var(--gold-glass-subtle))',
                             border: '1.5px solid var(--border-gold-strong)',
                             display: 'flex',
@@ -599,7 +599,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         textAlign: 'center',
                         padding: '28px 20px',
                         marginBottom: 24,
-                        borderRadius: 20,
+                        borderRadius: 12,
                         background: 'linear-gradient(145deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))',
                         border: '1px solid var(--border-gold)',
                         position: 'relative',
@@ -626,7 +626,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         fontWeight: 600,
                         color: 'var(--gold-400)',
                         margin: 0,
-                        marginBottom: 10,
+                        marginBottom: 8,
                         textTransform: 'uppercase',
                         letterSpacing: '0.15em',
                     }}>
@@ -669,14 +669,14 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             style={{
-                                marginTop: 14,
+                                marginTop: 12,
                                 padding: '8px 14px',
                                 background: 'rgba(139,92,246,0.1)',
-                                borderRadius: 10,
+                                borderRadius: 8,
                                 border: '1px solid rgba(139,92,246,0.2)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: 6,
+                                gap: 8,
                             }}
                         >
                             <Shield size={14} color="var(--accent-purple)" />
@@ -689,7 +689,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
 
                 {/* ═══ PAYMENT SCHEME ═══ */}
                 {!isSecondPayment ? (
-                    <div style={{ marginBottom: 20 }}>
+                    <div style={{ marginBottom: 24 }}>
                         <div style={{
                             fontSize: 11,
                             fontWeight: 700,
@@ -714,14 +714,14 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     whileTap={{ scale: 0.97 }}
                                     onClick={() => { haptic('light'); setPaymentScheme(scheme.key) }}
                                     style={{
-                                        padding: 18,
+                                        padding: 16,
                                         background: paymentScheme === scheme.key
                                             ? 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))'
                                             : 'var(--border-subtle)',
                                         border: paymentScheme === scheme.key
                                             ? '2px solid var(--border-gold-strong)'
                                             : '1px solid var(--border-strong)',
-                                        borderRadius: 18,
+                                        borderRadius: 12,
                                         cursor: 'pointer',
                                         position: 'relative',
                                         overflow: 'hidden',
@@ -760,7 +760,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                             marginTop: 8,
                                             padding: '4px 8px',
                                             background: 'var(--gold-glass-medium)',
-                                            borderRadius: 6,
+                                            borderRadius: 4,
                                             fontSize: 10,
                                             fontWeight: 600,
                                             color: 'var(--gold-400)',
@@ -778,20 +778,20 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         style={{
-                            marginBottom: 20,
+                            marginBottom: 24,
                             padding: '16px 18px',
                             background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))',
-                            borderRadius: 16,
+                            borderRadius: 12,
                             border: '1px solid rgba(34,197,94,0.25)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 14,
+                            gap: 12,
                         }}
                     >
                         <div style={{
                             width: 44,
                             height: 44,
-                            borderRadius: 14,
+                            borderRadius: 12,
                             background: 'rgba(34,197,94,0.15)',
                             border: '1px solid rgba(34,197,94,0.3)',
                             display: 'flex',
@@ -812,7 +812,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                 )}
 
                 {/* ═══ PAYMENT METHOD ═══ */}
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 24 }}>
                     <div style={{
                         fontSize: 11,
                         fontWeight: 700,
@@ -837,21 +837,21 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => { haptic('light'); setPaymentMethod(method.key) }}
                                 style={{
-                                    padding: 18,
+                                    padding: 16,
                                     background: paymentMethod === method.key
                                         ? `linear-gradient(135deg, ${method.color}20, ${method.color}08)`
                                         : 'var(--border-subtle)',
                                     border: paymentMethod === method.key
                                         ? `2px solid ${method.color}60`
                                         : '1px solid var(--border-strong)',
-                                    borderRadius: 18,
+                                    borderRadius: 12,
                                     cursor: 'pointer',
                                 }}
                             >
                                 <method.icon
                                     size={26}
                                     color={paymentMethod === method.key ? method.color : 'var(--text-muted)'}
-                                    style={{ marginBottom: 10 }}
+                                    style={{ marginBottom: 8 }}
                                 />
                                 <p style={{
                                     fontSize: 14,
@@ -876,13 +876,13 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             exit={{ opacity: 0, height: 0 }}
                             style={{
                                 background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02))',
-                                borderRadius: 18,
+                                borderRadius: 12,
                                 border: '1px solid rgba(59,130,246,0.2)',
-                                padding: 20,
-                                marginBottom: 20,
+                                padding: 24,
+                                marginBottom: 24,
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                                 <Lock size={14} color="var(--info-text)" />
                                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--info-text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты карты
@@ -897,12 +897,12 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     padding: '16px 18px',
                                     background: 'rgba(0,0,0,0.3)',
                                     border: '1px solid rgba(59,130,246,0.2)',
-                                    borderRadius: 14,
+                                    borderRadius: 12,
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    marginBottom: 10,
+                                    marginBottom: 8,
                                 }}
                             >
                                 <span style={{
@@ -939,13 +939,13 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             exit={{ opacity: 0, height: 0 }}
                             style={{
                                 background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.02))',
-                                borderRadius: 18,
+                                borderRadius: 12,
                                 border: '1px solid rgba(139,92,246,0.2)',
-                                padding: 20,
-                                marginBottom: 20,
+                                padding: 24,
+                                marginBottom: 24,
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                                 <Lock size={14} color="var(--accent-purple)" />
                                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты СБП
@@ -960,12 +960,12 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     padding: '16px 18px',
                                     background: 'rgba(0,0,0,0.3)',
                                     border: '1px solid rgba(139,92,246,0.2)',
-                                    borderRadius: 14,
+                                    borderRadius: 12,
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    marginBottom: 10,
+                                    marginBottom: 8,
                                 }}
                             >
                                 <span style={{
@@ -1003,11 +1003,11 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             padding: '14px 18px',
                             background: 'rgba(239,68,68,0.1)',
                             border: '1px solid rgba(239,68,68,0.3)',
-                            borderRadius: 14,
+                            borderRadius: 12,
                             marginBottom: 16,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 10,
+                            gap: 8,
                         }}
                     >
                         <div style={{
@@ -1037,12 +1037,12 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             padding: '14px',
                             background: 'var(--border-subtle)',
                             border: '1px solid var(--border-strong)',
-                            borderRadius: 14,
+                            borderRadius: 12,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 10,
+                            gap: 8,
                         }}
                     >
                         <Headphones size={18} color="rgba(255,255,255,0.5)" />
@@ -1076,7 +1076,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             ? 'var(--border-strong)'
                             : 'linear-gradient(180deg, var(--gold-100) 0%, var(--gold-400) 50%, var(--gold-500) 100%)',
                         border: 'none',
-                        borderRadius: 18,
+                        borderRadius: 12,
                         cursor: processing ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -1123,7 +1123,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
 
                 {/* ═══ TRUST SIGNALS ═══ */}
                 <div style={{
-                    marginTop: 20,
+                    marginTop: 24,
                     display: 'flex',
                     justifyContent: 'center',
                     gap: 16,
@@ -1142,7 +1142,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 6,
+                                gap: 8,
                                 padding: '6px 10px',
                                 borderRadius: 8,
                                 background: `${badge.color}10`,

@@ -21,7 +21,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
     width: '100%',
     aspectRatio: '2/1',
     maxHeight: 170,
-    borderRadius: 20,
+    borderRadius: 12,
     background: 'linear-gradient(145deg, rgba(22,22,26,1) 0%, rgba(14,14,18,1) 100%)',
     border: `1px solid ${isLocked ? 'rgba(255,255,255,0.06)' : 'rgba(212,175,55,0.18)'}`,
     overflow: 'hidden',
@@ -59,9 +59,9 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
       }}>
         {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
-              padding: 7, borderRadius: 11,
+              padding: 7, borderRadius: 12,
               background: isLocked ? 'rgba(255,255,255,0.04)' : 'rgba(212,175,55,0.08)',
               border: `1px solid ${isLocked ? 'rgba(255,255,255,0.06)' : 'rgba(212,175,55,0.12)'}`,
             }}>
@@ -87,7 +87,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
               Кэшбэк
             </div>
             <div style={{
-              fontSize: 24, fontWeight: 800,
+              fontSize: 24, fontWeight: 700,
               color: isLocked ? '#52525b' : '#E8D5A3',
             }}>
               {rank.cashback}%

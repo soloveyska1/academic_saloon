@@ -92,7 +92,7 @@ export const HolographicCard = forwardRef<HTMLDivElement, HolographicCardProps>(
         ...shineStyle,
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 24,
+        borderRadius: 12,
         cursor: onClick ? 'pointer' : 'default',
       }}
       onClick={onClick}
@@ -105,8 +105,8 @@ export const HolographicCard = forwardRef<HTMLDivElement, HolographicCardProps>(
           inset: 0,
           borderRadius: 'inherit',
           background: 'var(--bg-card)',
-          backdropFilter: 'blur(24px) saturate(130%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+          backdropFilter: 'blur(16px) saturate(120%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(120%)',
         }}
       />
 

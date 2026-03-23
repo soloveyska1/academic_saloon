@@ -163,7 +163,7 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   fontSize: 15,
   lineHeight: 1.4,
-  fontWeight: 500,
+  fontWeight: 600,
   fontFamily: "'Manrope', sans-serif",
   color: 'var(--text-main)',
   background: 'transparent',
@@ -208,7 +208,7 @@ function FieldCard({
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={() => setFocused(false)}
       style={{
-        borderRadius: 14,
+        borderRadius: 12,
         border: `1px solid ${focused ? goldBorder : cardBorder}`,
         background: cardBg,
         padding: '14px',
@@ -221,7 +221,7 @@ function FieldCard({
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 10,
+        marginBottom: 8,
       }}>
         <Icon
           size={15}
@@ -281,7 +281,7 @@ function RequirementsButton({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
-        borderRadius: 14,
+        borderRadius: 12,
         border: `1px solid ${hasContent ? goldBorder : cardBorder}`,
         background: hasContent ? goldSoft : cardBg,
         opacity: disabled ? 0.6 : 1,
@@ -307,7 +307,7 @@ function RequirementsButton({
         <div style={{
           width: 36,
           height: 36,
-          borderRadius: 10,
+          borderRadius: 8,
           background: hasContent ? 'var(--gold-glass-medium)' : 'var(--border-default)',
           display: 'flex',
           alignItems: 'center',
@@ -343,7 +343,7 @@ function RequirementsButton({
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {hasContent && !disabled && (
             <motion.div
               whileTap={{ scale: 0.9 }}
@@ -419,7 +419,7 @@ function AttachmentsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
       style={{
-        borderRadius: 14,
+        borderRadius: 12,
         border: `1px ${isDragging ? 'solid' : 'dashed'} ${isDragging ? goldBorder : cardBorder}`,
         background: isDragging ? goldSoft : cardBg,
         opacity: disabled ? 0.6 : 1,
@@ -451,7 +451,7 @@ function AttachmentsCard({
           <div style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 8,
             background: files.length > 0 ? 'var(--gold-glass-medium)' : 'var(--border-default)',
             display: 'flex',
             alignItems: 'center',
@@ -481,7 +481,7 @@ function AttachmentsCard({
 
         {/* File type chips */}
         {files.length === 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
             <Pill tone="muted" label="PDF" />
             <Pill tone="muted" label="DOCX" />
             <Pill tone="muted" label="JPG" />
@@ -495,7 +495,7 @@ function AttachmentsCard({
         <div style={{
           margin: '0 14px 12px',
           padding: '10px 12px',
-          borderRadius: 10,
+          borderRadius: 8,
           background: 'rgba(245, 158, 11, 0.08)',
           border: '1px solid rgba(245, 158, 11, 0.18)',
 
@@ -550,14 +550,14 @@ function FileRow({
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 10,
+      gap: 8,
       padding: '8px 10px',
-      borderRadius: 10,
+      borderRadius: 8,
       background: 'var(--border-subtle)',
     }}>
       <span style={{
         padding: '4px 8px',
-        borderRadius: 6,
+        borderRadius: 4,
         background: goldSoft,
         color: 'var(--gold-400)',
         fontSize: 10,
@@ -777,7 +777,7 @@ function RequirementsEditorModal({
                         color: key === primaryKey ? 'var(--gold-400)' : 'var(--text-secondary)',
                         background: key === primaryKey ? goldSoft : 'var(--bg-glass)',
                         border: `1px solid ${key === primaryKey ? goldBorder : cardBorder}`,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         cursor: 'pointer',
                       }}
                     >
@@ -833,7 +833,7 @@ function RequirementsEditorModal({
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: 14,
+                borderRadius: 12,
                 border: 'none',
                 background: 'var(--gold-metallic)',
                 color: 'var(--text-on-gold)',
@@ -883,7 +883,7 @@ function ToolbarBtn({
         color: danger ? 'var(--error-text)' : active ? 'var(--gold-400)' : 'var(--text-secondary)',
         background: active ? goldSoft : 'var(--bg-glass)',
         border: `1px solid ${active ? goldBorder : cardBorder}`,
-        borderRadius: 10,
+        borderRadius: 8,
         cursor: 'pointer',
       }}
     >

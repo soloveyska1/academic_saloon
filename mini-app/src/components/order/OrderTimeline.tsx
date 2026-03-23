@@ -127,7 +127,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
         animate={{ opacity: 1, y: 0 }}
         style={{
           padding: 24,
-          borderRadius: 24,
+          borderRadius: 12,
           background: 'linear-gradient(135deg, var(--error-glass) 0%, var(--bg-card) 100%)',
           border: '1px solid var(--error-border)',
           marginBottom: 24,
@@ -137,7 +137,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
           <div style={{
             width: 48,
             height: 48,
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'var(--error-glass)',
             border: '1px solid var(--error-border)',
             display: 'flex',
@@ -173,7 +173,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
       animate={{ opacity: 1, y: 0 }}
       style={{
         padding: 24,
-        borderRadius: 24,
+        borderRadius: 12,
         background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
         border: '1px solid var(--border-strong)',
         marginBottom: 24,

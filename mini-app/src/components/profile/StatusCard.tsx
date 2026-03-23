@@ -31,12 +31,12 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
       <div className={s.sectionTitle}>Статус и условия</div>
 
       {/* Rank progress card */}
-      <div className={`${s.glassCard} ${s.glassCardActive}`} style={{ padding: 18, marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      <div className={`${s.glassCard} ${s.glassCardActive}`} style={{ padding: 16, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={{
             width: 40,
             height: 40,
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--gold-glass-subtle)',
             border: '1px solid var(--border-gold)',
             display: 'flex',
@@ -81,7 +81,7 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        gap: 10,
+        gap: 8,
       }}>
         <div className={s.statCard}>
           <div className={s.statLabel}>Скидка</div>

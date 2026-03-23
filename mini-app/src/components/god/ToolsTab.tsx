@@ -91,7 +91,7 @@ export const ToolsTab = memo(function ToolsTab() {
 
         {/* Execute */}
         <button type="button" className={s.primaryBtn} disabled={loading || !query.trim()} onClick={execute}
-          style={{ marginTop: 6 }}>
+          style={{ marginTop: 8 }}>
           <Zap size={14} /> {loading ? 'Выполнение...' : 'Выполнить'}
         </button>
       </div>
@@ -103,7 +103,7 @@ export const ToolsTab = memo(function ToolsTab() {
             <div style={{ fontSize: 12, color: '#ef4444', fontFamily: 'monospace' }}>{result.error}</div>
           ) : result.columns && result.rows ? (
             <>
-              <div className={s.mutedSmall} style={{ marginBottom: 6 }}>
+              <div className={s.mutedSmall} style={{ marginBottom: 8 }}>
                 {result.total_rows ?? result.rows.length} строк
               </div>
               <div style={{ overflowX: 'auto' }}>

@@ -48,7 +48,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
         onClick={() => { haptic?.('light'); onClick() }}
         className={s.voidGlass}
         style={{
-          borderRadius: '20px',
+          borderRadius: '12px',
           padding: '20px',
           cursor: 'pointer',
           border: '1px solid var(--border-strong)',
@@ -62,7 +62,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           {/* Icon Container */}
           <div style={{
-            width: 50, height: 50, borderRadius: '14px',
+            width: 50, height: 50, borderRadius: '12px',
             background: 'linear-gradient(135deg, var(--border-default) 0%, rgba(255,255,255,0.01) 100%)',
             border: '1px solid var(--border-strong)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

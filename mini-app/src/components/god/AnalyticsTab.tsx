@@ -154,7 +154,7 @@ export const AnalyticsTab = memo(function AnalyticsTab() {
           <FunnelBars stages={funnelStages} />
 
           {/* Conversion rates */}
-          <div className={`${s.flexRow} ${s.gap6} ${s.flexWrap}`} style={{ marginTop: 10 }}>
+          <div className={`${s.flexRow} ${s.gap6} ${s.flexWrap}`} style={{ marginTop: 8 }}>
             {funnelStages.map((stage, i) => {
               if (i === 0 || !totalFunnel) return null
               const pct = ((stage.count / funnelStages[0].count) * 100).toFixed(0)

@@ -84,7 +84,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.45 + index * 0.05 }}
       style={{
-        borderRadius: 14,
+        borderRadius: 12,
         background: open
           ? 'var(--gold-glass-subtle)'
           : 'var(--bg-glass)',
@@ -152,7 +152,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
               fontSize: 12.5,
               lineHeight: 1.6,
               color: 'var(--text-muted)',
-              fontWeight: 500,
+              fontWeight: 600,
             }}>
               {a}
             </div>
@@ -175,7 +175,7 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
       transition={{ delay: 0.15 + index * 0.07, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{
         padding: isFeatured ? '16px 16px 14px' : '14px 16px',
-        borderRadius: 16,
+        borderRadius: 12,
         background: isFeatured
           ? 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, transparent 100%)'
           : 'var(--bg-glass)',
@@ -254,7 +254,7 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
             }}>
               <span style={{
                 fontSize: 13,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: isFeatured
                   ? 'var(--gold-200)'
                   : 'var(--gold-400)',
@@ -278,7 +278,7 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
             fontSize: 11,
             fontWeight: 600,
             color: 'var(--gold-400)',
-            marginBottom: 6,
+            marginBottom: 8,
             opacity: isFeatured ? 0.7 : 0.5,
           }}>
             {item.hook}
@@ -288,7 +288,7 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
             fontSize: 12.5,
             lineHeight: 1.55,
             color: 'var(--text-muted)',
-            fontWeight: 500,
+            fontWeight: 600,
           }}>
             {item.desc}
           </div>
@@ -304,7 +304,7 @@ function StatPill({ value, label }: { value: string; label: string }) {
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
       <span style={{
         fontSize: 15,
-        fontWeight: 800,
+        fontWeight: 700,
         color: 'var(--success, #4ade80)',
         letterSpacing: '-0.02em',
         fontFamily: "'Manrope', sans-serif",
@@ -355,7 +355,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             style={{
               width: 76,
               height: 76,
-              borderRadius: 22,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, var(--gold-glass-medium) 0%, var(--gold-glass-subtle) 100%)',
               border: '1.5px solid var(--gold-glass-medium)',
               display: 'flex',
@@ -396,7 +396,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
 
           <div style={{
             fontSize: 22,
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.2,
             letterSpacing: '-0.02em',
             marginBottom: 8,
@@ -410,7 +410,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             fontSize: 13,
             lineHeight: 1.5,
             color: 'var(--text-muted)',
-            fontWeight: 500,
+            fontWeight: 600,
             maxWidth: 260,
             margin: '0 auto',
           }}>
@@ -425,10 +425,10 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           transition={{ delay: 0.18, type: 'spring', damping: 20 }}
           style={{
             padding: '14px 18px',
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)',
             border: '1px solid rgba(34,197,94,0.12)',
-            marginBottom: 20,
+            marginBottom: 24,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -460,7 +460,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           style={{
             height: 1,
             background: 'linear-gradient(90deg, transparent, var(--gold-glass-medium), transparent)',
-            marginBottom: 18,
+            marginBottom: 16,
           }}
         />
 
@@ -476,13 +476,13 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.45 }}
-          style={{ marginTop: 22 }}
+          style={{ marginTop: 24 }}
         >
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            marginBottom: 10,
+            gap: 8,
+            marginBottom: 8,
             paddingLeft: 2,
           }}>
             <Sparkles
@@ -502,7 +502,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {FAQ.map((item, i) => (
               <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
             ))}
@@ -515,7 +515,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55 }}
-            style={{ marginTop: 22 }}
+            style={{ marginTop: 24 }}
           >
             <m.button
               type="button"
@@ -524,7 +524,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               style={{
                 width: '100%',
                 padding: '15px 24px',
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, var(--gold-glass-medium) 0%, var(--gold-glass-subtle) 100%)',
                 border: '1px solid var(--gold-glass-strong)',
                 cursor: 'pointer',
@@ -567,7 +567,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             textAlign: 'center',
             fontSize: 11,
             color: 'var(--text-muted)',
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           Все гарантии действуют с момента оформления заказа

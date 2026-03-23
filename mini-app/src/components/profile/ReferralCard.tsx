@@ -45,22 +45,22 @@ export const ReferralCard = memo(function ReferralCard({
       initial={prefersReducedMotion ? {} : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 20 }}
+      style={{ marginBottom: 24 }}
     >
       <div className={s.sectionTitle}>Внутренний круг</div>
 
-      <div className={`${s.glassCard}`} style={{ padding: 18 }}>
+      <div className={`${s.glassCard}`} style={{ padding: 16 }}>
         {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 8,
           marginBottom: 12,
         }}>
           <div style={{
             width: 40,
             height: 40,
-            borderRadius: 14,
+            borderRadius: 12,
             background: 'var(--accent-purple-glass)',
             border: '1px solid var(--accent-purple-border)',
             display: 'flex',
@@ -87,8 +87,8 @@ export const ReferralCard = memo(function ReferralCard({
         {/* Tier progress */}
         <div style={{
           display: 'flex',
-          gap: 6,
-          marginBottom: 14,
+          gap: 8,
+          marginBottom: 12,
         }}>
           {TIERS.map((tier) => (
             <div
@@ -132,8 +132,8 @@ export const ReferralCard = memo(function ReferralCard({
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          gap: 10,
-          marginBottom: 14,
+          gap: 8,
+          marginBottom: 12,
         }}>
           <div className={s.statCard}>
             <div className={s.statLabel}>Друзей</div>
@@ -150,7 +150,7 @@ export const ReferralCard = memo(function ReferralCard({
         </div>
 
         {/* Link display */}
-        <div className={s.linkBox} style={{ marginBottom: 14 }}>
+        <div className={s.linkBox} style={{ marginBottom: 12 }}>
           {inviteLink || 'Ссылка появится после загрузки конфигурации.'}
         </div>
 
@@ -158,7 +158,7 @@ export const ReferralCard = memo(function ReferralCard({
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 10,
+          gap: 8,
         }}>
           <MiniAction icon={Copy} label="Копировать" onClick={onCopy} disabled={!hasLink} />
           <MiniAction icon={ArrowUpRight} label="Поделиться" onClick={onShare} disabled={!hasLink} />

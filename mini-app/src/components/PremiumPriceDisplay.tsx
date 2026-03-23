@@ -36,9 +36,9 @@ export interface PremiumPriceDisplayProps {
 
 // Size configurations
 const SIZES = {
-  sm: { price: 14, label: 10, badge: 10, gap: 6 },
+  sm: { price: 14, label: 10, badge: 10, gap: 8 },
   md: { price: 18, label: 12, badge: 11, gap: 8 },
-  lg: { price: 24, label: 14, badge: 12, gap: 10 },
+  lg: { price: 24, label: 14, badge: 12, gap: 8 },
 }
 
 /**
@@ -66,7 +66,7 @@ function PromoBadge({
         padding: `${s.gap / 2}px ${s.gap}px`,
         background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1))',
         border: '1px solid rgba(34,197,94,0.4)',
-        borderRadius: 6,
+        borderRadius: 4,
       }}
     >
       <Zap size={s.badge} color="#22c55e" fill="#22c55e" />
@@ -204,7 +204,7 @@ function MiniVariant({
             padding: '4px 8px',
             background: 'rgba(34,197,94,0.15)',
             border: '1px solid rgba(34,197,94,0.3)',
-            borderRadius: 6,
+            borderRadius: 4,
           }}
         >
           <Tag size={s.badge} color="#22c55e" />
@@ -238,7 +238,7 @@ function InlineVariant({
   const basePrice = originalPrice || price
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, ...style }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, ...style }}>
       {hasPromo && basePrice !== price && (
         <span style={{
           fontSize: s.label,
@@ -307,7 +307,7 @@ function FullVariant({
       style={{
         padding: 16,
         background: 'rgba(34,197,94,0.05)',
-        borderRadius: 16,
+        borderRadius: 12,
         border: '1px solid rgba(34,197,94,0.2)',
         ...style
       }}
@@ -345,9 +345,9 @@ function FullVariant({
           marginBottom: 8,
           padding: '8px 12px',
           background: 'rgba(139,92,246,0.1)',
-          borderRadius: 10,
+          borderRadius: 8,
         }}>
-          <span style={{ fontSize: 13, color: '#a78bfa', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, color: '#a78bfa', display: 'flex', alignItems: 'center', gap: 8 }}>
             🎟️ <span style={{ fontWeight: 600 }}>{promoCode}</span>
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#22c55e', fontFamily: 'var(--font-mono)' }}>

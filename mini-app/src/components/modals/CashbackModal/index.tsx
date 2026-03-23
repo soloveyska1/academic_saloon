@@ -70,7 +70,7 @@ function RankStep({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         background: 'none',
         border: 'none',
         cursor: 'pointer',
@@ -235,7 +235,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             style={{
               width: 80,
               height: 80,
-              borderRadius: 24,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
               border: '1.5px solid var(--gold-glass-medium)',
               display: 'flex',
@@ -259,7 +259,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.2, type: 'spring', damping: 14 }}
             style={{
               fontSize: 48,
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: 1,
               letterSpacing: '-0.04em',
               fontFamily: "'Manrope', sans-serif",
@@ -291,7 +291,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             style={{
               fontSize: 13,
               color: 'var(--text-muted)',
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             статус «{currentRank.displayName}»
@@ -299,9 +299,9 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
 
           {admin.simulatedRank !== null && (
             <div style={{
-              marginTop: 10,
+              marginTop: 8,
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '4px 8px', borderRadius: 6,
+              padding: '4px 8px', borderRadius: 4,
               background: 'rgba(239,68,68,0.08)',
               color: 'rgba(239,68,68,0.65)',
               fontSize: 10, fontWeight: 700,
@@ -321,7 +321,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.2 }}
             style={{
               padding: '18px 20px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)',
               border: '1px solid rgba(34,197,94,0.12)',
               marginBottom: 16,
@@ -340,7 +340,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             </div>
             <div style={{
               fontSize: 28,
-              fontWeight: 800,
+              fontWeight: 700,
               color: 'var(--success, #4ade80)',
               letterSpacing: '-0.02em',
               fontFamily: "'Manrope', sans-serif",
@@ -352,7 +352,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               <div style={{
                 fontSize: 12,
                 color: 'var(--text-muted)',
-                fontWeight: 500,
+                fontWeight: 600,
                 marginTop: 8,
               }}>
                 С кэшбэком {nextRank!.cashback}% было бы на {formatMoney(nextRankSavings)} больше
@@ -366,7 +366,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 24 }}
         >
           <HolographicCard rank={displayRank} isLocked={isLockedView} />
         </m.div>
@@ -380,7 +380,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             display: 'flex',
             alignItems: 'flex-start',
             gap: 0,
-            marginBottom: 20,
+            marginBottom: 24,
             padding: '0 4px',
           }}
         >
@@ -406,7 +406,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.35 }}
             style={{
               padding: '18px 18px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'var(--gold-glass-subtle)',
               border: '1px solid var(--gold-glass-subtle)',
               marginBottom: 16,
@@ -443,10 +443,10 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             {/* Progress bar */}
             <div style={{
               height: 6,
-              borderRadius: 99,
+              borderRadius: 12,
               background: 'var(--surface-hover)',
               overflow: 'hidden',
-              marginBottom: 10,
+              marginBottom: 8,
             }}>
               <m.div
                 initial={{ width: 0 }}
@@ -454,7 +454,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
                 style={{
                   height: '100%',
-                  borderRadius: 99,
+                  borderRadius: 12,
                   background: 'linear-gradient(90deg, var(--gold-glass-strong), var(--gold-400))',
                   position: 'relative',
                   overflow: 'hidden',
@@ -481,7 +481,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               <span style={{
                 fontSize: 12,
                 color: 'var(--text-muted)',
-                fontWeight: 500,
+                fontWeight: 600,
               }}>
                 {progress}% пройдено
               </span>
@@ -504,7 +504,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.35, type: 'spring' }}
             style={{
               padding: '20px 18px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, var(--gold-glass-subtle), transparent)',
               border: '1px solid var(--gold-glass-medium)',
               textAlign: 'center',
@@ -541,7 +541,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.35 }}
             style={{
               padding: '18px 18px',
-              borderRadius: 18,
+              borderRadius: 12,
               background: 'var(--bg-glass)',
               border: '1px solid var(--surface-hover)',
               marginBottom: 16,
@@ -553,7 +553,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              marginBottom: 10,
+              marginBottom: 8,
             }}>
               Условия статуса «{displayRank.displayName}»
             </div>
@@ -581,7 +581,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               </div>
               <div style={{
                 fontSize: 28,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: 'var(--text-muted)',
                 fontFamily: "'Manrope', sans-serif",
                 opacity: 0.5,
@@ -601,7 +601,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 8,
-            marginBottom: 20,
+            marginBottom: 24,
           }}
         >
           {[
@@ -614,7 +614,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               key={b.label}
               style={{
                 padding: '14px 14px',
-                borderRadius: 14,
+                borderRadius: 12,
                 background: i === 0
                   ? 'var(--gold-glass-subtle)'
                   : 'var(--bg-glass)',
@@ -630,12 +630,12 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 marginBottom: 3,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}>
                 <span style={{
                   fontSize: 11,
                   color: 'var(--gold-400)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                 }}>
                   {b.icon}
                 </span>
@@ -644,7 +644,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               <div style={{
                 fontSize: 12,
                 color: 'var(--text-muted)',
-                fontWeight: 500,
+                fontWeight: 600,
               }}>
                 {b.desc}
               </div>
@@ -666,7 +666,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               style={{
                 width: '100%',
                 padding: '16px 20px',
-                borderRadius: 16,
+                borderRadius: 12,
                 background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
                 border: '1px solid var(--border-gold)',
                 cursor: 'pointer',

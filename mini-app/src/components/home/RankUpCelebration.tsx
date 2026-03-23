@@ -69,7 +69,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
             background: 'rgba(0,0,0,0.85)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            padding: 20,
+            padding: 24,
           }}
         >
           {/* Confetti particles - disabled for reduced motion preference */}
@@ -126,7 +126,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
               width: '100%',
               maxWidth: 340,
               background: 'linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-surface) 100%)',
-              borderRadius: 28,
+              borderRadius: 12,
               padding: 32,
               border: '1px solid var(--gold-glass-strong)',
               boxShadow: '0 0 60px var(--gold-glass-strong), inset 0 0 40px var(--gold-glass-subtle)',
@@ -200,7 +200,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
               <h2
                 style={{
                   fontSize: 28,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontFamily: "'Manrope', sans-serif",
                   background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
@@ -217,7 +217,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                   style={{
                     fontSize: 12,
                     color: 'var(--text-muted)',
-                    marginBottom: 20,
+                    marginBottom: 24,
                   }}
                 >
                   {prevDisplayName} → {displayName}
@@ -232,7 +232,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
               transition={{ delay: 0.4 }}
               style={{
                 background: 'var(--gold-glass-subtle)',
-                borderRadius: 16,
+                borderRadius: 12,
                 padding: 16,
                 marginBottom: 24,
                 border: '1px solid var(--gold-glass-medium)',
@@ -248,7 +248,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
+                  gap: 8,
                 }}
               >
                 <Sparkles size={12} color="var(--gold-400)" />
@@ -288,7 +288,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                 gap: 8,
                 padding: '12px 24px',
                 background: 'linear-gradient(135deg, var(--gold-glass-strong) 0%, var(--gold-glass-medium) 100%)',
-                borderRadius: 100,
+                borderRadius: 12,
                 border: '1px solid var(--gold-glass-strong)',
               }}
             >

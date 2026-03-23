@@ -87,7 +87,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        marginBottom: 14,
+        marginBottom: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -131,10 +131,10 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           padding: '6px 12px',
           background: statusConfig.bgColor,
-          borderRadius: 20,
+          borderRadius: 12,
           backdropFilter: 'blur(8px)',
         }}>
           <div style={{
@@ -156,7 +156,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
 
       {/* Progress Bar (if applicable) */}
       {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && (
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 12 }}>
           <div style={{
             height: 4,
             background: 'var(--bg-glass)',
@@ -177,7 +177,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           <div style={{
             display: 'flex',
             justifyContent: 'flex-end',
-            marginTop: 6,
+            marginTop: 8,
           }}>
             <span style={{
               fontSize: 11,
@@ -200,10 +200,10 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           marginBottom: 12,
           padding: '8px 12px',
           background: 'rgba(139,92,246,0.1)',
-          borderRadius: 10,
+          borderRadius: 8,
           border: '1px solid rgba(139,92,246,0.2)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 12 }}>🎟️</span>
             <span style={{
               fontSize: 12,
@@ -226,7 +226,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           <span style={{
             fontSize: 11,
             color: 'var(--success-text)',
-            fontWeight: 500,
+            fontWeight: 600,
           }}>
             💚 Экономия {Math.round(order.price - (order.final_price || order.price)).toLocaleString('ru-RU')} ₽
           </span>
@@ -238,7 +238,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: 14,
+        paddingTop: 16,
         borderTop: '1px solid var(--border-subtle)',
       }}>
         <span style={{
@@ -249,7 +249,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           #{order.id}
         </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Show original price struck through if promo applied */}
           {order.promo_code && order.price !== order.final_price && (
             <span style={{

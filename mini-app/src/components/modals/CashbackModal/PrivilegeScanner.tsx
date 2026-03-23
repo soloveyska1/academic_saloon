@@ -50,7 +50,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
         color: 'rgba(255,255,255,0.35)',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        marginBottom: 10,
+        marginBottom: 8,
         paddingLeft: 2,
       }}>
         Привилегии уровня
@@ -61,7 +61,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, staggerChildren: 0.05 }}
-        style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
       >
         {benefits.map((benefit) => {
           const Icon = benefit.icon
@@ -85,7 +85,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
             >
               <div style={{
                 display: 'flex', alignItems: 'center',
-                gap: 10, minWidth: 0, flex: 1,
+                gap: 8, minWidth: 0, flex: 1,
               }}>
                 <Icon
                   size={14}

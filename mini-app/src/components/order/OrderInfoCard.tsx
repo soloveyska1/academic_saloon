@@ -38,9 +38,9 @@ export function OrderInfoCard({ order }: OrderInfoCardProps) {
             transition={{ delay: 0.1 }}
             style={{
                 background: 'var(--bg-card-solid)',
-                borderRadius: 20,
+                borderRadius: 12,
                 border: '1px solid var(--border-subtle)',
-                padding: 20
+                padding: 24
             }}
         >
             <h2 style={{
@@ -53,7 +53,7 @@ export function OrderInfoCard({ order }: OrderInfoCardProps) {
                 {order.subject}
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Clock size={16} color="#71717a" />
                     <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
                         Дедлайн: <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>

@@ -116,7 +116,7 @@ export function FloatingMenu({
       <div style={{
         position: 'fixed',
         bottom: 100,
-        right: 20,
+        right: 24,
         zIndex: 999,
       }}>
         {/* Menu Items */}
@@ -161,7 +161,7 @@ export function FloatingMenu({
                   right: 0,
                   width: 48,
                   height: 48,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   background: `linear-gradient(135deg, ${item.color}, ${item.color}cc)`,
                   border: 'none',
                   cursor: 'pointer',
@@ -181,14 +181,14 @@ export function FloatingMenu({
                   style={{
                     position: 'absolute',
                     right: '100%',
-                    marginRight: 10,
+                    marginRight: 8,
                     padding: '6px 12px',
                     background: 'rgba(20, 20, 23, 0.95)',
                     border: '1px solid var(--surface-active)',
                     borderRadius: 8,
                     whiteSpace: 'nowrap',
                     fontSize: 12,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: 'var(--text-primary)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                   }}
@@ -210,7 +210,7 @@ export function FloatingMenu({
             position: 'relative',
             width: 56,
             height: 56,
-            borderRadius: 16,
+            borderRadius: 12,
             background: isOpen
               ? 'linear-gradient(135deg, #52525b, #3f3f46)'
               : 'linear-gradient(135deg, #d4af37, #b38728)',
@@ -264,7 +264,7 @@ export function FloatingMenu({
               style={{
                 position: 'absolute',
                 inset: -4,
-                borderRadius: 18,
+                borderRadius: 12,
                 border: '2px solid #d4af37',
                 pointerEvents: 'none',
               }}
@@ -314,7 +314,7 @@ export function QuickFAB({
         [position]: 20,
         width: 52,
         height: 52,
-        borderRadius: 14,
+        borderRadius: 12,
         background: `linear-gradient(135deg, ${color}, ${color}cc)`,
         border: 'none',
         cursor: 'pointer',
@@ -341,10 +341,10 @@ export function QuickFAB({
               padding: '8px 14px',
               background: 'rgba(20, 20, 23, 0.95)',
               border: '1px solid var(--surface-active)',
-              borderRadius: 10,
+              borderRadius: 8,
               whiteSpace: 'nowrap',
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 600,
               color: 'var(--text-primary)',
               boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}
@@ -367,7 +367,7 @@ export function QuickFAB({
         style={{
           position: 'absolute',
           inset: -3,
-          borderRadius: 16,
+          borderRadius: 12,
           border: `2px solid ${color}`,
           pointerEvents: 'none',
         }}
@@ -415,7 +415,7 @@ export function SpeedDialFAB({
       <div style={{
         position: 'fixed',
         bottom: 100,
-        right: 20,
+        right: 24,
         zIndex: 999,
         display: 'flex',
         flexDirection: 'column',
@@ -445,7 +445,7 @@ export function SpeedDialFAB({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 8,
                   padding: '10px 16px 10px 12px',
                   background: 'rgba(20, 20, 23, 0.95)',
                   border: `1px solid ${item.color}40`,
@@ -456,7 +456,7 @@ export function SpeedDialFAB({
                 <div style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   background: `${item.color}20`,
                   display: 'flex',
                   alignItems: 'center',
@@ -466,7 +466,7 @@ export function SpeedDialFAB({
                 </div>
                 <span style={{
                   fontSize: 13,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: 'var(--text-primary)',
                 }}>
                   {item.label}
@@ -486,7 +486,7 @@ export function SpeedDialFAB({
           style={{
             width: 56,
             height: 56,
-            borderRadius: 16,
+            borderRadius: 12,
             background: `linear-gradient(135deg, ${mainColor}, ${mainColor}cc)`,
             border: 'none',
             cursor: 'pointer',

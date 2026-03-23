@@ -57,13 +57,13 @@ export function FloatingCtaDock({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
+              gap: 12,
               padding: '14px 24px',
               background: 'var(--bg-card)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              backdropFilter: 'blur(16px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(120%)',
               border: `1px solid ${canProceed ? 'var(--gold-glass-strong)' : 'var(--border-strong)'}`,
-              borderRadius: 50,
+              borderRadius: 12,
               cursor: !canProceed ? 'default' : submitting ? 'wait' : 'pointer',
               pointerEvents: 'auto',
               opacity: canProceed ? 1 : 0.5,
@@ -84,7 +84,7 @@ export function FloatingCtaDock({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  paddingRight: 14,
+                  paddingRight: 16,
                   borderRight: '1px solid var(--surface-active)',
                 }}
               >
@@ -100,7 +100,7 @@ export function FloatingCtaDock({
                 <span
                   style={{
                     fontSize: 13,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: 'var(--text-secondary)',
                     maxWidth: 120,
                     overflow: 'hidden',

@@ -110,7 +110,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 <div
                   style={{
                     fontSize: 12,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     lineHeight: 1.4,
                     color: 'var(--text-secondary)',
                   }}
@@ -165,7 +165,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               minWidth: 0,
               minHeight: isPrimary ? 142 : 118,
               padding: isPrimary ? '18px 16px 16px' : '16px 15px',
-              borderRadius: 26,
+              borderRadius: 12,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
@@ -177,8 +177,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 ? 'linear-gradient(160deg, rgba(34, 28, 14, 0.98) 0%, rgba(16, 16, 16, 0.96) 50%, rgba(9, 9, 10, 1) 100%)'
                 : 'linear-gradient(160deg, rgba(18, 18, 17, 0.92) 0%, rgba(11, 11, 12, 0.95) 100%)',
               border: `1px solid ${isPrimary ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.05)'}`,
-              backdropFilter: 'blur(16px) saturate(140%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+              backdropFilter: 'blur(16px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(120%)',
               boxShadow: '0 22px 36px -30px rgba(0, 0, 0, 0.82)',
               gridColumn: isPrimary ? '1 / -1' : 'span 1',
               overflow: 'hidden',
@@ -245,7 +245,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                   lineHeight: isPrimary ? 0.98 : 1.15,
                   letterSpacing: isPrimary ? '-0.04em' : '-0.02em',
                   color: 'var(--text-primary)',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 {action.title}
@@ -254,7 +254,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               <div
                 style={{
                   fontSize: isPrimary ? 13 : 12,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   lineHeight: 1.45,
                   color: 'var(--text-secondary)',
                   maxWidth: isPrimary ? 260 : undefined,

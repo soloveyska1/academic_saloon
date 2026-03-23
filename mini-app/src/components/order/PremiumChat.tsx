@@ -34,7 +34,7 @@ const MessageSkeleton = () => (
           style={{
             width: `${50 + Math.random() * 30}%`,
             height: 60,
-            borderRadius: 16,
+            borderRadius: 12,
             background: 'linear-gradient(90deg, var(--border-subtle), var(--surface-hover), var(--border-subtle))',
           }}
         />
@@ -53,7 +53,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
+      padding: 48,
       textAlign: 'center',
       minHeight: 300,
     }}
@@ -64,7 +64,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
       style={{
         width: 80,
         height: 80,
-        borderRadius: 24,
+        borderRadius: 12,
         background: 'linear-gradient(135deg, var(--gold-glass-strong), rgba(212, 175, 55, 0.05))',
         border: '1px solid var(--border-gold)',
         display: 'flex',
@@ -101,7 +101,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
       onClick={onSendHello}
       style={{
         padding: '14px 28px',
-        borderRadius: 14,
+        borderRadius: 12,
         background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
         border: '1px solid var(--border-gold)',
         color: 'var(--gold-400)',
@@ -129,7 +129,7 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
+      padding: 48,
       textAlign: 'center',
       minHeight: 200,
     }}
@@ -137,7 +137,7 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void
     <div style={{
       width: 64,
       height: 64,
-      borderRadius: 20,
+      borderRadius: 12,
       background: 'var(--error-glass)',
       border: '1px solid var(--error-border)',
       display: 'flex',
@@ -201,7 +201,7 @@ const DateSeparator = ({ date }: { date: string }) => {
     }}>
       <div style={{
         padding: '6px 14px',
-        borderRadius: 10,
+        borderRadius: 8,
         background: 'var(--bg-glass)',
         fontSize: 12,
         fontWeight: 600,
@@ -225,7 +225,7 @@ const TypingIndicator = () => (
       gap: 8,
       padding: '8px 14px',
       background: 'var(--gold-glass-medium)',
-      borderRadius: '16px 16px 16px 4px',
+      borderRadius: '12px 12px 12px 4px',
       border: '1px solid var(--gold-glass-strong)',
       alignSelf: 'flex-start',
     }}
@@ -278,7 +278,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         marginBottom: 4,
         padding: '0 4px',
       }}>
@@ -335,11 +335,11 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               padding: '8px 12px',
               background: 'rgba(212, 175, 55, 0.15)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 20,
+              borderRadius: 12,
               cursor: 'pointer',
               minWidth: 140,
             }}
@@ -378,7 +378,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               padding: '10px 14px',
               background: 'var(--border-subtle)',
               border: '1px solid var(--border-strong)',
@@ -389,7 +389,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             <div style={{
               width: 40,
               height: 40,
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'var(--info-glass)',
               display: 'flex',
               alignItems: 'center',
@@ -406,7 +406,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
                 fontSize: 13,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: 'var(--text-main)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -779,8 +779,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           onClick={() => { setIsOpen(true); haptic('medium') }}
           style={{
             width: '100%',
-            padding: 20,
-            borderRadius: 20,
+            padding: 24,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, rgba(25, 25, 30, 0.95), rgba(30, 30, 35, 0.9))',
             border: '1px solid rgba(212, 175, 55, 0.25)',
             boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px var(--gold-glass-medium)',
@@ -807,11 +807,11 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
             <div style={{
               width: 50,
               height: 50,
-              borderRadius: 16,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, #d4af37 0%, #b8860b 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -830,7 +830,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                     right: -6,
                     minWidth: 20,
                     height: 20,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     background: 'var(--error-text)',
                     display: 'flex',
                     alignItems: 'center',
@@ -861,7 +861,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                 color: unreadCount > 0 ? '#22c55e' : 'rgba(212, 175, 55, 0.7)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}>
                 {unreadCount > 0 ? (
                   <span style={{ fontWeight: 600 }}>{unreadCount} новых</span>
@@ -921,7 +921,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         padding: '12px 16px',
         borderBottom: '1px solid var(--border-strong)',
         background: 'var(--bg-card)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -947,7 +947,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         <div style={{
           width: 44,
           height: 44,
-          borderRadius: 14,
+          borderRadius: 12,
           background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
           border: '1px solid var(--border-gold)',
           display: 'flex',
@@ -971,7 +971,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             color: isTyping ? 'var(--gold-400)' : (isConnected ? 'var(--success-text)' : 'var(--text-muted)'),
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 8,
           }}>
             {isTyping ? (
               'печатает...'
@@ -1048,10 +1048,10 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             style={{
               position: 'absolute',
               bottom: 100,
-              right: 20,
+              right: 24,
               width: 44,
               height: 44,
-              borderRadius: 22,
+              borderRadius: 12,
               background: 'rgba(212, 175, 55, 0.9)',
               border: 'none',
               display: 'flex',
@@ -1110,7 +1110,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               borderTop: '1px solid var(--gold-glass-strong)',
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
             }}
           >
             <Loader size={16} color="var(--gold-400)" className="animate-spin" />
@@ -1125,9 +1125,9 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         borderTop: '1px solid var(--border-strong)',
         background: 'var(--bg-card)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(16px)',
         display: 'flex',
-        gap: 10,
+        gap: 8,
         alignItems: 'center',
       }}>
         {/* File button */}
@@ -1143,7 +1143,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || isRecording}
           style={{
-            width: 44, height: 44, borderRadius: 14,
+            width: 44, height: 44, borderRadius: 12,
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-strong)',
             display: isRecording ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1167,7 +1167,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             padding: '14px 18px',
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-strong)',
-            borderRadius: 14,
+            borderRadius: 12,
             fontSize: 16,
             color: 'var(--text-main)',
             outline: 'none',
@@ -1181,7 +1181,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             onClick={() => handleSend()}
             disabled={sending}
             style={{
-              width: 44, height: 44, borderRadius: 14,
+              width: 44, height: 44, borderRadius: 12,
               background: 'linear-gradient(135deg, #d4af37, #b8860b)',
               border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1202,7 +1202,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               whileTap={{ scale: 0.9 }}
               onClick={cancelRecording}
               style={{
-                width: 44, height: 44, borderRadius: 14,
+                width: 44, height: 44, borderRadius: 12,
                 background: 'var(--error-text)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1216,7 +1216,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               whileTap={{ scale: 0.9 }}
               onClick={() => stopRecording(true)}
               style={{
-                width: 44, height: 44, borderRadius: 14,
+                width: 44, height: 44, borderRadius: 12,
                 background: 'linear-gradient(135deg, #d4af37, #b8860b)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1234,7 +1234,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             onClick={startRecording}
             disabled={uploading}
             style={{
-              width: 44, height: 44, borderRadius: 14,
+              width: 44, height: 44, borderRadius: 12,
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-strong)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',

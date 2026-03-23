@@ -200,11 +200,11 @@ export function PromoCodeSection({
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           padding: '6px 12px',
           background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08))',
           border: '1px solid rgba(34, 197, 94, 0.3)',
-          borderRadius: 20,
+          borderRadius: 12,
         }}
       >
         <Tag size={12} color="var(--success-text)" />
@@ -265,7 +265,7 @@ export function PromoCodeSection({
                 padding: '14px 16px',
                 background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))',
                 border: '1px solid rgba(34, 197, 94, 0.3)',
-                borderRadius: 16,
+                borderRadius: 12,
                 marginBottom: 12,
                 position: 'relative',
                 overflow: 'hidden',
@@ -317,7 +317,7 @@ export function PromoCodeSection({
                 ))}
               </AnimatePresence>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -325,7 +325,7 @@ export function PromoCodeSection({
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     background: 'rgba(34, 197, 94, 0.2)',
                     border: '1px solid rgba(34, 197, 94, 0.3)',
                     display: 'flex',
@@ -363,7 +363,7 @@ export function PromoCodeSection({
                       transition={{ delay: 0.2, type: 'spring' }}
                       style={{
                         padding: '2px 8px',
-                        borderRadius: 6,
+                        borderRadius: 4,
                         background: 'rgba(34, 197, 94, 0.25)',
                         fontSize: 11,
                         fontWeight: 700,
@@ -426,7 +426,7 @@ export function PromoCodeSection({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 marginBottom: 12,
                 width: '100%',
               }}
@@ -436,7 +436,7 @@ export function PromoCodeSection({
                 minWidth: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 padding: '10px 14px',
                 background: 'rgba(255, 255, 255, 0.03)',
                 border: '1px solid var(--border-strong)',
@@ -548,8 +548,8 @@ export function PromoCodeSection({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             style={{
-              padding: 20,
-              borderRadius: 20,
+              padding: 24,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, rgba(34, 197, 94, 0.12), rgba(20, 20, 23, 0.95))',
               border: '1px solid rgba(34, 197, 94, 0.25)',
               position: 'relative',
@@ -604,12 +604,12 @@ export function PromoCodeSection({
               ))}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               {/* Icon */}
               <div style={{
                 width: 48,
                 height: 48,
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'rgba(34, 197, 94, 0.15)',
                 border: '1px solid rgba(34, 197, 94, 0.25)',
                 display: 'flex',
@@ -670,7 +670,7 @@ export function PromoCodeSection({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 8,
                       padding: '6px 10px',
                       background: 'rgba(34, 197, 94, 0.1)',
                       border: '1px solid rgba(34, 197, 94, 0.2)',
@@ -693,7 +693,7 @@ export function PromoCodeSection({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   background: 'var(--border-default)',
                   border: '1px solid var(--surface-active)',
                   cursor: 'pointer',
@@ -714,8 +714,8 @@ export function PromoCodeSection({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             style={{
-              padding: 20,
-              borderRadius: 20,
+              padding: 24,
+              borderRadius: 12,
               background: 'linear-gradient(145deg, rgba(212, 175, 55, 0.08), rgba(20, 20, 23, 0.95))',
               border: '1px solid rgba(212, 175, 55, 0.15)',
             }}
@@ -724,13 +724,13 @@ export function PromoCodeSection({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               marginBottom: 16,
             }}>
               <div style={{
                 width: 36,
                 height: 36,
-                borderRadius: 10,
+                borderRadius: 8,
                 background: 'rgba(212, 175, 55, 0.15)',
                 border: '1px solid rgba(212, 175, 55, 0.2)',
                 display: 'flex',
@@ -767,7 +767,7 @@ export function PromoCodeSection({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
             }}>
               <div style={{
                 flex: 1,
@@ -780,7 +780,7 @@ export function PromoCodeSection({
                 border: validationError
                   ? '1px solid rgba(239, 68, 68, 0.4)'
                   : '1px solid var(--surface-active)',
-                borderRadius: 14,
+                borderRadius: 12,
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 boxShadow: isValidating ? '0 0 0 2px rgba(212,175,55,0.2)' : 'none',
               }}>
@@ -824,7 +824,7 @@ export function PromoCodeSection({
                 style={{
                   height: 48,
                   padding: '0 20px',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   background: inputCode.trim()
                     ? 'linear-gradient(135deg, var(--gold-400), var(--gold-700))'
                     : 'var(--border-default)',
@@ -898,7 +898,7 @@ export function PromoCodeSection({
                   style={{
                     marginTop: 12,
                     padding: '10px 14px',
-                    borderRadius: 10,
+                    borderRadius: 8,
                     background: 'rgba(239, 68, 68, 0.1)',
                     border: '1px solid rgba(239, 68, 68, 0.2)',
                     fontSize: 13,
@@ -938,7 +938,7 @@ export function PromoCodeSection({
             cursor: 'pointer',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {activePromo ? (
               <CheckCircle2 size={18} color="var(--success-text)" />
             ) : (
@@ -967,7 +967,7 @@ export function PromoCodeSection({
               exit={{ height: 0, opacity: 0 }}
               style={{
                 overflow: 'hidden',
-                borderRadius: '0 0 16px 16px',
+                borderRadius: '0 0 12px 12px',
                 background: 'rgba(255, 255, 255, 0.02)',
                 borderLeft: '1px solid var(--border-strong)',
                 borderRight: '1px solid var(--border-strong)',
@@ -1003,7 +1003,7 @@ export function PromoPriceDisplay({ originalPrice, className = '' }: PromoPriceD
     return (
       <span className={className} style={{
         fontSize: 24,
-        fontWeight: 800,
+        fontWeight: 700,
         fontFamily: 'var(--font-mono)',
         background: 'linear-gradient(135deg, var(--gold-400), var(--gold-150))',
         WebkitBackgroundClip: 'text',
@@ -1031,10 +1031,10 @@ export function PromoPriceDisplay({ originalPrice, className = '' }: PromoPriceD
       </div>
 
       {/* Final price */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{
           fontSize: 24,
-          fontWeight: 800,
+          fontWeight: 700,
           fontFamily: 'var(--font-mono)',
           background: 'linear-gradient(135deg, #22c55e, #4ade80)',
           WebkitBackgroundClip: 'text',

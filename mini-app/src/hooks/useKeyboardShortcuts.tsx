@@ -239,7 +239,7 @@ export const ShortcutsHelpModal: React.FC<ShortcutsHelpModalProps> = ({
                         <div className="p-4 max-h-[60vh] overflow-y-auto space-y-4">
                             {Object.entries(groupedShortcuts).map(([category, categoryShortcuts]) => (
                                 <div key={category}>
-                                    <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
                                         {category}
                                     </h3>
                                     <div className="space-y-1">

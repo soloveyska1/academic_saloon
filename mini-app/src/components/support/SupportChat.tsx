@@ -208,7 +208,7 @@ export function SupportChat() {
                   style={{
                     display: 'flex',
                     justifyContent: isClient ? 'flex-end' : 'flex-start',
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   <div className={isClient ? s.bubbleClient : s.bubbleAdmin}>

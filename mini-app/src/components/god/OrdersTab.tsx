@@ -84,7 +84,7 @@ export const OrdersTab = memo(function OrdersTab() {
           const cfg = STATUS_CONFIG[o.status] || { label: o.status, emoji: '?', color: 'var(--text-muted)', bg: 'rgba(113,113,122,0.15)' }
           return (
             <div key={o.id} className={s.cardClickable} onClick={() => setSelectedOrder(o.id)}>
-              <div className={`${s.flexRow} ${s.gap6}`} style={{ marginBottom: 6 }}>
+              <div className={`${s.flexRow} ${s.gap6}`} style={{ marginBottom: 8 }}>
                 <span className={s.statusBadge} style={{ background: cfg.bg, color: cfg.color }}>
                   {cfg.emoji} {cfg.label}
                 </span>
@@ -103,7 +103,7 @@ export const OrdersTab = memo(function OrdersTab() {
                 {o.deadline && <span> · до {formatDateTime(o.deadline)}</span>}
               </div>
               {o.progress > 0 && o.progress < 100 && (
-                <div style={{ marginTop: 6, height: 3, borderRadius: 2, background: 'var(--surface-hover)' }}>
+                <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: 'var(--surface-hover)' }}>
                   <div style={{ width: `${o.progress}%`, height: '100%', borderRadius: 2, background: 'var(--gold-400)' }} />
                 </div>
               )}

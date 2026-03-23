@@ -29,19 +29,20 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   if (variant === 'first-order') {
     return (
       <motion.section
+        className="aurora-bg"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'relative',
           width: '100%',
-          padding: '28px 20px 24px',
+          padding: '32px 24px 24px',
           borderRadius: 'var(--radius-lg)',
           marginBottom: 16,
-          background: 'rgba(12, 12, 10, 0.85)',
-          backdropFilter: 'blur(16px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-          border: '1px solid rgba(201, 162, 39, 0.08)',
+          background: 'rgba(18, 18, 18, 0.88)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(212, 175, 55, 0.10)',
           overflow: 'hidden',
         }}
       >
@@ -69,22 +70,22 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               color: 'var(--text-muted)',
-              marginBottom: 14,
+              marginBottom: 12,
             }}
           >
             Академический Салон
           </div>
 
-          {/* Headline */}
+          {/* Headline — shimmer gold text effect */}
           <h1
+            className="shimmer-text"
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(26px, 7vw, 34px)',
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: 1.08,
               letterSpacing: '-0.03em',
-              color: 'var(--text-primary)',
-              marginBottom: 10,
+              marginBottom: 8,
             }}
           >
             Работы под ключ.{'\n'}Точно в срок.
@@ -95,7 +96,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               color: 'var(--text-secondary)',
               fontSize: 14,
-              fontWeight: 500,
+              fontWeight: 600,
               lineHeight: 1.5,
               marginBottom: 16,
               maxWidth: 300,
@@ -111,8 +112,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           <div
             style={{
               display: 'flex',
-              gap: 6,
-              marginBottom: 20,
+              gap: 8,
+              marginBottom: 24,
             }}
           >
             {PROOF_ITEMS.map((p) => {
@@ -149,23 +150,24 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             })}
           </div>
 
-          {/* Primary CTA */}
+          {/* Primary CTA — shine sweep on hover */}
           <motion.button
             type="button"
+            className="shine-sweep"
             whileTap={{ scale: 0.97 }}
             onClick={handleClick}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 10,
+              gap: 8,
               width: '100%',
               height: 52,
-              padding: '0 20px',
+              padding: '0 24px',
               borderRadius: 'var(--radius-sm)',
               background: 'linear-gradient(135deg, var(--gold-600) 0%, var(--gold-400) 50%, var(--gold-300) 100%)',
               border: 'none',
-              boxShadow: '0 4px 16px rgba(201, 162, 39, 0.15)',
+              boxShadow: '0 8px 24px rgba(212, 175, 55, 0.15)',
               color: 'var(--text-on-gold)',
               fontFamily: 'var(--font-display)',
               fontSize: 15,
@@ -182,10 +184,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           {/* Micro-reassurance */}
           <div
             style={{
-              marginTop: 10,
+              marginTop: 8,
               fontSize: 11,
               color: 'var(--text-muted)',
-              fontWeight: 500,
+              fontWeight: 600,
               textAlign: 'center' as const,
               opacity: 0.7,
             }}
@@ -245,7 +247,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
                 fontSize: 24,
-                fontWeight: 800,
+                fontWeight: 700,
                 lineHeight: 0.98,
                 letterSpacing: '-0.04em',
                 color: 'var(--text-primary)',
@@ -258,7 +260,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               style={{
                 fontSize: 13,
                 color: 'var(--text-secondary)',
-                fontWeight: 500,
+                fontWeight: 600,
                 lineHeight: 1.45,
                 marginBottom: 0,
               }}
@@ -268,16 +270,17 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           </div>
 
           <div
+            className="shine-sweep"
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 18,
+              width: 48,
+              height: 48,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.5)',
+              boxShadow: '0 8px 24px rgba(212, 175, 55, 0.15)',
             }}
           >
             <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
@@ -299,8 +302,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         borderRadius: embedded ? 0 : 28,
         marginBottom: 0,
         background: embedded ? 'transparent' : 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
-        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
-        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(140%)',
+        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
+        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
         border: embedded ? 'none' : '1px solid rgba(212, 175, 55, 0.10)',
         overflow: 'hidden',
         boxShadow: embedded ? 'none' : '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
@@ -330,7 +333,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 14,
+          gap: 12,
           width: '100%',
           background: 'none',
           border: 'none',
@@ -359,7 +362,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               fontSize: embedded ? 25 : 28,
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: embedded ? 1 : 0.94,
               letterSpacing: '-0.04em',
               color: 'var(--text-primary)',
@@ -371,7 +374,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           <div style={{
             fontSize: 13,
             color: 'var(--text-secondary)',
-            fontWeight: 500,
+            fontWeight: 600,
             lineHeight: 1.45,
             marginBottom: embedded ? 12 : 16,
           }}>

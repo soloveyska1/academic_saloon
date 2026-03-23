@@ -145,7 +145,7 @@ function TransactionCard({
       style={{
         width: '100%',
         padding: '14px 16px',
-        borderRadius: 18,
+        borderRadius: 12,
         border: `1px solid ${
           selected
             ? 'var(--border-gold)'
@@ -164,7 +164,7 @@ function TransactionCard({
         style={{
           width: 44,
           height: 44,
-          borderRadius: 16,
+          borderRadius: 12,
           background: visual.iconBackground,
           border: `1px solid ${visual.iconBorder}`,
           display: 'flex',
@@ -191,7 +191,7 @@ function TransactionCard({
       </div>
 
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: visual.amountColor, marginBottom: 4 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: visual.amountColor, marginBottom: 4 }}>
           {transaction.type === 'debit' ? '-' : '+'}{formatMoney(transaction.amount)}
         </div>
         <ChevronRight
@@ -236,7 +236,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ paddingTop: 4, marginBottom: 18 }}
+          style={{ paddingTop: 4, marginBottom: 16 }}
         >
           <div
             style={{
@@ -276,8 +276,8 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
         <div
           style={{
             marginBottom: 16,
-            padding: 18,
-            borderRadius: 22,
+            padding: 16,
+            borderRadius: 12,
             background: 'linear-gradient(135deg, var(--gold-glass-subtle), var(--bg-glass))',
             border: '1px solid var(--gold-glass-medium)',
           }}
@@ -294,7 +294,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
           </div>
           <div style={{
             fontSize: 34,
-            fontWeight: 800,
+            fontWeight: 700,
             color: 'var(--text-primary)',
             lineHeight: 1,
             marginBottom: 8,
@@ -311,17 +311,17 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             style={{
               marginBottom: 16,
               padding: 16,
-              borderRadius: 20,
+              borderRadius: 12,
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-default)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
               <div
                 style={{
                   width: 48,
                   height: 48,
-                  borderRadius: 16,
+                  borderRadius: 12,
                   background: selectedVisual.iconBackground,
                   border: `1px solid ${selectedVisual.iconBorder}`,
                   display: 'flex',
@@ -347,7 +347,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 </div>
               </div>
 
-              <div style={{ fontSize: 18, fontWeight: 800, color: selectedVisual.amountColor, flexShrink: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: selectedVisual.amountColor, flexShrink: 0 }}>
                 {selectedTransaction.type === 'debit' ? '-' : '+'}{formatMoney(selectedTransaction.amount)}
               </div>
             </div>
@@ -355,7 +355,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
               <div style={{
                 padding: '10px 12px',
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'var(--bg-glass)',
                 border: '1px solid var(--border-subtle)',
               }}>
@@ -365,7 +365,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}>
                   Тип
                 </div>
@@ -379,7 +379,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               </div>
               <div style={{
                 padding: '10px 12px',
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'var(--bg-glass)',
                 border: '1px solid var(--border-subtle)',
               }}>
@@ -389,7 +389,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}>
                   Основание
                 </div>
@@ -403,7 +403,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               </div>
               <div style={{
                 padding: '10px 12px',
-                borderRadius: 14,
+                borderRadius: 12,
                 background: 'var(--bg-glass)',
                 border: '1px solid var(--border-subtle)',
               }}>
@@ -413,7 +413,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}>
                   Время
                 </div>
@@ -441,7 +441,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
           {sortedTransactions.length > 0 ? (
             sortedTransactions.map((transaction) => (
               <TransactionCard
@@ -455,7 +455,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             <div
               style={{
                 padding: '18px 16px',
-                borderRadius: 18,
+                borderRadius: 12,
                 background: 'var(--bg-glass)',
                 border: '1px solid var(--border-default)',
                 color: 'var(--text-secondary)',
@@ -475,7 +475,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
           style={{
             width: '100%',
             minHeight: 46,
-            borderRadius: 16,
+            borderRadius: 12,
             border: '1px solid var(--gold-glass-medium)',
             background: 'var(--gold-glass-subtle)',
             color: 'var(--gold-400)',

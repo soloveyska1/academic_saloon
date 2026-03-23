@@ -33,12 +33,12 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 transition={{ delay: 0.1 }}
                 style={{
                     gridColumn: 'span 1',
-                    padding: 20,
+                    padding: 24,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     minHeight: 140,
-                    borderRadius: 24,
+                    borderRadius: 12,
                     // Premium Dark Gradient
                     background: 'linear-gradient(145deg, var(--bg-card) 0%, var(--bg-card) 100%)',
                     border: '1px solid var(--border-default)',
@@ -73,12 +73,12 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 transition={{ delay: 0.2 }}
                 style={{
                     gridColumn: 'span 1',
-                    padding: 20,
+                    padding: 24,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     minHeight: 140,
-                    borderRadius: 24,
+                    borderRadius: 12,
                     // Gold Gradient
                     background: 'linear-gradient(145deg, var(--gold-glass-medium) 0%, var(--bg-card) 100%)',
                     border: '1px solid var(--border-gold)',
@@ -118,11 +118,11 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 4,
-                                marginBottom: 6,
+                                marginBottom: 8,
                                 padding: '3px 8px',
                                 background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1))',
                                 border: '1px solid rgba(34,197,94,0.3)',
-                                borderRadius: 6,
+                                borderRadius: 4,
                                 width: 'fit-content',
                             }}>
                                 <span style={{ fontSize: 10 }}>🎟️</span>
@@ -178,7 +178,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    borderRadius: 24,
+                    borderRadius: 12,
                     cursor: hasFiles ? 'pointer' : 'default',
                     // Clean dark look
                     background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
@@ -192,7 +192,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{
                         width: 48, height: 48,
-                        borderRadius: 16,
+                        borderRadius: 12,
                         background: hasFiles ? 'var(--success-glass)' : 'var(--border-default)',
                         border: hasFiles ? '1px solid var(--success-border)' : '1px solid var(--border-default)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -231,7 +231,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 style={{
                     gridColumn: 'span 2',
                     padding: 24,
-                    borderRadius: 24,
+                    borderRadius: 12,
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border-default)',
                 }}
@@ -250,7 +250,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     fontSize: 15,
                     color: 'var(--text-main)',
                     lineHeight: 1.6,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     fontFamily: 'var(--font-serif)', // Elegant
                 }}>
                     {order.subject}

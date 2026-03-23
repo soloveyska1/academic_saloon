@@ -133,14 +133,14 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
         style={{
           width: '100%',
           height: '100%',
-          padding: 22,
+          padding: 24,
           // Dark metal gradient with subtle texture
           background: isActive
             ? 'linear-gradient(155deg, rgba(35, 35, 40, 0.98) 0%, rgba(18, 18, 22, 0.99) 40%, rgba(28, 28, 33, 0.97) 100%)'
             : 'linear-gradient(155deg, rgba(25, 25, 28, 0.9) 0%, rgba(12, 12, 15, 0.95) 100%)',
-          backdropFilter: 'blur(50px)',
-          WebkitBackdropFilter: 'blur(50px)',
-          borderRadius: 22,
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderRadius: 12,
           border: isActive
             ? `2px solid ${colors.border}`
             : '1px solid rgba(255, 255, 255, 0.04)',
@@ -177,8 +177,8 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             animate={{ opacity: 1, scale: 1, rotate: -12 }}
             style={{
               position: 'absolute',
-              top: 14,
-              right: 14,
+              top: 16,
+              right: 16,
               padding: '5px 12px',
               background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.35)',
@@ -206,15 +206,15 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 8,
           marginBottom: 16,
-          paddingBottom: 14,
+          paddingBottom: 16,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}>
           <div style={{
             width: 32,
             height: 32,
-            borderRadius: 10,
+            borderRadius: 8,
             background: isActive
               ? `linear-gradient(135deg, ${colors.bg}, rgba(0,0,0,0.3))`
               : 'rgba(255,255,255,0.03)',
@@ -260,7 +260,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             fontSize: 18,
             fontWeight: 700,
             color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-            marginBottom: 14,
+            marginBottom: 12,
             lineHeight: 1.35,
             overflow: 'hidden',
             display: '-webkit-box',
@@ -277,13 +277,13 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 14,
+          marginBottom: 12,
           padding: '10px 12px',
           background: isUrgent
             ? 'rgba(239, 68, 68, 0.08)'
             : 'rgba(255,255,255,0.02)',
           border: `1px solid ${isUrgent ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.04)'}`,
-          borderRadius: 10,
+          borderRadius: 8,
         }}>
           {isUrgent ? (
             <Zap size={14} color="#ef4444" />
@@ -327,8 +327,8 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
 
         {/* Progress Bar (if in progress) */}
         {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && isActive && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Прогресс
               </span>
@@ -339,7 +339,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             <div style={{
               height: 5,
               background: 'rgba(255,255,255,0.04)',
-              borderRadius: 100,
+              borderRadius: 12,
               overflow: 'hidden',
             }}>
               <motion.div
@@ -349,7 +349,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
                 style={{
                   height: '100%',
                   background: `linear-gradient(90deg, ${colors.text}, ${colors.glow})`,
-                  borderRadius: 100,
+                  borderRadius: 12,
                   boxShadow: `0 0 15px ${colors.glow}`,
                 }}
               />
@@ -362,7 +362,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingTop: 14,
+          paddingTop: 16,
           borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
           {/* Status Badge with Glowing Dot */}
@@ -374,7 +374,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               padding: '6px 14px',
               background: isActive ? colors.bg : 'rgba(255,255,255,0.02)',
               border: `1px solid ${isActive ? colors.border : 'rgba(255,255,255,0.04)'}`,
-              borderRadius: 100,
+              borderRadius: 12,
               boxShadow: isActive ? `0 0 20px -8px ${colors.glow}` : 'none',
             }}
           >
@@ -412,7 +412,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               className="text-mono"
               style={{
                 fontSize: 17,
-                fontWeight: 800,
+                fontWeight: 700,
                 background: isActive
                   ? 'linear-gradient(135deg, #f5d061 0%, #d4af37 50%, #b48e26 100%)'
                   : 'none',
@@ -441,7 +441,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             style={{
               position: 'absolute',
               inset: -2,
-              borderRadius: 24,
+              borderRadius: 12,
               border: `2px solid ${colors.text}`,
               pointerEvents: 'none',
             }}
@@ -461,11 +461,11 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               transform: 'translateX(-50%)',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               padding: '6px 14px',
               background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08))',
               border: '1px solid rgba(212, 175, 55, 0.25)',
-              borderRadius: 100,
+              borderRadius: 12,
               boxShadow: '0 0 20px -8px rgba(212, 175, 55, 0.3)',
             }}
           >
@@ -492,10 +492,10 @@ function EmptyState() {
         padding: 48,
         textAlign: 'center',
         background: 'linear-gradient(180deg, rgba(30, 30, 35, 0.6) 0%, rgba(20, 20, 23, 0.8) 100%)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         border: '1px dashed rgba(255, 255, 255, 0.1)',
-        borderRadius: 20,
+        borderRadius: 12,
       }}
     >
       <motion.div
@@ -505,7 +505,7 @@ function EmptyState() {
           width: 64,
           height: 64,
           margin: '0 auto 20px',
-          borderRadius: 16,
+          borderRadius: 12,
           background: 'rgba(212, 175, 55, 0.08)',
           border: '1px solid rgba(212, 175, 55, 0.15)',
           display: 'flex',

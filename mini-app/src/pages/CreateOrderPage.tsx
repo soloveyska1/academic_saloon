@@ -651,13 +651,13 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               marginBottom: 16,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
               border: '1px solid rgba(212,175,55,0.3)',
-              borderRadius: 14,
+              borderRadius: 12,
             }}
           >
             <div style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'linear-gradient(135deg, #d4af37, #f5d76e)',
               display: 'flex',
               alignItems: 'center',
@@ -689,13 +689,13 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               marginBottom: 16,
               background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
               border: '1px solid rgba(34,197,94,0.3)',
-              borderRadius: 14,
+              borderRadius: 12,
             }}
           >
             <div style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'linear-gradient(135deg, #22c55e, #16a34a)',
               display: 'flex',
               alignItems: 'center',
@@ -724,7 +724,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 padding: '10px 14px',
                 marginBottom: 16,
                 background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
@@ -744,7 +744,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 24 }}
         >
           {/* Top row: back + step counter */}
           <div style={{
@@ -761,8 +761,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 height: 40,
                 borderRadius: 12,
                 background: 'rgba(12, 12, 10, 0.6)',
-                backdropFilter: 'blur(16px) saturate(140%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+                backdropFilter: 'blur(16px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
                 border: '1px solid rgba(255, 255, 255, 0.04)',
                 display: 'flex',
                 alignItems: 'center',
@@ -815,7 +815,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: 'var(--text-primary)',
                 fontFamily: 'var(--font-display)',
                 lineHeight: 1.2,
@@ -824,7 +824,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               }}>
                 {currentConfig?.title}
               </h1>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4, fontWeight: 500 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4, fontWeight: 600 }}>
                 {currentConfig?.subtitle}
               </p>
             </div>
@@ -838,7 +838,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                   padding: '8px 12px',
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   color: 'var(--text-secondary)',
                   fontSize: 12,
                   fontWeight: 600,
@@ -959,7 +959,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    style={{ marginTop: 20 }}
+                    style={{ marginTop: 24 }}
                   >
                     <PromoCodeSection
                       variant="inline"

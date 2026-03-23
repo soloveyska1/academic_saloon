@@ -7,8 +7,8 @@ const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'rgba(12, 12, 10, 0.6)',
-  backdropFilter: 'blur(16px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  backdropFilter: 'blur(16px) saturate(120%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(120%)',
   border: '1px solid rgba(255,255,255,0.04)',
 }
 
@@ -41,8 +41,8 @@ function MaxRankCard({ rank }: { rank: Rank }) {
       transition={{ delay: 0.32 }}
       style={{
         ...glassStyle,
-        borderRadius: 16,
-        padding: 20,
+        borderRadius: 12,
+        padding: 24,
         marginBottom: 24,
         border: '1px solid rgba(201, 162, 39, 0.08)',
         background: 'linear-gradient(145deg, rgba(201, 162, 39, 0.06), rgba(12, 12, 10, 0.6) 40%)',
@@ -50,7 +50,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Header with crown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{
             width: 40,
             height: 40,
@@ -147,11 +147,11 @@ export const LevelProgressCard = memo(function LevelProgressCard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
-      style={{ ...glassStyle, borderRadius: 16, padding: 20, marginBottom: 16 }}
+      style={{ ...glassStyle, borderRadius: 12, padding: 24, marginBottom: 16 }}
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div
-          style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
         >
           <div
             style={{
@@ -210,7 +210,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
           style={{
             height: 6,
             background: 'var(--bg-glass)',
-            borderRadius: 100,
+            borderRadius: 12,
             overflow: 'hidden',
             marginBottom: 12,
             border: '1px solid var(--border-subtle)',
@@ -224,7 +224,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
             aria-hidden="true"
             style={{
               height: '100%',
-              borderRadius: 100,
+              borderRadius: 12,
             }}
           />
         </div>
