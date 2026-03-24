@@ -4,7 +4,7 @@ import { ArrowUpRight, Crown, Sparkles } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { GoldText } from '../ui/GoldText'
-import { formatMoney } from '../../lib/utils'
+// formatMoney from utils includes ₽; we use formatNum locally for separate ₽ styling
 
 interface HomeHeaderProps {
   user: {
@@ -34,10 +34,15 @@ const stagger = {
   },
 }
 
+/* ─── Format number without ₽ for separate styling ─── */
+function formatNum(v: number): string {
+  return Math.max(0, Math.round(v)).toLocaleString('ru-RU')
+}
+
 /* ─── Animated counting number ─── */
 function AnimatedNumber({ value }: { value: number }) {
   const motionVal = useMotionValue(0)
-  const rounded = useTransform(motionVal, (v) => formatMoney(Math.round(v)))
+  const rounded = useTransform(motionVal, (v) => formatNum(Math.round(v)))
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -55,7 +60,7 @@ function AnimatedNumber({ value }: { value: number }) {
     return unsub
   }, [rounded])
 
-  return <span ref={ref}>{formatMoney(0)}</span>
+  return <span ref={ref}>{formatNum(0)}</span>
 }
 
 /* ─── Time-based greeting ─── */
@@ -349,7 +354,7 @@ export const HomeHeader = memo(function HomeHeader({
         {/* ═══ Greeting + Name ═══ */}
         <motion.div
           variants={stagger.item}
-          style={{ textAlign: 'center', marginBottom: showFinance ? 6 : 0 }}
+          style={{ textAlign: 'center', marginBottom: showFinance ? 2 : 0 }}
         >
           <div
             style={{
@@ -380,7 +385,7 @@ export const HomeHeader = memo(function HomeHeader({
 
         {/* ═══ Decorative diamond divider ═══ */}
         {showFinance && (
-          <motion.div variants={stagger.item} style={{ marginBottom: 18 }}>
+          <motion.div variants={stagger.item} style={{ marginBottom: 16, marginTop: 4 }}>
             <DiamondDivider />
           </motion.div>
         )}
@@ -507,7 +512,7 @@ export const HomeHeader = memo(function HomeHeader({
                   }}
                 >
                   {bonusBalance > 0
-                    ? `из них ${formatMoney(bonusBalance)} ₽ бонусов`
+                    ? `из них ${formatNum(bonusBalance)} ₽ бонусов`
                     : 'Личный счёт'}
                 </motion.div>
               </div>
@@ -557,11 +562,20 @@ export const HomeHeader = memo(function HomeHeader({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 10,
+                  flexWrap: 'wrap',
                 }}
               >
                 {/* Left: rank + cashback */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    minWidth: 0,
+                    flex: '1 1 auto',
+                  }}
+                >
                   {user.rank.name && (
                     <>
                       <motion.div
@@ -575,7 +589,7 @@ export const HomeHeader = memo(function HomeHeader({
                         style={{ display: 'flex', flexShrink: 0 }}
                       >
                         <Crown
-                          size={14}
+                          size={13}
                           strokeWidth={2}
                           style={{
                             color: 'rgba(212,175,55,0.60)',
@@ -585,10 +599,12 @@ export const HomeHeader = memo(function HomeHeader({
                       </motion.div>
                       <span
                         style={{
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: 600,
-                          color: 'rgba(245,240,225,0.55)',
+                          color: 'rgba(245,240,225,0.50)',
                           whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                           letterSpacing: '0.01em',
                         }}
                       >
@@ -607,9 +623,9 @@ export const HomeHeader = memo(function HomeHeader({
                   )}
                   <GoldText
                     variant="static"
-                    size="md"
+                    size="sm"
                     weight={700}
-                    style={{ whiteSpace: 'nowrap' }}
+                    style={{ whiteSpace: 'nowrap', fontSize: 12 }}
                   >
                     {cashback}% возврат
                   </GoldText>
@@ -625,12 +641,12 @@ export const HomeHeader = memo(function HomeHeader({
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 5,
                     background:
                       'linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(191,149,63,0.05) 100%)',
                     border: '1px solid rgba(212,175,55,0.16)',
                     borderRadius: 12,
-                    padding: '7px 14px 7px 12px',
+                    padding: '6px 12px 6px 10px',
                     cursor: 'pointer',
                     flexShrink: 0,
                     overflow: 'hidden',
@@ -640,7 +656,7 @@ export const HomeHeader = memo(function HomeHeader({
                 >
                   <ShimmerOverlay />
                   <Sparkles
-                    size={11}
+                    size={10}
                     strokeWidth={2}
                     style={{
                       color: 'var(--gold-400)',
@@ -651,7 +667,7 @@ export const HomeHeader = memo(function HomeHeader({
                   />
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 700,
                       color: 'var(--gold-400)',
                       whiteSpace: 'nowrap',
@@ -659,7 +675,7 @@ export const HomeHeader = memo(function HomeHeader({
                       zIndex: 1,
                     }}
                   >
-                    Ваш статус
+                    Статус
                   </span>
                   <motion.span
                     animate={{ x: [0, 3, 0] }}
@@ -671,7 +687,7 @@ export const HomeHeader = memo(function HomeHeader({
                       zIndex: 1,
                     }}
                   >
-                    <ArrowUpRight size={12} strokeWidth={2.5} />
+                    <ArrowUpRight size={11} strokeWidth={2.5} />
                   </motion.span>
                 </motion.button>
               </div>
