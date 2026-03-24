@@ -106,6 +106,14 @@
   background: linear-gradient(90deg, var(--surface-hover), transparent);
 }
 
+/* ==================== NARROW SCREEN (320px) PROTECTION ==================== */
+@media (max-width: 340px) {
+  .header {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
 /* ==================== LIGHT MODE OVERRIDES ==================== */
 
 :global([data-theme="light"]) .avatarContainer::before {
