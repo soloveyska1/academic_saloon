@@ -314,12 +314,25 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         padding: 22,
         borderRadius: 12,
         marginBottom: 0,
-        background: 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
-        border: '1px solid rgba(212, 175, 55, 0.10)',
+        background: 'linear-gradient(155deg, rgba(25,20,10,0.98) 0%, rgba(12,12,13,0.97) 50%, rgba(8,8,10,1) 100%)',
+        border: '1px solid rgba(212,175,55,0.12)',
         overflow: 'hidden',
         boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
+      {/* Top gold shine line */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.2) 50%, transparent 90%)',
+        }}
+      />
+
       {/* Decorative gold orb - top right */}
       <div
         aria-hidden="true"
@@ -362,24 +375,23 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontWeight: 700,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: 'rgba(212, 175, 55, 0.72)',
+              color: 'rgba(212,175,55,0.55)',
               marginBottom: 8,
             }}
           >
             НОВАЯ РАБОТА
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 24,
-              fontWeight: 700,
-              lineHeight: 0.94,
-              letterSpacing: '-0.04em',
-              color: 'var(--text-primary)',
-              marginBottom: 10,
-            }}
-          >
-            Оформить новый заказ
+          <div style={{ marginBottom: 10 }}>
+            <GoldText
+              variant="shimmer"
+              size="xl"
+              weight={700}
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              }}
+            >
+              Оформить новую работу
+            </GoldText>
           </div>
           <div
             style={{
@@ -403,8 +415,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                   alignItems: 'center',
                   padding: '7px 10px',
                   borderRadius: 999,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: item === 'от 990 ₽' ? 'rgba(212,175,55,0.06)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${item === 'от 990 ₽' ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
                   fontSize: 10,
                   fontWeight: 700,
                   color: item === 'от 990 ₽' ? 'var(--gold-300)' : 'var(--text-secondary)',
@@ -417,22 +429,23 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           </div>
         </div>
 
-        {/* Gold circle with arrow */}
-        <div
+        {/* Gold arrow button */}
+        <LiquidGoldButton
+          fullWidth={false}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleClick()
+          }}
           style={{
             width: 48,
             height: 48,
+            padding: 0,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 16px 28px -18px rgba(212, 175, 55, 0.4)',
           }}
         >
-          <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
-        </div>
+          <ArrowRight size={18} strokeWidth={2.5} />
+        </LiquidGoldButton>
       </motion.button>
     </motion.section>
   )

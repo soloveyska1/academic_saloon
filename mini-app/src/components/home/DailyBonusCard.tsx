@@ -59,8 +59,8 @@ function DailyBonusCardInner({
       : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
     backdropFilter: 'blur(16px) saturate(120%)',
     WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-    border: embedded ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(212, 175, 55, 0.12)',
-    borderRadius: embedded ? 22 : 24,
+    border: embedded ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(212,175,55,0.12)',
+    borderRadius: 12,
     padding: embedded ? 16 : 18,
     position: 'relative',
     overflow: 'hidden',
@@ -203,7 +203,7 @@ function DailyBonusCardInner({
                     fontWeight: 700,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
-                    color: 'rgba(212, 175, 55, 0.72)',
+                    color: 'rgba(212,175,55,0.55)',
                     marginBottom: 8,
                   }}
                 >
@@ -255,7 +255,7 @@ function DailyBonusCardInner({
                             fontSize: 30,
                             lineHeight: 0.95,
                             letterSpacing: '-0.05em',
-                            color: 'var(--text-primary)',
+                            color: 'var(--gold-200)',
                           }}
                         >
                           {Math.max(0, currentStreak)}
@@ -401,12 +401,14 @@ function DailyBonusCardInner({
                       borderRadius: 12,
                       textAlign: 'center',
                       background: isClaimed
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.96) 0%, rgba(180,141,36,0.88) 100%)'
+                        ? 'linear-gradient(180deg, rgba(212,175,55,1) 0%, rgba(180,141,36,0.94) 100%)'
                         : isCurrent
                           ? 'rgba(212,175,55,0.10)'
                           : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${isClaimed ? 'rgba(212,175,55,0.28)' : isCurrent ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
-                      boxShadow: isCurrent ? '0 16px 24px -24px rgba(212,175,55,0.5)' : 'none',
+                      border: `1px solid ${isClaimed ? 'rgba(212,175,55,0.40)' : isCurrent ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
+                      boxShadow: isClaimed
+                        ? '0 4px 12px -2px rgba(212,175,55,0.35)'
+                        : isCurrent ? '0 16px 24px -24px rgba(212,175,55,0.5)' : 'none',
                     }}
                   >
                     <div
