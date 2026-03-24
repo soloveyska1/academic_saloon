@@ -1,5 +1,5 @@
-import React, { memo, useMemo, useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { memo, useMemo, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence, PanInfo } from 'framer-motion'
 import {
   ArrowRight,
   CheckCircle2,
@@ -13,7 +13,6 @@ import { Order } from '../../types'
 import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
-import { GoldText, GoldBadge } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
 
 interface ActiveOrderDashboardProps {
@@ -69,46 +68,86 @@ function getVisibleOrderStatus(order: Order): string {
 function getStatusNarrative(status: string, remaining: number, paid: number, progress?: number): string {
   switch (status) {
     case 'pending':
-      return 'Заявка принята.'
+      return 'Заявка принята'
     case 'waiting_estimation':
-      return 'Готовим расчёт.'
+      return 'Готовим расчёт'
     case 'waiting_payment':
-      return paid > 0 ? `Осталось внести ${formatMoney(remaining)}.` : 'Ожидает оплаты.'
+      return paid > 0 ? `Осталось ${formatMoney(remaining)}` : 'Ожидает оплаты'
     case 'verification_pending':
-      return 'Подтверждаем оплату.'
+      return 'Подтверждаем оплату'
     case 'confirmed':
     case 'paid':
-      return remaining > 0 ? 'Аванс внесён.' : 'Оплата принята.'
+      return remaining > 0 ? 'Аванс внесён' : 'Оплата принята'
     case 'paid_full':
     case 'in_progress':
-      return progress ? `Готовность около ${progress}%.` : 'Работа в процессе.'
+      return progress ? `Готовность ${progress}%` : 'В работе'
     case 'review':
-      return 'Материал готов.'
+      return 'Материал готов'
     case 'revision':
-      return 'Идёт доработка.'
+      return 'Идёт доработка'
     default:
-      return 'Все детали внутри заказа.'
+      return 'Все детали внутри'
   }
 }
 
 function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
   switch (status) {
     case 'waiting_payment':
-      return hasPartialPayment ? 'Доплатить остаток' : 'Перейти к оплате'
+      return hasPartialPayment ? 'Доплатить' : 'Оплатить'
     case 'waiting_estimation':
-      return 'Открыть заказ'
+      return 'Подробнее'
     case 'verification_pending':
-      return 'Открыть заказ'
+      return 'Подробнее'
     case 'review':
-      return 'Открыть результат'
+      return 'Посмотреть'
     case 'revision':
-      return 'Посмотреть правки'
+      return 'Посмотреть'
     default:
-      return 'Открыть заказ'
+      return 'Открыть'
   }
 }
 
 const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision']
+
+/* ─── Deadline countdown hook ─── */
+function useDeadlineCountdown(deadline: string | null): { text: string; urgency: 'safe' | 'warning' | 'urgent' | 'unknown' } {
+  const [now, setNow] = useState(Date.now)
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (!deadline) return { text: 'Срок уточняется', urgency: 'unknown' }
+
+  // Handle text-based deadlines
+  const lower = deadline.toLowerCase().trim()
+  if (lower === 'today' || lower === 'сегодня') return { text: 'Сегодня', urgency: 'urgent' }
+  if (lower === 'tomorrow' || lower === 'завтра') return { text: 'Завтра', urgency: 'warning' }
+  if (lower === '3days') return { text: '2–3 дня', urgency: 'safe' }
+  if (lower === 'week') return { text: 'Неделя', urgency: 'safe' }
+  if (lower === '2weeks') return { text: '2 недели', urgency: 'safe' }
+  if (lower === 'month') return { text: 'Месяц+', urgency: 'safe' }
+
+  // Try parsing as date
+  const parsed = new Date(deadline)
+  if (isNaN(parsed.getTime())) return { text: formatOrderDeadlineRu(deadline), urgency: 'unknown' }
+
+  const diffMs = parsed.getTime() - now
+  const diffHours = diffMs / (1000 * 60 * 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMs < 0) return { text: 'Просрочено', urgency: 'urgent' }
+  if (diffHours < 1) return { text: 'Менее часа', urgency: 'urgent' }
+  if (diffHours < 24) {
+    const h = Math.floor(diffHours)
+    return { text: `${h} ч`, urgency: 'urgent' }
+  }
+  if (diffDays === 1) return { text: 'Завтра', urgency: 'warning' }
+  if (diffDays <= 3) return { text: `${diffDays} дня`, urgency: 'warning' }
+  if (diffDays <= 7) return { text: `${diffDays} дней`, urgency: 'safe' }
+  return { text: formatOrderDeadlineRu(deadline), urgency: 'safe' }
+}
 
 /* ─── Live elapsed time for in-progress orders ─── */
 function useElapsedTime(updatedAt: string | null | undefined, active: boolean): string | null {
@@ -116,14 +155,14 @@ function useElapsedTime(updatedAt: string | null | undefined, active: boolean): 
 
   useEffect(() => {
     if (!active || !updatedAt) return
-    const id = setInterval(() => setNow(Date.now()), 60_000) // update every minute
+    const id = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(id)
   }, [active, updatedAt])
 
   if (!active || !updatedAt) return null
 
   const diffMs = now - new Date(updatedAt).getTime()
-  if (diffMs < 60_000) return null // less than a minute
+  if (diffMs < 60_000) return null
   const mins = Math.floor(diffMs / 60_000)
   if (mins < 60) return `${mins} мин`
   const hours = Math.floor(mins / 60)
@@ -134,7 +173,7 @@ function useElapsedTime(updatedAt: string | null | undefined, active: boolean): 
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Animated shimmer line that sweeps across the card
+   Animated shimmer line
    ═══════════════════════════════════════════════════════════════ */
 function ShimmerSweep() {
   return (
@@ -156,20 +195,18 @@ function ShimmerSweep() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Animated gold border — breathing glow
+   Animated gold border
    ═══════════════════════════════════════════════════════════════ */
 function AnimatedGoldBorder({ active }: { active: boolean }) {
   if (!active) return null
   return (
     <motion.div
-      animate={{
-        opacity: [0.4, 0.8, 0.4],
-      }}
+      animate={{ opacity: [0.4, 0.8, 0.4] }}
       transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       style={{
         position: 'absolute',
         inset: -1,
-        borderRadius: 14,
+        borderRadius: 16,
         background: 'conic-gradient(from 45deg, rgba(212,175,55,0.3), rgba(245,225,160,0.15), rgba(212,175,55,0.3), rgba(183,142,38,0.2), rgba(251,245,183,0.15), rgba(212,175,55,0.3))',
         mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
         WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -184,140 +221,404 @@ function AnimatedGoldBorder({ active }: { active: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Stage progress — animated dots with pulse on active stage
+   Compact progress bar — replaces the full 4-step stepper
+   Shows a thin gold bar with current stage label
    ═══════════════════════════════════════════════════════════════ */
-function StageProgress({ stageIdx }: { stageIdx: number }) {
+function CompactProgress({ stageIdx }: { stageIdx: number }) {
+  const progress = ((stageIdx + 0.5) / STAGES.length) * 100
+  const currentStage = STAGES[stageIdx]
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 0, width: '100%' }}>
-      {STAGES.map((stage, index) => {
-        const completed = index < stageIdx
-        const active = index === stageIdx
-        const future = index > stageIdx
-        const StageIcon = stage.icon
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Labels row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <currentStage.icon
+            size={11}
+            strokeWidth={2.2}
+            style={{ color: 'var(--gold-400)' }}
+          />
+          <span style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'var(--gold-400)',
+            letterSpacing: '0.02em',
+          }}>
+            {currentStage.label}
+          </span>
+        </div>
+        <span style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.25)',
+          letterSpacing: '0.02em',
+        }}>
+          {stageIdx + 1} из {STAGES.length}
+        </span>
+      </div>
 
-        return (
-          <React.Fragment key={stage.key}>
-            {/* Connector line before (except first) */}
-            {index > 0 && (
-              <div
-                style={{
-                  flex: 1,
-                  height: 1,
-                  background: completed || active
-                    ? 'linear-gradient(90deg, rgba(212,175,55,0.5), rgba(212,175,55,0.3))'
-                    : 'rgba(255,255,255,0.06)',
-                  transition: 'background 0.5s ease',
-                }}
-              />
-            )}
-
-            {/* Stage node */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 5,
-                position: 'relative',
-              }}
-            >
-              {/* Pulse ring for active stage */}
-              {active && (
-                <motion.div
-                  animate={{
-                    scale: [1, 1.8, 1],
-                    opacity: [0.4, 0, 0.4],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    border: '1px solid rgba(212,175,55,0.3)',
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
-
-              {/* Icon circle */}
-              <motion.div
-                initial={false}
-                animate={{
-                  scale: active ? [1, 1.08, 1] : 1,
-                }}
-                transition={active ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: completed
-                    ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(183,142,38,0.15))'
-                    : active
-                      ? 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(183,142,38,0.10))'
-                      : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${
-                    completed
-                      ? 'rgba(212,175,55,0.35)'
-                      : active
-                        ? 'rgba(212,175,55,0.25)'
-                        : 'rgba(255,255,255,0.06)'
-                  }`,
-                  boxShadow: active
-                    ? '0 0 12px rgba(212,175,55,0.15)'
-                    : 'none',
-                  transition: 'all 0.4s ease',
-                }}
-              >
-                <StageIcon
-                  size={12}
-                  strokeWidth={2}
-                  style={{
-                    color: completed || active
-                      ? 'var(--gold-400)'
-                      : 'rgba(255,255,255,0.20)',
-                    transition: 'color 0.4s ease',
-                  }}
-                />
-              </motion.div>
-
-              {/* Label */}
-              <span
-                style={{
-                  fontSize: 9,
-                  fontWeight: active ? 700 : 600,
-                  letterSpacing: '0.04em',
-                  color: completed
-                    ? 'rgba(212,175,55,0.6)'
-                    : active
-                      ? 'var(--gold-400)'
-                      : future
-                        ? 'rgba(255,255,255,0.18)'
-                        : 'var(--text-muted)',
-                  whiteSpace: 'nowrap',
-                  transition: 'color 0.4s ease',
-                }}
-              >
-                {stage.label}
-              </span>
-            </div>
-          </React.Fragment>
-        )
-      })}
+      {/* Progress bar */}
+      <div style={{
+        height: 3,
+        borderRadius: 2,
+        background: 'rgba(255,255,255,0.06)',
+        overflow: 'hidden',
+      }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{
+            height: '100%',
+            borderRadius: 2,
+            background: 'linear-gradient(90deg, var(--gold-metallic, #D4AF37), rgba(245,225,160,0.8))',
+            boxShadow: '0 0 8px rgba(212,175,55,0.3)',
+          }}
+        />
+      </div>
     </div>
   )
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Urgency color helper
+   ═══════════════════════════════════════════════════════════════ */
+const URGENCY_COLORS = {
+  safe: { text: 'rgba(74,222,128,0.85)', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' },
+  warning: { text: 'rgba(251,191,36,0.9)', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
+  urgent: { text: 'rgba(248,113,113,0.9)', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.15)' },
+  unknown: { text: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)' },
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Single order card
+   ═══════════════════════════════════════════════════════════════ */
+function OrderCard({
+  order,
+  onNavigate,
+  haptic,
+}: {
+  order: Order
+  onNavigate: (path: string) => void
+  haptic: (style: 'light' | 'medium' | 'heavy') => void
+}) {
+  const visibleStatus = getVisibleOrderStatus(order)
+  const stageIdx = getStageIndex(visibleStatus)
+  const statusInfo = ORDER_STATUS_MAP[visibleStatus]
+  const total = Math.max(0, order.final_price ?? order.price ?? 0)
+  const paid = Math.max(0, order.paid_amount ?? 0)
+  const remaining = Math.max(0, total - paid)
+  const hasPartialPayment = paid > 0 && remaining > 0
+  const workType = stripEmoji(order.work_type_label ?? order.work_type ?? 'Заказ')
+  const headline = getOrderHeadlineSafe(order)
+  const subline = order.subject && order.subject !== headline ? order.subject : null
+  const { text: deadlineText, urgency } = useDeadlineCountdown(order.deadline)
+  const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
+  const narrative = getStatusNarrative(visibleStatus, remaining, paid, order.progress)
+  const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
+  const isWorking = ['in_progress', 'revision'].includes(visibleStatus)
+  const elapsed = useElapsedTime(order.updated_at, isWorking)
+  const urgencyColors = URGENCY_COLORS[urgency]
+  const financeAmount = total <= 0 ? null : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
+
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.985 }}
+      onClick={() => {
+        haptic('light')
+        onNavigate(`/order/${order.id}`)
+      }}
+      style={{
+        position: 'relative',
+        display: 'block',
+        width: '100%',
+        padding: 0,
+        borderRadius: 16,
+        background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(10,10,11,0.99) 40%, rgba(6,6,8,1) 100%)',
+        border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        textAlign: 'left',
+        cursor: 'pointer',
+        appearance: 'none',
+        overflow: 'hidden',
+        boxShadow: needsAction
+          ? '0 0 40px -10px rgba(212,175,55,0.12), 0 20px 50px -20px rgba(0,0,0,0.8)'
+          : '0 20px 50px -20px rgba(0,0,0,0.7)',
+      }}
+    >
+      <AnimatedGoldBorder active={needsAction} />
+      <ShimmerSweep />
+
+      {/* Inner glow */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '10%',
+          right: '10%',
+          height: 80,
+          background: needsAction
+            ? 'radial-gradient(ellipse at top, rgba(212,175,55,0.06) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse at top, rgba(255,255,255,0.02) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* ─── Zone 1: Title + Subject (hero) ─── */}
+      <div style={{ padding: '20px 20px 0', position: 'relative', zIndex: 3 }}>
+        {/* Work type label + order id */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginBottom: 8,
+        }}>
+          <Sparkles size={10} strokeWidth={2.2} style={{ color: 'rgba(212,175,55,0.4)', flexShrink: 0 }} />
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(212,175,55,0.40)',
+          }}>
+            {workType} #{order.id}
+          </span>
+        </div>
+
+        {/* Headline — the main attention grabber */}
+        <div style={{
+          fontFamily: "var(--font-display, 'Playfair Display', serif)",
+          fontSize: 20,
+          fontWeight: 700,
+          lineHeight: 1.25,
+          letterSpacing: '-0.015em',
+          color: 'rgba(245, 240, 225, 0.92)',
+          marginBottom: subline ? 4 : 0,
+        }}>
+          {headline}
+        </div>
+
+        {/* Subject subline */}
+        {subline && (
+          <div style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'rgba(255,255,255,0.30)',
+            lineHeight: 1.3,
+          }}>
+            {subline}
+          </div>
+        )}
+      </div>
+
+      {/* ─── Zone 2: Status + Deadline — the key info strip ─── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 20px 14px',
+        position: 'relative',
+        zIndex: 3,
+      }}>
+        {/* Status pill */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '4px 10px',
+          borderRadius: 999,
+          background: needsAction ? 'rgba(212,175,55,0.08)' : (statusInfo?.bg ?? 'rgba(212,175,55,0.06)'),
+          border: `1px solid ${needsAction ? 'rgba(212,175,55,0.15)' : (statusInfo?.border ?? 'rgba(212,175,55,0.10)')}`,
+        }}>
+          <motion.span
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: statusInfo?.color ?? 'var(--gold-400)',
+              flexShrink: 0,
+            }}
+          />
+          <span style={{
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: statusInfo?.color ?? 'var(--gold-300)',
+            whiteSpace: 'nowrap',
+          }}>
+            {narrative}
+          </span>
+        </div>
+
+        {/* Deadline pill */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '4px 10px',
+          borderRadius: 999,
+          background: urgencyColors.bg,
+          border: `1px solid ${urgencyColors.border}`,
+        }}>
+          <Clock3 size={10} strokeWidth={2.2} style={{ color: urgencyColors.text, flexShrink: 0 }} />
+          <span style={{
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: urgencyColors.text,
+            whiteSpace: 'nowrap',
+          }}>
+            {deadlineText}
+          </span>
+        </div>
+
+        {/* Elapsed time badge */}
+        {elapsed && (
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'rgba(212,175,55,0.40)',
+            whiteSpace: 'nowrap',
+            marginLeft: 'auto',
+          }}>
+            {elapsed}
+          </span>
+        )}
+      </div>
+
+      {/* ─── Zone 3: Compact progress bar ─── */}
+      <div style={{
+        padding: '0 20px 14px',
+        position: 'relative',
+        zIndex: 3,
+      }}>
+        <CompactProgress stageIdx={stageIdx} />
+      </div>
+
+      {/* ─── Separator ─── */}
+      <div style={{
+        margin: '0 20px',
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+      }} />
+
+      {/* ─── Zone 4: Action footer — single clear CTA ─── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '12px 20px',
+        position: 'relative',
+        zIndex: 3,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {/* Price (secondary) */}
+          {financeAmount && (
+            <span style={{
+              fontSize: 15,
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+              color: remaining > 0 ? 'var(--gold-400)' : 'rgba(255,255,255,0.45)',
+              whiteSpace: 'nowrap',
+            }}>
+              {financeAmount}
+            </span>
+          )}
+
+          {hasPartialPayment && (
+            <span style={{
+              padding: '2px 7px',
+              borderRadius: 999,
+              background: 'rgba(74,222,128,0.08)',
+              border: '1px solid rgba(74,222,128,0.12)',
+              fontSize: 9,
+              fontWeight: 700,
+              color: 'rgba(74,222,128,0.8)',
+              whiteSpace: 'nowrap',
+            }}>
+              аванс
+            </span>
+          )}
+        </div>
+
+        {/* Action button */}
+        <motion.div
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: needsAction ? '8px 14px' : '8px 12px',
+            borderRadius: 10,
+            background: needsAction
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))'
+              : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.20)' : 'rgba(255,255,255,0.06)'}`,
+            boxShadow: needsAction ? '0 0 20px -4px rgba(212,175,55,0.15)' : 'none',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.50)',
+            whiteSpace: 'nowrap',
+          }}>
+            {primaryAction}
+          </span>
+          <ArrowRight
+            size={13}
+            strokeWidth={2.5}
+            style={{ color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.35)' }}
+          />
+        </motion.div>
+      </div>
+    </motion.button>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Dot pagination indicator
+   ═══════════════════════════════════════════════════════════════ */
+function DotIndicator({ count, active }: { count: number; active: number }) {
+  if (count <= 1) return null
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      gap: 6,
+      paddingTop: 10,
+    }}>
+      {Array.from({ length: count }, (_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            width: i === active ? 16 : 6,
+            opacity: i === active ? 1 : 0.3,
+          }}
+          transition={{ duration: 0.25 }}
+          style={{
+            height: 4,
+            borderRadius: 2,
+            background: i === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT — Swipeable carousel of active orders
+   ═══════════════════════════════════════════════════════════════ */
 export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   orders,
   onNavigate,
   haptic,
 }: ActiveOrderDashboardProps) {
-  const { activeOrder, otherActiveCount } = useMemo(() => {
+  const activeOrders = useMemo(() => {
     const priority: Record<string, number> = {
       waiting_payment: 1,
       review: 2,
@@ -331,337 +632,84 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
       pending: 9,
     }
 
-    const active = orders
+    return orders
       .filter((order) => ACTIVE_STATUSES.includes(order.status))
       .sort((a, b) => (priority[a.status] ?? 99) - (priority[b.status] ?? 99))
-
-    return {
-      activeOrder: active[0] || null,
-      otherActiveCount: Math.max(0, active.length - 1),
-    }
   }, [orders])
 
-  if (!activeOrder) return null
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const safeIndex = Math.min(currentIndex, Math.max(0, activeOrders.length - 1))
 
-  const visibleStatus = getVisibleOrderStatus(activeOrder)
-  const stageIdx = getStageIndex(visibleStatus)
-  const statusInfo = ORDER_STATUS_MAP[visibleStatus]
-  const total = Math.max(0, activeOrder.final_price ?? activeOrder.price ?? 0)
-  const paid = Math.max(0, activeOrder.paid_amount ?? 0)
-  const remaining = Math.max(0, total - paid)
-  const hasPartialPayment = paid > 0 && remaining > 0
-  const workType = stripEmoji(activeOrder.work_type_label ?? activeOrder.work_type ?? 'Заказ')
-  const headline = getOrderHeadlineSafe(activeOrder)
-  const deadlineText = activeOrder.deadline ? formatOrderDeadlineRu(activeOrder.deadline) : 'Срок уточняется'
-  const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
-  const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
-  const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
-  const isWorking = ['in_progress', 'revision'].includes(visibleStatus)
-  const elapsed = useElapsedTime(activeOrder.updated_at, isWorking)
-  const footerHint = otherActiveCount > 0
-    ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе`
-    : null
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 50
+    if (info.offset.x < -threshold && safeIndex < activeOrders.length - 1) {
+      haptic('light')
+      setCurrentIndex(safeIndex + 1)
+    } else if (info.offset.x > threshold && safeIndex > 0) {
+      haptic('light')
+      setCurrentIndex(safeIndex - 1)
+    }
+  }, [safeIndex, activeOrders.length, haptic])
 
-  const financeAmount = total <= 0 ? 'Уточняется' : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
+  if (activeOrders.length === 0) return null
 
+  // Single order — no carousel needed
+  if (activeOrders.length === 1) {
+    return (
+      <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
+        <OrderCard
+          order={activeOrders[0]}
+          onNavigate={onNavigate}
+          haptic={haptic}
+        />
+      </Reveal>
+    )
+  }
+
+  // Multiple orders — swipe carousel
   return (
     <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.985 }}
-        onClick={() => {
-          haptic('light')
-          onNavigate(`/order/${activeOrder.id}`)
-        }}
-        style={{
-          position: 'relative',
-          display: 'block',
-          width: '100%',
-          padding: 0,
-          borderRadius: 14,
-          background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(10,10,11,0.99) 40%, rgba(6,6,8,1) 100%)',
-          border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.05)',
-          textAlign: 'left',
-          cursor: 'pointer',
-          appearance: 'none',
-          overflow: 'hidden',
-          boxShadow: needsAction
-            ? '0 0 40px -10px rgba(212,175,55,0.12), 0 20px 50px -20px rgba(0,0,0,0.8)'
-            : '0 20px 50px -20px rgba(0,0,0,0.7)',
-        }}
-      >
-        {/* Animated gold border for action-needed */}
-        <AnimatedGoldBorder active={needsAction} />
-
-        {/* Shimmer sweep across card */}
-        <ShimmerSweep />
-
-        {/* Subtle inner glow at top */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: '10%',
-            right: '10%',
-            height: 80,
-            background: needsAction
-              ? 'radial-gradient(ellipse at top, rgba(212,175,55,0.06) 0%, transparent 70%)'
-              : 'radial-gradient(ellipse at top, rgba(255,255,255,0.02) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* ─── Zone 1: Identity ─── */}
-        <div style={{ padding: '20px 20px 16px', position: 'relative', zIndex: 3 }}>
-          {/* Work type + status */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 10,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <Sparkles
-                size={11}
-                strokeWidth={2}
-                style={{ color: 'rgba(212,175,55,0.4)' }}
-              />
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(212,175,55,0.45)',
-                }}
-              >
-                {workType} #{activeOrder.id}
-              </span>
-            </div>
-
-            {needsAction ? (
-              <GoldBadge>{statusInfo?.label ?? visibleStatus}</GoldBadge>
-            ) : (
-              <motion.span
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '4px 10px',
-                  borderRadius: 999,
-                  background: statusInfo?.bg ?? 'rgba(212,175,55,0.06)',
-                  border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.10)'}`,
-                  color: statusInfo?.color ?? 'var(--gold-300)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {/* Animated dot */}
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: statusInfo?.color ?? 'var(--gold-400)',
-                  }}
-                />
-                {statusInfo?.label ?? visibleStatus}
-              </motion.span>
-            )}
-          </div>
-
-          {/* Headline — warm ivory, not harsh white */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 21,
-              fontWeight: 700,
-              lineHeight: 1.2,
-              letterSpacing: '-0.02em',
-              color: 'rgba(245, 240, 225, 0.92)',
-              marginBottom: 8,
-            }}
-          >
-            {headline}
-          </motion.div>
-
-          {/* Narrative + deadline */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              lineHeight: 1.45,
-              color: 'rgba(255,255,255,0.40)',
-            }}
-          >
-            {narrative}{' '}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Clock3 size={11} strokeWidth={2} style={{ verticalAlign: 'middle', opacity: 0.7 }} />
-              {deadlineText}
-            </span>
-            {elapsed && (
-              <span style={{ display: 'block', marginTop: 4, fontSize: 11, color: 'rgba(212,175,55,0.45)' }}>
-                В работе {elapsed}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ─── Separator ─── */}
-        <div
-          style={{
-            margin: '0 20px',
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-          }}
-        />
-
-        {/* ─── Zone 2: Finance + Progress ─── */}
-        <div style={{ padding: '16px 20px', position: 'relative', zIndex: 3 }}>
-          {/* Finance row */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 18,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <GoldText variant="liquid" size="xl" weight={700}>
-                {financeAmount}
-              </GoldText>
-              {remaining > 0 && (
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.25)',
-                  }}
-                >
-                  к оплате
-                </span>
-              )}
-            </div>
-
-            {hasPartialPayment && (
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 999,
-                  background: 'rgba(74,222,128,0.08)',
-                  border: '1px solid rgba(74,222,128,0.12)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: 'rgba(74,222,128,0.8)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Аванс внесён
-              </span>
-            )}
-          </div>
-
-          {/* Stage progress — animated nodes */}
-          <StageProgress stageIdx={stageIdx} />
-        </div>
-
-        {/* ─── Separator ─── */}
-        <div
-          style={{
-            margin: '0 20px',
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-          }}
-        />
-
-        {/* ─── Zone 3: Action ─── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            padding: '14px 20px',
-            position: 'relative',
-            zIndex: 3,
-          }}
+      <div style={{ position: 'relative' }}>
+        {/* Swipeable area */}
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.15}
+          onDragEnd={handleDragEnd}
+          style={{ touchAction: 'pan-y' }}
         >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                lineHeight: 1.2,
-                color: needsAction ? 'var(--gold-300)' : 'rgba(255,255,255,0.7)',
-                marginBottom: footerHint ? 3 : 0,
-              }}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={safeIndex}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
             >
-              {primaryAction}
-            </div>
-            {footerHint && (
-              <div
-                style={{
-                  fontSize: 11,
-                  lineHeight: 1.4,
-                  color: 'rgba(255,255,255,0.25)',
-                }}
-              >
-                {footerHint}
-              </div>
-            )}
-          </div>
+              <OrderCard
+                order={activeOrders[safeIndex]}
+                onNavigate={onNavigate}
+                haptic={haptic}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
 
-          {/* Arrow button with gold glow for action-needed */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              background: needsAction
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))'
-                : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${needsAction ? 'rgba(212,175,55,0.20)' : 'rgba(255,255,255,0.06)'}`,
-              boxShadow: needsAction
-                ? '0 0 20px -4px rgba(212,175,55,0.15)'
-                : 'none',
-            }}
-          >
-            <ArrowRight
-              size={16}
-              strokeWidth={2.2}
-              style={{
-                color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.35)',
-              }}
-            />
-          </motion.div>
+        {/* Dot indicator */}
+        <DotIndicator count={activeOrders.length} active={safeIndex} />
+
+        {/* Counter label */}
+        <div style={{
+          textAlign: 'center',
+          marginTop: 4,
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.25)',
+          letterSpacing: '0.02em',
+        }}>
+          {activeOrders.length} {activeOrders.length === 1 ? 'активный заказ' : activeOrders.length < 5 ? 'активных заказа' : 'активных заказов'}
         </div>
-      </motion.button>
+      </div>
     </Reveal>
   )
 })
