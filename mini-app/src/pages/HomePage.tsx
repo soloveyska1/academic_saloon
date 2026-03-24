@@ -104,6 +104,11 @@ export function HomePage({ user, onRefresh }: Props) {
     [user?.orders]
   )
 
+  const hasPendingPayment = useMemo(
+    () => user?.orders.some(o => o.status === 'waiting_payment') ?? false,
+    [user?.orders]
+  )
+
   // Prefetch CreateOrderPage on first hover/focus
   const prefetchedRef = useRef(false)
   const prefetchCreateOrder = useCallback(() => {
@@ -297,6 +302,7 @@ export function HomePage({ user, onRefresh }: Props) {
             cashback: user.rank.cashback,
             activeOrders,
             totalSaved,
+            hasPendingPayment,
           }}
           userPhoto={userPhoto}
           onSecretTap={handleSecretTap}

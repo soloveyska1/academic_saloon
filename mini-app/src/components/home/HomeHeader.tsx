@@ -20,6 +20,7 @@ interface HomeHeaderProps {
     cashback: number
     activeOrders: number
     totalSaved?: number
+    hasPendingPayment?: boolean
   }
   userPhoto?: string
   onSecretTap: () => void
@@ -189,15 +190,16 @@ function AnimatedNumber({ value, reduced }: { value: number; reduced: boolean })
 }
 
 /* ─── Time-based greeting ─── */
-function useGreeting(isNewUser: boolean) {
+function useGreeting(isNewUser: boolean, hasPendingPayment?: boolean) {
   return useMemo(() => {
     if (isNewUser) return 'Добро пожаловать'
+    if (hasPendingPayment) return 'Заказ ждёт оплаты'
     const hour = new Date().getHours()
     if (hour >= 5 && hour < 12) return 'Доброе утро'
     if (hour >= 12 && hour < 18) return 'С возвращением'
     if (hour >= 18 && hour < 23) return 'Добрый вечер'
     return 'Салун не спит'
-  }, [isNewUser])
+  }, [isNewUser, hasPendingPayment])
 }
 
 /* ─── Slow-breathing card border ─── */
@@ -306,14 +308,14 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
-  const greeting = useGreeting(!!isNewUser)
+  const greeting = useGreeting(!!isNewUser, summary?.hasPendingPayment)
 
   const balance = summary?.balance ?? 0
   const bonusBalance = summary?.bonusBalance ?? 0
   const cashback = summary?.cashback ?? 0
   const totalSaved = summary?.totalSaved ?? 0
   const showFinance = !isNewUser && summary
-  const { delta: weeklyDelta, orderEstimate } = useBalanceFraming(balance, user.orders_count)
+  const { delta: weeklyDelta } = useBalanceFraming(balance, user.orders_count)
 
   // Sticky mini-bar: track when header scrolls out of view
   const headerRef = useRef<HTMLElement>(null)
@@ -409,7 +411,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
       )}
     </AnimatePresence>
 
-    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
+    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 20 : 12 }}>
       <motion.div
         initial="initial"
         animate="animate"
@@ -683,7 +685,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     )}
                   </AnimatePresence>
 
-                  {/* Eye toggle — right-aligned */}
+                  {/* Eye toggle — right-aligned, no background */}
                   <motion.div
                     whileTap={reduced ? undefined : { scale: 0.88 }}
                     transition={{ duration: TIMING.micro }}
@@ -693,9 +695,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       justifyContent: 'center',
                       width: 36,
                       height: 36,
-                      borderRadius: '50%',
                       flexShrink: 0,
-                      background: 'rgba(255,255,255,0.03)',
                     }}
                   >
                     <AnimatePresence mode="wait" initial={false}>
@@ -738,41 +738,31 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   }}>
                     {!online ? 'Нет связи' : bonusBalance > 0 ? 'Бонусный счёт' : 'Личный счёт'}
                   </span>
-                  {online && !balanceHidden && orderEstimate >= 2 && (
-                    <span style={{
-                      fontSize: TYPE.context,
-                      fontWeight: 500,
-                      color: 'rgba(255,255,255,0.18)',
-                      letterSpacing: '0.04em',
-                    }}>
-                      {`\u2248 ${orderEstimate} заказов`}
-                    </span>
-                  )}
                 </motion.div>
 
-                {/* Weekly delta + savings — horizontal chips */}
+                {/* Metric chips row — always show at least one */}
                 {online && !balanceHidden && (
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 6,
-                    marginTop: 10,
-                  }}>
+                  <motion.div
+                    initial={reduced ? false : { opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : 1.0, duration: reduced ? 0 : 0.4 }}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 6,
+                      marginTop: 10,
+                    }}
+                  >
                     {weeklyDelta !== null && weeklyDelta !== 0 && (
-                      <motion.div
-                        initial={reduced ? false : { opacity: 0, y: 3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: reduced ? 0 : 1.0, duration: reduced ? 0 : 0.4 }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '3px 10px',
-                          borderRadius: 999,
-                          background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${weeklyDelta > 0 ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.06)'}`,
-                        }}
-                      >
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${weeklyDelta > 0 ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.06)'}`,
+                      }}>
                         <span style={{
                           fontSize: 10,
                           fontWeight: 600,
@@ -783,116 +773,127 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                             ? `+${formatNum(Math.abs(weeklyDelta))} за неделю`
                             : `\u2212${formatNum(Math.abs(weeklyDelta))} за неделю`}
                         </span>
-                      </motion.div>
+                      </div>
                     )}
                     {totalSaved > 0 && (
-                      <motion.div
-                        initial={reduced ? false : { opacity: 0, y: 3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: reduced ? 0 : 1.2, duration: reduced ? 0 : 0.4 }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '3px 10px',
-                          borderRadius: 999,
-                          background: 'rgba(212,175,55,0.06)',
-                          border: '1px solid rgba(212,175,55,0.10)',
-                        }}
-                      >
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(212,175,55,0.06)',
+                        border: '1px solid rgba(212,175,55,0.10)',
+                      }}>
                         <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.50)' }} />
                         <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.50)', letterSpacing: '0.02em' }}>
                           Сэкономлено {formatNum(totalSaved)} ₽
                         </span>
-                      </motion.div>
+                      </div>
                     )}
-                  </div>
+                    {/* Orders count chip — always present as context */}
+                    {(user.orders_count ?? 0) > 0 && (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                      }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.02em' }}>
+                          {user.orders_count} {(user.orders_count ?? 0) === 1 ? 'заказ' : (user.orders_count ?? 0) < 5 ? 'заказа' : 'заказов'}
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
                 )}
               </div>
 
-              {/* ── Bottom row: rank + cashback | bonuses button ── */}
+              {/* ── Bottom: 3-column mini-grid ── */}
               <div
                 style={{
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto 1fr',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 0,
                   paddingTop: 14,
                   borderTop: '1px solid rgba(212,175,55,0.06)',
                 }}
               >
-                {/* Left: rank + cashback */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  {user.rank.name && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Crown
-                        size={11}
-                        strokeWidth={2}
-                        aria-hidden
-                        style={{ color: 'rgba(212,175,55,0.45)', flexShrink: 0 }}
-                      />
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: 'rgba(255,255,255,0.35)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.14em',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {user.rank.name}
-                      </span>
-                    </div>
-                  )}
-                  <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.06)' }} />
-                  <GoldText
-                    variant="static"
-                    size="sm"
-                    weight={700}
-                    style={{ whiteSpace: 'nowrap', fontSize: TYPE.support }}
-                  >
-                    {cashback}% кешбэк
-                  </GoldText>
+                {/* Left: rank */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Crown
+                    size={12}
+                    strokeWidth={2}
+                    aria-hidden
+                    style={{ color: 'rgba(212,175,55,0.50)', flexShrink: 0 }}
+                  />
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.10em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {user.rank.name || 'Клуб'}
+                  </span>
                 </div>
 
-                {/* Right: bonus button */}
-                <motion.button
-                  type="button"
-                  aria-label="Открыть бонусы"
-                  whileTap={reduced ? undefined : { scale: TAP_SCALE }}
-                  onClick={() => onOpenLounge()}
+                {/* Center: cashback hero */}
+                <GoldText
+                  variant="static"
+                  size="sm"
+                  weight={700}
                   style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    background: 'rgba(212,175,55,0.06)',
-                    border: '1px solid rgba(212,175,55,0.20)',
-                    borderRadius: 10,
-                    padding: '7px 14px',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    fontSize: 15,
+                    textAlign: 'center',
+                    padding: '0 16px',
                   }}
                 >
-                  <span
+                  {cashback}% кешбэк
+                </GoldText>
+
+                {/* Right: bonus button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <motion.button
+                    type="button"
+                    aria-label="Открыть бонусы"
+                    whileTap={reduced ? undefined : { scale: TAP_SCALE }}
+                    onClick={() => onOpenLounge()}
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      background: 'rgba(212,175,55,0.06)',
+                      border: '1px solid rgba(212,175,55,0.18)',
+                      borderRadius: 10,
+                      padding: '7px 14px',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <span style={{
                       fontSize: 11,
                       fontWeight: 700,
                       color: 'var(--gold-400)',
                       whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Бонусы
-                  </span>
-                  <ArrowUpRight
-                    size={11}
-                    strokeWidth={2.5}
-                    aria-hidden
-                    style={{ color: 'var(--gold-400)' }}
-                  />
-                </motion.button>
+                    }}>
+                      Бонусы
+                    </span>
+                    <ArrowUpRight
+                      size={11}
+                      strokeWidth={2.5}
+                      aria-hidden
+                      style={{ color: 'var(--gold-400)' }}
+                    />
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>

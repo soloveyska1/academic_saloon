@@ -1,10 +1,8 @@
 import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useCapability } from '../../contexts/DeviceCapabilityContext'
 import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift, Award, Flame, Users, Star, Zap } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
-import { GoldText } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
 import { formatMoney } from '../../lib/utils'
 
@@ -269,7 +267,6 @@ export const LoungeVault = memo(function LoungeVault({
   onShowQR,
   onTelegramShare,
 }: LoungeVaultProps) {
-  const capability = useCapability()
   const achievements = useAchievements(ordersCount, totalSpent, referralsCount, dailyStreak, rank.is_max)
   const unlockedCount = achievements.filter(a => a.unlocked).length
   return (
@@ -279,7 +276,7 @@ export const LoungeVault = memo(function LoungeVault({
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 20, display: 'grid', gap: 10 }}
     >
-      {/* ═══ Card A — Bonus Balance (HEAVY visual weight) ═══ */}
+      {/* ═══ Card A — Rank & Club Progress (balance is in header) ═══ */}
       <Reveal animation="spring" delay={0.2}>
         <div
           className="glass-card"
@@ -304,7 +301,7 @@ export const LoungeVault = memo(function LoungeVault({
               height: 220,
               borderRadius: '50%',
               background:
-                'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 35%, transparent 70%)',
+                'radial-gradient(circle, rgba(212,175,55,0.10) 0%, rgba(212,175,55,0.03) 35%, transparent 70%)',
               pointerEvents: 'none',
             }}
           />
@@ -323,7 +320,7 @@ export const LoungeVault = memo(function LoungeVault({
             }}
           />
 
-          <div style={{ position: 'relative', zIndex: 1, padding: '24px 20px' }}>
+          <div style={{ position: 'relative', zIndex: 1, padding: '20px 20px' }}>
             {/* Header row */}
             <div
               style={{
@@ -331,11 +328,11 @@ export const LoungeVault = memo(function LoungeVault({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                marginBottom: 20,
+                marginBottom: 16,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={15} color="var(--gold-300)" strokeWidth={1.9} />
+                <Crown size={14} color="var(--gold-300)" strokeWidth={1.9} />
                 <span
                   style={{
                     fontSize: 11,
@@ -345,7 +342,7 @@ export const LoungeVault = memo(function LoungeVault({
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
                 >
-                  Бонусный баланс
+                  {rank.name || 'Клуб'}
                 </span>
               </div>
 
@@ -367,8 +364,8 @@ export const LoungeVault = memo(function LoungeVault({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  <Crown size={12} strokeWidth={1.9} />
-                  Высший
+                  <Sparkles size={10} strokeWidth={2} />
+                  Макс. уровень
                 </span>
               ) : (
                 <span
@@ -379,47 +376,19 @@ export const LoungeVault = memo(function LoungeVault({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {rank.progress}% прогресса
+                  {rank.progress}%
                 </span>
               )}
             </div>
 
-            {/* THE STAR NUMBER — liquid gold balance */}
-            {capability.tier === 3 ? (
-              <motion.div
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                viewport={{ once: true }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-              >
-                <GoldText
-                  variant="liquid"
-                  size="3xl"
-                  weight={700}
-                  style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
-                >
-                  {formatMoney(bonusBalance)}
-                </GoldText>
-              </motion.div>
-            ) : (
-              <GoldText
-                variant="liquid"
-                size="3xl"
-                weight={700}
-                style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
-              >
-                {formatMoney(bonusBalance)}
-              </GoldText>
-            )}
-
+            {/* How bonuses work */}
             <div
               style={{
                 fontSize: 13,
-                lineHeight: 1.4,
+                lineHeight: 1.5,
                 color: 'var(--text-secondary)',
-                marginTop: 6,
-                marginBottom: 20,
-                maxWidth: 300,
+                marginBottom: 16,
+                maxWidth: 320,
               }}
             >
               Бонусы списываются при оплате новых заказов вместе с кэшбэком клуба.
@@ -488,7 +457,7 @@ export const LoungeVault = memo(function LoungeVault({
                     marginBottom: 6,
                   }}
                 >
-                  {rank.is_max ? 'Уровень' : 'До уровня'}
+                  {rank.is_max ? 'Бонусы' : 'До уровня'}
                 </div>
                 <div
                   style={{
@@ -498,7 +467,7 @@ export const LoungeVault = memo(function LoungeVault({
                     letterSpacing: '-0.03em',
                   }}
                 >
-                  {rank.is_max ? 'Высший' : formatMoney(rank.spent_to_next)}
+                  {rank.is_max ? formatMoney(bonusBalance) : formatMoney(rank.spent_to_next)}
                 </div>
               </div>
             </div>
