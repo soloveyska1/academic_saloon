@@ -42,6 +42,7 @@ from bot.services.abandoned_detector import init_abandoned_tracker
 from bot.services.daily_stats import init_daily_stats
 from bot.services.silence_reminder import init_silence_reminder
 from bot.services.notification_scheduler import init_notification_scheduler
+from bot.services.engagement_push import init_engagement_push
 from bot.services.unified_hub import init_unified_hub
 from database.db import async_session_maker
 from core.redis_pool import close_redis
@@ -122,6 +123,8 @@ async def run_bot():
     logger.info("Silence reminder service started")
     notification_scheduler = init_notification_scheduler(bot, async_session_maker)
     logger.info("Notification scheduler started")
+    engagement_push = init_engagement_push(bot, async_session_maker)
+    logger.info("Engagement push service started")
     # --------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---

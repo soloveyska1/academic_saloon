@@ -48,6 +48,78 @@ const staggerReduced = {
   },
 }
 
+/* ─── Balance history (localStorage) ─── */
+const BALANCE_HISTORY_KEY = 'academic_saloon_balance_history'
+const MAX_HISTORY = 30
+const MS_PER_DAY = 86_400_000
+
+interface BalanceEntry { balance: number; timestamp: number }
+
+function getBalanceHistory(): BalanceEntry[] {
+  try {
+    const raw = localStorage.getItem(BALANCE_HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function recordBalance(balance: number) {
+  const history = getBalanceHistory()
+  const now = Date.now()
+  const today = Math.floor(now / MS_PER_DAY)
+  // One entry per day — replace if same day, otherwise append
+  if (history.length > 0) {
+    const last = history[history.length - 1]
+    if (Math.floor(last.timestamp / MS_PER_DAY) === today) {
+      history[history.length - 1] = { balance, timestamp: now }
+    } else {
+      history.push({ balance, timestamp: now })
+    }
+  } else {
+    history.push({ balance, timestamp: now })
+  }
+  // Keep last MAX_HISTORY entries
+  const trimmed = history.slice(-MAX_HISTORY)
+  try { localStorage.setItem(BALANCE_HISTORY_KEY, JSON.stringify(trimmed)) } catch {}
+}
+
+function getWeeklyDelta(currentBalance: number): number | null {
+  const history = getBalanceHistory()
+  if (history.length < 2) return null
+  const now = Date.now()
+  const targetTs = now - 7 * MS_PER_DAY
+  // Find closest entry to ~7 days ago
+  let best: BalanceEntry | null = null
+  let bestDist = Infinity
+  for (const entry of history) {
+    const dist = Math.abs(entry.timestamp - targetTs)
+    // Only consider entries at least 3 days old to avoid comparing today vs yesterday
+    if (now - entry.timestamp > 3 * MS_PER_DAY && dist < bestDist) {
+      bestDist = dist
+      best = entry
+    }
+  }
+  if (!best) return null
+  return currentBalance - best.balance
+}
+
+/* ─── useBalanceFraming hook ─── */
+function useBalanceFraming(balance: number, ordersCount?: number) {
+  // Record balance on change
+  useEffect(() => {
+    if (balance > 0) recordBalance(balance)
+  }, [balance])
+
+  return useMemo(() => {
+    const delta = getWeeklyDelta(balance)
+    // Estimate orders: use ~350₽ as fallback average order cost
+    const avgCost = ordersCount && ordersCount > 0 && balance > 0
+      ? Math.max(200, Math.min(800, balance / Math.max(ordersCount, 1)))
+      : 350
+    const orderEstimate = balance >= avgCost ? Math.floor(balance / avgCost) : 0
+    return { delta, orderEstimate }
+  }, [balance, ordersCount])
+}
+
 /* ─── Format number ─── */
 function formatNum(v: number): string {
   return Math.max(0, Math.round(v)).toLocaleString('ru-RU')
@@ -241,6 +313,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const cashback = summary?.cashback ?? 0
   const totalSaved = summary?.totalSaved ?? 0
   const showFinance = !isNewUser && summary
+  const { delta: weeklyDelta, orderEstimate } = useBalanceFraming(balance, user.orders_count)
 
   // Sticky mini-bar: track when header scrolls out of view
   const headerRef = useRef<HTMLElement>(null)
@@ -662,6 +735,42 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 >
                   {!online ? 'Нет связи' : bonusBalance > 0 ? 'Бонусный счёт' : 'Личный счёт'}
                 </motion.div>
+
+                {/* Contextual balance framing */}
+                {online && !balanceHidden && (weeklyDelta !== null && weeklyDelta !== 0 || orderEstimate >= 2) && (
+                  <motion.div
+                    initial={reduced ? false : { opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : 1.0, duration: reduced ? 0 : 0.4 }}
+                    style={{
+                      fontSize: TYPE.context,
+                      fontWeight: 500,
+                      marginTop: 4,
+                      letterSpacing: '0.04em',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}
+                  >
+                    {weeklyDelta !== null && weeklyDelta !== 0 && (
+                      <span style={{
+                        color: weeklyDelta > 0
+                          ? 'rgba(212,175,55,0.55)'
+                          : 'rgba(255,255,255,0.25)',
+                      }}>
+                        {weeklyDelta > 0
+                          ? `\u2191 на ${formatNum(Math.abs(weeklyDelta))} больше за неделю`
+                          : `\u2193 на ${formatNum(Math.abs(weeklyDelta))} меньше за неделю`}
+                      </span>
+                    )}
+                    {orderEstimate >= 2 && (
+                      <span style={{ color: 'rgba(255,255,255,0.22)' }}>
+                        {`\u2248 ${orderEstimate} заказов`}
+                      </span>
+                    )}
+                  </motion.div>
+                )}
 
                 {/* Savings storytelling — emotional anchor */}
                 {totalSaved > 0 && online && !balanceHidden && (

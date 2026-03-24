@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { useAdaptiveDarkMode } from '../hooks/useAdaptiveDarkMode'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
 import { Confetti } from '../components/ui/Confetti'
 import { openAdminPanel } from '../components/AdminPanel'
@@ -62,6 +63,7 @@ function Section({ children, gap = 0 }: { children: ReactNode; gap?: number }) {
 }
 
 export function HomePage({ user, onRefresh }: Props) {
+  useAdaptiveDarkMode()
   const navigate = useNavigate()
   const { haptic, tg, botUsername } = useTelegram()
   const admin = useAdmin()

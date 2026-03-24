@@ -19,11 +19,40 @@ async function waitForTelegramContext(timeoutMs = 7000, pollMs = 50) {
   return false
 }
 
+const SWR_CACHE_KEY = 'academic_saloon_user_cache'
+
+interface CachedUserData {
+  data: UserData
+  timestamp: number
+}
+
+function readCache(): UserData | null {
+  try {
+    const raw = localStorage.getItem(SWR_CACHE_KEY)
+    if (!raw) return null
+    const parsed: CachedUserData = JSON.parse(raw)
+    if (parsed?.data && typeof parsed.timestamp === 'number') return parsed.data
+    return null
+  } catch {
+    return null
+  }
+}
+
+function writeCache(data: UserData): void {
+  try {
+    const entry: CachedUserData = { data, timestamp: Date.now() }
+    localStorage.setItem(SWR_CACHE_KEY, JSON.stringify(entry))
+  } catch {
+    // localStorage may be full or unavailable – silently ignore
+  }
+}
+
 export function useUserData() {
   const admin = useAdmin()
-  const [rawUserData, setRawUserData] = useState<UserData | null>(null)
+  const [rawUserData, setRawUserData] = useState<UserData | null>(() => readCache())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isStale, setIsStale] = useState<boolean>(() => readCache() !== null)
 
   useEffect(() => {
     async function loadUserData() {
@@ -39,6 +68,8 @@ export function useUserData() {
 
         const data = await fetchUserData()
         setRawUserData(data)
+        writeCache(data)
+        setIsStale(false)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
@@ -54,6 +85,8 @@ export function useUserData() {
     try {
       const data = await fetchUserData()
       setRawUserData(data)
+      writeCache(data)
+      setIsStale(false)
     } catch {
       // Silent refetch failure - user data stays unchanged
     }
@@ -101,7 +134,7 @@ export function useUserData() {
     }
   }, [admin.simulateNewUser, rawUserData])
 
-  return { userData, loading, error, refetch }
+  return { userData, loading, error, refetch, isStale }
 }
 
 // Bot username - правильное имя!

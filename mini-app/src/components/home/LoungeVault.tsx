@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift, Award, Flame, Users, Star, Zap } from 'lucide-react'
@@ -179,6 +180,81 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
   )
 }
 
+/* ─── Squad promo card — links to /squads ─── */
+const SquadPromoCard = memo(function SquadPromoCard() {
+  const navigate = useNavigate()
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.98 }}
+      onClick={() => navigate('/squads')}
+      style={{
+        width: '100%',
+        padding: '16px 18px',
+        borderRadius: 12,
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        textAlign: 'left',
+      }}
+    >
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))',
+          border: '1px solid rgba(212,175,55,0.18)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          fontSize: 20,
+        }}
+      >
+        🪑
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <Users size={13} color="var(--gold-400)" strokeWidth={2} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Столики
+          </span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '2px 6px',
+              borderRadius: 4,
+              background: 'rgba(212,175,55,0.12)',
+              color: 'var(--gold-300)',
+            }}
+          >
+            Новое
+          </span>
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+          Соревнуйтесь командой и получайте бонусы
+        </span>
+      </div>
+      <div
+        style={{
+          color: 'var(--text-muted)',
+          fontSize: 18,
+          flexShrink: 0,
+        }}
+      >
+        ›
+      </div>
+    </motion.button>
+  )
+})
+
 export const LoungeVault = memo(function LoungeVault({
   rank,
   bonusBalance,
@@ -206,6 +282,7 @@ export const LoungeVault = memo(function LoungeVault({
       {/* ═══ Card A — Bonus Balance (HEAVY visual weight) ═══ */}
       <Reveal animation="spring" delay={0.2}>
         <div
+          className="glass-card"
           style={{
             position: 'relative',
             overflow: 'hidden',
@@ -463,6 +540,7 @@ export const LoungeVault = memo(function LoungeVault({
 
       {/* ═══ Card B — Achievements (collection grid) ═══ */}
       <div
+        className="glass-card"
         style={{
           padding: 18,
           borderRadius: 12,
@@ -509,8 +587,12 @@ export const LoungeVault = memo(function LoungeVault({
         </div>
       </div>
 
+      {/* ═══ Card B2 — Squads / Столики (team competition) ═══ */}
+      <SquadPromoCard />
+
       {/* ═══ Card C — Referral (LIGHT visual weight) ═══ */}
       <div
+        className="glass-card"
         style={{
           padding: 20,
           borderRadius: 12,
