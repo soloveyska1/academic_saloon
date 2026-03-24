@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef, useMemo } from 'react'
+import { memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Reveal } from '../ui/StaggerReveal'
 
@@ -6,21 +6,13 @@ interface WorkItem {
   subject: string
   workType: string
   progress: number
-  status: 'writing' | 'checking' | 'formatting' | 'done'
+  status: 'writing' | 'checking' | 'formatting'
 }
 
 const STATUS_LABELS: Record<string, string> = {
   writing: 'Пишем',
   checking: 'Проверяем',
   formatting: 'Оформляем',
-  done: 'Сдана',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  writing: 'var(--gold-400)',
-  checking: 'rgba(167, 139, 250, 0.8)',
-  formatting: 'rgba(52, 211, 153, 0.8)',
-  done: 'var(--success-text)',
 }
 
 const ALL_ITEMS: WorkItem[] = [
@@ -28,14 +20,13 @@ const ALL_ITEMS: WorkItem[] = [
   { subject: 'Гражданское право', workType: 'Дипломная', progress: 45, status: 'writing' },
   { subject: 'Психология личности', workType: 'Реферат', progress: 97, status: 'formatting' },
   { subject: 'Финансовый менеджмент', workType: 'Курсовая', progress: 62, status: 'writing' },
-  { subject: 'Информационные технологии', workType: 'Контрольная', progress: 100, status: 'done' },
   { subject: 'Теория вероятностей', workType: 'Эссе', progress: 34, status: 'writing' },
   { subject: 'Уголовное право', workType: 'Курсовая', progress: 78, status: 'checking' },
   { subject: 'Маркетинг', workType: 'Презентация', progress: 91, status: 'formatting' },
 ]
 
 function shuffleForSession(items: WorkItem[]): WorkItem[] {
-  const seed = Math.floor(Date.now() / (1000 * 60 * 30)) // changes every 30 min
+  const seed = Math.floor(Date.now() / (1000 * 60 * 30))
   const shuffled = [...items]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = ((seed * (i + 1) * 2654435761) >>> 0) % (i + 1)
@@ -49,25 +40,44 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
   const [activeIndex, setActiveIndex] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
   const shouldReduceMotion = useReducedMotion()
+  const [paused, setPaused] = useState(false)
+
+  const startRotation = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      if (!paused) {
+        setActiveIndex(prev => (prev + 1) % items.length)
+      }
+    }, 5000)
+  }, [items.length, paused])
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % items.length)
-    }, 5000)
+    startRotation()
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [items.length])
+  }, [startRotation])
+
+  // Pause on tab hidden
+  useEffect(() => {
+    const handleVisibility = () => setPaused(document.hidden)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   const item = items[activeIndex]
-  const statusColor = STATUS_COLORS[item.status]
 
   return (
     <Reveal animation="fade" delay={0.1}>
-      <div style={{
-        padding: '14px 16px',
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.05)',
-      }}>
+      <div
+        onPointerEnter={() => setPaused(true)}
+        onPointerLeave={() => setPaused(false)}
+        style={{
+          padding: '14px 16px',
+          borderRadius: 12,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid var(--border-default)',
+          boxShadow: '0 4px 12px -4px rgba(0,0,0,0.2)',
+        }}
+      >
         {/* Header */}
         <div style={{
           display: 'flex',
@@ -76,16 +86,9 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
           marginBottom: 12,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              position: 'relative',
-              width: 6,
-              height: 6,
-              flexShrink: 0,
-            }}>
+            <div style={{ position: 'relative', width: 6, height: 6, flexShrink: 0 }}>
               <div style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
+                width: 6, height: 6, borderRadius: '50%',
                 background: 'var(--gold-400)',
               }} />
               {!shouldReduceMotion && (
@@ -93,9 +96,7 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
                   animate={{ scale: [1, 2, 1], opacity: [0.5, 0, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
+                    position: 'absolute', inset: 0, borderRadius: '50%',
                     background: 'var(--gold-400)',
                   }}
                 />
@@ -112,7 +113,7 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
             </span>
           </div>
 
-          {/* Page dots */}
+          {/* Dots */}
           <div style={{ display: 'flex', gap: 4 }}>
             {items.map((_, i) => (
               <div
@@ -121,8 +122,8 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
                   width: i === activeIndex ? 12 : 4,
                   height: 4,
                   borderRadius: 2,
-                  background: i === activeIndex ? 'var(--gold-400)' : 'rgba(255,255,255,0.1)',
-                  transition: 'all 0.3s ease',
+                  background: i === activeIndex ? 'var(--gold-400)' : 'rgba(255,255,255,0.08)',
+                  transition: 'all 0.3s var(--ease-out)',
                 }}
               />
             ))}
@@ -163,19 +164,17 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
                 gap: 4,
                 padding: '3px 8px',
                 borderRadius: 999,
-                background: `${statusColor}`.replace(/[\d.]+\)$/, '0.08)'),
+                background: 'var(--gold-glass-subtle)',
                 flexShrink: 0,
               }}>
                 <div style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: '50%',
-                  background: statusColor,
+                  width: 4, height: 4, borderRadius: '50%',
+                  background: 'var(--gold-400)',
                 }} />
                 <span style={{
                   fontSize: 9,
                   fontWeight: 700,
-                  color: statusColor,
+                  color: 'var(--gold-400)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                 }}>
@@ -195,11 +194,11 @@ export const WorkInProgressFeed = memo(function WorkInProgressFeed() {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${item.progress}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                   height: '100%',
                   borderRadius: 2,
-                  background: statusColor,
+                  background: 'linear-gradient(90deg, var(--gold-400), rgba(245,225,160,0.7))',
                   opacity: 0.7,
                 }}
               />

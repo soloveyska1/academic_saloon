@@ -1,31 +1,31 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { Snowflake, Sun, BookOpen, Leaf, GraduationCap, ArrowRight } from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 
 export interface SeasonTheme {
   id: string
   name: string
-  accent: string
-  accentGlow: string
-  particleEmoji: string
+  icon: LucideIcon
   bannerText: string
   bannerSubtext: string
+  ctaText?: string
 }
 
-function getCurrentSeason(): SeasonTheme {
+function getCurrentSeason(): SeasonTheme | null {
   const now = new Date()
   const month = now.getMonth() + 1
   const day = now.getDate()
 
-  // New Year / Christmas: Dec 15 - Jan 15
+  // New Year: Dec 15 - Jan 15
   if ((month === 12 && day >= 15) || (month === 1 && day <= 15)) {
     return {
       id: 'newyear',
       name: 'Новый год',
-      accent: 'rgba(59, 130, 246, 0.8)',
-      accentGlow: 'rgba(59, 130, 246, 0.15)',
-      particleEmoji: '❄️',
-      bannerText: 'С Новым годом! 🎄',
-      bannerSubtext: 'Скидка 15% на первый заказ в новом году',
+      icon: Snowflake,
+      bannerText: 'С Новым годом!',
+      bannerSubtext: 'Подготовьтесь к сессии заранее',
+      ctaText: 'Заказать со скидкой',
     }
   }
 
@@ -34,24 +34,10 @@ function getCurrentSeason(): SeasonTheme {
     return {
       id: 'winter-session',
       name: 'Зимняя сессия',
-      accent: 'rgba(239, 68, 68, 0.8)',
-      accentGlow: 'rgba(239, 68, 68, 0.15)',
-      particleEmoji: '🔥',
+      icon: BookOpen,
       bannerText: 'Зимняя сессия',
       bannerSubtext: 'Успейте сдать всё вовремя',
-    }
-  }
-
-  // Spring: Mar - Apr
-  if (month >= 3 && month <= 4) {
-    return {
-      id: 'spring',
-      name: 'Весна',
-      accent: 'rgba(52, 211, 153, 0.8)',
-      accentGlow: 'rgba(52, 211, 153, 0.15)',
-      particleEmoji: '🌿',
-      bannerText: 'Весенний семестр',
-      bannerSubtext: 'Закажите работу заранее — со скидкой',
+      ctaText: 'Оформить заказ',
     }
   }
 
@@ -60,11 +46,33 @@ function getCurrentSeason(): SeasonTheme {
     return {
       id: 'summer-session',
       name: 'Летняя сессия',
-      accent: 'rgba(251, 146, 60, 0.8)',
-      accentGlow: 'rgba(251, 146, 60, 0.15)',
-      particleEmoji: '☀️',
+      icon: GraduationCap,
       bannerText: 'Летняя сессия',
-      bannerSubtext: 'Защита дипломов — не откладывайте!',
+      bannerSubtext: 'Дипломы и курсовые — не откладывайте',
+      ctaText: 'Оформить заказ',
+    }
+  }
+
+  // Back to school: Sep
+  if (month === 9) {
+    return {
+      id: 'september',
+      name: 'Новый семестр',
+      icon: BookOpen,
+      bannerText: 'Новый семестр',
+      bannerSubtext: 'Начните с чистого листа',
+      ctaText: 'Заказать работу',
+    }
+  }
+
+  // Autumn: Oct - Nov
+  if (month >= 10 && month <= 11) {
+    return {
+      id: 'autumn',
+      name: 'Осенний семестр',
+      icon: Leaf,
+      bannerText: 'Осенний семестр',
+      bannerSubtext: 'Курсовые и рефераты — по лучшей цене',
     }
   }
 
@@ -73,53 +81,16 @@ function getCurrentSeason(): SeasonTheme {
     return {
       id: 'summer',
       name: 'Лето',
-      accent: 'rgba(34, 197, 94, 0.8)',
-      accentGlow: 'rgba(34, 197, 94, 0.15)',
-      particleEmoji: '🏖️',
+      icon: Sun,
       bannerText: 'Летние каникулы',
       bannerSubtext: 'Подготовьтесь к новому семестру',
     }
   }
 
-  // Back to school: Sep
-  if (month === 9) {
-    return {
-      id: 'september',
-      name: 'Новый учебный год',
-      accent: 'rgba(99, 102, 241, 0.8)',
-      accentGlow: 'rgba(99, 102, 241, 0.15)',
-      particleEmoji: '📚',
-      bannerText: 'Новый семестр!',
-      bannerSubtext: 'Начните с чистого листа',
-    }
-  }
-
-  // Autumn: Oct - Nov
-  if (month >= 10 && month <= 11) {
-    return {
-      id: 'autumn',
-      name: 'Осень',
-      accent: 'rgba(245, 158, 11, 0.8)',
-      accentGlow: 'rgba(245, 158, 11, 0.15)',
-      particleEmoji: '🍂',
-      bannerText: 'Осенний семестр',
-      bannerSubtext: 'Сдайте работы вовремя',
-    }
-  }
-
-  // Default: Dec 1-14
-  return {
-    id: 'default',
-    name: 'Золотой сезон',
-    accent: 'rgba(212,175,55,0.8)',
-    accentGlow: 'rgba(212,175,55,0.15)',
-    particleEmoji: '✨',
-    bannerText: 'Академический Салон',
-    bannerSubtext: 'Качество. Точно в срок.',
-  }
+  return null // Spring (Mar-Apr), early Dec — no banner
 }
 
-export function useSeasonalTheme(): SeasonTheme {
+export function useSeasonalTheme(): SeasonTheme | null {
   return useMemo(() => getCurrentSeason(), [])
 }
 
@@ -130,56 +101,70 @@ interface SeasonalBannerProps {
 export const SeasonalBanner = memo(function SeasonalBanner({ onAction }: SeasonalBannerProps) {
   const theme = useSeasonalTheme()
 
-  // Don't show default banner
-  if (theme.id === 'default') return null
+  if (!theme) return null
+
+  const Icon = theme.icon
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.4 }}
+      transition={{ delay: 0.25, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       onClick={onAction}
+      role={onAction ? 'button' : undefined}
+      tabIndex={onAction ? 0 : undefined}
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 10,
-        padding: '12px 14px',
-        background: theme.accentGlow.replace(/[\d.]+\)$/, '0.06)'),
-        border: `1px solid ${theme.accent.replace(/[\d.]+\)$/, '0.12)')}`,
+        borderRadius: 12,
+        padding: '14px 16px',
+        background: 'var(--gold-glass-subtle)',
+        border: '1px solid rgba(212,175,55,0.12)',
         cursor: onAction ? 'pointer' : undefined,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
       }}
     >
-      {/* Floating particle */}
-      <motion.span
-        animate={{ y: [-2, 2, -2], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 12,
-          fontSize: 20,
-          pointerEvents: 'none',
-        }}
-      >
-        {theme.particleEmoji}
-      </motion.span>
+      {/* Icon */}
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        background: 'var(--gold-glass-medium)',
+        border: '1px solid rgba(212,175,55,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={17} strokeWidth={1.8} color="var(--gold-400)" />
+      </div>
 
-      <div style={{
-        fontSize: 12,
-        fontWeight: 700,
-        color: theme.accent,
-        marginBottom: 2,
-      }}>
-        {theme.bannerText}
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: 'var(--gold-300)',
+          lineHeight: 1.3,
+        }}>
+          {theme.bannerText}
+        </div>
+        <div style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--text-muted)',
+          lineHeight: 1.3,
+        }}>
+          {theme.bannerSubtext}
+        </div>
       </div>
-      <div style={{
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--text-muted)',
-        maxWidth: '85%',
-      }}>
-        {theme.bannerSubtext}
-      </div>
+
+      {/* Arrow (if actionable) */}
+      {onAction && theme.ctaText && (
+        <ArrowRight size={14} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.4, flexShrink: 0 }} />
+      )}
     </motion.div>
   )
 })

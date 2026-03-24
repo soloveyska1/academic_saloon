@@ -38,7 +38,6 @@ import {
   PricingAnchor,
   FAQSection,
   // New features
-  StoryCards,
   PriceCalculator,
   SpinWheel,
   StreakFreezeCard,
@@ -236,12 +235,6 @@ export function HomePage({ user, onRefresh }: Props) {
     return true
   }, [haptic])
 
-  // Story action handler
-  const handleStoryAction = useCallback((action: 'order' | 'club' | 'dismiss') => {
-    if (action === 'order') handleNewOrder()
-    else if (action === 'club') handleOpenLounge()
-  }, [handleNewOrder, handleOpenLounge])
-
   // User state detection
   const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
@@ -348,11 +341,6 @@ export function HomePage({ user, onRefresh }: Props) {
             ═══════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            {/* ─── Story cards (Revolut-style) ─── */}
-            <Section>
-              <StoryCards onAction={handleStoryAction} haptic={haptic} />
-            </Section>
-
             <div ref={heroCTARef as React.RefObject<HTMLDivElement>} onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
@@ -391,11 +379,6 @@ export function HomePage({ user, onRefresh }: Props) {
              RETURNING USER FLOW
              ═══════════════════════════════════════════════════════ */
           <>
-            {/* ─── Story cards ─── */}
-            <Section>
-              <StoryCards onAction={handleStoryAction} haptic={haptic} />
-            </Section>
-
             {/* ── Active orders → order tracker first ── */}
             {returningUserState === 'active' && (
               <ActiveOrderDashboard

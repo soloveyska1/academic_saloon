@@ -1,25 +1,37 @@
 import { memo, useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Calculator, ArrowRight } from 'lucide-react'
+import {
+  FileText, GraduationCap, PenTool, FileSpreadsheet,
+  ClipboardList, Building, BarChart3, Award, ArrowRight, Calendar,
+} from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 import { Reveal } from '../ui/StaggerReveal'
+import { GoldText } from '../ui/GoldText'
 
-const WORK_TYPES = [
-  { id: 'coursework', label: 'Курсовая', basePrice: 990, icon: '📝' },
-  { id: 'diploma', label: 'Дипломная', basePrice: 4990, icon: '🎓' },
-  { id: 'essay', label: 'Эссе', basePrice: 490, icon: '✍️' },
-  { id: 'report', label: 'Реферат', basePrice: 590, icon: '📄' },
-  { id: 'control', label: 'Контрольная', basePrice: 690, icon: '📋' },
-  { id: 'practice', label: 'Практика', basePrice: 1490, icon: '🏢' },
-  { id: 'presentation', label: 'Презентация', basePrice: 490, icon: '📊' },
-  { id: 'masters', label: 'Магистерская', basePrice: 7990, icon: '🏆' },
+interface WorkTypeOption {
+  id: string
+  label: string
+  basePrice: number
+  icon: LucideIcon
+}
+
+const WORK_TYPES: WorkTypeOption[] = [
+  { id: 'coursework', label: 'Курсовая', basePrice: 990, icon: FileText },
+  { id: 'diploma', label: 'Дипломная', basePrice: 4990, icon: GraduationCap },
+  { id: 'essay', label: 'Эссе', basePrice: 490, icon: PenTool },
+  { id: 'report', label: 'Реферат', basePrice: 590, icon: FileSpreadsheet },
+  { id: 'control', label: 'Контрольная', basePrice: 690, icon: ClipboardList },
+  { id: 'practice', label: 'Практика', basePrice: 1490, icon: Building },
+  { id: 'presentation', label: 'Презентация', basePrice: 490, icon: BarChart3 },
+  { id: 'masters', label: 'Магистерская', basePrice: 7990, icon: Award },
 ]
 
-const DEADLINE_MULTIPLIERS = [
-  { days: 1, label: '1 день', multiplier: 2.0 },
+const DEADLINES = [
+  { days: 1, label: '24ч', multiplier: 2.0 },
   { days: 3, label: '3 дня', multiplier: 1.5 },
   { days: 7, label: 'Неделя', multiplier: 1.2 },
-  { days: 14, label: '2 недели', multiplier: 1.0 },
-  { days: 28, label: 'Месяц', multiplier: 0.9 },
+  { days: 14, label: '2 нед.', multiplier: 1.0 },
+  { days: 30, label: 'Месяц', multiplier: 0.9 },
 ]
 
 interface PriceCalculatorProps {
@@ -28,29 +40,32 @@ interface PriceCalculatorProps {
   cashbackPercent?: number
 }
 
+function formatDeliveryDate(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
 export const PriceCalculator = memo(function PriceCalculator({
   onCreateOrder,
   haptic,
   cashbackPercent = 0,
 }: PriceCalculatorProps) {
   const [selectedType, setSelectedType] = useState(0)
-  const [deadlineIndex, setDeadlineIndex] = useState(3) // default 2 weeks
+  const [deadlineIndex, setDeadlineIndex] = useState(3)
 
   const workType = WORK_TYPES[selectedType]
-  const deadline = DEADLINE_MULTIPLIERS[deadlineIndex]
+  const deadline = DEADLINES[deadlineIndex]
 
-  const estimatedPrice = useMemo(() => {
-    return Math.round(workType.basePrice * deadline.multiplier / 10) * 10
-  }, [workType.basePrice, deadline.multiplier])
+  const estimatedPrice = useMemo(
+    () => Math.round(workType.basePrice * deadline.multiplier / 10) * 10,
+    [workType.basePrice, deadline.multiplier],
+  )
 
-  const cashbackAmount = useMemo(() => {
-    return Math.round(estimatedPrice * cashbackPercent / 100)
-  }, [estimatedPrice, cashbackPercent])
-
-  const handleTypeSelect = useCallback((index: number) => {
-    haptic('light')
-    setSelectedType(index)
-  }, [haptic])
+  const cashbackAmount = useMemo(
+    () => Math.round(estimatedPrice * cashbackPercent / 100),
+    [estimatedPrice, cashbackPercent],
+  )
 
   const handleOrder = useCallback(() => {
     haptic('heavy')
@@ -67,6 +82,7 @@ export const PriceCalculator = memo(function PriceCalculator({
           background: 'linear-gradient(160deg, rgba(27,22,12,0.94) 0%, rgba(12,12,12,0.98) 46%, rgba(9,9,10,1) 100%)',
           border: '1px solid rgba(212,175,55,0.12)',
           padding: '20px 18px',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         {/* Ambient glow */}
@@ -79,126 +95,146 @@ export const PriceCalculator = memo(function PriceCalculator({
             width: 160,
             height: 160,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.10) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 65%)',
             pointerEvents: 'none',
+          }}
+        />
+
+        {/* Top shine line */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
           }}
         />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Calculator size={14} color="rgba(212,175,55,0.55)" />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.55)',
-            }}>
-              Калькулятор
-            </span>
-          </div>
-
-          {/* Work type pills - horizontal scroll */}
           <div style={{
-            display: 'flex',
-            gap: 6,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'rgba(212,175,55,0.55)',
             marginBottom: 16,
-            paddingBottom: 2,
-            margin: '0 -18px 16px',
-            padding: '0 18px 2px',
           }}>
-            {WORK_TYPES.map((type, i) => (
-              <motion.button
-                key={type.id}
-                type="button"
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleTypeSelect(i)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '7px 12px',
-                  borderRadius: 999,
-                  border: 'none',
-                  background: i === selectedType
-                    ? 'rgba(212,175,55,0.15)'
-                    : 'rgba(255,255,255,0.04)',
-                  color: i === selectedType
-                    ? 'var(--gold-300)'
-                    : 'var(--text-secondary)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  outline: i === selectedType
-                    ? '1px solid rgba(212,175,55,0.25)'
-                    : '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <span style={{ fontSize: 13 }}>{type.icon}</span>
-                {type.label}
-              </motion.button>
-            ))}
+            Рассчитать стоимость
           </div>
 
-          {/* Deadline slider */}
+          {/* Work type pills */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              margin: '0 -18px 18px',
+              padding: '0 18px 2px',
+            }}
+          >
+            {WORK_TYPES.map((type, i) => {
+              const Icon = type.icon
+              const isSelected = i === selectedType
+              return (
+                <motion.button
+                  key={type.id}
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { haptic('light'); setSelectedType(i) }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    border: 'none',
+                    background: isSelected
+                      ? 'var(--gold-glass-medium)'
+                      : 'rgba(255,255,255,0.04)',
+                    outline: isSelected
+                      ? '1px solid rgba(212,175,55,0.25)'
+                      : '1px solid var(--border-default)',
+                    color: isSelected
+                      ? 'var(--gold-300)'
+                      : 'var(--text-secondary)',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s var(--ease-out)',
+                  }}
+                >
+                  <Icon size={13} strokeWidth={2} />
+                  {type.label}
+                </motion.button>
+              )
+            })}
+          </div>
+
+          {/* Deadline selector — discrete steps */}
           <div style={{ marginBottom: 20 }}>
             <div style={{
               display: 'flex',
+              alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: 10,
             }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                Срок выполнения
+                Срок
               </span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold-300)' }}>
-                {deadline.label}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Calendar size={11} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.6 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold-300)' }}>
+                  {deadline.label} · к {formatDeliveryDate(deadline.days)}
+                </span>
+              </div>
             </div>
-            <input
-              type="range"
-              min={0}
-              max={DEADLINE_MULTIPLIERS.length - 1}
-              value={deadlineIndex}
-              onChange={e => {
-                haptic('light')
-                setDeadlineIndex(Number(e.target.value))
-              }}
-              style={{
-                width: '100%',
-                height: 4,
-                borderRadius: 2,
-                appearance: 'none',
-                background: `linear-gradient(to right, var(--gold-400) ${(deadlineIndex / (DEADLINE_MULTIPLIERS.length - 1)) * 100}%, rgba(255,255,255,0.08) ${(deadlineIndex / (DEADLINE_MULTIPLIERS.length - 1)) * 100}%)`,
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            />
+
+            {/* Stepped deadline buttons */}
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: 6,
+              gap: 4,
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 10,
+              padding: 3,
+              border: '1px solid var(--border-subtle)',
             }}>
-              {DEADLINE_MULTIPLIERS.map((d, i) => (
-                <span
+              {DEADLINES.map((d, i) => (
+                <motion.button
                   key={i}
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { haptic('light'); setDeadlineIndex(i) }}
                   style={{
-                    fontSize: 9,
-                    fontWeight: 600,
-                    color: i === deadlineIndex ? 'var(--gold-400)' : 'var(--text-muted)',
-                    opacity: i === deadlineIndex ? 1 : 0.5,
+                    flex: 1,
+                    padding: '8px 4px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: i === deadlineIndex
+                      ? 'var(--gold-glass-medium)'
+                      : 'transparent',
+                    color: i === deadlineIndex
+                      ? 'var(--gold-300)'
+                      : 'var(--text-muted)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s var(--ease-out)',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   {d.label}
-                </span>
+                </motion.button>
               ))}
             </div>
           </div>
 
-          {/* Price display */}
+          {/* Price result + CTA */}
           <div style={{
             display: 'flex',
             alignItems: 'flex-end',
@@ -214,24 +250,27 @@ export const PriceCalculator = memo(function PriceCalculator({
               }}>
                 Примерная стоимость
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <motion.span
-                  key={estimatedPrice}
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                key={estimatedPrice}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}
+              >
+                <GoldText
+                  variant="liquid"
+                  weight={700}
                   style={{
                     fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: 28,
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    color: 'var(--gold-200)',
+                    fontSize: 26,
                     lineHeight: 1,
+                    letterSpacing: '-0.03em',
                   }}
                 >
                   от {estimatedPrice.toLocaleString('ru-RU')} ₽
-                </motion.span>
-              </div>
-              {cashbackPercent > 0 && (
+                </GoldText>
+              </motion.div>
+              {cashbackPercent > 0 && cashbackAmount > 0 && (
                 <div style={{
                   fontSize: 10,
                   fontWeight: 700,
@@ -245,13 +284,13 @@ export const PriceCalculator = memo(function PriceCalculator({
 
             <motion.button
               type="button"
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
               onClick={handleOrder}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '10px 16px',
+                padding: '12px 18px',
                 borderRadius: 10,
                 border: 'none',
                 background: 'var(--gold-metallic)',
@@ -261,10 +300,11 @@ export const PriceCalculator = memo(function PriceCalculator({
                 cursor: 'pointer',
                 boxShadow: 'var(--glow-gold)',
                 whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
               }}
             >
               Заказать
-              <ArrowRight size={14} />
+              <ArrowRight size={14} strokeWidth={2.5} />
             </motion.button>
           </div>
         </div>
