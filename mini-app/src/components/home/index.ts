@@ -29,6 +29,18 @@ export { FinanceStrip } from './FinanceStrip'
 export { LiveActivityFeed } from './LiveActivityFeed'
 export { PricingAnchor } from './PricingAnchor'
 export { FAQSection } from './FAQSection'
+// New features
+export { StreakFreezeCard } from './StreakFreezeCard'
+export { StoryCards } from './StoryCards'
+export { PriceCalculator } from './PriceCalculator'
+export { SpinWheel } from './SpinWheel'
+export { WorkInProgressFeed } from './WorkInProgressFeed'
+export { AchievementBadges } from './AchievementBadges'
+export { RankAvatar } from './RankAvatar'
+export { SeasonalBanner, useSeasonalTheme } from './SeasonalTheme'
+export { ShareDiscountCard } from './ShareDiscountCard'
+export { ReferralBattle } from './ReferralBattle'
+export { SmartReorderCard } from './SmartReorderCard'
 // Skeleton Loaders
 export {
   BenefitsCardSkeleton,
