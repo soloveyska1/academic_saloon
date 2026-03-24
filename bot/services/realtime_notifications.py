@@ -231,6 +231,18 @@ BALANCE_NOTIFICATIONS = {
             "message": "+{amount}₽ начислено на баланс",
         },
     },
+    "daily_luck": {
+        "positive": {
+            "title": "Ежедневный бонус",
+            "message": "+{amount}₽ зачислено в серию дня",
+        },
+    },
+    "streak_freeze": {
+        "negative": {
+            "title": "Защита серии активирована",
+            "message": "-{amount}₽ списано за защиту пропуска",
+        },
+    },
 }
 
 

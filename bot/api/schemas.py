@@ -163,7 +163,9 @@ class DailyBonusInfoResponse(BaseModel):
     cooldown_remaining: Optional[str] = None  # "Xч Yмин" or None if can claim
     bonuses: List[int]  # Array of bonus amounts [10, 20, 30, 40, 50, 100, 150]
     streak_freeze_count: int = 0  # Available freeze passes
-    streak_freeze_active: bool = False  # Whether freeze is protecting current streak
+    streak_freeze_active: bool = False  # Whether streak currently has an armed freeze
+    streak_freeze_pending: bool = False  # Whether a missed day is currently being covered by freeze
+    streak_milestones: List[Dict[str, int]] = Field(default_factory=list)
 
 
 class StreakFreezeResponse(BaseModel):
@@ -181,6 +183,11 @@ class DailyBonusClaimResponse(BaseModel):
     bonus: int  # Actual bonus won (0 if lost)
     streak: int  # Updated streak
     message: str
+    new_balance: float = 0
+    streak_freeze_count: int = 0
+    streak_freeze_active: bool = False
+    streak_freeze_pending: bool = False
+    freeze_used: bool = False
     next_claim_at: Optional[str] = None  # When can claim next
 
 

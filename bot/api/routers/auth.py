@@ -116,16 +116,8 @@ async def get_user_profile(
     )
     transactions = tx_result.scalars().all()
 
-    # Check daily bonus availability (use timezone-aware datetime!)
-    daily_available = True
-    if user.last_daily_bonus_at:
-        # Ensure both datetimes are timezone-aware for comparison
-        next_claim = user.last_daily_bonus_at + timedelta(hours=24)
-        now_utc = datetime.now(timezone.utc)
-        # If next_claim is naive, make it aware
-        if next_claim.tzinfo is None:
-            next_claim = next_claim.replace(tzinfo=timezone.utc)
-        daily_available = now_utc >= next_claim
+    # Daily bonus uses calendar-day logic in MSK, not rolling 24h cooldown.
+    daily_available = user.can_claim_daily_bonus
 
     # Get bonus expiry info
     bonus_expiry_data = user.bonus_expiry_info
@@ -150,6 +142,7 @@ async def get_user_profile(
         referral_refs_to_next=ref_tier["refs_to_next"],
         daily_luck_available=daily_available,
         daily_bonus_streak=user.daily_bonus_streak or 0,
+        streak_freeze_count=user.streak_freeze_count or 0,
         rank=rank_info,  # Use actual total spent
         loyalty=loyalty_info,
         bonus_expiry=bonus_expiry,

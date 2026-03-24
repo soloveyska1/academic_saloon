@@ -16,7 +16,7 @@ interface DailyBonusCardProps {
   dailyAvailable: boolean
   streak: number
   haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => void
-  onBonusClaimed: () => void
+  onBonusClaimed: (claimedAmount?: number) => void
   variant?: 'full' | 'compact'
   embedded?: boolean
 }
@@ -78,6 +78,9 @@ function DailyBonusCardInner({
 
   const canClaim = info ? info.can_claim : dailyAvailable
   const currentStreak = info ? info.streak : streak
+  const freezeCount = info?.streak_freeze_count ?? 0
+  const freezeActive = info?.streak_freeze_active ?? false
+  const freezePending = info?.streak_freeze_pending ?? false
 
   // Flame color based on streak length
   const flameStyle: React.CSSProperties = currentStreak >= 30
@@ -88,7 +91,7 @@ function DailyBonusCardInner({
         ? { flexShrink: 0, color: '#d97706' }
         : { flexShrink: 0 }
 
-  const streakFreezeIndicator = currentStreak > 0 ? (
+  const streakFreezeIndicator = freezeCount > 0 ? (
     <div
       style={{
         display: 'inline-flex',
@@ -100,11 +103,15 @@ function DailyBonusCardInner({
         background: 'rgba(147, 197, 253, 0.08)',
         border: '1px solid rgba(147, 197, 253, 0.12)',
       }}
-      title="Серия не сбросится, если пропустить 1 день"
+      title={freezePending ? 'Один пропуск уже покрыт защитой серии' : 'Один пропуск будет защищён автоматически'}
     >
       <span style={{ fontSize: 10 }}>❄️</span>
       <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(147, 197, 253, 0.6)', letterSpacing: '0.02em' }}>
-        1 день запас
+        {freezePending
+          ? 'Пропуск сохранён'
+          : freezeActive
+            ? `Защита ×${freezeCount}`
+            : `В запасе ×${freezeCount}`}
       </span>
     </div>
   ) : null
@@ -151,9 +158,12 @@ function DailyBonusCardInner({
           can_claim: false,
           streak: result.streak,
           cooldown_remaining: formatCooldown(result.next_claim_at),
+          streak_freeze_count: result.streak_freeze_count,
+          streak_freeze_active: result.streak_freeze_active,
+          streak_freeze_pending: result.streak_freeze_pending,
         } : prev)
 
-        onBonusClaimed()
+        onBonusClaimed(result.bonus)
         setTimeout(() => setClaimedAmount(null), 3000)
       } else {
         haptic('error')

@@ -29,6 +29,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "order_cashback": "Кэшбэк за заказ",
     "bonus_expired": "Сгорание бонусов",
     "daily_luck": "Ежедневный бонус",
+    "streak_freeze": "Защита серии",
     "coupon": "Купон",
     "order_refund": "Возврат бонусов",
 }
@@ -44,6 +45,7 @@ class BonusReason(str, Enum):
     ORDER_CASHBACK = "order_cashback"        # Кэшбэк за выполненный заказ
     BONUS_EXPIRED = "bonus_expired"          # Сгорание бонусов
     DAILY_LUCK = "daily_luck"                # Ежедневная удача / бонус
+    STREAK_FREEZE = "streak_freeze"          # Покупка защиты серии
     COUPON = "coupon"                        # Промокод
     ORDER_REFUND = "order_refund"            # Возврат бонусов при отмене заказа
 

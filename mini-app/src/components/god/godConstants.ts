@@ -73,6 +73,7 @@ export const TRANSACTION_REASON_LABELS: Record<string, string> = {
   compensation: 'Компенсация',
   order_cashback: 'Кэшбэк за заказ',
   bonus_expired: 'Сгорание бонусов',
+  streak_freeze: 'Защита серии',
   coupon: 'Купон',
   promo_code: 'Промокод',
   order_refund: 'Возврат бонусов',

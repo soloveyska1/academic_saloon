@@ -89,7 +89,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         ...options.headers,
       },
     })
-  } catch (networkError) {
+  } catch {
     throw new Error('Ошибка сети. Проверьте подключение.')
   }
 
@@ -113,7 +113,9 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
           errorMessage = detailStr
         }
       }
-    } catch { }
+    } catch {
+      // Leave the generic HTTP error when the backend body cannot be parsed.
+    }
     throw new Error(errorMessage)
   }
 
@@ -833,6 +835,9 @@ export interface DailyBonusInfo {
   next_bonus: number
   cooldown_remaining: string | null
   bonuses: number[]
+  streak_freeze_count: number
+  streak_freeze_active: boolean
+  streak_freeze_pending: boolean
   streak_milestones: { day: number; bonus: number }[]
 }
 
@@ -843,6 +848,10 @@ export interface DailyBonusClaimResult {
   streak: number
   message: string
   new_balance: number
+  streak_freeze_count: number
+  streak_freeze_active: boolean
+  streak_freeze_pending: boolean
+  freeze_used: boolean
   next_claim_at: string | null
 }
 
@@ -864,4 +873,3 @@ export interface StreakFreezeResult {
 export async function buyStreakFreeze(): Promise<StreakFreezeResult> {
   return apiFetch<StreakFreezeResult>('/daily-bonus/buy-freeze', { method: 'POST' })
 }
-

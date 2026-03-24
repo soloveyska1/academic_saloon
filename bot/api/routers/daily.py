@@ -10,7 +10,7 @@ from database.db import get_session
 from database.models.users import User
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
-    DailyBonusInfoResponse, DailyBonusClaimResponse
+    DailyBonusInfoResponse, DailyBonusClaimResponse, StreakFreezeResponse
 )
 from bot.services.bonus import BonusService, BonusReason
 
@@ -45,6 +45,48 @@ DAILY_COOLDOWN_HOURS = 24
 
 # Grace period - время после cooldown, в течение которого стрик сохраняется (в часах)
 STREAK_GRACE_PERIOD_HOURS = 24  # 24 часа после cooldown (итого 48 часов от последнего клейма)
+STREAK_FREEZE_COST = 100  # Cost in bonus rubles
+MAX_FREEZE_COUNT = 3  # Max freezes a user can hold
+MIN_STREAK_FOR_FREEZE = 3
+
+
+def _get_msk_tz():
+    try:
+        return ZoneInfo("Europe/Moscow")
+    except Exception:
+        return timezone.utc
+
+
+def _to_msk_date(dt: datetime | None, msk_tz) -> datetime.date | None:
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(msk_tz).date()
+
+
+def _build_milestones() -> list[dict[str, int]]:
+    return [{"day": day, "bonus": reward} for day, reward in sorted(MILESTONE_BONUSES.items())]
+
+
+def _freeze_is_armed(streak: int, freeze_count: int) -> bool:
+    return streak >= MIN_STREAK_FOR_FREEZE and freeze_count > 0
+
+
+def _freeze_pending_for_missed_day(
+    *,
+    last_claim_date,
+    today_msk,
+    current_streak: int,
+    freeze_count: int,
+) -> bool:
+    if last_claim_date is None:
+        return False
+    return (
+        last_claim_date == (today_msk - timedelta(days=2))
+        and current_streak >= MIN_STREAK_FOR_FREEZE
+        and freeze_count > 0
+    )
 
 def _calculate_bonus_amount(base_amount: int, is_vip: bool) -> int:
     """Вычисляет итоговую сумму бонуса с учётом VIP множителя"""
@@ -95,26 +137,30 @@ async def get_daily_bonus_info(
         logger.debug(f"[Daily] VIP check failed: {e}")
 
     # ═══ MSK TIMEZONE LOGIC ═══
-    try:
-        msk_tz = ZoneInfo("Europe/Moscow")
-    except Exception:
-        msk_tz = timezone.utc # Fallback
-        
+    msk_tz = _get_msk_tz()
     now_msk = datetime.now(msk_tz)
     today_msk = now_msk.date()
-    
+
     # Calculate next midnight MSK
     next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    last_claim = user.last_daily_bonus_at
-    last_claim_date = None
-    
-    if last_claim:
-        if last_claim.tzinfo is None:
-            last_claim = last_claim.replace(tzinfo=timezone.utc)
-        # Convert to MSK for date comparison
-        last_claim_msk = last_claim.astimezone(msk_tz)
-        last_claim_date = last_claim_msk.date()
+
+    last_claim_date = _to_msk_date(user.last_daily_bonus_at, msk_tz)
+    current_streak = user.daily_bonus_streak or 0
+    freeze_count = user.streak_freeze_count or 0
+    freeze_pending = _freeze_pending_for_missed_day(
+        last_claim_date=last_claim_date,
+        today_msk=today_msk,
+        current_streak=current_streak,
+        freeze_count=freeze_count,
+    )
+    bonuses = [_calculate_bonus_amount(b, is_vip) for b in DAILY_BONUS_AMOUNTS]
+    milestones = [
+        {
+            "day": day,
+            "bonus": _calculate_bonus_amount(reward, is_vip),
+        }
+        for day, reward in sorted(MILESTONE_BONUSES.items())
+    ]
 
     # 1. Check if already claimed today
     if last_claim_date == today_msk:
@@ -125,20 +171,26 @@ async def get_daily_bonus_info(
         
         return DailyBonusInfoResponse(
             can_claim=False,
-            streak=user.daily_bonus_streak,
+            streak=current_streak,
             next_bonus=0, # Hidden when claimed
             cooldown_remaining=cooldown_text,
-            bonuses=[_calculate_bonus_amount(b, is_vip) for b in DAILY_BONUS_AMOUNTS]
+            bonuses=bonuses,
+            streak_freeze_count=freeze_count,
+            streak_freeze_active=_freeze_is_armed(current_streak, freeze_count),
+            streak_freeze_pending=False,
+            streak_milestones=milestones,
         )
 
     # 2. Check streak continuity
-    current_streak = user.daily_bonus_streak
-    
     if last_claim_date:
         yesterday_msk = today_msk - timedelta(days=1)
-        if last_claim_date < yesterday_msk:
-             # Streak broken
-             current_streak = 0
+        if last_claim_date == yesterday_msk:
+            pass
+        elif freeze_pending:
+            # Keep the streak visible: next claim will consume one freeze and continue the chain.
+            pass
+        elif last_claim_date < yesterday_msk:
+            current_streak = 0
     elif current_streak > 0:
         # Admin reset case: last_claim is None but streak exists.
         # Treat as valid continuation.
@@ -158,7 +210,11 @@ async def get_daily_bonus_info(
         streak=current_streak,
         next_bonus=next_bonus,
         cooldown_remaining=None,
-        bonuses=[_calculate_bonus_amount(b, is_vip) for b in DAILY_BONUS_AMOUNTS]
+        bonuses=bonuses,
+        streak_freeze_count=freeze_count,
+        streak_freeze_active=_freeze_is_armed(current_streak, freeze_count),
+        streak_freeze_pending=freeze_pending,
+        streak_milestones=milestones,
     )
 
 
@@ -182,22 +238,10 @@ async def claim_daily_bonus(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    try:
-        msk_tz = ZoneInfo("Europe/Moscow")
-    except Exception:
-        msk_tz = timezone.utc
-
+    msk_tz = _get_msk_tz()
     now_msk = datetime.now(msk_tz)
     today_msk = now_msk.date()
-    
-    last_claim = user.last_daily_bonus_at
-    last_claim_date = None
-    
-    if last_claim:
-        if last_claim.tzinfo is None:
-            last_claim = last_claim.replace(tzinfo=timezone.utc)
-        last_claim_msk = last_claim.astimezone(msk_tz)
-        last_claim_date = last_claim_msk.date()
+    last_claim_date = _to_msk_date(user.last_daily_bonus_at, msk_tz)
 
     # VIP Check
     is_vip = False
@@ -217,29 +261,40 @@ async def claim_daily_bonus(
             bonus=0,
             streak=user.daily_bonus_streak,
             message="Бонус уже получен сегодня.",
+            new_balance=float(user.balance or 0),
+            streak_freeze_count=user.streak_freeze_count or 0,
+            streak_freeze_active=_freeze_is_armed(user.daily_bonus_streak or 0, user.streak_freeze_count or 0),
             next_claim_at=next_midnight.isoformat()
         )
 
     # 2. Calculate Streak
     current_streak = user.daily_bonus_streak
+    freeze_count = user.streak_freeze_count or 0
+    freeze_used = False
     
     if last_claim_date:
         yesterday_msk = today_msk - timedelta(days=1)
         if last_claim_date == yesterday_msk:
             # Perfect streak
             new_streak = current_streak + 1
+        elif _freeze_pending_for_missed_day(
+            last_claim_date=last_claim_date,
+            today_msk=today_msk,
+            current_streak=current_streak,
+            freeze_count=freeze_count,
+        ):
+            # Missed exactly one day — consume one freeze and continue the chain.
+            user.streak_freeze_count = freeze_count - 1
+            freeze_used = True
+            new_streak = current_streak + 1
+            logger.info(
+                f"[DailyBonus] Freeze used for {tg_user.id}. "
+                f"Streak preserved from {current_streak} to {new_streak}."
+            )
         elif last_claim_date < yesterday_msk:
-            # Missed day — check for freeze
-            freeze_count = user.streak_freeze_count or 0
-            if freeze_count > 0 and current_streak >= 3:
-                # Use freeze to preserve streak
-                user.streak_freeze_count = freeze_count - 1
-                new_streak = current_streak + 1
-                logger.info(f"[DailyBonus] Freeze used for {tg_user.id}. Streak preserved at {current_streak}.")
-            else:
-                # Streak broken
-                new_streak = 1
-                logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Missed day.")
+            # Missed too much time or no freeze available — streak breaks.
+            new_streak = 1
+            logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Gap exceeded protection window.")
         else:
             # Future claim?!
             new_streak = current_streak + 1
@@ -302,29 +357,31 @@ async def claim_daily_bonus(
     next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Message
+    msg_parts = []
+    if freeze_used:
+        msg_parts.append("🛡 Защита серии сработала")
+
     msg = f"🎁 +{bonus_amount}₽ (День {new_streak})"
     if milestone_reached:
         msg += f"\n🏆 +{milestone_reached['reward']}₽ за стрик!"
+    msg_parts.append(msg)
 
     return DailyBonusClaimResponse(
         success=True,
         won=True,
         bonus=total_bonus,
         streak=new_streak,
-        message=msg,
+        message="\n".join(msg_parts),
+        new_balance=float(user.balance or 0),
+        streak_freeze_count=user.streak_freeze_count or 0,
+        streak_freeze_active=_freeze_is_armed(new_streak, user.streak_freeze_count or 0),
+        streak_freeze_pending=False,
+        freeze_used=freeze_used,
         next_claim_at=next_midnight.isoformat()
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  STREAK FREEZE — Buy freeze with bonus balance
-# ═══════════════════════════════════════════════════════════════════════════
-
-STREAK_FREEZE_COST = 100  # Cost in bonus rubles
-MAX_FREEZE_COUNT = 3  # Max freezes a user can hold
-
-
-@router.post("/daily-bonus/buy-freeze")
+@router.post("/daily-bonus/buy-freeze", response_model=StreakFreezeResponse)
 async def buy_streak_freeze(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
@@ -334,42 +391,65 @@ async def buy_streak_freeze(
     Freeze automatically protects streak if user misses a day.
     Max 3 freezes at a time.
     """
-    from bot.api.schemas import StreakFreezeResponse
-
-    user = await session.get(User, tg_user.db_id)
+    result = await session.execute(
+        select(User)
+        .where(User.telegram_id == tg_user.id)
+        .with_for_update()
+    )
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(404, "User not found")
 
     # Check limits
     current_freezes = user.streak_freeze_count or 0
+    current_streak = user.daily_bonus_streak or 0
+
+    if current_streak < MIN_STREAK_FOR_FREEZE:
+        return StreakFreezeResponse(
+            success=False,
+            message=f"Защита серии откроется с {MIN_STREAK_FOR_FREEZE}-го дня серии",
+            freeze_count=current_freezes,
+            bonus_balance=float(user.balance or 0),
+        )
+
     if current_freezes >= MAX_FREEZE_COUNT:
         return StreakFreezeResponse(
             success=False,
-            message=f"Максимум {MAX_FREEZE_COUNT} заморозки",
+            message=f"Максимум {MAX_FREEZE_COUNT} защиты в запасе",
             freeze_count=current_freezes,
-            bonus_balance=float(user.balance),
+            bonus_balance=float(user.balance or 0),
         )
 
     # Check balance
-    if float(user.balance) < STREAK_FREEZE_COST:
+    if float(user.balance or 0) < STREAK_FREEZE_COST:
         return StreakFreezeResponse(
             success=False,
-            message=f"Нужно {STREAK_FREEZE_COST}₽ бонусов",
+            message=f"Нужно {STREAK_FREEZE_COST} ₽ бонусов",
             freeze_count=current_freezes,
-            bonus_balance=float(user.balance),
+            bonus_balance=float(user.balance or 0),
         )
 
     # Deduct balance and add freeze
     try:
-        await BonusService.add_bonus(
+        success, new_balance = await BonusService.deduct_bonus(
             session=session,
             user_id=tg_user.id,
-            amount=-STREAK_FREEZE_COST,
-            reason=BonusReason.DAILY_LUCK,
-            description=f"Покупка заморозки серии ({current_freezes + 1}/{MAX_FREEZE_COUNT})",
+            amount=STREAK_FREEZE_COST,
+            reason=BonusReason.STREAK_FREEZE,
+            description=f"Защита серии {current_freezes + 1}/{MAX_FREEZE_COUNT}",
             bot=None,
+            user=user,
             auto_commit=False,
         )
+        if not success:
+            await session.rollback()
+            return StreakFreezeResponse(
+                success=False,
+                message=f"Нужно {STREAK_FREEZE_COST} ₽ бонусов",
+                freeze_count=current_freezes,
+                bonus_balance=float(user.balance or 0),
+            )
+
         user.streak_freeze_count = current_freezes + 1
         await session.commit()
 
@@ -377,9 +457,9 @@ async def buy_streak_freeze(
 
         return StreakFreezeResponse(
             success=True,
-            message="Заморозка куплена!",
+            message="Защита серии добавлена",
             freeze_count=current_freezes + 1,
-            bonus_balance=float(user.balance),
+            bonus_balance=float(new_balance),
         )
     except Exception as e:
         await session.rollback()

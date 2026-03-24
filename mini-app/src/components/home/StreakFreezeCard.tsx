@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, ShieldPlus } from 'lucide-react'
 import { buyStreakFreeze } from '../../api/userApi'
@@ -12,6 +12,8 @@ interface StreakFreezeCardProps {
 }
 
 const FREEZE_COST = 100
+const MAX_FREEZES = 3
+const MIN_STREAK = 3
 
 export const StreakFreezeCard = memo(function StreakFreezeCard({
   streak,
@@ -22,14 +24,38 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
 }: StreakFreezeCardProps) {
   const [purchasing, setPurchasing] = useState(false)
   const [localFreezeCount, setLocalFreezeCount] = useState(freezeCount)
+  const [localBonusBalance, setLocalBonusBalance] = useState(bonusBalance)
   const [error, setError] = useState<string | null>(null)
 
-  const canAfford = bonusBalance >= FREEZE_COST
-  const hasFreeze = localFreezeCount > 0 || freezeCount > 0
-  const displayCount = Math.max(localFreezeCount, freezeCount)
+  useEffect(() => {
+    setLocalFreezeCount(freezeCount)
+  }, [freezeCount])
+
+  useEffect(() => {
+    setLocalBonusBalance(bonusBalance)
+  }, [bonusBalance])
+
+  const displayCount = localFreezeCount
+  const canAfford = localBonusBalance >= FREEZE_COST
+  const hasFreeze = displayCount > 0
+  const isUnlocked = streak >= MIN_STREAK
+  const canBuyMore = isUnlocked && displayCount < MAX_FREEZES
+  const canPurchase = canBuyMore && canAfford && !purchasing
+
+  const title = hasFreeze
+    ? isUnlocked
+      ? `Серия под защитой${displayCount > 1 ? ` ×${displayCount}` : ''}`
+      : `Защита в запасе${displayCount > 1 ? ` ×${displayCount}` : ''}`
+    : 'Защитить серию'
+
+  const subtitle = hasFreeze
+    ? isUnlocked
+      ? 'Один пропуск закроется автоматически без сброса серии'
+      : `Серия пока ниже ${MIN_STREAK} дней, защита сработает позже`
+    : `${FREEZE_COST} ₽ бонусами за 1 защищённый пропуск`
 
   const handlePurchase = useCallback(async () => {
-    if (purchasing || !canAfford) return
+    if (!canPurchase) return
     setPurchasing(true)
     setError(null)
     haptic('medium')
@@ -39,22 +65,24 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
       if (result.success) {
         haptic('success')
         setLocalFreezeCount(result.freeze_count)
+        setLocalBonusBalance(result.bonus_balance)
         onBalanceChanged?.()
       } else {
         haptic('error')
         setError(result.message)
         setTimeout(() => setError(null), 3000)
       }
-    } catch {
-      // Silently fail on network errors — feature is not critical
-      haptic('light')
+    } catch (err) {
+      haptic('error')
+      setError(err instanceof Error ? err.message : 'Не удалось активировать защиту серии')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setPurchasing(false)
     }
-  }, [purchasing, canAfford, haptic, onBalanceChanged])
+  }, [canPurchase, haptic, onBalanceChanged])
 
-  // Only show for streaks worth protecting
-  if (streak < 3) return null
+  // Show the card while the streak is worth protecting or if the user already owns freezes.
+  if (!hasFreeze && streak < MIN_STREAK) return null
 
   return (
     <div
@@ -64,15 +92,10 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
         gap: 10,
         padding: '10px 14px',
         borderRadius: 10,
-        background: hasFreeze
-          ? 'rgba(212,175,55,0.04)'
-          : 'transparent',
-        border: hasFreeze
-          ? '1px solid rgba(212,175,55,0.10)'
-          : '1px solid rgba(255,255,255,0.04)',
+        background: hasFreeze ? 'rgba(212,175,55,0.04)' : 'transparent',
+        border: hasFreeze ? '1px solid rgba(212,175,55,0.10)' : '1px solid rgba(255,255,255,0.04)',
       }}
     >
-      {/* Icon */}
       <div style={{
         width: 28,
         height: 28,
@@ -90,7 +113,6 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
         )}
       </div>
 
-      {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 11,
@@ -98,10 +120,7 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
           color: hasFreeze ? 'var(--gold-300)' : 'var(--text-primary)',
           lineHeight: 1.3,
         }}>
-          {hasFreeze
-            ? `Заморозка${displayCount > 1 ? ` ×${displayCount}` : ''}`
-            : 'Защитить серию'
-          }
+          {title}
         </div>
         <div style={{
           fontSize: 9,
@@ -109,10 +128,39 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
           color: 'var(--text-muted)',
           lineHeight: 1.3,
         }}>
-          {hasFreeze
-            ? 'Пропустите день без потери серии'
-            : `${FREEZE_COST}₽ бонусов — 1 пропуск`
-          }
+          {subtitle}
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: 4,
+          flexWrap: 'wrap',
+        }}>
+          <span style={{
+            fontSize: 9,
+            fontWeight: 700,
+            color: hasFreeze ? 'var(--gold-300)' : 'var(--text-muted)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}>
+            {displayCount}/{MAX_FREEZES}
+          </span>
+          {!isUnlocked && hasFreeze && (
+            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-muted)' }}>
+              Активируется с {MIN_STREAK}-го дня
+            </span>
+          )}
+          {isUnlocked && !canAfford && canBuyMore && (
+            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-muted)' }}>
+              Нужно ещё {Math.max(FREEZE_COST - Math.floor(localBonusBalance), 0)} ₽
+            </span>
+          )}
+          {displayCount >= MAX_FREEZES && (
+            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--gold-300)' }}>
+              Лимит достигнут
+            </span>
+          )}
         </div>
         <AnimatePresence>
           {error && (
@@ -128,27 +176,26 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
         </AnimatePresence>
       </div>
 
-      {/* Action */}
-      {!hasFreeze && (
+      {canBuyMore && (
         <motion.button
           type="button"
           whileTap={{ scale: 0.95 }}
           onClick={handlePurchase}
-          disabled={purchasing || !canAfford}
+          disabled={!canPurchase}
           style={{
             padding: '5px 10px',
             borderRadius: 6,
             border: 'none',
-            background: canAfford ? 'var(--gold-glass-medium)' : 'rgba(255,255,255,0.04)',
-            color: canAfford ? 'var(--gold-300)' : 'var(--text-muted)',
+            background: canPurchase ? 'var(--gold-glass-medium)' : 'rgba(255,255,255,0.04)',
+            color: canPurchase ? 'var(--gold-300)' : 'var(--text-muted)',
             fontSize: 10,
             fontWeight: 700,
-            cursor: canAfford ? 'pointer' : 'not-allowed',
+            cursor: canPurchase ? 'pointer' : 'not-allowed',
             opacity: purchasing ? 0.5 : 1,
             whiteSpace: 'nowrap',
           }}
         >
-          {purchasing ? '...' : `${FREEZE_COST}₽`}
+          {purchasing ? '...' : `${FREEZE_COST} ₽`}
         </motion.button>
       )}
     </div>

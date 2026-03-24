@@ -239,7 +239,11 @@ export function HomePage({ user, onRefresh }: Props) {
     return 'idle' as const
   }, [isNewUser, activeOrders, user])
 
-  const shouldShowDailyBonus = Boolean(user?.daily_luck_available || (user?.daily_bonus_streak ?? 0) > 0)
+  const shouldShowDailyBonus = Boolean(
+    user?.daily_luck_available ||
+    (user?.daily_bonus_streak ?? 0) > 0 ||
+    (user?.streak_freeze_count ?? 0) > 0
+  )
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
 
   /* ─── Loading skeleton ─── */
