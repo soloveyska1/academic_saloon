@@ -230,13 +230,12 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {/* Continuous progress bar */}
+      {/* Continuous progress bar with stage markers */}
       <div style={{
         position: 'relative',
         height: 3,
         borderRadius: 2,
         background: 'rgba(255,255,255,0.06)',
-        overflow: 'hidden',
       }}>
         <motion.div
           initial={{ width: 0 }}
@@ -249,6 +248,29 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
             boxShadow: '0 0 8px rgba(212,175,55,0.3)',
           }}
         />
+        {/* Stage transition dots */}
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: `${(i / STAGES.length) * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: i < stageIdx
+                ? '#D4AF37'
+                : i === stageIdx
+                  ? 'rgba(212,175,55,0.5)'
+                  : 'rgba(255,255,255,0.10)',
+              border: `1.5px solid ${i <= stageIdx ? 'rgba(20,18,14,0.8)' : 'rgba(20,18,14,0.6)'}`,
+              zIndex: 2,
+              transition: 'background 0.3s',
+            }}
+          />
+        ))}
       </div>
 
       {/* Stage labels row */}
@@ -557,30 +579,30 @@ function OrderCard({
           </div>
         )}
 
-        {/* Full-width action button */}
+        {/* Full-width action button — solid gold for payment, subtle for others */}
         <motion.div
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.97 }}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
             width: '100%',
-            padding: needsAction ? '12px 16px' : '10px 16px',
+            padding: needsAction ? '13px 16px' : '10px 16px',
             borderRadius: 12,
             background: needsAction
-              ? 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(183,142,38,0.10))'
+              ? 'linear-gradient(135deg, #D4AF37 0%, #C5A028 40%, #B8962A 100%)'
               : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.06)'}`,
+            border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.06)',
             boxShadow: needsAction
-              ? '0 4px 20px -4px rgba(212,175,55,0.20), inset 0 1px 0 rgba(252,246,186,0.06)'
+              ? '0 6px 24px -4px rgba(212,175,55,0.40), inset 0 1px 0 rgba(252,246,186,0.25)'
               : 'none',
           }}
         >
           <span style={{
             fontSize: 13,
             fontWeight: 700,
-            color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.50)',
+            color: needsAction ? 'rgba(15,12,8,0.92)' : 'rgba(255,255,255,0.50)',
             letterSpacing: '0.02em',
           }}>
             {primaryAction}
@@ -588,7 +610,7 @@ function OrderCard({
           <ArrowRight
             size={14}
             strokeWidth={2.5}
-            style={{ color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.35)' }}
+            style={{ color: needsAction ? 'rgba(15,12,8,0.75)' : 'rgba(255,255,255,0.35)' }}
           />
         </motion.div>
       </div>

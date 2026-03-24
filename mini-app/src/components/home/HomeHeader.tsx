@@ -717,7 +717,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   </motion.div>
                 </div>
 
-                {/* Subtitle row: label + order estimate inline */}
+                {/* Subtitle — tight to number */}
                 <motion.div
                   initial={reduced ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -726,7 +726,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    marginTop: 4,
+                    marginTop: 2,
                   }}
                 >
                   <span style={{
@@ -859,7 +859,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   {cashback}% кешбэк
                 </GoldText>
 
-                {/* Right: bonus button */}
+                {/* Right: bonus link — subtle text, not a loud button */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <motion.button
                     type="button"
@@ -869,28 +869,26 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 5,
-                      background: 'rgba(212,175,55,0.06)',
-                      border: '1px solid rgba(212,175,55,0.18)',
-                      borderRadius: 10,
-                      padding: '7px 14px',
+                      gap: 4,
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px 0',
                       cursor: 'pointer',
-                      overflow: 'hidden',
                     }}
                   >
                     <span style={{
                       fontSize: 11,
-                      fontWeight: 700,
-                      color: 'var(--gold-400)',
+                      fontWeight: 600,
+                      color: 'rgba(212,175,55,0.50)',
                       whiteSpace: 'nowrap',
                     }}>
                       Бонусы
                     </span>
                     <ArrowUpRight
-                      size={11}
+                      size={10}
                       strokeWidth={2.5}
                       aria-hidden
-                      style={{ color: 'var(--gold-400)' }}
+                      style={{ color: 'rgba(212,175,55,0.45)' }}
                     />
                   </motion.button>
                 </div>
