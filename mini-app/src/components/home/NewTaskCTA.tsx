@@ -104,7 +104,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 }}
               >
                 <GoldText
-                  variant="shimmer"
+                  variant="liquid"
                   weight={700}
                   style={{
                     fontFamily: "var(--font-display, 'Playfair Display', serif)",
@@ -280,7 +280,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             Новая работа
           </div>
           <GoldText
-            variant="shimmer"
+            variant="liquid"
             size="lg"
             weight={700}
             style={{
