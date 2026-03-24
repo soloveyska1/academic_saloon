@@ -359,7 +359,7 @@ export function HomePage({ user, onRefresh }: Props) {
             {/* ─── New order CTA ─── */}
             <Section>
               <div onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
-                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <NewTaskCTA onClick={handleNewOrder} onUrgent={handleOpenUrgentSheet} variant="repeat-order" />
               </div>
             </Section>
 

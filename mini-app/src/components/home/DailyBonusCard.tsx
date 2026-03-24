@@ -89,19 +89,22 @@ function DailyBonusCardInner({
         : { flexShrink: 0 }
 
   const streakFreezeIndicator = currentStreak > 0 ? (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 3,
-      marginLeft: 'auto',
-      padding: '2px 8px',
-      borderRadius: 999,
-      background: 'rgba(147, 197, 253, 0.08)',
-      border: '1px solid rgba(147, 197, 253, 0.12)',
-    }}>
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 3,
+        marginLeft: 'auto',
+        padding: '2px 8px',
+        borderRadius: 999,
+        background: 'rgba(147, 197, 253, 0.08)',
+        border: '1px solid rgba(147, 197, 253, 0.12)',
+      }}
+      title="Серия не сбросится, если пропустить 1 день"
+    >
       <span style={{ fontSize: 10 }}>❄️</span>
       <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(147, 197, 253, 0.6)', letterSpacing: '0.02em' }}>
-        Заморозка
+        1 день запас
       </span>
     </div>
   ) : null
@@ -457,7 +460,7 @@ function DailyBonusCardInner({
                         lineHeight: 1.15,
                       }}
                     >
-                      +{bonus}
+                      +{bonus}₽
                     </div>
                   </div>
                 )

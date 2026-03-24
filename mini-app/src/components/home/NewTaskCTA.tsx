@@ -1,11 +1,12 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Zap } from 'lucide-react'
 import { GoldText, LiquidGoldButton } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
 
 interface NewTaskCTAProps {
   onClick: () => void
+  onUrgent?: () => void
   haptic?: (style: 'light' | 'medium' | 'heavy') => void
   variant?: 'first-order' | 'repeat-order'
   embedded?: boolean
@@ -13,6 +14,7 @@ interface NewTaskCTAProps {
 
 export const NewTaskCTA = memo(function NewTaskCTA({
   onClick,
+  onUrgent,
   haptic,
   variant = 'repeat-order',
   embedded = false,
@@ -20,6 +22,11 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   const handleClick = () => {
     haptic?.('heavy')
     onClick()
+  }
+  const handleUrgent = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    haptic?.('medium')
+    onUrgent?.()
   }
 
   // ═══ First-order hero — elegant, restrained, luxurious ═══
@@ -227,21 +234,17 @@ export const NewTaskCTA = memo(function NewTaskCTA({
     )
   }
 
-  // ═══ Returning user — standalone CTA card ═══
+  // ═══ Returning user — standalone CTA card with integrated urgent option ═══
   return (
     <Reveal animation="spring" delay={0.15}>
-      <motion.button
-        type="button"
+      <motion.div
         whileTap={{ scale: 0.97 }}
         onClick={handleClick}
+        role="button"
+        tabIndex={0}
         style={{
           position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
           width: '100%',
-          padding: '20px',
           borderRadius: 12,
           background: 'linear-gradient(155deg, rgba(22,18,10,0.97) 0%, rgba(10,10,11,0.99) 100%)',
           border: '1px solid rgba(212,175,55,0.10)',
@@ -266,61 +269,112 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           }}
         />
 
-        <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.50)',
-              marginBottom: 6,
-            }}
-          >
-            Новая работа
+        {/* Main CTA area */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          padding: '20px',
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(212,175,55,0.50)',
+                marginBottom: 6,
+              }}
+            >
+              Новая работа
+            </div>
+            <GoldText
+              variant="liquid"
+              size="lg"
+              weight={700}
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                display: 'block',
+                marginBottom: 6,
+              }}
+            >
+              Оформить заказ
+            </GoldText>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              От 990 ₽ · расчёт за 5 минут
+            </div>
           </div>
-          <GoldText
-            variant="liquid"
-            size="lg"
-            weight={700}
-            style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              display: 'block',
-              marginBottom: 6,
-            }}
-          >
-            Оформить заказ
-          </GoldText>
+
           <div
             style={{
-              fontSize: 13,
-              color: 'var(--text-secondary)',
-              fontWeight: 600,
-              lineHeight: 1.4,
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.95), rgba(245,225,160,0.80))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 12px 24px -12px rgba(212,175,55,0.35)',
             }}
           >
-            От 990 ₽ · расчёт за 5 минут
+            <ArrowRight size={18} color="#050505" strokeWidth={2.5} />
           </div>
         </div>
 
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.95), rgba(245,225,160,0.80))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 12px 24px -12px rgba(212,175,55,0.35)',
+        {/* Urgent chip — inline at bottom */}
+        {onUrgent && (
+          <div style={{
+            padding: '0 20px 16px',
             position: 'relative',
             zIndex: 1,
-          }}
-        >
-          <ArrowRight size={18} color="#050505" strokeWidth={2.5} />
-        </div>
-      </motion.button>
+          }}>
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={handleUrgent}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: 'rgba(212,175,55,0.08)',
+                border: '1px solid rgba(212,175,55,0.14)',
+                cursor: 'pointer',
+                appearance: 'none' as const,
+              }}
+            >
+              <Zap size={12} strokeWidth={2.2} style={{ color: 'var(--gold-400)' }} />
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--gold-300)',
+              }}>
+                Срочный
+              </span>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+              }}>
+                · оценка за 5 мин
+              </span>
+            </motion.button>
+          </div>
+        )}
+      </motion.div>
     </Reveal>
   )
 })

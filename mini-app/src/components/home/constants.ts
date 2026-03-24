@@ -10,14 +10,6 @@ import { QuickAction, UrgentOption, OrderStatusInfo } from './types'
 
 export const QUICK_ACTIONS: QuickAction[] = [
   {
-    id: 'urgent',
-    icon: Zap,
-    title: 'Срочный заказ',
-    subtitle: 'расчёт и запуск без очереди',
-    action: 'sheet',
-    modal: 'urgent',
-  },
-  {
     id: 'cashback',
     icon: Percent,
     title: 'Кэшбэк',
