@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
+import { useCapability } from '../../contexts/DeviceCapabilityContext'
 import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { GoldText } from '../ui/GoldText'
@@ -39,6 +40,7 @@ export const LoungeVault = memo(function LoungeVault({
   onShowQR,
   onTelegramShare,
 }: LoungeVaultProps) {
+  const capability = useCapability()
   return (
     <motion.section
       initial={{ opacity: 0, y: 18 }}
@@ -151,14 +153,32 @@ export const LoungeVault = memo(function LoungeVault({
             </div>
 
             {/* THE STAR NUMBER — liquid gold balance */}
-            <GoldText
-              variant="liquid"
-              size="3xl"
-              weight={700}
-              style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
-            >
-              {formatMoney(bonusBalance)}
-            </GoldText>
+            {capability.tier === 3 ? (
+              <motion.div
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              >
+                <GoldText
+                  variant="liquid"
+                  size="3xl"
+                  weight={700}
+                  style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
+                >
+                  {formatMoney(bonusBalance)}
+                </GoldText>
+              </motion.div>
+            ) : (
+              <GoldText
+                variant="liquid"
+                size="3xl"
+                weight={700}
+                style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
+              >
+                {formatMoney(bonusBalance)}
+              </GoldText>
+            )}
 
             <div
               style={{
