@@ -10,13 +10,13 @@ import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
-// FloatingGoldParticles removed — visual noise
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
 // Home Components
 import {
   DailyBonusCard,
   HomeHeader,
+  FinanceStrip,
   QuickActionsRow,
   NewTaskCTA,
   QuickReorderCard,
@@ -53,37 +53,12 @@ interface Props {
 
 import s from './HomePage.module.css'
 
-function ActionDeck({
-  children,
-}: {
-  children: ReactNode
-}) {
+/* ─── Section wrapper for visual grouping ─── */
+function Section({ children, gap = 0 }: { children: ReactNode; gap?: number }) {
   return (
-    <div
-      style={{
-        marginBottom: 16,
-        padding: '18px 16px',
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.05)',
-      }}
-    >
-      <div style={{ display: 'grid', gap: 12 }}>
-        {children}
-      </div>
+    <div style={{ marginBottom: 16, display: 'grid', gap }}>
+      {children}
     </div>
-  )
-}
-
-function DeckDivider() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        height: 1,
-        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 12%, rgba(255,255,255,0.06) 88%, transparent 100%)',
-      }}
-    />
   )
 }
 
@@ -98,24 +73,17 @@ export function HomePage({ user, onRefresh }: Props) {
     disabled: !onRefresh,
   })
 
-  // State management via reducer
   const { state, actions } = useHomePageState()
-
-  // Welcome tour for first-time users
   const [showTour, setShowTour] = useState(() => !hasSeenWelcomeTour())
-
-  // Referral copy state
   const [referralCopied, setReferralCopied] = useState(false)
-
   const heroCTARef = useRef<HTMLElement>(null)
 
-  // Secret admin activation (5 quick taps on logo badge)
+  // Secret admin activation (5 quick taps)
   const tapCountRef = useRef(0)
   const lastTapTimeRef = useRef(0)
 
   const handleSecretTap = useCallback(() => {
     if (!admin.isAdmin) return
-
     const now = Date.now()
     if (now - lastTapTimeRef.current > 500) {
       tapCountRef.current = 1
@@ -130,7 +98,6 @@ export function HomePage({ user, onRefresh }: Props) {
     lastTapTimeRef.current = now
   }, [admin.isAdmin, haptic])
 
-  // Memoized calculations
   const activeOrders = useMemo(
     () => user?.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length ?? 0,
     [user?.orders]
@@ -167,7 +134,6 @@ export function HomePage({ user, onRefresh }: Props) {
     })
   }, [user?.orders, navigate])
 
-  // Cleanup ref for copy timeout
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
 
@@ -178,9 +144,7 @@ export function HomePage({ user, onRefresh }: Props) {
       setReferralCopied(true)
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
       copyTimerRef.current = setTimeout(() => setReferralCopied(false), 2000)
-    }).catch(() => {
-      // Clipboard not available — don't show false "copied" feedback
-    })
+    }).catch(() => {})
   }, [user, haptic])
 
   const handleTelegramShare = useCallback(() => {
@@ -192,9 +156,7 @@ export function HomePage({ user, onRefresh }: Props) {
   }, [user, haptic, botUsername])
 
   const handleBonusClaimed = useCallback(() => {
-    if (onRefresh) {
-      void onRefresh()
-    }
+    if (onRefresh) void onRefresh()
   }, [onRefresh])
 
   const handleOpenModal = useCallback((modal: ModalName) => {
@@ -207,22 +169,17 @@ export function HomePage({ user, onRefresh }: Props) {
     actions.openModal('urgentSheet')
   }, [haptic, actions])
 
-  // User type detection for progressive disclosure
+  // User state detection
   const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
   const inviteLink = buildReferralLink(botUsername, user?.telegram_id)
 
-  // Three returning-user sub-states for personalized flow
   const returningUserState = useMemo(() => {
     if (!user || isNewUser) return 'new' as const
-    const hasActive = activeOrders > 0
-    if (hasActive) return 'active' as const
-
-    // Check if last order was completed recently (within 7 days)
+    if (activeOrders > 0) return 'active' as const
     const lastOrder = user.orders[0]
     if (lastOrder?.status === 'completed' && lastOrder.completed_at) {
-      const completedDate = new Date(lastOrder.completed_at)
-      const daysSince = (Date.now() - completedDate.getTime()) / (1000 * 60 * 60 * 24)
+      const daysSince = (Date.now() - new Date(lastOrder.completed_at).getTime()) / (1000 * 60 * 60 * 24)
       if (daysSince <= 7) return 'just-completed' as const
     }
     return 'idle' as const
@@ -231,21 +188,20 @@ export function HomePage({ user, onRefresh }: Props) {
   const shouldShowDailyBonus = Boolean(user?.daily_luck_available || (user?.daily_bonus_streak ?? 0) > 0)
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
 
+  /* ─── Loading skeleton ─── */
   if (!user) return (
     <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))' }}>
-      <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '0' }}>
-        {/* Header skeleton */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 0' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--surface-hover)' }} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ width: 120, height: 18, borderRadius: 8, background: 'var(--surface-hover)' }} />
-            <div style={{ width: 80, height: 12, borderRadius: 4, background: 'var(--surface-hover)', opacity: 0.6 }} />
+      <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ width: 100, height: 14, borderRadius: 4, background: 'var(--surface-hover)', opacity: 0.5 }} />
+            <div style={{ width: 140, height: 24, borderRadius: 8, background: 'var(--surface-hover)' }} />
           </div>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface-hover)' }} />
         </div>
-        {/* CTA skeleton */}
-        <div style={{ height: 180, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.5 }} />
-        {/* Actions skeleton */}
-        <div style={{ height: 120, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.3 }} />
+        <div style={{ height: 56, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.4 }} />
+        <div style={{ height: 180, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.3 }} />
+        <div style={{ height: 100, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.2 }} />
       </div>
     </main>
   )
@@ -267,21 +223,14 @@ export function HomePage({ user, onRefresh }: Props) {
         paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))',
       }}>
       <PullIndicator />
-      {/* Premium Background */}
+
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
-        <PremiumBackground
-          variant="gold"
-          intensity="subtle"
-          interactive={false}
-        />
+        <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
       </div>
 
-      {/* Content */}
       <div className="relative z-[1]">
 
-        {/* ═══════════════════════════════════════════════════════════════════
-          HEADER
-          ═══════════════════════════════════════════════════════════════════ */}
+        {/* ═══ HEADER — Minimal: greeting + name + avatar ═══ */}
         <HomeHeader
           user={{
             fullname: user.fullname,
@@ -301,134 +250,103 @@ export function HomePage({ user, onRefresh }: Props) {
           isNewUser={isNewUser}
         />
 
-        {/* ═══════════════════════════════════════════════════════════════════
-          NEW USER FLOW — Full conversion funnel:
-          Hero → LiveActivity → TrustStats → HowItWorks →
-          Testimonials → Guarantees → PricingAnchor → FAQ → Footer
-          + StickyBottomCTA (fixed, appears after hero exits viewport)
-          ═══════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════
+            NEW USER FLOW
+            ═══════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            {/* 1. Hero CTA — The promise + price anchor */}
             <div ref={heroCTARef as React.RefObject<HTMLDivElement>}>
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
-
-            {/* 2. Live Activity Feed — Real-time social proof */}
             <LiveActivityFeed />
-
-            {/* 3. Trust Stats — Proof in numbers */}
             <TrustStatsStrip />
-
-            {/* 4. How It Works — Eliminate process anxiety */}
             <HowItWorks />
-
-            {/* 5. Testimonials — Social proof with outcomes */}
             <TestimonialsSection />
-
-            {/* 6. Guarantees — Loss-aversion framing */}
             <GuaranteesShowcase />
-
-            {/* 7. Pricing Anchor — Price comparison that sells */}
-            <PricingAnchor
-              onNavigateToOrder={handleNewOrderWithType}
-              haptic={haptic}
-            />
-
-            {/* 8. FAQ — Objection handler */}
+            <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
-
-            {/* 9. Footer CTA — Repeat conversion point */}
             <StickyBottomCTA onClick={handleNewOrder} />
           </>
         ) : (
-          /* ═══════════════════════════════════════════════════════════════════
-             RETURNING USER FLOW — Three sub-states:
-             A) Active orders  → tracker-first, action-oriented
-             B) Just completed → celebration + quick reorder prominent
-             C) Idle returning → win-back + quick reorder
-             ═══════════════════════════════════════════════════════════════════ */
+          /* ═══════════════════════════════════════════════════════
+             RETURNING USER FLOW
+             ═══════════════════════════════════════════════════════ */
           <>
-            {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
+            {/* ─── Finance strip: balance, cashback, bonus, club ─── */}
+            <FinanceStrip
+              balance={user.balance}
+              bonusBalance={user.bonus_balance}
+              cashback={user.rank.cashback}
+              activeOrders={activeOrders}
+              onOpenLounge={handleOpenLounge}
+              haptic={haptic}
+            />
+
+            {/* ── Active orders → order tracker first ── */}
             {returningUserState === 'active' && (
-              <>
-                <ActiveOrderDashboard
-                  orders={user.orders}
-                  onNavigate={navigate}
+              <ActiveOrderDashboard
+                orders={user.orders}
+                onNavigate={navigate}
+                haptic={haptic}
+              />
+            )}
+
+            {/* ── Quick reorder (just-completed or idle with history) ── */}
+            {(returningUserState === 'just-completed' || returningUserState === 'idle') &&
+              user.orders.length > 0 && (
+              <Section>
+                <QuickReorderCard
+                  lastOrder={user.orders[0]}
+                  onReorder={handleReorder}
                   haptic={haptic}
+                  embedded={false}
                 />
-
-                <ActionDeck>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
-                  <DeckDivider />
-                  <QuickActionsRow
-                    onNavigate={navigate}
-                    onOpenModal={handleOpenModal}
-                    onOpenUrgentSheet={handleOpenUrgentSheet}
-                    haptic={haptic}
-                    cashbackPercent={user.rank.cashback}
-                    embedded
-                  />
-                </ActionDeck>
-              </>
+              </Section>
             )}
 
-            {/* ── STATE B: JUST COMPLETED — Celebrate + next order ── */}
-            {returningUserState === 'just-completed' && (
-              <>
-                <ActionDeck>
-                  {user.orders.length > 0 && (
-                    <QuickReorderCard
-                      lastOrder={user.orders[0]}
-                      onReorder={handleReorder}
-                      haptic={haptic}
-                      embedded
-                    />
-                  )}
-                  <DeckDivider />
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
-                  <DeckDivider />
-                  <QuickActionsRow
-                    onNavigate={navigate}
-                    onOpenModal={handleOpenModal}
-                    onOpenUrgentSheet={handleOpenUrgentSheet}
-                    haptic={haptic}
-                    cashbackPercent={user.rank.cashback}
-                    embedded
-                  />
-                </ActionDeck>
-              </>
+            {/* ─── New order CTA ─── */}
+            <Section>
+              <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+            </Section>
+
+            {/* ─── Quick actions row ─── */}
+            <Section>
+              <QuickActionsRow
+                onNavigate={navigate}
+                onOpenModal={handleOpenModal}
+                onOpenUrgentSheet={handleOpenUrgentSheet}
+                haptic={haptic}
+                cashbackPercent={user.rank.cashback}
+              />
+            </Section>
+
+            {/* ─── Daily bonus ─── */}
+            {shouldShowDailyBonus && (
+              <Section>
+                <DailyBonusCard
+                  variant="compact"
+                  dailyAvailable={user.daily_luck_available ?? false}
+                  streak={user.daily_bonus_streak || 0}
+                  haptic={haptic}
+                  onBonusClaimed={handleBonusClaimed}
+                />
+              </Section>
             )}
 
-            {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
-            {returningUserState === 'idle' && (
-              <>
-                <ActionDeck>
-                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" embedded />
-                  {user.orders.length > 0 && <DeckDivider />}
-                  {user.orders.length > 0 && (
-                    <QuickReorderCard
-                      lastOrder={user.orders[0]}
-                      onReorder={handleReorder}
-                      haptic={haptic}
-                      embedded
-                    />
-                  )}
-                  <DeckDivider />
-                  <QuickActionsRow
-                    onNavigate={navigate}
-                    onOpenModal={handleOpenModal}
-                    onOpenUrgentSheet={handleOpenUrgentSheet}
-                    haptic={haptic}
-                    cashbackPercent={user.rank.cashback}
-                    embedded
-                  />
-                </ActionDeck>
-              </>
+            {/* ─── Bonus expiry alert ─── */}
+            {user.bonus_expiry && (
+              <Section>
+                <BonusExpiryAlert
+                  bonusExpiry={user.bonus_expiry}
+                  bonusBalance={user.bonus_balance}
+                  onUseBonus={handleNewOrder}
+                />
+              </Section>
             )}
 
+            {/* ─── Club & Referrals ─── */}
             <LoungeVault
               rank={user.rank}
               bonusBalance={user.bonus_balance}
@@ -439,34 +357,14 @@ export function HomePage({ user, onRefresh }: Props) {
               onCopy={handleCopyReferral}
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}
               onTelegramShare={handleTelegramShare}
-              alertPanel={user.bonus_expiry ? (
-                <BonusExpiryAlert
-                  bonusExpiry={user.bonus_expiry}
-                  bonusBalance={user.bonus_balance}
-                  onUseBonus={handleNewOrder}
-                  embedded
-                />
-              ) : undefined}
-              bonusPanel={shouldShowDailyBonus ? (
-                <DailyBonusCard
-                  variant="compact"
-                  embedded
-                  dailyAvailable={user.daily_luck_available ?? false}
-                  streak={user.daily_bonus_streak || 0}
-                  haptic={haptic}
-                  onBonusClaimed={handleBonusClaimed}
-                />
-              ) : undefined}
             />
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
-
           </>
         )}
 
         <SaloonFooter />
       </div>
-
 
       <UrgentHubSheet
         isOpen={state.modals.urgentSheet}
@@ -475,9 +373,6 @@ export function HomePage({ user, onRefresh }: Props) {
         haptic={haptic}
       />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MODALS — Lazy loaded, always rendered for exit animations
-          ═══════════════════════════════════════════════════════════════════ */}
       <Suspense fallback={<ModalLoadingFallback />}>
         <QRCodeModal
           isOpen={state.modals.qr}
@@ -519,12 +414,8 @@ export function HomePage({ user, onRefresh }: Props) {
           onCreateOrder={handleNewOrder}
         />
       </Suspense>
-
     </main>
 
-      {/* Footer CTA moved inline into new-user flow above */}
-
-      {/* Welcome tour — only for new users, shown once */}
       <AnimatePresence>
         {isNewUser && showTour && (
           <WelcomeTour

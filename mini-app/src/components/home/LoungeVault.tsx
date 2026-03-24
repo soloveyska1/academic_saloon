@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift } from 'lucide-react'
@@ -25,8 +24,6 @@ interface LoungeVaultProps {
   onCopy: () => void
   onShowQR: () => void
   onTelegramShare: () => void
-  alertPanel?: ReactNode
-  bonusPanel?: ReactNode
 }
 
 
@@ -40,8 +37,6 @@ export const LoungeVault = memo(function LoungeVault({
   onCopy,
   onShowQR,
   onTelegramShare,
-  alertPanel,
-  bonusPanel,
 }: LoungeVaultProps) {
   return (
     <motion.section
@@ -247,14 +242,6 @@ export const LoungeVault = memo(function LoungeVault({
           )}
         </div>
       </div>
-
-      {/* ═══ Alert + Daily Bonus panels ═══ */}
-      {(alertPanel || bonusPanel) && (
-        <div style={{ display: 'grid', gap: 8 }}>
-          {alertPanel}
-          {bonusPanel}
-        </div>
-      )}
 
       {/* ═══ Referral Card — Separate, lighter card ═══ */}
       <div
