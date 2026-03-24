@@ -190,16 +190,16 @@ function AnimatedNumber({ value, reduced }: { value: number; reduced: boolean })
 }
 
 /* ─── Time-based greeting ─── */
-function useGreeting(isNewUser: boolean, hasPendingPayment?: boolean) {
+function useGreeting(isNewUser: boolean, _hasPendingPayment?: boolean) {
   return useMemo(() => {
     if (isNewUser) return 'Добро пожаловать'
-    if (hasPendingPayment) return 'Заказ ждёт оплаты'
+    // Payment status is shown on the order card — keep greeting contextual
     const hour = new Date().getHours()
     if (hour >= 5 && hour < 12) return 'Доброе утро'
     if (hour >= 12 && hour < 18) return 'С возвращением'
     if (hour >= 18 && hour < 23) return 'Добрый вечер'
     return 'Салун не спит'
-  }, [isNewUser, hasPendingPayment])
+  }, [isNewUser, _hasPendingPayment])
 }
 
 /* ─── Slow-breathing card border ─── */
@@ -411,7 +411,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
       )}
     </AnimatePresence>
 
-    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 20 : 12 }}>
+    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 14 : 10 }}>
       <motion.div
         initial="initial"
         animate="animate"
@@ -509,14 +509,14 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
         {/* ═══ Greeting + Name ═══ */}
         <motion.div
           variants={variants.item}
-          style={{ textAlign: 'center', marginBottom: showFinance ? 2 : 0, maxWidth: '100%' }}
+          style={{ textAlign: 'center', marginBottom: 0, maxWidth: '100%' }}
         >
           <div
             style={{
               fontSize: TYPE.context,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.25)',
-              marginBottom: 2,
+              marginBottom: 1,
               letterSpacing: '0.06em',
             }}
           >
@@ -544,7 +544,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
 
         {/* ═══ Diamond divider ═══ */}
         {showFinance && (
-          <motion.div variants={variants.item} style={{ margin: '4px 0 14px' }}>
+          <motion.div variants={variants.item} style={{ margin: '2px 0 10px' }}>
             <DiamondDivider reduced={reduced} />
           </motion.div>
         )}
@@ -569,7 +569,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '20px 20px 16px',
+                padding: '16px 20px 14px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -587,7 +587,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               />
 
               {/* ── Balance section ── */}
-              <div style={{ marginBottom: 14, position: 'relative' }}>
+              <div style={{ marginBottom: 10, position: 'relative' }}>
                 {/* Breathing glow — quiet */}
                 {!reduced && (
                   <motion.div
@@ -750,7 +750,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: 6,
-                      marginTop: 10,
+                      marginTop: 8,
                     }}
                   >
                     {weeklyDelta !== null && weeklyDelta !== 0 && (
@@ -818,7 +818,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   gridTemplateColumns: '1fr auto 1fr',
                   alignItems: 'center',
                   gap: 0,
-                  paddingTop: 14,
+                  paddingTop: 10,
                   borderTop: '1px solid rgba(212,175,55,0.06)',
                 }}
               >
