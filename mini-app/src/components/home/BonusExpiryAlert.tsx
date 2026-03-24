@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Flame, Clock, Gift } from 'lucide-react'
 import { BonusExpiryInfo } from '../../types'
+import { Reveal } from '../ui/StaggerReveal'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  BONUS EXPIRY ALERT — Loss aversion trigger.
@@ -67,9 +68,9 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       title: `Используйте ${Math.round(amount).toLocaleString('ru-RU')} ₽ бонусов`,
       subtitle: `Истекают через ${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'}`,
       gradient: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, rgba(12,12,10,0.6) 100%)',
-      border: 'rgba(201,162,39,0.08)',
-      iconBg: 'rgba(201,162,39,0.06)',
-      iconBorder: 'rgba(201,162,39,0.08)',
+      border: 'rgba(212,175,55,0.12)',
+      iconBg: 'rgba(212,175,55,0.06)',
+      iconBorder: 'rgba(212,175,55,0.12)',
       iconColor: 'var(--gold-400)',
       textColor: 'var(--text-primary)',
       pulse: false,
@@ -81,6 +82,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
   const Icon = config.icon
 
   return (
+    <Reveal animation="slide">
     <motion.button
       type="button"
       initial={{ opacity: 0, y: 16 }}
@@ -95,7 +97,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         width: '100%',
         padding: embedded ? '13px 14px' : '14px 16px',
         marginBottom: embedded ? 0 : 14,
-        borderRadius: embedded ? 18 : 22,
+        borderRadius: 12,
         background: config.gradient,
         border: `1px solid ${config.border}`,
         cursor: 'pointer',
@@ -186,5 +188,6 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         Открыть
       </div>
     </motion.button>
+    </Reveal>
   )
 })

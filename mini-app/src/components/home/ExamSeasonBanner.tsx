@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Clock, Zap, Snowflake, Sun } from 'lucide-react'
+import { Reveal } from '../ui/StaggerReveal'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  EXAM SEASON BANNER — Contextual info banner during exam periods
@@ -133,6 +134,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
   const IconComponent = season.icon
 
   return (
+    <Reveal animation="fade" delay={0.1}>
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -217,5 +219,6 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
         </div>
       </div>
     </motion.div>
+    </Reveal>
   )
 })
