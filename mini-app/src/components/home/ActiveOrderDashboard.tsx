@@ -248,7 +248,7 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
             boxShadow: '0 0 8px rgba(212,175,55,0.3)',
           }}
         />
-        {/* Stage transition dots */}
+        {/* Stage transition ticks — subtle, flush with bar */}
         {[1, 2, 3].map((i) => (
           <div
             key={i}
@@ -257,15 +257,15 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
               top: '50%',
               left: `${(i / STAGES.length) * 100}%`,
               transform: 'translate(-50%, -50%)',
-              width: 5,
-              height: 5,
+              width: 3,
+              height: 3,
               borderRadius: '50%',
               background: i < stageIdx
                 ? '#D4AF37'
                 : i === stageIdx
-                  ? 'rgba(212,175,55,0.5)'
-                  : 'rgba(255,255,255,0.10)',
-              border: `1.5px solid ${i <= stageIdx ? 'rgba(20,18,14,0.8)' : 'rgba(20,18,14,0.6)'}`,
+                  ? 'rgba(212,175,55,0.4)'
+                  : 'rgba(255,255,255,0.12)',
+              border: `1px solid rgba(20,18,14,0.7)`,
               zIndex: 2,
               transition: 'background 0.3s',
             }}
@@ -532,7 +532,7 @@ function OrderCard({
         <CompactProgress stageIdx={stageIdx} />
       </div>
 
-      {/* ─── Zone 4: Action footer — price + full-width CTA ─── */}
+      {/* ─── Zone 4: Action footer — CTA with integrated price ─── */}
       <div style={{
         padding: '0 20px 16px',
         position: 'relative',
@@ -545,41 +545,7 @@ function OrderCard({
           marginBottom: 14,
         }} />
 
-        {/* Price row */}
-        {financeAmount && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 10,
-          }}>
-            <span style={{
-              fontSize: 20,
-              fontWeight: 700,
-              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              color: remaining > 0 ? 'var(--gold-400)' : 'rgba(255,255,255,0.50)',
-              letterSpacing: '-0.01em',
-            }}>
-              {financeAmount}
-            </span>
-            {hasPartialPayment && (
-              <span style={{
-                padding: '2px 7px',
-                borderRadius: 999,
-                background: 'rgba(74,222,128,0.08)',
-                border: '1px solid rgba(74,222,128,0.12)',
-                fontSize: 9,
-                fontWeight: 700,
-                color: 'rgba(74,222,128,0.8)',
-                whiteSpace: 'nowrap',
-              }}>
-                аванс
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Full-width action button — solid gold for payment, subtle for others */}
+        {/* Full-width CTA — price integrated into button for payment states */}
         <motion.div
           whileTap={{ scale: 0.97 }}
           style={{
@@ -588,31 +554,55 @@ function OrderCard({
             justifyContent: 'center',
             gap: 8,
             width: '100%',
-            padding: needsAction ? '13px 16px' : '10px 16px',
+            padding: needsAction ? '14px 20px' : '10px 16px',
             borderRadius: 12,
             background: needsAction
-              ? 'linear-gradient(135deg, #D4AF37 0%, #C5A028 40%, #B8962A 100%)'
+              ? 'linear-gradient(135deg, #E2C04C 0%, #D4AF37 50%, #C19B2A 100%)'
               : 'rgba(255,255,255,0.04)',
             border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.06)',
             boxShadow: needsAction
-              ? '0 6px 24px -4px rgba(212,175,55,0.40), inset 0 1px 0 rgba(252,246,186,0.25)'
+              ? '0 6px 24px -4px rgba(212,175,55,0.45), inset 0 1px 0 rgba(255,248,200,0.35)'
               : 'none',
           }}
         >
           <span style={{
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 700,
             color: needsAction ? 'rgba(15,12,8,0.92)' : 'rgba(255,255,255,0.50)',
-            letterSpacing: '0.02em',
+            letterSpacing: '0.01em',
           }}>
-            {primaryAction}
+            {needsAction && financeAmount
+              ? `${primaryAction} ${financeAmount}`
+              : primaryAction}
           </span>
           <ArrowRight
-            size={14}
+            size={15}
             strokeWidth={2.5}
-            style={{ color: needsAction ? 'rgba(15,12,8,0.75)' : 'rgba(255,255,255,0.35)' }}
+            style={{ color: needsAction ? 'rgba(15,12,8,0.70)' : 'rgba(255,255,255,0.35)' }}
           />
         </motion.div>
+
+        {/* Partial payment badge — below button */}
+        {hasPartialPayment && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: 8,
+          }}>
+            <span style={{
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(74,222,128,0.08)',
+              border: '1px solid rgba(74,222,128,0.12)',
+              fontSize: 9,
+              fontWeight: 700,
+              color: 'rgba(74,222,128,0.8)',
+              whiteSpace: 'nowrap',
+            }}>
+              аванс внесён
+            </span>
+          </div>
+        )}
       </div>
     </motion.button>
   )
@@ -626,48 +616,27 @@ const MAX_DOTS = 5
 function DotIndicator({ count, active }: { count: number; active: number }) {
   if (count <= 1) return null
 
-  // For small counts, show all dots
-  if (count <= MAX_DOTS) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, paddingTop: 10 }}>
-        {Array.from({ length: count }, (_, i) => (
-          <motion.div
-            key={i}
-            animate={{ width: i === active ? 16 : 6, opacity: i === active ? 1 : 0.35 }}
-            transition={{ duration: 0.2 }}
-            style={{ height: 3.5, borderRadius: 2, background: i === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)' }}
-          />
-        ))}
-      </div>
-    )
+  // Always show dots (max 5 visible), no text counter
+  const visible = Math.min(count, MAX_DOTS)
+  // For many orders, shift the window so active dot stays centered
+  let start = 0
+  if (count > MAX_DOTS) {
+    start = Math.min(Math.max(0, active - Math.floor(MAX_DOTS / 2)), count - MAX_DOTS)
   }
 
-  // For many: show "1 / N" text counter
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 4,
-      paddingTop: 10,
-    }}>
-      <span style={{
-        fontSize: 11,
-        fontWeight: 700,
-        fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-        color: 'var(--gold-400)',
-      }}>
-        {active + 1}
-      </span>
-      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)' }}>/</span>
-      <span style={{
-        fontSize: 11,
-        fontWeight: 600,
-        fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-        color: 'rgba(255,255,255,0.30)',
-      }}>
-        {count}
-      </span>
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 6, paddingTop: 10 }}>
+      {Array.from({ length: visible }, (_, i) => {
+        const idx = start + i
+        return (
+          <motion.div
+            key={idx}
+            animate={{ width: idx === active ? 16 : 6, opacity: idx === active ? 1 : 0.35 }}
+            transition={{ duration: 0.2 }}
+            style={{ height: 3.5, borderRadius: 2, background: idx === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)' }}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -684,7 +653,7 @@ function SeeAllOrdersLink({
   onNavigate: (path: string) => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }) {
-  if (count < 2) return null
+  if (count < 3) return null
 
   return (
     <motion.button
