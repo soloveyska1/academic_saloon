@@ -234,11 +234,11 @@ export const NewTaskCTA = memo(function NewTaskCTA({
     )
   }
 
-  // ═══ Returning user — standalone CTA card with integrated urgent option ═══
+  // ═══ Returning user — premium unified CTA ═══
   return (
     <Reveal animation="spring" delay={0.15}>
       <motion.div
-        whileTap={{ scale: 0.97 }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleClick}
         role="button"
         tabIndex={0}
@@ -246,47 +246,59 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           position: 'relative',
           width: '100%',
           borderRadius: 12,
-          background: 'linear-gradient(155deg, rgba(22,18,10,0.97) 0%, rgba(10,10,11,0.99) 100%)',
-          border: '1px solid rgba(212,175,55,0.10)',
-          boxShadow: '0 16px 32px -24px rgba(0,0,0,0.7)',
+          background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 50%, rgba(9,9,10,1) 100%)',
+          border: '1px solid rgba(212,175,55,0.18)',
+          boxShadow: 'var(--card-shadow), inset 0 1px 0 rgba(255,255,255,0.04)',
           cursor: 'pointer',
           textAlign: 'left',
           overflow: 'hidden',
         }}
       >
-        {/* Subtle gold glow */}
+        {/* Top gold accent line */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: -50,
-            right: -20,
-            width: 140,
-            height: 140,
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)',
+          }}
+        />
+
+        {/* Ambient glow — top right */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -60,
+            right: -30,
+            width: 160,
+            height: 160,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 60%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 65%)',
             pointerEvents: 'none',
           }}
         />
 
-        {/* Main CTA area */}
+        {/* Main CTA content */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          padding: '20px',
           position: 'relative',
           zIndex: 1,
+          padding: '20px 20px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.12em',
+                letterSpacing: 'var(--ls-caps)',
                 textTransform: 'uppercase',
-                color: 'rgba(212,175,55,0.50)',
+                color: 'rgba(212,175,55,0.60)',
                 marginBottom: 6,
               }}
             >
@@ -316,63 +328,72 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             </div>
           </div>
 
-          <div
+          {/* Directional hint — subtle chevron, not a separate button */}
+          <ArrowRight
+            size={20}
+            strokeWidth={2}
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.95), rgba(245,225,160,0.80))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              color: 'var(--gold-400)',
+              opacity: 0.4,
               flexShrink: 0,
-              boxShadow: '0 12px 24px -12px rgba(212,175,55,0.35)',
             }}
-          >
-            <ArrowRight size={18} color="#050505" strokeWidth={2.5} />
-          </div>
+          />
         </div>
 
-        {/* Urgent chip — inline at bottom */}
+        {/* Urgent option — proper secondary row with divider */}
         {onUrgent && (
-          <div style={{
-            padding: '0 20px 16px',
-            position: 'relative',
-            zIndex: 1,
-          }}>
+          <>
+            <div
+              aria-hidden="true"
+              style={{
+                margin: '0 20px',
+                height: 1,
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
+              }}
+            />
             <motion.button
               type="button"
-              whileTap={{ scale: 0.96 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleUrgent}
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: 5,
-                padding: '6px 12px',
-                borderRadius: 999,
-                background: 'rgba(212,175,55,0.08)',
-                border: '1px solid rgba(212,175,55,0.14)',
+                gap: 10,
+                width: '100%',
+                padding: '12px 20px',
+                background: 'none',
+                border: 'none',
                 cursor: 'pointer',
+                textAlign: 'left' as const,
                 appearance: 'none' as const,
               }}
             >
-              <Zap size={12} strokeWidth={2.2} style={{ color: 'var(--gold-400)' }} />
-              <span style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--gold-300)',
-              }}>
-                Срочный
-              </span>
-              <span style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-              }}>
-                · оценка за 5 мин
-              </span>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  background: 'var(--gold-glass-subtle)',
+                  border: '1px solid rgba(212,175,55,0.14)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Zap size={14} strokeWidth={2.2} color="var(--gold-400)" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-300)' }}>
+                  Срочный заказ
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 6 }}>
+                  за 24ч
+                </span>
+              </div>
+              <ArrowRight size={14} strokeWidth={2} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
             </motion.button>
-          </div>
+          </>
         )}
       </motion.div>
     </Reveal>
