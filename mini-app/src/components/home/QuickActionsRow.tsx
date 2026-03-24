@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { QUICK_ACTIONS } from './constants'
 import { StaggerGrid } from '../ui/StaggerReveal'
-import { MagneticButton } from '../ui/MagneticButton'
 
 interface QuickActionsRowProps {
   onNavigate: (route: string) => void
@@ -147,16 +146,16 @@ export const QuickActionsRow = memo(function QuickActionsRow({
     )
   }
 
-  // ── Non-embedded: grid with MagneticButton + StaggerGrid ──
+  // ── Non-embedded: grid with StaggerGrid ──
   return (
     <StaggerGrid columns={2} gap={10} animation="spring">
       {actions.map((action) => {
         const isPrimary = action.id === 'urgent'
 
         return (
-          <MagneticButton
+          <motion.button
             key={action.id}
-            magneticStrength={0.3}
+            whileTap={{ scale: 0.97 }}
             onClick={() => handleClick(action)}
             style={{
               padding: 16,
@@ -165,10 +164,12 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               minHeight: 100,
               gridColumn: isPrimary ? '1 / -1' : undefined,
               background: isPrimary
-                ? 'linear-gradient(160deg, rgba(34,28,14,0.98) 0%, rgba(16,16,16,0.96) 50%, rgba(9,9,10,1) 100%)'
-                : 'linear-gradient(160deg, rgba(18,18,17,0.92) 0%, rgba(11,11,12,0.95) 100%)',
-              border: `1px solid ${isPrimary ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                ? 'rgba(212,175,55,0.06)'
+                : 'rgba(255,255,255,0.025)',
+              border: `1px solid ${isPrimary ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
               overflow: 'hidden',
+              cursor: 'pointer',
+              appearance: 'none' as const,
             }}
           >
             {isPrimary ? (
@@ -192,12 +193,12 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(212,175,55,0.12)',
+                      background: 'rgba(212,175,55,0.06)',
                       border: '1px solid rgba(212,175,55,0.16)',
                       flexShrink: 0,
                     }}
                   >
-                    <action.icon size={17} color="var(--gold-300)" strokeWidth={2} />
+                    <action.icon size={17} color="var(--gold-400)" strokeWidth={2} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -233,8 +234,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'rgba(212,175,55,0.06)',
+                    border: '1px solid rgba(212,175,55,0.14)',
                     color: 'var(--gold-300)',
                     flexShrink: 0,
                   }}
@@ -254,7 +255,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'rgba(212,175,55,0.06)',
                     border: '1px solid rgba(255,255,255,0.06)',
                     marginBottom: 12,
                   }}
@@ -288,7 +289,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 </div>
               </div>
             )}
-          </MagneticButton>
+          </motion.button>
         )
       })}
     </StaggerGrid>

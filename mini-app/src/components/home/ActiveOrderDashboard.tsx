@@ -13,7 +13,6 @@ import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../l
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
 import { GoldText, GoldBadge, LiquidGoldButton } from '../ui/GoldText'
-import { TiltCard } from '../ui/TiltCard'
 import { Reveal } from '../ui/StaggerReveal'
 
 interface ActiveOrderDashboardProps {
@@ -163,7 +162,6 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
   return (
     <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
-      <TiltCard tiltMaxAngle={5} style={{ borderRadius: 12 }}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.985 }}
@@ -453,7 +451,6 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             )}
           </div>
         </motion.button>
-      </TiltCard>
     </Reveal>
   )
 })
