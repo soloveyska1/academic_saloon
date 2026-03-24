@@ -202,7 +202,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             />
           )}
 
-          {/* ─── Zone 1: Identity (top) ─── */}
+          {/* Zone 1: Identity (top) */}
           <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             {/* Work type + status row */}
             <div
@@ -280,7 +280,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             </div>
           </div>
 
-          {/* ─── Zone 2: Finance (middle) ─── */}
+          {/* Zone 2: Finance (middle) */}
           <div
             style={{
               padding: '16px 20px',
@@ -381,7 +381,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             </div>
           </div>
 
-          {/* ─── Zone 3: Action (bottom) ─── */}
+          {/* Zone 3: Action (bottom) */}
           <div
             style={{
               display: 'flex',
