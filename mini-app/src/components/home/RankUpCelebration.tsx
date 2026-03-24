@@ -72,10 +72,31 @@ export const RankUpCelebration = memo(function RankUpCelebration({
             padding: 24,
           }}
         >
-          {/* Confetti particles - disabled for reduced motion preference */}
+          {/* Radial gold burst rays */}
+          {!shouldReduceMotion && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: [0, 0.6, 0], scale: [0.3, 2.5], rotate: [0, 30] }}
+              transition={{ duration: 2, ease: 'easeOut' }}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: 300,
+                height: 300,
+                marginTop: -150,
+                marginLeft: -150,
+                background: 'conic-gradient(from 0deg, transparent, rgba(212,175,55,0.15), transparent, rgba(212,175,55,0.10), transparent, rgba(212,175,55,0.15), transparent)',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+
+          {/* Confetti particles — 60 for fullscreen celebration */}
           {!shouldReduceMotion && (
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-              {Array.from({ length: 30 }).map((_, i) => (
+              {Array.from({ length: 60 }).map((_, i) => (
                 <motion.div
                   key={i}
                   initial={{

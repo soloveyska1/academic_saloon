@@ -1,7 +1,7 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
-import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift } from 'lucide-react'
+import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift, Award, Flame, Users, Star, Zap } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { GoldText } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
@@ -23,10 +23,160 @@ interface LoungeVaultProps {
   referralCode: string
   referralsCount: number
   referralEarnings: number
+  ordersCount: number
+  totalSpent: number
+  dailyStreak: number
   copied: boolean
   onCopy: () => void
   onShowQR: () => void
   onTelegramShare: () => void
+}
+
+/* ─── Achievement / Milestone definitions ─── */
+interface Achievement {
+  id: string
+  icon: typeof Award
+  label: string
+  description: string
+  unlocked: boolean
+  progress?: number // 0-1
+}
+
+function useAchievements(
+  ordersCount: number,
+  totalSpent: number,
+  referralsCount: number,
+  dailyStreak: number,
+  isMaxRank: boolean,
+): Achievement[] {
+  return useMemo(() => [
+    {
+      id: 'first',
+      icon: Star,
+      label: 'Первый шаг',
+      description: 'Первый заказ',
+      unlocked: ordersCount >= 1,
+      progress: Math.min(1, ordersCount / 1),
+    },
+    {
+      id: 'five',
+      icon: Zap,
+      label: 'Постоянный',
+      description: '5 заказов',
+      unlocked: ordersCount >= 5,
+      progress: Math.min(1, ordersCount / 5),
+    },
+    {
+      id: 'referrer',
+      icon: Users,
+      label: 'Амбассадор',
+      description: 'Пригласить друга',
+      unlocked: referralsCount >= 1,
+      progress: Math.min(1, referralsCount / 1),
+    },
+    {
+      id: 'streak',
+      icon: Flame,
+      label: 'Огонь',
+      description: 'Стрик 7 дней',
+      unlocked: dailyStreak >= 7,
+      progress: Math.min(1, dailyStreak / 7),
+    },
+    {
+      id: 'whale',
+      icon: Crown,
+      label: 'Топ-клиент',
+      description: 'Потрачено 10K₽',
+      unlocked: totalSpent >= 10000,
+      progress: Math.min(1, totalSpent / 10000),
+    },
+    {
+      id: 'max',
+      icon: Award,
+      label: 'Легенда',
+      description: 'Высший ранг',
+      unlocked: isMaxRank,
+      progress: isMaxRank ? 1 : 0,
+    },
+  ], [ordersCount, totalSpent, referralsCount, dailyStreak, isMaxRank])
+}
+
+/* ─── Achievement badge component ─── */
+function AchievementBadge({ achievement }: { achievement: Achievement }) {
+  const Icon = achievement.icon
+  const unlocked = achievement.unlocked
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 5,
+        opacity: unlocked ? 1 : 0.3,
+      }}
+    >
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: unlocked
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))'
+            : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${unlocked ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.06)'}`,
+          boxShadow: unlocked ? '0 0 12px rgba(212,175,55,0.10)' : 'none',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <Icon
+          size={18}
+          strokeWidth={1.8}
+          style={{
+            color: unlocked ? 'var(--gold-400)' : 'rgba(255,255,255,0.20)',
+          }}
+        />
+        {/* Progress ring for locked */}
+        {!unlocked && achievement.progress !== undefined && achievement.progress > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background: 'rgba(212,175,55,0.15)',
+            }}
+          >
+            <div
+              style={{
+                width: `${achievement.progress * 100}%`,
+                height: '100%',
+                background: 'rgba(212,175,55,0.6)',
+                borderRadius: 1,
+              }}
+            />
+          </div>
+        )}
+      </div>
+      <span
+        style={{
+          fontSize: 8,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          color: unlocked ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.20)',
+          textAlign: 'center',
+          maxWidth: 52,
+          lineHeight: 1.2,
+        }}
+      >
+        {achievement.label}
+      </span>
+    </div>
+  )
 }
 
 export const LoungeVault = memo(function LoungeVault({
@@ -35,12 +185,17 @@ export const LoungeVault = memo(function LoungeVault({
   referralCode,
   referralsCount,
   referralEarnings,
+  ordersCount,
+  totalSpent,
+  dailyStreak,
   copied,
   onCopy,
   onShowQR,
   onTelegramShare,
 }: LoungeVaultProps) {
   const capability = useCapability()
+  const achievements = useAchievements(ordersCount, totalSpent, referralsCount, dailyStreak, rank.is_max)
+  const unlockedCount = achievements.filter(a => a.unlocked).length
   return (
     <motion.section
       initial={{ opacity: 0, y: 18 }}
@@ -306,7 +461,55 @@ export const LoungeVault = memo(function LoungeVault({
         </div>
       </Reveal>
 
-      {/* ═══ Card B — Referral (LIGHT visual weight) ═══ */}
+      {/* ═══ Card B — Achievements (collection grid) ═══ */}
+      <div
+        style={{
+          padding: 18,
+          borderRadius: 12,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Award size={14} color="var(--gold-400)" strokeWidth={1.9} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Достижения
+            </span>
+          </div>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--gold-300)',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {unlockedCount}/{achievements.length}
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, 1fr)',
+            gap: 6,
+          }}
+        >
+          {achievements.map(a => (
+            <AchievementBadge key={a.id} achievement={a} />
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ Card C — Referral (LIGHT visual weight) ═══ */}
       <div
         style={{
           padding: 20,
