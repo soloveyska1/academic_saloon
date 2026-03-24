@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { GoldAvatar } from '../ui/GoldText'
+import { useCapability } from '../../contexts/DeviceCapabilityContext'
+import { KineticText } from '../ui/KineticText'
 
 interface HomeHeaderProps {
   user: {
@@ -31,6 +33,7 @@ export const HomeHeader = memo(function HomeHeader({
   onSecretTap,
   isNewUser,
 }: HomeHeaderProps) {
+  const capability = useCapability()
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
@@ -88,7 +91,23 @@ export const HomeHeader = memo(function HomeHeader({
               whiteSpace: 'nowrap',
             }}
           >
-            {firstName}
+            {capability.tier === 3 ? (
+              <KineticText
+                animation="typewriter"
+                variant="white"
+                delay={0.2}
+                staggerDelay={0.03}
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 28,
+                  fontWeight: 700,
+                }}
+              >
+                {firstName}
+              </KineticText>
+            ) : (
+              firstName
+            )}
           </motion.div>
         </div>
 

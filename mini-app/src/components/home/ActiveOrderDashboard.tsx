@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import React, { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -339,20 +339,36 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   marginBottom: 6,
                 }}
               >
-                {STAGES.map((stage, index) => (
-                  <div
-                    key={stage.key}
-                    style={{
-                      height: 4,
-                      borderRadius: 999,
-                      background: index <= stageIdx
-                        ? 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))'
-                        : 'rgba(255,255,255,0.06)',
-                      boxShadow: index === stageIdx ? '0 0 12px rgba(212,175,55,0.2)' : 'none',
-                      transition: 'background 0.3s ease',
-                    }}
-                  />
-                ))}
+                {STAGES.map((stage, index) => {
+                  const barStyle: React.CSSProperties = {
+                    height: 4,
+                    borderRadius: 999,
+                    background: index <= stageIdx
+                      ? 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))'
+                      : 'rgba(255,255,255,0.06)',
+                    boxShadow: index === stageIdx ? '0 0 12px rgba(212,175,55,0.2)' : 'none',
+                    transition: 'background 0.3s ease',
+                  }
+
+                  if (index === stageIdx) {
+                    return (
+                      <motion.div
+                        key={stage.key}
+                        animate={{
+                          boxShadow: [
+                            '0 0 8px rgba(212,175,55,0.15)',
+                            '0 0 16px rgba(212,175,55,0.3)',
+                            '0 0 8px rgba(212,175,55,0.15)',
+                          ],
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        style={barStyle}
+                      />
+                    )
+                  }
+
+                  return <div key={stage.key} style={barStyle} />
+                })}
               </div>
 
               <div

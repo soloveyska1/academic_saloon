@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { formatMoney } from '../../lib/utils'
 import { StaggerReveal } from '../ui/StaggerReveal'
+import { useCapability } from '../../contexts/DeviceCapabilityContext'
+import { HolographicCard } from '../ui/HolographicCard'
 
 interface FinanceStripProps {
   balance: number
@@ -57,6 +59,7 @@ export const FinanceStrip = memo(function FinanceStrip({
   onOpenLounge,
   haptic,
 }: FinanceStripProps) {
+  const capability = useCapability()
   // Combine balance + bonus into one "Счёт" pill
   const totalBalance = balance + bonusBalance
   const hasBonus = bonusBalance > 0
@@ -81,25 +84,51 @@ export const FinanceStrip = memo(function FinanceStrip({
           style={{ display: 'flex', gap: 8 }}
         >
           {/* Combined balance pill — the hero number */}
-          <div style={GOLD_PILL}>
-            <div style={LABEL}>Счёт</div>
-            <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
-              {formatMoney(totalBalance)}
-            </div>
-            {hasBonus && (
-              <div
-                style={{
-                  marginTop: 4,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: 'rgba(212,175,55,0.50)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {formatMoney(bonusBalance)} бонусов
+          {capability.tier === 3 ? (
+            <HolographicCard
+              variant="gold"
+              intensity="subtle"
+              style={{ ...GOLD_PILL, flexShrink: 0 }}
+            >
+              <div style={LABEL}>Счёт</div>
+              <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
+                {formatMoney(totalBalance)}
               </div>
-            )}
-          </div>
+              {hasBonus && (
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'rgba(212,175,55,0.50)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatMoney(bonusBalance)} бонусов
+                </div>
+              )}
+            </HolographicCard>
+          ) : (
+            <div style={GOLD_PILL}>
+              <div style={LABEL}>Счёт</div>
+              <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
+                {formatMoney(totalBalance)}
+              </div>
+              {hasBonus && (
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'rgba(212,175,55,0.50)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatMoney(bonusBalance)} бонусов
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Cashback pill */}
           <div style={NEUTRAL_PILL}>
