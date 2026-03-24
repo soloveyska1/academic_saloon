@@ -44,7 +44,8 @@ export const FinanceStrip = memo(function FinanceStrip({
   onOpenLounge,
   haptic,
 }: FinanceStripProps) {
-  const totalBalance = balance + bonusBalance
+  // balance is the total — bonusBalance is a portion of it (not additive)
+  const displayBalance = balance
 
   return (
     <motion.div
@@ -53,21 +54,21 @@ export const FinanceStrip = memo(function FinanceStrip({
       transition={{ delay: 0.1, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 18 }}
     >
-      {/* ─── Three-column grid: Balance | Cashback | Club ─── */}
+      {/* ─── Three-column strip: Balance | Cashback | Club ─── */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr auto auto',
           alignItems: 'end',
-          gap: 20,
+          gap: 24,
           padding: '14px 0',
           borderBottom: '1px solid rgba(255,255,255,0.04)',
         }}
       >
-        {/* Column 1: Balance (the star) */}
+        {/* Balance */}
         <div>
           <GoldText variant="liquid" size="3xl" weight={700}>
-            <AnimatedNumber value={totalBalance} />
+            <AnimatedNumber value={displayBalance} />
           </GoldText>
           <div
             style={{
@@ -78,15 +79,15 @@ export const FinanceStrip = memo(function FinanceStrip({
             }}
           >
             {bonusBalance > 0
-              ? `${formatMoney(balance)} + ${formatMoney(bonusBalance)} бонусов`
+              ? `из них ${formatMoney(bonusBalance)} бонусов`
               : 'на счёте'
             }
           </div>
         </div>
 
-        {/* Column 2: Cashback */}
+        {/* Cashback */}
         <div style={{ textAlign: 'center', paddingBottom: 2 }}>
-          <GoldText variant="static" size="lg" weight={700}>
+          <GoldText variant="static" size="xl" weight={700}>
             {cashback}%
           </GoldText>
           <div
@@ -101,7 +102,7 @@ export const FinanceStrip = memo(function FinanceStrip({
           </div>
         </div>
 
-        {/* Column 3: Club */}
+        {/* Club */}
         <motion.button
           type="button"
           whileTap={{ scale: 0.95 }}
@@ -119,17 +120,18 @@ export const FinanceStrip = memo(function FinanceStrip({
         >
           <div
             style={{
-              fontSize: 18,
+              fontSize: 24,
               fontWeight: 700,
               color: 'var(--gold-400)',
               display: 'flex',
               alignItems: 'center',
               gap: 3,
               justifyContent: 'center',
+              lineHeight: 1.2,
             }}
           >
             Клуб
-            <ArrowUpRight size={15} strokeWidth={2.2} />
+            <ArrowUpRight size={16} strokeWidth={2.2} />
           </div>
           <div
             style={{
