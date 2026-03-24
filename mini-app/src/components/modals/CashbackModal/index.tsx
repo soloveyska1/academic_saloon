@@ -17,6 +17,13 @@ function fmt(v: number): string {
   return `${Math.max(0, Math.round(v)).toLocaleString('ru-RU')} ₽`
 }
 
+function memberSince(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  try {
+    return new Date(dateStr).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })
+  } catch { return null }
+}
+
 /* ── Compact tier row ── */
 const TierRow = memo(function TierRow({
   rank, index, currentRankIndex,
@@ -36,41 +43,33 @@ const TierRow = memo(function TierRow({
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: isCurrent ? '8px 10px' : '6px 10px',
+        padding: isCurrent ? '6px 10px' : '5px 10px',
         borderRadius: 8,
         background: isCurrent ? 'var(--gold-glass-subtle)' : 'transparent',
-        opacity: isLocked ? 0.45 : 1,
+        opacity: isLocked ? 0.4 : 1,
       }}
     >
-      {/* Icon */}
       <div style={{
-        width: 24,
-        height: 24,
-        borderRadius: 7,
+        width: 22, height: 22, borderRadius: 6,
         background: isPassed || isCurrent ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
         {isPassed ? (
-          <Check size={11} strokeWidth={2.5} color="var(--gold-400)" style={{ opacity: 0.6 }} />
+          <Check size={10} strokeWidth={2.5} color="var(--gold-400)" />
         ) : isLocked ? (
-          <Lock size={10} strokeWidth={2} color="var(--text-muted)" />
+          <Lock size={9} strokeWidth={2} color="var(--text-muted)" />
         ) : (
-          <Icon size={11} strokeWidth={1.8} color="var(--gold-400)" />
+          <Icon size={10} strokeWidth={1.8} color="var(--gold-400)" />
         )}
       </div>
 
-      {/* Name */}
       <span style={{
-        flex: 1,
-        fontSize: 12,
+        flex: 1, fontSize: 12,
         fontWeight: isCurrent ? 700 : 600,
         color: isCurrent ? 'var(--text-primary)' : isPassed ? 'var(--text-secondary)' : 'var(--text-muted)',
       }}>
         {rank.displayName}
-        {/* Show threshold only for locked ranks */}
         {isLocked && rank.minSpent > 0 && (
           <span style={{ color: 'var(--text-muted)', marginLeft: 4, fontWeight: 600, fontSize: 11 }}>
             · от {fmt(rank.minSpent)}
@@ -78,10 +77,8 @@ const TierRow = memo(function TierRow({
         )}
       </span>
 
-      {/* % */}
       <span style={{
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: 12, fontWeight: 700,
         color: isCurrent ? 'var(--gold-400)' : 'var(--text-muted)',
         flexShrink: 0,
       }}>
@@ -122,6 +119,8 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
 
   const handleCTA = useCallback(() => { onClose(); onCreateOrder?.() }, [onClose, onCreateOrder])
 
+  const since = memberSince(user.created_at)
+
   return (
     <ModalWrapper
       isOpen={isOpen}
@@ -147,7 +146,6 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             overflow: 'hidden',
           }}
         >
-          {/* Ambient glow */}
           <div aria-hidden="true" style={{
             position: 'absolute', top: -40, right: -20,
             width: 140, height: 140, borderRadius: '50%',
@@ -160,7 +158,6 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Top row: icon + name ... big % */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginBottom: 12,
@@ -176,13 +173,8 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                     <Icon size={14} strokeWidth={1.8} color="var(--gold-400)" />
                   </div>
                 ) })()}
-                <div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 700,
-                    color: 'var(--text-primary)',
-                  }}>
-                    {currentRank.displayName}
-                  </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {currentRank.displayName}
                 </div>
               </div>
 
@@ -199,22 +191,21 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               </div>
             </div>
 
-            {/* Bottom: description + savings badge */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-                возвращается с каждого заказа
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Возвращается с каждого заказа
               </span>
               {totalSaved > 0 && (
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '3px 8px', borderRadius: 6,
-                  background: 'rgba(212,175,55,0.06)',
-                  border: '1px solid rgba(212,175,55,0.10)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 8,
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.04))',
+                  border: '1px solid rgba(212,175,55,0.15)',
                 }}>
-                  <TrendingUp size={10} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.5 }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold-300)' }}>
+                  <TrendingUp size={11} strokeWidth={2.2} color="var(--gold-400)" style={{ opacity: 0.7 }} />
+                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--gold-300)', letterSpacing: '-0.02em' }}>
                     {fmt(totalSaved)}
                   </span>
                 </div>
@@ -223,15 +214,14 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           </div>
         </m.div>
 
-        {/* ═══════ PROGRESS (only for non-max users) ═══════ */}
+        {/* ═══════ PROGRESS (non-max only) ═══════ */}
         {nextRank && (
           <m.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             style={{
-              padding: '12px 14px',
-              borderRadius: 10,
+              padding: '12px 14px', borderRadius: 10,
               background: 'rgba(255,255,255,0.025)',
               border: '1px solid var(--border-default)',
               marginBottom: 14,
@@ -248,7 +238,6 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 осталось {fmt(spentToNext)}
               </span>
             </div>
-
             <div style={{
               height: 4, borderRadius: 2,
               background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
@@ -278,26 +267,55 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           </m.div>
         )}
 
-        {/* ═══════ TIER LIST — tight, clean ═══════ */}
+        {/* ═══════ TIER LIST ═══════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
-          style={{ marginBottom: onCreateOrder && !isMaxRank ? 16 : 0 }}
+          style={{ marginBottom: 14 }}
         >
-          <div style={{ display: 'grid', gap: 0 }}>
+          <div style={{ display: 'grid', gap: 2 }}>
             {RANKS.map((rank, index) => (
-              <TierRow
-                key={rank.id}
-                rank={rank}
-                index={index}
-                currentRankIndex={currentRankIndex}
-              />
+              <TierRow key={rank.id} rank={rank} index={index} currentRankIndex={currentRankIndex} />
             ))}
           </div>
         </m.div>
 
-        {/* ═══════ CTA — only for users who have room to grow ═══════ */}
+        {/* ═══════ STATS — for max-rank users (reward for loyalty) ═══════ */}
+        {isMaxRank && (
+          <m.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              padding: '12px 14px', borderRadius: 10,
+              background: 'rgba(212,175,55,0.03)',
+              border: '1px solid rgba(212,175,55,0.08)',
+              marginBottom: 0,
+            }}
+          >
+            <div style={{ display: 'grid', gap: 6 }}>
+              {[
+                { label: 'Заказов', value: String(user.orders_count) },
+                { label: 'Потрачено', value: fmt(user.total_spent) },
+                ...(since ? [{ label: 'С нами с', value: since }] : []),
+              ].map((row, i) => (
+                <div key={i} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                    {row.label}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </m.div>
+        )}
+
+        {/* ═══════ CTA — only for users who can grow ═══════ */}
         {onCreateOrder && !isMaxRank && (
           <m.button
             type="button"
@@ -308,16 +326,11 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             transition={{ delay: 0.25 }}
             style={{
               width: '100%',
-              padding: '13px 20px',
-              borderRadius: 12,
+              padding: '13px 20px', borderRadius: 12,
               background: 'var(--gold-metallic)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              boxShadow: 'var(--glow-gold)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 8, boxShadow: 'var(--glow-gold)',
             }}
           >
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-on-gold)' }}>
