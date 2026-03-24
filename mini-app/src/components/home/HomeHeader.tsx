@@ -547,13 +547,12 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
           </motion.div>
         )}
 
-        {/* ═══ Finance card ═══ */}
+        {/* ═══ Finance card — full-width ═══ */}
         {showFinance && (
           <motion.div
             variants={variants.item}
             style={{
               width: '100%',
-              maxWidth: 320,
               position: 'relative',
               borderRadius: 16,
               padding: 1,
@@ -568,7 +567,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '18px 20px 16px',
+                padding: '20px 20px 16px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -578,16 +577,15 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 style={{
                   position: 'absolute',
                   top: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '60%',
+                  left: '20%',
+                  right: '20%',
                   height: 1,
                   background: 'linear-gradient(90deg, transparent, rgba(252,246,186,0.18), transparent)',
                 }}
               />
 
-              {/* ── Balance ── */}
-              <div style={{ textAlign: 'center', marginBottom: 14, position: 'relative' }}>
+              {/* ── Balance section ── */}
+              <div style={{ marginBottom: 14, position: 'relative' }}>
                 {/* Breathing glow — quiet */}
                 {!reduced && (
                   <motion.div
@@ -595,11 +593,10 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     transition={{ duration: TIMING.breathe - 1, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
                       position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      width: 140,
-                      height: 44,
-                      transform: 'translate(-50%, -55%)',
+                      top: '30%',
+                      left: 0,
+                      width: 160,
+                      height: 50,
                       borderRadius: '50%',
                       background: 'radial-gradient(ellipse, rgba(212,175,55,0.10) 0%, transparent 70%)',
                       pointerEvents: 'none',
@@ -607,7 +604,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   />
                 )}
 
-                {/* Balance row */}
+                {/* Balance row — left-aligned */}
                 <div
                   role="button"
                   tabIndex={0}
@@ -615,13 +612,13 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   onClick={toggleBalance}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBalance() } }}
                   style={{
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 14,
+                    justifyContent: 'space-between',
                     cursor: 'pointer',
                     position: 'relative',
                     zIndex: 1,
-                    minHeight: 48,
+                    minHeight: 44,
                   }}
                 >
                   <AnimatePresence mode="wait" initial={false}>
@@ -686,7 +683,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     )}
                   </AnimatePresence>
 
-                  {/* Eye — crossfade + 44px zone */}
+                  {/* Eye toggle — right-aligned */}
                   <motion.div
                     whileTap={reduced ? undefined : { scale: 0.88 }}
                     transition={{ duration: TIMING.micro }}
@@ -698,6 +695,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       height: 36,
                       borderRadius: '50%',
                       flexShrink: 0,
+                      background: 'rgba(255,255,255,0.03)',
                     }}
                   >
                     <AnimatePresence mode="wait" initial={false}>
@@ -719,121 +717,135 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   </motion.div>
                 </div>
 
-                {/* Subtitle */}
+                {/* Subtitle row: label + order estimate inline */}
                 <motion.div
                   initial={reduced ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: reduced ? 0 : 0.8, duration: reduced ? 0 : 0.5 }}
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginTop: 4,
+                  }}
+                >
+                  <span style={{
                     fontSize: TYPE.context,
                     fontWeight: 600,
                     color: 'rgba(255,255,255,0.30)',
-                    marginTop: 4,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
-                  }}
-                >
-                  {!online ? 'Нет связи' : bonusBalance > 0 ? 'Бонусный счёт' : 'Личный счёт'}
-                </motion.div>
-
-                {/* Contextual balance framing */}
-                {online && !balanceHidden && (weeklyDelta !== null && weeklyDelta !== 0 || orderEstimate >= 2) && (
-                  <motion.div
-                    initial={reduced ? false : { opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: reduced ? 0 : 1.0, duration: reduced ? 0 : 0.4 }}
-                    style={{
+                  }}>
+                    {!online ? 'Нет связи' : bonusBalance > 0 ? 'Бонусный счёт' : 'Личный счёт'}
+                  </span>
+                  {online && !balanceHidden && orderEstimate >= 2 && (
+                    <span style={{
                       fontSize: TYPE.context,
                       fontWeight: 500,
-                      marginTop: 4,
+                      color: 'rgba(255,255,255,0.18)',
                       letterSpacing: '0.04em',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 2,
-                    }}
-                  >
-                    {weeklyDelta !== null && weeklyDelta !== 0 && (
-                      <span style={{
-                        color: weeklyDelta > 0
-                          ? 'rgba(212,175,55,0.55)'
-                          : 'rgba(255,255,255,0.25)',
-                      }}>
-                        {weeklyDelta > 0
-                          ? `\u2191 на ${formatNum(Math.abs(weeklyDelta))} больше за неделю`
-                          : `\u2193 на ${formatNum(Math.abs(weeklyDelta))} меньше за неделю`}
-                      </span>
-                    )}
-                    {orderEstimate >= 2 && (
-                      <span style={{ color: 'rgba(255,255,255,0.22)' }}>
-                        {`\u2248 ${orderEstimate} заказов`}
-                      </span>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Savings storytelling — emotional anchor */}
-                {totalSaved > 0 && online && !balanceHidden && (
-                  <motion.div
-                    initial={reduced ? false : { opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: reduced ? 0 : 1.2, duration: reduced ? 0 : 0.4 }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      marginTop: 8,
-                      padding: '3px 10px',
-                      borderRadius: 999,
-                      background: 'rgba(212,175,55,0.06)',
-                      border: '1px solid rgba(212,175,55,0.12)',
-                    }}
-                  >
-                    <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.55)' }} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.55)', letterSpacing: '0.02em' }}>
-                      Сэкономлено {formatNum(totalSaved)} ₽
+                    }}>
+                      {`\u2248 ${orderEstimate} заказов`}
                     </span>
-                  </motion.div>
+                  )}
+                </motion.div>
+
+                {/* Weekly delta + savings — horizontal chips */}
+                {online && !balanceHidden && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 10,
+                  }}>
+                    {weeklyDelta !== null && weeklyDelta !== 0 && (
+                      <motion.div
+                        initial={reduced ? false : { opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: reduced ? 0 : 1.0, duration: reduced ? 0 : 0.4 }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '3px 10px',
+                          borderRadius: 999,
+                          background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${weeklyDelta > 0 ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.06)'}`,
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: weeklyDelta > 0 ? 'rgba(74,222,128,0.7)' : 'rgba(255,255,255,0.25)',
+                          letterSpacing: '0.02em',
+                        }}>
+                          {weeklyDelta > 0
+                            ? `+${formatNum(Math.abs(weeklyDelta))} за неделю`
+                            : `\u2212${formatNum(Math.abs(weeklyDelta))} за неделю`}
+                        </span>
+                      </motion.div>
+                    )}
+                    {totalSaved > 0 && (
+                      <motion.div
+                        initial={reduced ? false : { opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: reduced ? 0 : 1.2, duration: reduced ? 0 : 0.4 }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '3px 10px',
+                          borderRadius: 999,
+                          background: 'rgba(212,175,55,0.06)',
+                          border: '1px solid rgba(212,175,55,0.10)',
+                        }}
+                      >
+                        <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.50)' }} />
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.50)', letterSpacing: '0.02em' }}>
+                          Сэкономлено {formatNum(totalSaved)} ₽
+                        </span>
+                      </motion.div>
+                    )}
+                  </div>
                 )}
               </div>
 
-              {/* ── Bottom row ── */}
+              {/* ── Bottom row: rank + cashback | bonuses button ── */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 10,
-                  paddingTop: 12,
+                  gap: 12,
+                  paddingTop: 14,
                   borderTop: '1px solid rgba(212,175,55,0.06)',
                 }}
               >
                 {/* Left: rank + cashback */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                   {user.rank.name && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <Crown
-                        size={10}
+                        size={11}
                         strokeWidth={2}
                         aria-hidden
                         style={{ color: 'rgba(212,175,55,0.45)', flexShrink: 0 }}
                       />
                       <span
                         style={{
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: 600,
                           color: 'rgba(255,255,255,0.35)',
                           textTransform: 'uppercase',
-                          letterSpacing: '0.18em',
+                          letterSpacing: '0.14em',
                           whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
                         }}
                       >
                         {user.rank.name}
                       </span>
                     </div>
                   )}
+                  <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.06)' }} />
                   <GoldText
                     variant="static"
                     size="sm"
@@ -857,8 +869,8 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     gap: 5,
                     background: 'rgba(212,175,55,0.06)',
                     border: '1px solid rgba(212,175,55,0.20)',
-                    borderRadius: 8,
-                    padding: '5px 12px',
+                    borderRadius: 10,
+                    padding: '7px 14px',
                     cursor: 'pointer',
                     flexShrink: 0,
                     overflow: 'hidden',
@@ -866,7 +878,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 >
                   <span
                     style={{
-                      fontSize: TYPE.context,
+                      fontSize: 11,
                       fontWeight: 700,
                       color: 'var(--gold-400)',
                       whiteSpace: 'nowrap',
@@ -875,7 +887,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     Бонусы
                   </span>
                   <ArrowUpRight
-                    size={TYPE.context}
+                    size={11}
                     strokeWidth={2.5}
                     aria-hidden
                     style={{ color: 'var(--gold-400)' }}
