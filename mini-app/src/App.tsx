@@ -40,6 +40,7 @@ const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ d
 const OrderChatPage = lazy(() => import('./pages/OrderChatPage').then(module => ({ default: module.OrderChatPage })))
 const BatchPaymentPage = lazy(() => import('./pages/BatchPaymentPage').then(module => ({ default: module.BatchPaymentPage })))
 const GodModePage = lazy(() => import('./pages/GodModePage').then(module => ({ default: module.GodModePage })))
+const SquadPage = lazy(() => import('./pages/SquadPage').then(m => ({ default: m.SquadPage })))
 
 // WebSocket connection status indicator (only shown in debug mode)
 function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
@@ -554,6 +555,7 @@ function AppContent() {
                           <Route path="/support" element={<SupportPage />} />
                           <Route path="/batch-payment" element={<BatchPaymentPage />} />
                           <Route path="/admin" element={<GodModePage />} />
+                          <Route path="/squads" element={<SquadPage />} />
                           <Route path="/god" element={<GodModePage />} />
                           <Route path="*" element={<NotFoundPage />} />
                         </Routes>

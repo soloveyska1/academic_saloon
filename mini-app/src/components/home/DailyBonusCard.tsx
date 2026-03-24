@@ -79,6 +79,33 @@ function DailyBonusCardInner({
   const canClaim = info ? info.can_claim : dailyAvailable
   const currentStreak = info ? info.streak : streak
 
+  // Flame color based on streak length
+  const flameStyle: React.CSSProperties = currentStreak >= 30
+    ? { flexShrink: 0, filter: 'hue-rotate(200deg) saturate(1.5)' }
+    : currentStreak >= 14
+      ? { flexShrink: 0, color: '#e05a1a' }
+      : currentStreak >= 7
+        ? { flexShrink: 0, color: '#d97706' }
+        : { flexShrink: 0 }
+
+  const streakFreezeIndicator = currentStreak > 0 ? (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      marginLeft: 'auto',
+      padding: '2px 8px',
+      borderRadius: 999,
+      background: 'rgba(147, 197, 253, 0.08)',
+      border: '1px solid rgba(147, 197, 253, 0.12)',
+    }}>
+      <span style={{ fontSize: 10 }}>❄️</span>
+      <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(147, 197, 253, 0.6)', letterSpacing: '0.02em' }}>
+        Заморозка
+      </span>
+    </div>
+  ) : null
+
   useEffect(() => {
     let cancelled = false
 
@@ -263,6 +290,7 @@ function DailyBonusCardInner({
                         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
                           {currentStreak === 1 ? 'день подряд' : currentStreak >= 2 && currentStreak <= 4 ? 'дня подряд' : 'дней подряд'}
                         </span>
+                        {streakFreezeIndicator}
                       </div>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
                         {canClaim
@@ -492,7 +520,7 @@ function DailyBonusCardInner({
                 marginBottom: 16,
               }}
             >
-              <Flame size={16} color="var(--gold-400)" style={{ flexShrink: 0 }} />
+              <Flame size={16} color={currentStreak >= 30 ? 'var(--gold-400)' : currentStreak >= 14 ? '#e05a1a' : currentStreak >= 7 ? '#d97706' : 'var(--gold-400)'} style={flameStyle} />
               <span style={{
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 14,
@@ -516,6 +544,7 @@ function DailyBonusCardInner({
                   </span>
                 )
               })()}
+              {streakFreezeIndicator}
             </motion.div>
           )}
         </AnimatePresence>
