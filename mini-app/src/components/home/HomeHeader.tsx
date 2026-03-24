@@ -28,7 +28,7 @@ interface HomeHeaderProps {
 }
 
 /* ─── Typography system: 38 / 15 / 11 ─── */
-const TYPE = { hero: 38, support: 15, context: 11 } as const
+const TYPE = { hero: 32, support: 14, context: 10 } as const
 
 /* ─── Stagger children ─── */
 const stagger = {
@@ -133,7 +133,7 @@ function CardBorder({ reduced }: { reduced: boolean }) {
   const base: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 1,
     background:
       'linear-gradient(135deg, rgba(191,149,63,0.20), rgba(252,246,186,0.06), rgba(212,175,55,0.15), rgba(179,135,40,0.05), rgba(251,245,183,0.10), rgba(191,149,63,0.20))',
@@ -287,7 +287,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
 
   const staticRing = 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)'
   const variants = reduced ? staggerReduced : stagger
-  const AVATAR_SIZE = 64
+  const AVATAR_SIZE = 48
 
   return (
     <>
@@ -355,7 +355,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               width: AVATAR_SIZE,
               height: AVATAR_SIZE,
               cursor: 'pointer',
-              marginBottom: 10,
+              marginBottom: 6,
               background: 'none',
               border: 'none',
               padding: 0,
@@ -434,7 +434,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
         {/* ═══ Greeting + Name ═══ */}
         <motion.div
           variants={variants.item}
-          style={{ textAlign: 'center', marginBottom: showFinance ? 4 : 0, maxWidth: '100%' }}
+          style={{ textAlign: 'center', marginBottom: showFinance ? 2 : 0, maxWidth: '100%' }}
         >
           <div
             style={{
@@ -455,7 +455,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               letterSpacing: '-0.01em',
               display: 'block',
-              fontSize: 26,
+              fontSize: 22,
               filter: reduced ? undefined : 'drop-shadow(0 2px 6px rgba(212,175,55,0.15))',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -469,7 +469,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
 
         {/* ═══ Diamond divider ═══ */}
         {showFinance && (
-          <motion.div variants={variants.item} style={{ margin: '6px 0 28px' }}>
+          <motion.div variants={variants.item} style={{ margin: '4px 0 14px' }}>
             <DiamondDivider reduced={reduced} />
           </motion.div>
         )}
@@ -480,9 +480,9 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
             variants={variants.item}
             style={{
               width: '100%',
-              maxWidth: 340,
+              maxWidth: 320,
               position: 'relative',
-              borderRadius: 20,
+              borderRadius: 16,
               padding: 1,
             }}
           >
@@ -490,12 +490,12 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
 
             <div
               style={{
-                borderRadius: 19,
+                borderRadius: 15,
                 background:
                   'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '24px 24px 20px',
+                padding: '18px 20px 16px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -514,7 +514,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               />
 
               {/* ── Balance ── */}
-              <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+              <div style={{ textAlign: 'center', marginBottom: 14, position: 'relative' }}>
                 {/* Breathing glow — quiet */}
                 {!reduced && (
                   <motion.div
@@ -598,7 +598,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                           {online && (
                             <span
                               style={{
-                                fontSize: 22,
+                                fontSize: 18,
                                 marginLeft: 3,
                                 opacity: 0.5,
                                 verticalAlign: 'super',
@@ -655,7 +655,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     fontSize: TYPE.context,
                     fontWeight: 600,
                     color: 'rgba(255,255,255,0.30)',
-                    marginTop: 8,
+                    marginTop: 4,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
                   }}
@@ -673,15 +673,15 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 5,
-                      marginTop: 10,
-                      padding: '4px 10px',
+                      marginTop: 8,
+                      padding: '3px 10px',
                       borderRadius: 999,
-                      background: 'rgba(74,222,128,0.06)',
-                      border: '1px solid rgba(74,222,128,0.10)',
+                      background: 'rgba(212,175,55,0.06)',
+                      border: '1px solid rgba(212,175,55,0.12)',
                     }}
                   >
-                    <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(74,222,128,0.7)' }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(74,222,128,0.7)', letterSpacing: '0.02em' }}>
+                    <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.55)' }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.55)', letterSpacing: '0.02em' }}>
                       Сэкономлено {formatNum(totalSaved)} ₽
                     </span>
                   </motion.div>
@@ -694,7 +694,9 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 10,
+                  paddingTop: 12,
+                  borderTop: '1px solid rgba(212,175,55,0.06)',
                 }}
               >
                 {/* Left: rank + cashback */}
@@ -747,7 +749,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                     background: 'rgba(212,175,55,0.06)',
                     border: '1px solid rgba(212,175,55,0.20)',
                     borderRadius: 8,
-                    padding: '6px 14px',
+                    padding: '5px 12px',
                     cursor: 'pointer',
                     flexShrink: 0,
                     overflow: 'hidden',
