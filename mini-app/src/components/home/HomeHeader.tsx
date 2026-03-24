@@ -2,9 +2,6 @@ import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
-import { GoldAvatar } from '../ui/GoldText'
-import { useCapability } from '../../contexts/DeviceCapabilityContext'
-import { KineticText } from '../ui/KineticText'
 
 interface HomeHeaderProps {
   user: {
@@ -25,7 +22,7 @@ interface HomeHeaderProps {
   isNewUser?: boolean
 }
 
-const springTransition = { type: 'spring' as const, stiffness: 400, damping: 28 }
+const spring = { type: 'spring' as const, stiffness: 400, damping: 28 }
 
 export const HomeHeader = memo(function HomeHeader({
   user,
@@ -33,7 +30,6 @@ export const HomeHeader = memo(function HomeHeader({
   onSecretTap,
   isNewUser,
 }: HomeHeaderProps) {
-  const capability = useCapability()
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
@@ -47,103 +43,123 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Доброй ночи'
   }, [])
 
-  const initial = firstName.charAt(0).toUpperCase()
-
   return (
-    <header className={s.header} style={{ marginBottom: 20 }}>
-      <div
+    <header className={s.header} style={{ marginBottom: 16 }}>
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...spring, delay: 0 }}
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
+          gap: 14,
         }}
       >
-        {/* Left: greeting + name */}
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0, ...springTransition }}
+        {/* Avatar — left, small, clean */}
+        <div
+          onClick={onSecretTap}
+          style={{
+            position: 'relative',
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            cursor: 'pointer',
+          }}
+        >
+          <div
             style={{
-              fontFamily: "'Manrope', system-ui, sans-serif",
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              marginBottom: 2,
+              position: 'absolute',
+              inset: -1.5,
+              borderRadius: '50%',
+              background: 'conic-gradient(from 45deg, rgba(212,175,55,0.5), rgba(245,225,160,0.3), rgba(212,175,55,0.5))',
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
+              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
             }}
-          >
-            {isNewUser ? 'Добро пожаловать' : greeting},
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, ...springTransition }}
+          />
+          <div
             style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 28,
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: '-0.04em',
-              color: 'var(--text-primary)',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'var(--bg-elevated)',
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {capability.tier === 3 ? (
-              <KineticText
-                animation="typewriter"
-                variant="white"
-                delay={0.2}
-                staggerDelay={0.03}
+            <span
+              style={{
+                color: 'var(--gold-400)',
+                fontWeight: 700,
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 16,
+                lineHeight: 1,
+              }}
+            >
+              {firstName.charAt(0).toUpperCase()}
+            </span>
+
+            {shouldShowAvatar && (
+              <img
+                src={avatarSrc}
+                alt={firstName}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
                 style={{
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 28,
-                  fontWeight: 700,
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 2,
+                  borderRadius: '50%',
                 }}
-              >
-                {firstName}
-              </KineticText>
-            ) : (
-              firstName
+                onError={() => setAvatarError(true)}
+              />
             )}
-          </motion.div>
+          </div>
         </div>
 
-        {/* Right: avatar with gold ring */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, ...springTransition }}
-          onClick={onSecretTap}
-          style={{ cursor: 'pointer', position: 'relative' }}
-        >
-          <GoldAvatar initials={initial} size={44} />
-
-          {/* Photo overlay on top of GoldAvatar if available */}
-          {shouldShowAvatar && (
-            <img
-              src={avatarSrc}
-              alt={firstName}
-              loading="eager"
-              decoding="async"
-              referrerPolicy="no-referrer"
+        {/* Greeting + name — one line, baseline aligned */}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 6,
+              overflow: 'hidden',
+            }}
+          >
+            <span
               style={{
-                position: 'absolute',
-                top: 3,
-                left: 3,
-                width: 38,
-                height: 38,
-                objectFit: 'cover',
-                borderRadius: '50%',
-                zIndex: 2,
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                flexShrink: 0,
               }}
-              onError={() => setAvatarError(true)}
-            />
-          )}
-        </motion.div>
-      </div>
+            >
+              {isNewUser ? 'Привет,' : `${greeting},`}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: '-0.03em',
+                color: 'var(--text-primary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {firstName}
+            </span>
+          </div>
+        </div>
+      </motion.div>
     </header>
   )
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
