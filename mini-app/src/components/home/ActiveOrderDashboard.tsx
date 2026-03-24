@@ -221,61 +221,74 @@ function AnimatedGoldBorder({ active }: { active: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Compact progress bar — replaces the full 4-step stepper
-   Shows a thin gold bar with current stage label
+   Compact progress — segmented bar with stage labels
+   Each segment is a stage; completed = gold, active = pulsing, future = dim
    ═══════════════════════════════════════════════════════════════ */
 function CompactProgress({ stageIdx }: { stageIdx: number }) {
-  const progress = ((stageIdx + 0.5) / STAGES.length) * 100
-  const currentStage = STAGES[stageIdx]
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {/* Labels row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <currentStage.icon
-            size={11}
-            strokeWidth={2.2}
-            style={{ color: 'var(--gold-400)' }}
-          />
-          <span style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: 'var(--gold-400)',
-            letterSpacing: '0.02em',
-          }}>
-            {currentStage.label}
-          </span>
-        </div>
-        <span style={{
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'rgba(255,255,255,0.25)',
-          letterSpacing: '0.02em',
-        }}>
-          {stageIdx + 1} из {STAGES.length}
-        </span>
-      </div>
+    <div style={{ display: 'flex', gap: 3 }}>
+      {STAGES.map((stage, i) => {
+        const completed = i < stageIdx
+        const active = i === stageIdx
+        const StageIcon = stage.icon
 
-      {/* Progress bar */}
-      <div style={{
-        height: 3,
-        borderRadius: 2,
-        background: 'rgba(255,255,255,0.06)',
-        overflow: 'hidden',
-      }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          style={{
-            height: '100%',
-            borderRadius: 2,
-            background: 'linear-gradient(90deg, var(--gold-metallic, #D4AF37), rgba(245,225,160,0.8))',
-            boxShadow: '0 0 8px rgba(212,175,55,0.3)',
-          }}
-        />
-      </div>
+        return (
+          <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {/* Segment bar */}
+            <div style={{
+              position: 'relative',
+              height: 3,
+              borderRadius: 2,
+              background: 'rgba(255,255,255,0.06)',
+              overflow: 'hidden',
+            }}>
+              {(completed || active) && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: completed ? '100%' : '50%' }}
+                  transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 2,
+                    background: 'linear-gradient(90deg, #D4AF37, rgba(245,225,160,0.85))',
+                    boxShadow: active ? '0 0 8px rgba(212,175,55,0.4)' : 'none',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Stage label */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3,
+            }}>
+              <StageIcon
+                size={9}
+                strokeWidth={2.2}
+                style={{
+                  color: completed || active ? 'var(--gold-400)' : 'rgba(255,255,255,0.15)',
+                  transition: 'color 0.3s',
+                }}
+              />
+              <span style={{
+                fontSize: 9,
+                fontWeight: active ? 700 : 600,
+                color: active
+                  ? 'var(--gold-400)'
+                  : completed
+                    ? 'rgba(212,175,55,0.55)'
+                    : 'rgba(255,255,255,0.15)',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.3s',
+              }}>
+                {stage.label}
+              </span>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -580,33 +593,101 @@ function OrderCard({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Dot pagination indicator
+   Dot pagination — max 5 visible dots, scales down for many
    ═══════════════════════════════════════════════════════════════ */
+const MAX_DOTS = 5
+
 function DotIndicator({ count, active }: { count: number; active: number }) {
   if (count <= 1) return null
+
+  // For small counts, show all dots
+  if (count <= MAX_DOTS) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, paddingTop: 10 }}>
+        {Array.from({ length: count }, (_, i) => (
+          <motion.div
+            key={i}
+            animate={{ width: i === active ? 16 : 6, opacity: i === active ? 1 : 0.35 }}
+            transition={{ duration: 0.2 }}
+            style={{ height: 3.5, borderRadius: 2, background: i === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)' }}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // For many: show "1 / N" text counter
   return (
     <div style={{
       display: 'flex',
       justifyContent: 'center',
-      gap: 6,
+      alignItems: 'center',
+      gap: 4,
       paddingTop: 10,
     }}>
-      {Array.from({ length: count }, (_, i) => (
-        <motion.div
-          key={i}
-          animate={{
-            width: i === active ? 16 : 6,
-            opacity: i === active ? 1 : 0.3,
-          }}
-          transition={{ duration: 0.25 }}
-          style={{
-            height: 4,
-            borderRadius: 2,
-            background: i === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)',
-          }}
-        />
-      ))}
+      <span style={{
+        fontSize: 11,
+        fontWeight: 700,
+        fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+        color: 'var(--gold-400)',
+      }}>
+        {active + 1}
+      </span>
+      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)' }}>/</span>
+      <span style={{
+        fontSize: 11,
+        fontWeight: 600,
+        fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+        color: 'rgba(255,255,255,0.30)',
+      }}>
+        {count}
+      </span>
     </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   "See all orders" footer link (for 3+ orders)
+   ═══════════════════════════════════════════════════════════════ */
+function SeeAllOrdersLink({
+  count,
+  onNavigate,
+  haptic,
+}: {
+  count: number
+  onNavigate: (path: string) => void
+  haptic: (style: 'light' | 'medium' | 'heavy') => void
+}) {
+  if (count < 3) return null
+
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.97 }}
+      onClick={() => { haptic('light'); onNavigate('/orders') }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        width: '100%',
+        padding: '10px 0 2px',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        appearance: 'none',
+      }}
+    >
+      <span style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: 'rgba(255,255,255,0.30)',
+        letterSpacing: '0.01em',
+      }}>
+        Все заказы
+      </span>
+      <ArrowRight size={12} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.20)' }} />
+    </motion.button>
   )
 }
 
@@ -653,7 +734,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
   if (activeOrders.length === 0) return null
 
-  // Single order — no carousel needed
+  // Single order — just the card, no chrome
   if (activeOrders.length === 1) {
     return (
       <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
@@ -666,7 +747,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     )
   }
 
-  // Multiple orders — swipe carousel
+  // Multiple orders — swipe carousel with smart pagination
   return (
     <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
       <div style={{ position: 'relative' }}>
@@ -695,20 +776,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           </AnimatePresence>
         </motion.div>
 
-        {/* Dot indicator */}
+        {/* Pagination: dots for ≤5, counter for 6+ */}
         <DotIndicator count={activeOrders.length} active={safeIndex} />
 
-        {/* Counter label */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: 4,
-          fontSize: 10.5,
-          fontWeight: 600,
-          color: 'rgba(255,255,255,0.25)',
-          letterSpacing: '0.02em',
-        }}>
-          {activeOrders.length} {activeOrders.length === 1 ? 'активный заказ' : activeOrders.length < 5 ? 'активных заказа' : 'активных заказов'}
-        </div>
+        {/* "See all" link for 3+ orders */}
+        <SeeAllOrdersLink count={activeOrders.length} onNavigate={onNavigate} haptic={haptic} />
       </div>
     </Reveal>
   )
