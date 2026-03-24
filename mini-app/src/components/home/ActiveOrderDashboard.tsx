@@ -225,40 +225,42 @@ function AnimatedGoldBorder({ active }: { active: boolean }) {
    Each segment is a stage; completed = gold, active = pulsing, future = dim
    ═══════════════════════════════════════════════════════════════ */
 function CompactProgress({ stageIdx }: { stageIdx: number }) {
+  // Continuous bar: total 4 stages, fill = (completed stages + 0.5 for active) / total
+  const fillPercent = ((stageIdx + 0.5) / STAGES.length) * 100
+
   return (
-    <div style={{ display: 'flex', gap: 3 }}>
-      {STAGES.map((stage, i) => {
-        const completed = i < stageIdx
-        const active = i === stageIdx
-        const StageIcon = stage.icon
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Continuous progress bar */}
+      <div style={{
+        position: 'relative',
+        height: 3,
+        borderRadius: 2,
+        background: 'rgba(255,255,255,0.06)',
+        overflow: 'hidden',
+      }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${fillPercent}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{
+            height: '100%',
+            borderRadius: 2,
+            background: 'linear-gradient(90deg, #D4AF37, rgba(245,225,160,0.85))',
+            boxShadow: '0 0 8px rgba(212,175,55,0.3)',
+          }}
+        />
+      </div>
 
-        return (
-          <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {/* Segment bar */}
-            <div style={{
-              position: 'relative',
-              height: 3,
-              borderRadius: 2,
-              background: 'rgba(255,255,255,0.06)',
-              overflow: 'hidden',
-            }}>
-              {(completed || active) && (
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: completed ? '100%' : '50%' }}
-                  transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' }}
-                  style={{
-                    height: '100%',
-                    borderRadius: 2,
-                    background: 'linear-gradient(90deg, #D4AF37, rgba(245,225,160,0.85))',
-                    boxShadow: active ? '0 0 8px rgba(212,175,55,0.4)' : 'none',
-                  }}
-                />
-              )}
-            </div>
+      {/* Stage labels row */}
+      <div style={{ display: 'flex' }}>
+        {STAGES.map((stage, i) => {
+          const completed = i < stageIdx
+          const active = i === stageIdx
+          const StageIcon = stage.icon
 
-            {/* Stage label */}
-            <div style={{
+          return (
+            <div key={stage.key} style={{
+              flex: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -286,9 +288,9 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
                 {stage.label}
               </span>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -508,81 +510,83 @@ function OrderCard({
         <CompactProgress stageIdx={stageIdx} />
       </div>
 
-      {/* ─── Separator ─── */}
+      {/* ─── Zone 4: Action footer — price + full-width CTA ─── */}
       <div style={{
-        margin: '0 20px',
-        height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-      }} />
-
-      {/* ─── Zone 4: Action footer — single clear CTA ─── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        padding: '12px 20px',
+        padding: '0 20px 16px',
         position: 'relative',
         zIndex: 3,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {/* Price (secondary) */}
-          {financeAmount && (
+        {/* Separator */}
+        <div style={{
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+          marginBottom: 14,
+        }} />
+
+        {/* Price row */}
+        {financeAmount && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 10,
+          }}>
             <span style={{
-              fontSize: 15,
+              fontSize: 20,
               fontWeight: 700,
               fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              color: remaining > 0 ? 'var(--gold-400)' : 'rgba(255,255,255,0.45)',
-              whiteSpace: 'nowrap',
+              color: remaining > 0 ? 'var(--gold-400)' : 'rgba(255,255,255,0.50)',
+              letterSpacing: '-0.01em',
             }}>
               {financeAmount}
             </span>
-          )}
+            {hasPartialPayment && (
+              <span style={{
+                padding: '2px 7px',
+                borderRadius: 999,
+                background: 'rgba(74,222,128,0.08)',
+                border: '1px solid rgba(74,222,128,0.12)',
+                fontSize: 9,
+                fontWeight: 700,
+                color: 'rgba(74,222,128,0.8)',
+                whiteSpace: 'nowrap',
+              }}>
+                аванс
+              </span>
+            )}
+          </div>
+        )}
 
-          {hasPartialPayment && (
-            <span style={{
-              padding: '2px 7px',
-              borderRadius: 999,
-              background: 'rgba(74,222,128,0.08)',
-              border: '1px solid rgba(74,222,128,0.12)',
-              fontSize: 9,
-              fontWeight: 700,
-              color: 'rgba(74,222,128,0.8)',
-              whiteSpace: 'nowrap',
-            }}>
-              аванс
-            </span>
-          )}
-        </div>
-
-        {/* Action button */}
+        {/* Full-width action button */}
         <motion.div
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.98 }}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            padding: needsAction ? '8px 14px' : '8px 12px',
-            borderRadius: 10,
+            justifyContent: 'center',
+            gap: 8,
+            width: '100%',
+            padding: needsAction ? '12px 16px' : '10px 16px',
+            borderRadius: 12,
             background: needsAction
-              ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))'
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(183,142,38,0.10))'
               : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.20)' : 'rgba(255,255,255,0.06)'}`,
-            boxShadow: needsAction ? '0 0 20px -4px rgba(212,175,55,0.15)' : 'none',
-            flexShrink: 0,
+            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.06)'}`,
+            boxShadow: needsAction
+              ? '0 4px 20px -4px rgba(212,175,55,0.20), inset 0 1px 0 rgba(252,246,186,0.06)'
+              : 'none',
           }}
         >
           <span style={{
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.50)',
-            whiteSpace: 'nowrap',
+            letterSpacing: '0.02em',
           }}>
             {primaryAction}
           </span>
           <ArrowRight
-            size={13}
+            size={14}
             strokeWidth={2.5}
             style={{ color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.35)' }}
           />
@@ -658,7 +662,7 @@ function SeeAllOrdersLink({
   onNavigate: (path: string) => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }) {
-  if (count < 3) return null
+  if (count < 2) return null
 
   return (
     <motion.button
