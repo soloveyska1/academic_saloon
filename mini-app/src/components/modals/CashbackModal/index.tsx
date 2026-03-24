@@ -63,22 +63,22 @@ const TierRow = memo(function TierRow({
         width: '100%',
       }}
     >
-      {/* Small icon */}
+      {/* Small icon — gold monochrome for all states */}
       <div style={{
         width: 28,
         height: 28,
         borderRadius: 8,
-        background: isPassed || isCurrent ? `${rank.color}10` : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${isPassed || isCurrent ? `${rank.color}20` : 'var(--border-subtle)'}`,
+        background: isPassed || isCurrent ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${isPassed || isCurrent ? 'rgba(212,175,55,0.15)' : 'var(--border-subtle)'}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
       }}>
         {isPassed ? (
-          <Check size={12} strokeWidth={2.5} color={rank.color} style={{ opacity: 0.7 }} />
+          <Check size={12} strokeWidth={2.5} color="var(--gold-400)" style={{ opacity: 0.6 }} />
         ) : (
-          <Icon size={12} strokeWidth={1.8} color={isPassed || isCurrent ? rank.color : 'var(--text-muted)'} style={{ opacity: isLocked ? 0.4 : 1 }} />
+          <Icon size={12} strokeWidth={1.8} color={isPassed || isCurrent ? 'var(--gold-400)' : 'var(--text-muted)'} style={{ opacity: isLocked ? 0.4 : 1 }} />
         )}
       </div>
 
@@ -108,7 +108,7 @@ const TierRow = memo(function TierRow({
       <span style={{
         fontSize: 13,
         fontWeight: 700,
-        color: isCurrent ? 'var(--gold-300)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
+        color: isCurrent ? 'var(--gold-400)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
         flexShrink: 0,
         opacity: isLocked ? 0.5 : 1,
       }}>
@@ -226,8 +226,8 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 <div>
                   <div style={{
                     fontSize: 10, fontWeight: 700,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    color: 'rgba(212,175,55,0.50)',
+                    letterSpacing: '0.06em',
+                    color: 'rgba(212,175,55,0.45)',
                     marginBottom: 1,
                   }}>
                     Ваш статус
@@ -358,13 +358,13 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '12px 14px', borderRadius: 12,
-              background: 'var(--gold-glass-subtle)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid var(--border-default)',
               marginBottom: 16,
             }}
           >
-            <Crown size={14} strokeWidth={1.8} color="var(--gold-400)" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-300)' }}>
+            <Crown size={14} strokeWidth={1.8} color="var(--gold-400)" style={{ opacity: 0.7 }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
               Высший уровень — 10% с каждого заказа
             </span>
           </m.div>
@@ -458,22 +458,23 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               width: '100%',
               padding: '14px 20px',
               borderRadius: 12,
-              background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
-              border: '1px solid rgba(212,175,55,0.18)',
+              background: 'var(--gold-metallic)',
+              border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
+              boxShadow: 'var(--glow-gold)',
             }}
           >
             <span style={{
               fontSize: 14, fontWeight: 700,
-              color: 'var(--gold-200)',
+              color: 'var(--text-on-gold)',
             }}>
               {isMaxRank ? 'Новый заказ' : 'Сделать заказ'}
             </span>
-            <ArrowRight size={15} strokeWidth={2.2} color="var(--gold-300)" />
+            <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" />
           </m.button>
         )}
       </div>
