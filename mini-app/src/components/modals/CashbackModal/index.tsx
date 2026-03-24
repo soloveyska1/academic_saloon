@@ -1,17 +1,15 @@
 import { useCallback, useMemo, useState } from 'react'
-import { m } from 'framer-motion'
-import { ArrowRight, Crown, Sparkles, TrendingUp, Wallet2 } from 'lucide-react'
+import { m, AnimatePresence } from 'framer-motion'
+import { ArrowRight, Crown, TrendingUp, Check, Lock, ChevronRight } from 'lucide-react'
 import { ModalWrapper } from '../shared'
-import { HolographicCard } from './HolographicCard'
 import { RANKS, getRankIndexByCashback } from '../../../lib/ranks'
 import { useAdmin } from '../../../contexts/AdminContext'
 import type { UserData } from '../../../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CASHBACK MODAL — Aspirational Rewards Experience
-//  Not an info screen — a "look how far you've come" celebration
-//  + "look what's waiting for you" motivation engine.
-//  Every element either validates progress or creates desire.
+//  CASHBACK MODAL — Premium tier progression
+//  Clean: Hero stat → Card → Progress → Tier ladder → CTA
+//  No noise. Every pixel earns its place.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface CashbackModalProps {
@@ -23,140 +21,6 @@ export interface CashbackModalProps {
 
 function formatMoney(value: number): string {
   return `${Math.max(0, Math.round(value)).toLocaleString('ru-RU')} ₽`
-}
-
-// ═══════════ ANIMATED COUNTER ═══════════
-function AnimatedValue({ value, prefix = '', suffix = '' }: {
-  value: number; prefix?: string; suffix?: string
-}) {
-  return (
-    <m.span
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.5 }}
-    >
-      {prefix}{Math.round(value).toLocaleString('ru-RU')}{suffix}
-    </m.span>
-  )
-}
-
-// ═══════════ RANK STEP ═══════════
-function RankStep({
-  rank,
-  index,
-  isActive,
-  isPassed,
-  isLast,
-  onSelect,
-  isSelected,
-}: {
-  rank: typeof RANKS[0]
-  index: number
-  isActive: boolean
-  isPassed: boolean
-  isLast: boolean
-  onSelect: (i: number) => void
-  isSelected: boolean
-}) {
-  const Icon = rank.icon
-
-  return (
-    <m.button
-      type="button"
-      whileTap={{ scale: 0.95 }}
-      onClick={() => onSelect(index)}
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 8,
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        position: 'relative',
-        padding: '8px 0',
-      }}
-    >
-      {/* Connector line */}
-      {!isLast && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            right: '-50%',
-            height: 2,
-            background: isPassed
-              ? 'var(--gold-glass-strong)'
-              : 'var(--surface-hover)',
-            transform: 'translateY(-50%)',
-            zIndex: 0,
-          }}
-        />
-      )}
-
-      {/* Node */}
-      <m.div
-        animate={isActive ? {
-          boxShadow: [
-            '0 0 0 0 rgba(212,175,55,0)',
-            '0 0 0 6px var(--gold-glass-medium)',
-            '0 0 0 0 rgba(212,175,55,0)',
-          ],
-        } : undefined}
-        transition={{ duration: 2.5, repeat: Infinity }}
-        style={{
-          width: isSelected ? 42 : 36,
-          height: isSelected ? 42 : 36,
-          borderRadius: isSelected ? 14 : 12,
-          background: isPassed || isActive
-            ? `linear-gradient(135deg, ${rank.color}30, ${rank.color}15)`
-            : 'var(--bg-glass)',
-          border: isSelected
-            ? `2px solid ${rank.color}60`
-            : isPassed || isActive
-              ? `1.5px solid ${rank.color}30`
-              : '1.5px solid var(--surface-hover)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 1,
-          transition: 'all 0.2s ease',
-        }}
-      >
-        <Icon
-          size={isSelected ? 18 : 15}
-          color={isPassed || isActive
-            ? rank.color
-            : 'var(--text-muted)'}
-          strokeWidth={1.8}
-        />
-      </m.div>
-
-      {/* Label */}
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: isSelected
-            ? rank.color
-            : isPassed || isActive
-              ? 'var(--text-secondary)'
-              : 'var(--text-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          textAlign: 'center',
-          lineHeight: 1.2,
-          transition: 'color 0.2s ease',
-        }}
-      >
-        {rank.cashback}%
-      </span>
-    </m.button>
-  )
 }
 
 export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: CashbackModalProps) {
@@ -173,242 +37,165 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
     [effectiveCashback],
   )
 
-  const activeRankIndex = selectedRankIndex ?? currentRankIndex
   const currentRank = RANKS[currentRankIndex] || RANKS[0]
-  const displayRank = RANKS[activeRankIndex] || RANKS[0]
   const nextRank = RANKS[currentRankIndex + 1] || null
-  const isLockedView = activeRankIndex > currentRankIndex
   const progress = Math.max(0, Math.min(user.rank.progress, 100))
+  const isMaxRank = !nextRank
 
-  // Calculate actual savings
   const totalSaved = useMemo(() => {
     const spent = admin.simulatedRank !== null ? 25000 : user.total_spent
     return Math.round(spent * currentRank.cashback / 100)
   }, [admin.simulatedRank, user.total_spent, currentRank.cashback])
 
-  // Calculate what next rank would save on total
-  const nextRankSavings = useMemo(() => {
-    if (!nextRank) return 0
-    const spent = admin.simulatedRank !== null ? 25000 : user.total_spent
-    return Math.round(spent * nextRank.cashback / 100) - totalSaved
-  }, [nextRank, admin.simulatedRank, user.total_spent, totalSaved])
-
   const spentToNext = useMemo(() => {
     if (!nextRank) return 0
-    if (admin.simulatedRank !== null) {
-      return Math.round((nextRank.minSpent - currentRank.minSpent) * 0.55)
-    }
+    if (admin.simulatedRank !== null) return Math.round((nextRank.minSpent - currentRank.minSpent) * 0.55)
     return Math.max(0, user.rank.spent_to_next)
   }, [admin.simulatedRank, currentRank.minSpent, nextRank, user.rank.spent_to_next])
-
-  const handleRankSelect = useCallback((index: number) => {
-    setSelectedRankIndex(prev => prev === index ? null : index)
-  }, [])
 
   const handleCTA = useCallback(() => {
     onClose()
     onCreateOrder?.()
   }, [onClose, onCreateOrder])
 
+  // View a different rank's details
+  const viewedRank = selectedRankIndex !== null ? RANKS[selectedRankIndex] : null
+  const isViewingLocked = selectedRankIndex !== null && selectedRankIndex > currentRankIndex
+
   return (
     <ModalWrapper
       isOpen={isOpen}
       onClose={onClose}
       modalId="cashback-modal"
-      title="Кэшбэк и статус"
+      title="Кэшбэк"
       accentColor="var(--gold-400)"
     >
-      <div style={{ padding: '0 20px 20px', overflowX: 'hidden' }}>
+      <div style={{ padding: '0 20px 24px', overflowX: 'hidden' }}>
 
-        {/* ═══════ HERO — Big cashback number ═══════ */}
+        {/* ═══════ HERO — Current status, compact ═══════ */}
         <m.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: 'center', padding: '8px 0 24px' }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            textAlign: 'center',
+            padding: '12px 0 28px',
+          }}
         >
-          {/* Cashback icon */}
-          <m.div
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 12, delay: 0.1 }}
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 12,
-              background: 'linear-gradient(145deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
-              border: '1.5px solid var(--gold-glass-medium)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 20px',
-              boxShadow: 'var(--glow-gold)',
-            }}
-          >
-            <Wallet2
-              size={32}
-              color="var(--gold-400)"
-              strokeWidth={1.3}
-            />
-          </m.div>
-
           {/* Big percentage */}
           <m.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', damping: 14 }}
+            transition={{ delay: 0.1, type: 'spring', damping: 16 }}
             style={{
-              fontSize: 48,
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 56,
               fontWeight: 700,
               lineHeight: 1,
               letterSpacing: '-0.04em',
-              fontFamily: "'Manrope', sans-serif",
-              color: 'var(--gold-200)',
+              background: 'var(--gold-metallic)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
               marginBottom: 8,
             }}
           >
             {currentRank.cashback}%
           </m.div>
 
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            style={{
-              fontSize: 14,
-              color: 'var(--text-secondary)',
-              fontWeight: 600,
-              marginBottom: 4,
-            }}
-          >
+          <div style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+            marginBottom: 4,
+          }}>
             кэшбэк на все заказы
-          </m.div>
+          </div>
 
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            style={{
-              fontSize: 13,
-              color: 'var(--text-muted)',
-              fontWeight: 600,
-            }}
-          >
-            статус «{currentRank.displayName}»
-          </m.div>
-
-          {admin.simulatedRank !== null && (
-            <div style={{
-              marginTop: 8,
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '4px 8px', borderRadius: 4,
-              background: 'rgba(239,68,68,0.08)',
-              color: 'rgba(239,68,68,0.65)',
-              fontSize: 10, fontWeight: 700,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-            }}>
-              <Sparkles size={10} />
-              Тестовый просмотр
-            </div>
-          )}
-        </m.div>
-
-        {/* ═══════ SAVINGS CARD — The wow moment ═══════ */}
-        {totalSaved > 0 && (
-          <m.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            style={{
-              padding: '18px 20px',
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)',
-              border: '1px solid rgba(34,197,94,0.12)',
-              marginBottom: 16,
-              textAlign: 'center',
-            }}
-          >
-            <div style={{
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 12px',
+            borderRadius: 999,
+            background: 'var(--gold-glass-subtle)',
+            border: '1px solid rgba(212,175,55,0.10)',
+          }}>
+            {(() => { const Icon = currentRank.icon; return <Icon size={12} strokeWidth={2} color="var(--gold-400)" /> })()}
+            <span style={{
               fontSize: 11,
               fontWeight: 700,
-              color: 'rgba(34,197,94,0.55)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 8,
+              color: 'var(--gold-300)',
+              letterSpacing: '0.04em',
             }}>
-              Вы сэкономили с кэшбэком
+              {currentRank.displayName}
+            </span>
+          </div>
+        </m.div>
+
+        {/* ═══════ SAVINGS — If user has saved anything ═══════ */}
+        {totalSaved > 0 && (
+          <m.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 16px',
+              borderRadius: 12,
+              background: 'var(--gold-glass-subtle)',
+              border: '1px solid rgba(212,175,55,0.10)',
+              marginBottom: 16,
+            }}
+          >
+            <div>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'rgba(212,175,55,0.50)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                marginBottom: 2,
+              }}>
+                Сэкономлено
+              </div>
+              <div style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: 'var(--gold-200)',
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                letterSpacing: '-0.02em',
+              }}>
+                {formatMoney(totalSaved)}
+              </div>
             </div>
             <div style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: 'var(--success, #4ade80)',
-              letterSpacing: '-0.02em',
-              fontFamily: "'Manrope', sans-serif",
-              lineHeight: 1,
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'rgba(212,175,55,0.08)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
-              <AnimatedValue value={totalSaved} suffix=" ₽" />
+              <TrendingUp size={18} strokeWidth={1.8} color="var(--gold-400)" />
             </div>
-            {nextRankSavings > 0 && (
-              <div style={{
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                fontWeight: 600,
-                marginTop: 8,
-              }}>
-                С кэшбэком {nextRank!.cashback}% было бы на {formatMoney(nextRankSavings)} больше
-              </div>
-            )}
           </m.div>
         )}
 
-        {/* ═══════ STATUS CARD ═══════ */}
-        <m.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          style={{ marginBottom: 24 }}
-        >
-          <HolographicCard rank={displayRank} isLocked={isLockedView} />
-        </m.div>
-
-        {/* ═══════ RANK PROGRESSION ═══════ */}
-        <m.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 0,
-            marginBottom: 24,
-            padding: '0 4px',
-          }}
-        >
-          {RANKS.map((rank, index) => (
-            <RankStep
-              key={rank.id}
-              rank={rank}
-              index={index}
-              isActive={index === currentRankIndex}
-              isPassed={index < currentRankIndex}
-              isLast={index === RANKS.length - 1}
-              onSelect={handleRankSelect}
-              isSelected={activeRankIndex === index}
-            />
-          ))}
-        </m.div>
-
-        {/* ═══════ PROGRESS TO NEXT ═══════ */}
-        {nextRank && !isLockedView && (
+        {/* ═══════ PROGRESS TO NEXT RANK ═══════ */}
+        {nextRank && (
           <m.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.2 }}
             style={{
-              padding: '18px 18px',
+              padding: '16px',
               borderRadius: 12,
-              background: 'var(--gold-glass-subtle)',
-              border: '1px solid var(--gold-glass-subtle)',
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid var(--border-default)',
               marginBottom: 16,
             }}
           >
@@ -418,56 +205,50 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               alignItems: 'center',
               marginBottom: 12,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TrendingUp
-                  size={14}
-                  color="var(--gold-400)"
-                />
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                }}>
-                  До «{nextRank.displayName}»
-                </span>
-              </div>
               <span style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: 'var(--gold-200)',
+                color: 'var(--text-primary)',
               }}>
-                {formatMoney(spentToNext)}
+                До «{nextRank.displayName}»
+              </span>
+              <span style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--gold-300)',
+              }}>
+                {nextRank.cashback}%
               </span>
             </div>
 
-            {/* Progress bar */}
+            {/* Bar */}
             <div style={{
-              height: 6,
-              borderRadius: 12,
-              background: 'var(--surface-hover)',
+              height: 5,
+              borderRadius: 3,
+              background: 'rgba(255,255,255,0.06)',
               overflow: 'hidden',
               marginBottom: 8,
             }}>
               <m.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.max(progress, 3)}%` }}
-                transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
+                transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                   height: '100%',
-                  borderRadius: 12,
-                  background: 'linear-gradient(90deg, var(--gold-glass-strong), var(--gold-400))',
+                  borderRadius: 3,
+                  background: 'linear-gradient(90deg, rgba(212,175,55,0.5), var(--gold-400))',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
               >
                 <m.div
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  animate={{ x: ['-100%', '250%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
                   style={{
                     position: 'absolute',
                     top: 0, left: 0,
-                    width: '40%', height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                    width: '30%', height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
                   }}
                 />
               </m.div>
@@ -476,216 +257,329 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
             }}>
-              <span style={{
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                fontWeight: 600,
-              }}>
-                {progress}% пройдено
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
+                {progress}%
               </span>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--gold-400)',
-              }}>
-                +{nextRank.cashback - currentRank.cashback}% к кэшбэку
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
+                ещё {formatMoney(spentToNext)}
               </span>
             </div>
           </m.div>
         )}
 
-        {/* Max rank celebration */}
-        {!nextRank && !isLockedView && (
+        {/* Max rank */}
+        {isMaxRank && (
           <m.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35, type: 'spring' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
             style={{
-              padding: '20px 18px',
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, var(--gold-glass-subtle), transparent)',
-              border: '1px solid var(--gold-glass-medium)',
-              textAlign: 'center',
-              marginBottom: 16,
-            }}
-          >
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 15,
-              fontWeight: 700,
-              color: 'var(--gold-200)',
-            }}>
-              <Crown size={18} color="var(--gold-400)" />
-              Максимальный кэшбэк активен
-            </div>
-            <div style={{
-              fontSize: 13,
-              color: 'var(--text-muted)',
-              marginTop: 8,
-              lineHeight: 1.5,
-            }}>
-              10% возвращается с каждого заказа на ваш баланс
-            </div>
-          </m.div>
-        )}
-
-        {/* Locked rank preview */}
-        {isLockedView && (
-          <m.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            style={{
-              padding: '18px 18px',
-              borderRadius: 12,
-              background: 'var(--bg-glass)',
-              border: '1px solid var(--surface-hover)',
-              marginBottom: 16,
-            }}
-          >
-            <div style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 8,
-            }}>
-              Условия статуса «{displayRank.displayName}»
-            </div>
-            <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: 12,
-            }}>
-              <div>
+              gap: 10,
+              padding: '14px 16px',
+              borderRadius: 12,
+              background: 'var(--gold-glass-subtle)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              marginBottom: 16,
+            }}
+          >
+            <Crown size={16} strokeWidth={1.8} color="var(--gold-400)" />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-200)' }}>
+                Максимальный кэшбэк
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
+                10% возвращается с каждого заказа
+              </div>
+            </div>
+          </m.div>
+        )}
+
+        {/* ═══════ TIER LADDER ═══════ */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          style={{ marginBottom: 24 }}
+        >
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            marginBottom: 12,
+          }}>
+            Уровни
+          </div>
+
+          <div style={{ display: 'grid', gap: 6 }}>
+            {RANKS.map((rank, index) => {
+              const isPassed = index < currentRankIndex
+              const isCurrent = index === currentRankIndex
+              const isLocked = index > currentRankIndex
+              const isSelected = selectedRankIndex === index
+              const Icon = rank.icon
+
+              return (
+                <m.button
+                  key={rank.id}
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSelectedRankIndex(prev => prev === index ? null : index)}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + index * 0.05 }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    border: 'none',
+                    background: isCurrent
+                      ? 'var(--gold-glass-subtle)'
+                      : isSelected
+                        ? 'rgba(255,255,255,0.03)'
+                        : 'transparent',
+                    outline: isCurrent
+                      ? '1px solid rgba(212,175,55,0.15)'
+                      : isSelected
+                        ? '1px solid var(--border-default)'
+                        : '1px solid transparent',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  {/* Icon */}
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: isPassed || isCurrent
+                      ? `${rank.color}15`
+                      : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isPassed || isCurrent ? `${rank.color}25` : 'var(--border-default)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    {isPassed ? (
+                      <Check size={15} strokeWidth={2.5} color={rank.color} />
+                    ) : (
+                      <Icon size={15} strokeWidth={1.8} color={isPassed || isCurrent ? rank.color : 'var(--text-muted)'} />
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      <span style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: isCurrent ? 'var(--text-primary)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
+                      }}>
+                        {rank.displayName}
+                      </span>
+                      {isCurrent && (
+                        <span style={{
+                          fontSize: 8,
+                          fontWeight: 800,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: 'var(--gold-400)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          background: 'rgba(212,175,55,0.08)',
+                        }}>
+                          Сейчас
+                        </span>
+                      )}
+                    </div>
+                    {rank.minSpent > 0 && (
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: 'var(--text-muted)',
+                      }}>
+                        от {formatMoney(rank.minSpent)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Cashback badge */}
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: isCurrent ? 'var(--gold-300)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
+                    flexShrink: 0,
+                  }}>
+                    {rank.cashback}%
+                  </div>
+
+                  {isLocked && (
+                    <Lock size={12} strokeWidth={2} color="var(--text-muted)" style={{ opacity: 0.4, flexShrink: 0 }} />
+                  )}
+                </m.button>
+              )
+            })}
+          </div>
+        </m.div>
+
+        {/* ═══════ LOCKED RANK DETAIL ═══════ */}
+        <AnimatePresence>
+          {viewedRank && isViewingLocked && (
+            <m.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ overflow: 'hidden', marginBottom: 16 }}
+            >
+              <div style={{
+                padding: '14px 16px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid var(--border-default)',
+              }}>
                 <div style={{
-                  fontSize: 14,
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  marginBottom: 4,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: 8,
                 }}>
-                  Кэшбэк {displayRank.cashback}% на все заказы
+                  Привилегии «{viewedRank.displayName}»
                 </div>
                 <div style={{
                   fontSize: 13,
-                  color: 'var(--text-muted)',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.5,
                 }}>
-                  Объём заказов от {formatMoney(displayRank.minSpent)}
+                  Кэшбэк {viewedRank.cashback}% на все заказы.
+                  {viewedRank.cashback >= 7 && ' Приоритет в поддержке.'}
+                  {viewedRank.cashback >= 10 && ' Персональные условия.'}
                 </div>
               </div>
-              <div style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                fontFamily: "'Manrope', sans-serif",
-                opacity: 0.5,
-              }}>
-                {displayRank.cashback}%
-              </div>
-            </div>
-          </m.div>
-        )}
+            </m.div>
+          )}
+        </AnimatePresence>
 
-        {/* ═══════ BENEFITS STRIP ═══════ */}
+        {/* ═══════ HOW IT WORKS — Two compact lines ═══════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 8,
-            marginBottom: 24,
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid var(--border-subtle)',
+            marginBottom: 20,
           }}
         >
           {[
-            { label: 'Автоматически', desc: 'Начисление на баланс', icon: '✓' },
-            { label: 'На все заказы', desc: 'Без исключений', icon: '✓' },
-            { label: 'Бессрочно', desc: 'Накопленное не сгорает', icon: '✓' },
-            { label: 'Растёт', desc: 'С каждым заказом', icon: '↑' },
-          ].map((b, i) => (
+            'Начисляется автоматически с каждого заказа',
+            'Растёт с объёмом заказов — без ограничений по сроку',
+          ].map((text, i) => (
             <div
-              key={b.label}
+              key={i}
               style={{
-                padding: '14px 14px',
-                borderRadius: 12,
-                background: i === 0
-                  ? 'var(--gold-glass-subtle)'
-                  : 'var(--bg-glass)',
-                border: `1px solid ${i === 0
-                  ? 'var(--gold-glass-subtle)'
-                  : 'var(--border-subtle)'}`,
-              }}
-            >
-              <div style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                marginBottom: 3,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-              }}>
-                <span style={{
-                  fontSize: 11,
-                  color: 'var(--gold-400)',
-                  fontWeight: 700,
-                }}>
-                  {b.icon}
-                </span>
-                {b.label}
-              </div>
-              <div style={{
+                padding: '6px 0',
+                borderTop: i > 0 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+              }}
+            >
+              <Check size={12} strokeWidth={2.5} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.6 }} />
+              <span style={{
                 fontSize: 12,
-                color: 'var(--text-muted)',
                 fontWeight: 600,
+                color: 'var(--text-muted)',
+                lineHeight: 1.4,
               }}>
-                {b.desc}
-              </div>
+                {text}
+              </span>
             </div>
           ))}
         </m.div>
 
         {/* ═══════ CTA ═══════ */}
-        {onCreateOrder && nextRank && (
-          <m.div
-            initial={{ opacity: 0, y: 10 }}
+        {onCreateOrder && !isMaxRank && (
+          <m.button
+            type="button"
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCTA}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.45 }}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              borderRadius: 12,
+              background: 'var(--gold-metallic)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: 'var(--glow-gold)',
+            }}
           >
-            <m.button
-              type="button"
-              whileTap={{ scale: 0.97 }}
-              onClick={handleCTA}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
-                border: '1px solid var(--border-gold)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <span style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: 'var(--gold-200)',
-              }}>
-                Следующий заказ приближает к {nextRank.cashback}%
-              </span>
-              <ArrowRight size={16} color="var(--gold-200)" />
-            </m.button>
-          </m.div>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--text-on-gold)',
+              letterSpacing: '0.02em',
+            }}>
+              Заказать → {nextRank!.cashback}%
+            </span>
+            <ArrowRight size={16} strokeWidth={2.5} color="var(--text-on-gold)" />
+          </m.button>
+        )}
+
+        {/* Max rank CTA */}
+        {onCreateOrder && isMaxRank && (
+          <m.button
+            type="button"
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCTA}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              borderRadius: 12,
+              background: 'var(--gold-glass-medium)',
+              border: '1px solid rgba(212,175,55,0.20)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <span style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--gold-200)',
+            }}>
+              Новый заказ с кэшбэком 10%
+            </span>
+            <ChevronRight size={16} color="var(--gold-300)" />
+          </m.button>
         )}
 
       </div>
