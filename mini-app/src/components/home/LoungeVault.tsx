@@ -2,6 +2,8 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
+import { GoldText } from '../ui/GoldText'
+import { Reveal } from '../ui/StaggerReveal'
 import { formatMoney } from '../../lib/utils'
 
 interface Rank {
@@ -26,7 +28,6 @@ interface LoungeVaultProps {
   onTelegramShare: () => void
 }
 
-
 export const LoungeVault = memo(function LoungeVault({
   rank,
   bonusBalance,
@@ -45,213 +46,256 @@ export const LoungeVault = memo(function LoungeVault({
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 20, display: 'grid', gap: 10 }}
     >
-      {/* ═══ Bonus Balance — Hero Card ═══ */}
-      <div
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: 12,
-          background: 'linear-gradient(160deg, rgba(25, 20, 10, 0.98) 0%, rgba(12, 12, 13, 0.97) 50%, rgba(8, 8, 10, 1) 100%)',
-          border: '1px solid rgba(212,175,55,0.12)',
-          boxShadow: '0 24px 48px -32px rgba(0,0,0,0.8)',
-        }}
-      >
-        {/* Gold orb */}
+      {/* ═══ Card A — Bonus Balance (HEAVY visual weight) ═══ */}
+      <Reveal animation="spring" delay={0.2}>
         <div
-          aria-hidden="true"
           style={{
-            position: 'absolute',
-            top: -80,
-            right: -40,
-            width: 220,
-            height: 220,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 35%, transparent 70%)',
-            pointerEvents: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 12,
+            background:
+              'linear-gradient(160deg, rgba(25, 20, 10, 0.98) 0%, rgba(12, 12, 13, 0.97) 50%, rgba(8, 8, 10, 1) 100%)',
+            border: '1px solid rgba(212,175,55,0.12)',
+            boxShadow: '0 24px 48px -32px rgba(0,0,0,0.8)',
           }}
-        />
-
-        {/* Top shine */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.2) 50%, transparent 90%)',
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1, padding: '24px 20px' }}>
-          {/* Header row */}
+        >
+          {/* Gold orb top-right */}
           <div
+            aria-hidden="true"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 20,
+              position: 'absolute',
+              top: -80,
+              right: -40,
+              width: 220,
+              height: 220,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 35%, transparent 70%)',
+              pointerEvents: 'none',
             }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Sparkles size={15} color="var(--gold-300)" strokeWidth={1.9} />
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(212, 175, 55, 0.72)',
-                }}
-              >
-                Бонусный баланс
-              </span>
-            </div>
+          />
 
-            {rank.is_max ? (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'rgba(212,175,55,0.08)',
-                  border: '1px solid rgba(212,175,55,0.14)',
-                  color: 'var(--gold-300)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <Crown size={12} strokeWidth={1.9} />
-                Высший
-              </span>
-            ) : (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--gold-300)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {rank.progress}% прогресса
-              </span>
-            )}
-          </div>
-
-          {/* Big balance number */}
+          {/* Top shine line */}
           <div
+            aria-hidden="true"
             style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 44,
-              lineHeight: 1,
-              letterSpacing: '-0.05em',
-              color: 'var(--text-primary)',
-              marginBottom: 6,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background:
+                'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.2) 50%, transparent 90%)',
             }}
-          >
-            {formatMoney(bonusBalance)}
-          </div>
+          />
 
-          <div
-            style={{
-              fontSize: 13,
-              lineHeight: 1.4,
-              color: 'var(--text-secondary)',
-              marginBottom: 20,
-              maxWidth: 300,
-            }}
-          >
-            Бонусы списываются при оплате новых заказов вместе с кэшбэком клуба.
-          </div>
-
-          {/* Stats row */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 8,
-            }}
-          >
+          <div style={{ position: 'relative', zIndex: 1, padding: '24px 20px' }}>
+            {/* Header row */}
             <div
               style={{
-                padding: '14px',
-                borderRadius: 12,
-                background: 'rgba(212,175,55,0.06)',
-                border: '1px solid rgba(212,175,55,0.10)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 20,
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: 6 }}>
-                Кэшбэк
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Percent size={14} color="var(--gold-300)" strokeWidth={2} />
-                <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold-300)', letterSpacing: '-0.03em' }}>
-                  {rank.cashback}%
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={15} color="var(--gold-300)" strokeWidth={1.9} />
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(212, 175, 55, 0.72)',
+                  }}
+                >
+                  Бонусный баланс
                 </span>
               </div>
+
+              {rank.is_max ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 10px',
+                    borderRadius: 999,
+                    background: 'rgba(212,175,55,0.08)',
+                    border: '1px solid rgba(212,175,55,0.14)',
+                    color: 'var(--gold-300)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <Crown size={12} strokeWidth={1.9} />
+                  Высший
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--gold-300)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {rank.progress}% прогресса
+                </span>
+              )}
             </div>
+
+            {/* THE STAR NUMBER — liquid gold balance */}
+            <GoldText
+              variant="liquid"
+              size="3xl"
+              weight={700}
+              style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)" }}
+            >
+              {formatMoney(bonusBalance)}
+            </GoldText>
 
             <div
               style={{
-                padding: '14px',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                fontSize: 13,
+                lineHeight: 1.4,
+                color: 'var(--text-secondary)',
+                marginTop: 6,
+                marginBottom: 20,
+                maxWidth: 300,
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: 6 }}>
-                {rank.is_max ? 'Уровень' : 'До уровня'}
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
-                {rank.is_max ? 'Высший' : formatMoney(rank.spent_to_next)}
-              </div>
+              Бонусы списываются при оплате новых заказов вместе с кэшбэком клуба.
             </div>
-          </div>
 
-          {/* Progress bar */}
-          {!rank.is_max && (
-            <div style={{ marginTop: 12 }}>
+            {/* Stats grid — 2 columns */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 8,
+              }}
+            >
+              {/* Cashback — accent card */}
               <div
                 style={{
-                  height: 5,
-                  borderRadius: 999,
-                  background: 'rgba(255,255,255,0.06)',
-                  overflow: 'hidden',
+                  padding: 14,
+                  borderRadius: 12,
+                  background: 'rgba(212,175,55,0.06)',
+                  border: '1px solid rgba(212,175,55,0.10)',
                 }}
               >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(4, rank.progress)}%` }}
-                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                <div
                   style={{
-                    height: '100%',
-                    borderRadius: 999,
-                    background: 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))',
-                    boxShadow: '0 8px 16px -12px rgba(212,175,55,0.4)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.34)',
+                    marginBottom: 6,
                   }}
-                />
+                >
+                  Кэшбэк
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Percent size={14} color="var(--gold-300)" strokeWidth={2} />
+                  <span
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: 'var(--gold-300)',
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    {rank.cashback}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Level — neutral card */}
+              <div
+                style={{
+                  padding: 14,
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.34)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {rank.is_max ? 'Уровень' : 'До уровня'}
+                </div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    letterSpacing: '-0.03em',
+                  }}
+                >
+                  {rank.is_max ? 'Высший' : formatMoney(rank.spent_to_next)}
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* ═══ Referral Card — Separate, lighter card ═══ */}
+            {/* Progress bar (only if not max rank) */}
+            {!rank.is_max && (
+              <div style={{ marginTop: 12 }}>
+                <div
+                  style={{
+                    height: 5,
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.06)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.max(4, rank.progress)}%` }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 100,
+                      damping: 20,
+                      delay: 0.3,
+                    }}
+                    style={{
+                      height: '100%',
+                      borderRadius: 999,
+                      background:
+                        'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))',
+                      boxShadow: '0 8px 16px -12px rgba(212,175,55,0.4)',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* ═══ Card B — Referral (LIGHT visual weight) ═══ */}
       <div
         style={{
-          padding: '20px',
+          padding: 20,
           borderRadius: 12,
           background: 'rgba(255,255,255,0.025)',
           border: '1px solid rgba(255,255,255,0.05)',
         }}
       >
+        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -284,6 +328,7 @@ export const LoungeVault = memo(function LoungeVault({
             <div
               style={{
                 fontSize: 12,
+                fontWeight: 600,
                 lineHeight: 1.45,
                 color: 'var(--text-secondary)',
               }}
@@ -292,6 +337,7 @@ export const LoungeVault = memo(function LoungeVault({
             </div>
           </div>
 
+          {/* Referral stats pills */}
           {(referralsCount > 0 || referralEarnings > 0) && (
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               {referralsCount > 0 && (
@@ -330,11 +376,19 @@ export const LoungeVault = memo(function LoungeVault({
           )}
         </div>
 
-        {/* Referral code + actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 8, marginBottom: 14 }}>
+        {/* Referral code + action buttons */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          {/* Code button */}
           <motion.button
             type="button"
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onCopy}
             style={{
               minWidth: 0,
@@ -370,6 +424,7 @@ export const LoungeVault = memo(function LoungeVault({
             )}
           </motion.button>
 
+          {/* Share button */}
           <motion.button
             type="button"
             whileTap={{ scale: 0.95 }}
@@ -390,6 +445,7 @@ export const LoungeVault = memo(function LoungeVault({
             <Send size={17} strokeWidth={1.8} />
           </motion.button>
 
+          {/* QR button */}
           <motion.button
             type="button"
             whileTap={{ scale: 0.95 }}
@@ -411,18 +467,14 @@ export const LoungeVault = memo(function LoungeVault({
           </motion.button>
         </div>
 
-        {/* Promo code */}
+        {/* PromoCode section — collapsible, separated */}
         <div
           style={{
             borderTop: '1px solid rgba(255,255,255,0.05)',
             paddingTop: 14,
           }}
         >
-          <PromoCodeSection
-            variant="full"
-            collapsible
-            defaultExpanded={false}
-          />
+          <PromoCodeSection variant="full" collapsible defaultExpanded={false} />
         </div>
       </div>
     </motion.section>

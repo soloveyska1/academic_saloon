@@ -1,6 +1,8 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, Shield, Clock, Sparkles } from 'lucide-react'
+import { ArrowRight, Star, Shield, Clock } from 'lucide-react'
+import { GoldText, GoldBadge, LiquidGoldButton } from '../ui/GoldText'
+import { Reveal } from '../ui/StaggerReveal'
 
 interface NewTaskCTAProps {
   onClick: () => void
@@ -26,12 +28,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
     onClick()
   }
 
+  // ── First-order hero variant ──
   if (variant === 'first-order') {
     return (
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      <div
         style={{
           position: 'relative',
           width: '100%',
@@ -49,7 +49,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           }}
         />
 
-        {/* Large decorative gold orb — top right */}
+        {/* Large decorative gold orb - top right */}
         <div
           aria-hidden="true"
           style={{
@@ -64,7 +64,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           }}
         />
 
-        {/* Secondary orb — bottom left */}
+        {/* Secondary orb - bottom left */}
         <div
           aria-hidden="true"
           style={{
@@ -79,7 +79,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           }}
         />
 
-        {/* Top shine line */}
+        {/* Top gold accent line */}
         <div
           aria-hidden="true"
           style={{
@@ -88,7 +88,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             left: 0,
             right: 0,
             height: 1,
-            background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.25) 30%, rgba(212,175,55,0.25) 70%, transparent 100%)',
+            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.25) 50%, transparent 90%)',
           }}
         />
 
@@ -99,179 +99,126 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             padding: '36px 24px 28px',
           }}
         >
-          {/* Eyebrow with sparkle */}
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 12px',
-              borderRadius: 999,
-              background: 'rgba(212,175,55,0.08)',
-              border: '1px solid rgba(212,175,55,0.14)',
-              marginBottom: 20,
-            }}
-          >
-            <Sparkles size={12} color="var(--gold-400)" strokeWidth={2} />
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--gold-300)',
-              }}
-            >
-              Академический Салон
-            </span>
-          </motion.div>
+          {/* Eyebrow badge */}
+          <Reveal animation="spring" delay={0.1}>
+            <div style={{ marginBottom: 20 }}>
+              <GoldBadge>Академический Салон</GoldBadge>
+            </div>
+          </Reveal>
 
-          {/* Headline — big and bold */}
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="shimmer-text"
-            style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 'clamp(32px, 8.5vw, 42px)',
-              fontWeight: 700,
-              lineHeight: 1.0,
-              letterSpacing: '-0.03em',
-              marginBottom: 12,
-            }}
-          >
-            Работы под ключ.
-            <br />
-            Точно в срок.
-          </motion.h1>
+          {/* Headline */}
+          <Reveal animation="spring" delay={0.15}>
+            <div style={{ marginBottom: 12 }}>
+              <GoldText
+                variant="shimmer"
+                size="3xl"
+                weight={700}
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                }}
+              >
+                Работы под ключ.
+                <br />
+                Точно в срок.
+              </GoldText>
+            </div>
+          </Reveal>
 
           {/* Subhead */}
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.45 }}
-            style={{
-              color: 'var(--text-secondary)',
-              fontSize: 15,
-              fontWeight: 600,
-              lineHeight: 1.5,
-              marginBottom: 24,
-              maxWidth: 320,
-            }}
-          >
-            Курсовые, дипломы, рефераты и ещё 15+ форматов.{' '}
-            <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>
-              От 990 ₽
-            </span>
-          </motion.p>
+          <Reveal animation="spring" delay={0.2}>
+            <p
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: 15,
+                fontWeight: 600,
+                lineHeight: 1.5,
+                marginBottom: 24,
+                maxWidth: 320,
+              }}
+            >
+              Курсовые, дипломы, рефераты и ещё 15+ форматов.{' '}
+              <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>
+                От 990 ₽
+              </span>
+            </p>
+          </Reveal>
 
-          {/* Proof strip — refined pills */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            style={{
-              display: 'flex',
-              gap: 8,
-              flexWrap: 'wrap',
-              marginBottom: 28,
-            }}
-          >
-            {PROOF_ITEMS.map((p) => {
-              const Icon = p.icon
-              return (
-                <div
-                  key={p.text}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <Icon size={12} color={p.color} strokeWidth={2.2} />
-                  <span
+          {/* Proof pills */}
+          <Reveal animation="spring" delay={0.25}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+                marginBottom: 28,
+              }}
+            >
+              {PROOF_ITEMS.map((p) => {
+                const Icon = p.icon
+                return (
+                  <div
+                    key={p.text}
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'var(--text-secondary)',
-                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
                     }}
                   >
-                    {p.text}
-                  </span>
-                </div>
-              )
-            })}
-          </motion.div>
+                    <Icon size={12} color={p.color} strokeWidth={2.2} />
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: 'var(--text-secondary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {p.text}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </Reveal>
 
-          {/* Primary CTA — gold gradient button */}
-          <motion.button
-            type="button"
-            className="shine-sweep"
-            whileTap={{ scale: 0.97 }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-            onClick={handleClick}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              width: '100%',
-              height: 56,
-              padding: '0 24px',
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, var(--gold-600) 0%, var(--gold-400) 50%, var(--gold-300) 100%)',
-              border: 'none',
-              boxShadow: '0 12px 32px -8px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
-              color: 'var(--text-on-gold)',
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: '-0.01em',
-              cursor: 'pointer',
-              appearance: 'none' as const,
-            }}
-          >
-            Рассчитать стоимость
-            <ArrowRight size={18} strokeWidth={2.5} />
-          </motion.button>
+          {/* CTA button */}
+          <Reveal animation="spring" delay={0.3}>
+            <LiquidGoldButton
+              onClick={handleClick}
+              icon={<ArrowRight size={18} />}
+            >
+              Рассчитать стоимость
+            </LiquidGoldButton>
+          </Reveal>
 
           {/* Micro-reassurance */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
-            transition={{ delay: 0.45, duration: 0.3 }}
-            style={{
-              marginTop: 12,
-              fontSize: 12,
-              color: 'var(--text-muted)',
-              fontWeight: 600,
-              textAlign: 'center' as const,
-              letterSpacing: '0.02em',
-            }}
-          >
-            Бесплатный расчёт · без предоплаты · ответ за 5 минут
-          </motion.div>
+          <Reveal animation="spring" delay={0.4}>
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                fontWeight: 600,
+                textAlign: 'center' as const,
+                opacity: 0.6,
+              }}
+            >
+              Бесплатный расчёт · без предоплаты · ответ за 5 минут
+            </div>
+          </Reveal>
         </div>
-      </motion.section>
+      </div>
     )
   }
 
+  // ── Embedded variant (transparent, no background) ──
   if (embedded) {
     return (
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         style={{
           position: 'relative',
           width: '100%',
@@ -337,7 +284,6 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           </div>
 
           <div
-            className="shine-sweep"
             style={{
               width: 48,
               height: 48,
@@ -353,7 +299,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
           </div>
         </motion.button>
-      </motion.section>
+      </div>
     )
   }
 
@@ -374,6 +320,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
+      {/* Decorative gold orb - top right */}
       <div
         aria-hidden="true"
         style={{
@@ -419,12 +366,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 8,
             }}
           >
-            Новая работа
+            НОВАЯ РАБОТА
           </div>
           <div
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 700,
               lineHeight: 0.94,
               letterSpacing: '-0.04em',
@@ -434,16 +381,19 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           >
             Оформить новый заказ
           </div>
-          <div style={{
-            fontSize: 13,
-            color: 'var(--text-secondary)',
-            fontWeight: 600,
-            lineHeight: 1.45,
-            marginBottom: 16,
-          }}>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+              fontWeight: 600,
+              lineHeight: 1.45,
+              marginBottom: 16,
+            }}
+          >
             Расчёт за 5 минут, стоимость известна до оплаты.
           </div>
 
+          {/* Tags */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {['от 990 ₽', '5 минут', 'в чате'].map((item) => (
               <span
@@ -466,11 +416,13 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             ))}
           </div>
         </div>
+
+        {/* Gold circle with arrow */}
         <div
           style={{
-            width: 52,
-            height: 52,
-            borderRadius: 12,
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
             background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
             display: 'flex',
             alignItems: 'center',
