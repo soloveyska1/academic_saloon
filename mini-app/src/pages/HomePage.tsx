@@ -16,7 +16,6 @@ import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import {
   DailyBonusCard,
   HomeHeader,
-  FinanceStrip,
   QuickActionsRow,
   NewTaskCTA,
   QuickReorderCard,
@@ -248,11 +247,11 @@ export function HomePage({ user, onRefresh }: Props) {
 
       <div className="relative z-[1]">
 
-        {/* ═══ HEADER — Minimal: greeting + name + avatar ═══ */}
+        {/* ═══ HEADER — Greeting + Avatar + Finance (unified) ═══ */}
         <HomeHeader
           user={{
             fullname: user.fullname,
-            rank: { is_max: user.rank.is_max },
+            rank: { is_max: user.rank.is_max, name: user.rank.name, cashback: user.rank.cashback },
             orders_count: user.orders_count,
             has_active_orders: activeOrders > 0,
           }}
@@ -292,16 +291,6 @@ export function HomePage({ user, onRefresh }: Props) {
              RETURNING USER FLOW
              ═══════════════════════════════════════════════════════ */
           <>
-            {/* ─── Finance strip: balance, cashback, bonus, club ─── */}
-            <FinanceStrip
-              balance={user.balance}
-              bonusBalance={user.bonus_balance}
-              cashback={user.rank.cashback}
-              activeOrders={activeOrders}
-              onOpenLounge={handleOpenLounge}
-              haptic={haptic}
-            />
-
             {/* ── Active orders → order tracker first ── */}
             {returningUserState === 'active' && (
               <ActiveOrderDashboard
