@@ -7,12 +7,13 @@ import {
   CreditCard,
   FileEdit,
   FolderKanban,
+  Sparkles,
 } from 'lucide-react'
 import { Order } from '../../types'
 import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
-import { GoldText, GoldBadge, LiquidGoldButton } from '../ui/GoldText'
+import { GoldText, GoldBadge } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
 
 interface ActiveOrderDashboardProps {
@@ -109,6 +110,185 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
 
 const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision']
 
+/* ═══════════════════════════════════════════════════════════════
+   Animated shimmer line that sweeps across the card
+   ═══════════════════════════════════════════════════════════════ */
+function ShimmerSweep() {
+  return (
+    <motion.div
+      animate={{ x: ['-100%', '250%'] }}
+      transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity, repeatDelay: 4 }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '40%',
+        height: '100%',
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.04), rgba(255,255,255,0.02), transparent)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}
+    />
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Animated gold border — breathing glow
+   ═══════════════════════════════════════════════════════════════ */
+function AnimatedGoldBorder({ active }: { active: boolean }) {
+  if (!active) return null
+  return (
+    <motion.div
+      animate={{
+        opacity: [0.4, 0.8, 0.4],
+      }}
+      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      style={{
+        position: 'absolute',
+        inset: -1,
+        borderRadius: 14,
+        background: 'conic-gradient(from 45deg, rgba(212,175,55,0.3), rgba(245,225,160,0.15), rgba(212,175,55,0.3), rgba(183,142,38,0.2), rgba(251,245,183,0.15), rgba(212,175,55,0.3))',
+        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        maskComposite: 'exclude',
+        WebkitMaskComposite: 'xor',
+        padding: 1,
+        pointerEvents: 'none',
+        zIndex: 2,
+      }}
+    />
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Stage progress — animated dots with pulse on active stage
+   ═══════════════════════════════════════════════════════════════ */
+function StageProgress({ stageIdx }: { stageIdx: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0, width: '100%' }}>
+      {STAGES.map((stage, index) => {
+        const completed = index < stageIdx
+        const active = index === stageIdx
+        const future = index > stageIdx
+        const StageIcon = stage.icon
+
+        return (
+          <React.Fragment key={stage.key}>
+            {/* Connector line before (except first) */}
+            {index > 0 && (
+              <div
+                style={{
+                  flex: 1,
+                  height: 1,
+                  background: completed || active
+                    ? 'linear-gradient(90deg, rgba(212,175,55,0.5), rgba(212,175,55,0.3))'
+                    : 'rgba(255,255,255,0.06)',
+                  transition: 'background 0.5s ease',
+                }}
+              />
+            )}
+
+            {/* Stage node */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 5,
+                position: 'relative',
+              }}
+            >
+              {/* Pulse ring for active stage */}
+              {active && (
+                <motion.div
+                  animate={{
+                    scale: [1, 1.8, 1],
+                    opacity: [0.4, 0, 0.4],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    border: '1px solid rgba(212,175,55,0.3)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+
+              {/* Icon circle */}
+              <motion.div
+                initial={false}
+                animate={{
+                  scale: active ? [1, 1.08, 1] : 1,
+                }}
+                transition={active ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: completed
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(183,142,38,0.15))'
+                    : active
+                      ? 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(183,142,38,0.10))'
+                      : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${
+                    completed
+                      ? 'rgba(212,175,55,0.35)'
+                      : active
+                        ? 'rgba(212,175,55,0.25)'
+                        : 'rgba(255,255,255,0.06)'
+                  }`,
+                  boxShadow: active
+                    ? '0 0 12px rgba(212,175,55,0.15)'
+                    : 'none',
+                  transition: 'all 0.4s ease',
+                }}
+              >
+                <StageIcon
+                  size={12}
+                  strokeWidth={2}
+                  style={{
+                    color: completed || active
+                      ? 'var(--gold-400)'
+                      : 'rgba(255,255,255,0.20)',
+                    transition: 'color 0.4s ease',
+                  }}
+                />
+              </motion.div>
+
+              {/* Label */}
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: active ? 700 : 600,
+                  letterSpacing: '0.04em',
+                  color: completed
+                    ? 'rgba(212,175,55,0.6)'
+                    : active
+                      ? 'var(--gold-400)'
+                      : future
+                        ? 'rgba(255,255,255,0.18)'
+                        : 'var(--text-muted)',
+                  whiteSpace: 'nowrap',
+                  transition: 'color 0.4s ease',
+                }}
+              >
+                {stage.label}
+              </span>
+            </div>
+          </React.Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
 export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   orders,
   onNavigate,
@@ -157,316 +337,301 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе`
     : null
 
-  // Finance display
   const financeAmount = total <= 0 ? 'Уточняется' : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
 
   return (
     <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.985 }}
-          onClick={() => {
-            haptic('light')
-            onNavigate(`/order/${activeOrder.id}`)
-          }}
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.985 }}
+        onClick={() => {
+          haptic('light')
+          onNavigate(`/order/${activeOrder.id}`)
+        }}
+        style={{
+          position: 'relative',
+          display: 'block',
+          width: '100%',
+          padding: 0,
+          borderRadius: 14,
+          background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(10,10,11,0.99) 40%, rgba(6,6,8,1) 100%)',
+          border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.05)',
+          textAlign: 'left',
+          cursor: 'pointer',
+          appearance: 'none',
+          overflow: 'hidden',
+          boxShadow: needsAction
+            ? '0 0 40px -10px rgba(212,175,55,0.12), 0 20px 50px -20px rgba(0,0,0,0.8)'
+            : '0 20px 50px -20px rgba(0,0,0,0.7)',
+        }}
+      >
+        {/* Animated gold border for action-needed */}
+        <AnimatedGoldBorder active={needsAction} />
+
+        {/* Shimmer sweep across card */}
+        <ShimmerSweep />
+
+        {/* Subtle inner glow at top */}
+        <div
           style={{
-            position: 'relative',
-            display: 'block',
-            width: '100%',
-            padding: 0,
-            borderRadius: 12,
+            position: 'absolute',
+            top: 0,
+            left: '10%',
+            right: '10%',
+            height: 80,
             background: needsAction
-              ? 'linear-gradient(155deg, rgba(30,24,12,0.98) 0%, rgba(14,14,15,0.97) 50%, rgba(8,8,10,1) 100%)'
-              : 'linear-gradient(155deg, rgba(20,18,14,0.97) 0%, rgba(12,12,13,0.98) 50%, rgba(8,8,10,1) 100%)',
-            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
-            boxShadow: '0 24px 48px -32px rgba(0,0,0,0.8)',
-            textAlign: 'left',
-            cursor: 'pointer',
-            appearance: 'none',
-            overflow: 'hidden',
+              ? 'radial-gradient(ellipse at top, rgba(212,175,55,0.06) 0%, transparent 70%)'
+              : 'radial-gradient(ellipse at top, rgba(255,255,255,0.02) 0%, transparent 70%)',
+            pointerEvents: 'none',
           }}
-        >
-          {/* Gold top accent line for action-needed */}
-          {needsAction && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2,
-                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent)',
-              }}
-            />
-          )}
+        />
 
-          {/* Zone 1: Identity (top) */}
-          <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            {/* Work type + status row */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(212,175,55,0.55)',
-                }}
-              >
-                {workType} #{activeOrder.id}
-              </div>
-
-              {needsAction ? (
-                <GoldBadge>{statusInfo?.label ?? visibleStatus}</GoldBadge>
-              ) : (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '5px 10px',
-                    borderRadius: 999,
-                    background: statusInfo?.bg ?? 'rgba(212,175,55,0.08)',
-                    border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.14)'}`,
-                    color: statusInfo?.color ?? 'var(--gold-300)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {statusInfo?.label ?? visibleStatus}
-                </span>
-              )}
-            </div>
-
-            {/* Headline */}
-            <div
-              style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 22,
-                fontWeight: 700,
-                lineHeight: 1.15,
-                letterSpacing: '-0.03em',
-                color: 'var(--text-primary)',
-                marginBottom: 8,
-              }}
-            >
-              {headline}
-            </div>
-
-            {/* Narrative + deadline */}
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                lineHeight: 1.45,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              {narrative}{' '}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Clock3 size={12} strokeWidth={2} style={{ verticalAlign: 'middle' }} />
-                {deadlineText}
-              </span>
-            </div>
-          </div>
-
-          {/* Zone 2: Finance (middle) */}
-          <div
-            style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
-              background: 'rgba(255,255,255,0.015)',
-            }}
-          >
-            {/* Finance row */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 10,
-                marginBottom: 16,
-              }}
-            >
-              <GoldText variant="liquid" size="2xl" weight={700}>
-                {financeAmount}
-              </GoldText>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.34)',
-                }}
-              >
-                К ОПЛАТЕ
-              </span>
-
-              {hasPartialPayment && (
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    padding: '5px 10px',
-                    borderRadius: 999,
-                    background: 'rgba(212,175,55,0.08)',
-                    border: '1px solid rgba(212,175,55,0.14)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: 'var(--gold-300)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Аванс внесён
-                </span>
-              )}
-            </div>
-
-            {/* Stage progress bar */}
-            <div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
-                  gap: 6,
-                  marginBottom: 6,
-                }}
-              >
-                {STAGES.map((stage, index) => {
-                  const barStyle: React.CSSProperties = {
-                    height: 4,
-                    borderRadius: 999,
-                    background: index <= stageIdx
-                      ? 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))'
-                      : 'rgba(255,255,255,0.06)',
-                    boxShadow: index === stageIdx ? '0 0 12px rgba(212,175,55,0.2)' : 'none',
-                    transition: 'background 0.3s ease',
-                  }
-
-                  if (index === stageIdx) {
-                    return (
-                      <motion.div
-                        key={stage.key}
-                        animate={{
-                          boxShadow: [
-                            '0 0 8px rgba(212,175,55,0.15)',
-                            '0 0 16px rgba(212,175,55,0.3)',
-                            '0 0 8px rgba(212,175,55,0.15)',
-                          ],
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        style={barStyle}
-                      />
-                    )
-                  }
-
-                  return <div key={stage.key} style={barStyle} />
-                })}
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
-                  gap: 6,
-                }}
-              >
-                {STAGES.map((stage, index) => (
-                  <div
-                    key={stage.key}
-                    style={{
-                      fontSize: 10,
-                      fontWeight: index === stageIdx ? 700 : 600,
-                      color: index <= stageIdx ? 'var(--gold-300)' : 'var(--text-muted)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {stage.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Zone 3: Action (bottom) */}
+        {/* ─── Zone 1: Identity ─── */}
+        <div style={{ padding: '20px 20px 16px', position: 'relative', zIndex: 3 }}>
+          {/* Work type + status */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 12,
-              padding: '16px 20px',
+              marginBottom: 10,
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Sparkles
+                size={11}
+                strokeWidth={2}
+                style={{ color: 'rgba(212,175,55,0.4)' }}
+              />
+              <span
                 style={{
-                  fontSize: 15,
+                  fontSize: 10.5,
                   fontWeight: 700,
-                  lineHeight: 1.2,
-                  color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
-                  marginBottom: footerHint ? 3 : 0,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212,175,55,0.45)',
                 }}
               >
-                {primaryAction}
-              </div>
-              {footerHint && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {footerHint}
-                </div>
-              )}
+                {workType} #{activeOrder.id}
+              </span>
             </div>
 
             {needsAction ? (
-              <LiquidGoldButton
-                fullWidth={false}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  haptic('medium')
-                  onNavigate(`/order/${activeOrder.id}`)
-                }}
+              <GoldBadge>{statusInfo?.label ?? visibleStatus}</GoldBadge>
+            ) : (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  padding: 0,
-                  borderRadius: 12,
-                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  background: statusInfo?.bg ?? 'rgba(212,175,55,0.06)',
+                  border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.10)'}`,
+                  color: statusInfo?.color ?? 'var(--gold-300)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <ArrowRight size={18} strokeWidth={2.2} />
-              </LiquidGoldButton>
-            ) : (
+                {/* Animated dot */}
+                <motion.span
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: statusInfo?.color ?? 'var(--gold-400)',
+                  }}
+                />
+                {statusInfo?.label ?? visibleStatus}
+              </motion.span>
+            )}
+          </div>
+
+          {/* Headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 21,
+              fontWeight: 700,
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+              marginBottom: 8,
+            }}
+          >
+            {headline}
+          </motion.div>
+
+          {/* Narrative + deadline */}
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              lineHeight: 1.45,
+              color: 'rgba(255,255,255,0.40)',
+            }}
+          >
+            {narrative}{' '}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Clock3 size={11} strokeWidth={2} style={{ verticalAlign: 'middle', opacity: 0.7 }} />
+              {deadlineText}
+            </span>
+          </div>
+        </div>
+
+        {/* ─── Separator ─── */}
+        <div
+          style={{
+            margin: '0 20px',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+          }}
+        />
+
+        {/* ─── Zone 2: Finance + Progress ─── */}
+        <div style={{ padding: '16px 20px', position: 'relative', zIndex: 3 }}>
+          {/* Finance row */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 18,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <GoldText variant="liquid" size="xl" weight={700}>
+                {financeAmount}
+              </GoldText>
+              {remaining > 0 && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.25)',
+                  }}
+                >
+                  к оплате
+                </span>
+              )}
+            </div>
+
+            {hasPartialPayment && (
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(74,222,128,0.08)',
+                  border: '1px solid rgba(74,222,128,0.12)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: 'rgba(74,222,128,0.8)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Аванс внесён
+              </span>
+            )}
+          </div>
+
+          {/* Stage progress — animated nodes */}
+          <StageProgress stageIdx={stageIdx} />
+        </div>
+
+        {/* ─── Separator ─── */}
+        <div
+          style={{
+            margin: '0 20px',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+          }}
+        />
+
+        {/* ─── Zone 3: Action ─── */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '14px 20px',
+            position: 'relative',
+            zIndex: 3,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: needsAction ? 'var(--gold-300)' : 'rgba(255,255,255,0.7)',
+                marginBottom: footerHint ? 3 : 0,
+              }}
+            >
+              {primaryAction}
+            </div>
+            {footerHint && (
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  fontSize: 11,
+                  lineHeight: 1.4,
+                  color: 'rgba(255,255,255,0.25)',
                 }}
               >
-                <ArrowRight size={18} strokeWidth={2.2} />
+                {footerHint}
               </div>
             )}
           </div>
-        </motion.button>
+
+          {/* Arrow button with gold glow for action-needed */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              background: needsAction
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(183,142,38,0.08))'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${needsAction ? 'rgba(212,175,55,0.20)' : 'rgba(255,255,255,0.06)'}`,
+              boxShadow: needsAction
+                ? '0 0 20px -4px rgba(212,175,55,0.15)'
+                : 'none',
+            }}
+          >
+            <ArrowRight
+              size={16}
+              strokeWidth={2.2}
+              style={{
+                color: needsAction ? 'var(--gold-400)' : 'rgba(255,255,255,0.35)',
+              }}
+            />
+          </motion.div>
+        </div>
+      </motion.button>
     </Reveal>
   )
 })

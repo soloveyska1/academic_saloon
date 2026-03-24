@@ -158,8 +158,8 @@ textarea:focus-visible,
   --bg-main: #121212;
   --bg-surface: #1E1E1E;
   --bg-elevated: #2A2A2A;
-  --bg-card: rgba(30, 30, 30, 0.7);
-  --bg-card-solid: #1E1E1E;
+  --bg-card: rgba(14, 13, 12, 0.92);
+  --bg-card-solid: #111110;
   --bg-glass: rgba(255, 255, 255, 0.06);
 
   /* === GLASS OVERLAY SURFACES === */
@@ -1802,15 +1802,17 @@ h4 {
 /* Premium Order Card — Base styles */
 .order-card-premium {
   position: relative;
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(165deg, rgba(16,15,12,0.95) 0%, rgba(10,10,11,0.97) 50%, rgba(6,6,8,0.99) 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.05);
   padding: 20px;
   cursor: pointer;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 20px 50px -20px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.03);
 
   /* Critical for instant touch response */
   touch-action: manipulation;
@@ -1821,6 +1823,30 @@ h4 {
   /* GPU acceleration for smooth transforms */
   will-change: transform, opacity;
   transform: translateZ(0);
+}
+
+/* Subtle top glow on card */
+.order-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent);
+  pointer-events: none;
+}
+
+/* Inner ambient light */
+.order-card-premium::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 60px;
+  background: radial-gradient(ellipse at top, rgba(212,175,55,0.03) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 /* Premium Filter Chip — Base styles */
