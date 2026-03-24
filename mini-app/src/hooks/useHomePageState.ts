@@ -18,6 +18,7 @@ export interface HomePageState {
     ranks: boolean
     welcome: boolean
     urgentSheet: boolean
+    spinWheel: boolean
   }
 }
 
@@ -50,6 +51,7 @@ export const initialHomePageState: HomePageState = {
     ranks: false,
     welcome: false,
     urgentSheet: false,
+    spinWheel: false,
   },
 }
 
@@ -106,6 +108,7 @@ export function homePageReducer(
           ranks: false,
           welcome: false,
           urgentSheet: false,
+          spinWheel: false,
         },
       }
 

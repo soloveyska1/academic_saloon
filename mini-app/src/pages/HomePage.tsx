@@ -12,6 +12,7 @@ import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
+import { claimDailyBonus } from '../api/userApi'
 
 // Home Components
 import {
@@ -19,7 +20,6 @@ import {
   HomeHeader,
   QuickActionsRow,
   NewTaskCTA,
-  QuickReorderCard,
   UrgentHubSheet,
   TrustStatsStrip,
   HowItWorks,
@@ -37,6 +37,17 @@ import {
   LoungeVault,
   PricingAnchor,
   FAQSection,
+  // New features
+  StoryCards,
+  PriceCalculator,
+  SpinWheel,
+  StreakFreezeCard,
+  WorkInProgressFeed,
+  AchievementBadges,
+  SeasonalBanner,
+  ShareDiscountCard,
+  ReferralBattle,
+  SmartReorderCard,
 } from '../components/home'
 
 // Lazy load modal components
@@ -143,20 +154,6 @@ export function HomePage({ user, onRefresh }: Props) {
     navWithTransition('/club')
   }, [haptic, navWithTransition])
 
-  const handleReorder = useCallback((orderId: number) => {
-    const order = user?.orders.find(o => o.id === orderId)
-    if (!order) return
-    navWithTransition('/create-order', {
-      state: {
-        prefill: {
-          work_type: order.work_type,
-          subject: order.subject,
-          topic: order.subject,
-        },
-      },
-    })
-  }, [user?.orders, navWithTransition])
-
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
 
@@ -208,6 +205,42 @@ export function HomePage({ user, onRefresh }: Props) {
     haptic('medium')
     actions.openModal('urgentSheet')
   }, [haptic, actions])
+
+  // Smart reorder with optional subject override
+  const handleSmartReorder = useCallback((workType: string, subject?: string) => {
+    navWithTransition('/create-order', {
+      state: {
+        prefill: {
+          work_type: workType,
+          subject: subject || undefined,
+          topic: subject || undefined,
+        },
+      },
+    })
+  }, [navWithTransition])
+
+  // Spin wheel handler
+  const handleSpinWheel = useCallback(async () => {
+    const result = await claimDailyBonus()
+    if (result.success) {
+      handleBonusClaimed(result.bonus)
+      return { bonus: result.bonus, streak: result.streak }
+    }
+    throw new Error(result.message || 'Failed')
+  }, [handleBonusClaimed])
+
+  // Streak freeze handler (mock — would call API)
+  const handlePurchaseFreeze = useCallback(async () => {
+    // TODO: connect to real API endpoint
+    haptic('success')
+    return true
+  }, [haptic])
+
+  // Story action handler
+  const handleStoryAction = useCallback((action: 'order' | 'club' | 'dismiss') => {
+    if (action === 'order') handleNewOrder()
+    else if (action === 'club') handleOpenLounge()
+  }, [handleNewOrder, handleOpenLounge])
 
   // User state detection
   const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
@@ -315,12 +348,36 @@ export function HomePage({ user, onRefresh }: Props) {
             ═══════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
+            {/* ─── Story cards (Revolut-style) ─── */}
+            <Section>
+              <StoryCards onAction={handleStoryAction} haptic={haptic} />
+            </Section>
+
             <div ref={heroCTARef as React.RefObject<HTMLDivElement>} onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
 
+            {/* ─── Seasonal banner ─── */}
+            <Section>
+              <SeasonalBanner onAction={handleNewOrder} />
+            </Section>
+
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <LiveActivityFeed />
+
+            {/* ─── Price calculator ─── */}
+            <Section>
+              <PriceCalculator
+                onCreateOrder={handleNewOrderWithType}
+                haptic={haptic}
+              />
+            </Section>
+
+            {/* ─── Work in progress feed ─── */}
+            <Section>
+              <WorkInProgressFeed />
+            </Section>
+
             <TrustStatsStrip />
             <HowItWorks />
             <TestimonialsSection />
@@ -334,6 +391,11 @@ export function HomePage({ user, onRefresh }: Props) {
              RETURNING USER FLOW
              ═══════════════════════════════════════════════════════ */
           <>
+            {/* ─── Story cards ─── */}
+            <Section>
+              <StoryCards onAction={handleStoryAction} haptic={haptic} />
+            </Section>
+
             {/* ── Active orders → order tracker first ── */}
             {returningUserState === 'active' && (
               <ActiveOrderDashboard
@@ -343,20 +405,20 @@ export function HomePage({ user, onRefresh }: Props) {
               />
             )}
 
-            {/* ── Quick reorder (just-completed or idle with history) ── */}
+            {/* ── Smart reorder (just-completed or idle with history) ── */}
             {(returningUserState === 'just-completed' || returningUserState === 'idle') &&
               user.orders.length > 0 && (
               <Section>
-                <QuickReorderCard
+                <SmartReorderCard
                   lastOrder={user.orders[0]}
-                  onReorder={handleReorder}
+                  onReorder={handleSmartReorder}
                   haptic={haptic}
-                  embedded={false}
+                  cashbackPercent={user.rank.cashback}
                 />
               </Section>
             )}
 
-            {/* ─── New order CTA ─── */}
+            {/* ─── New order CTA (context-aware) ─── */}
             <Section>
               <div onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
                 <NewTaskCTA onClick={handleNewOrder} onUrgent={handleOpenUrgentSheet} variant="repeat-order" />
@@ -374,15 +436,21 @@ export function HomePage({ user, onRefresh }: Props) {
               />
             </Section>
 
-            {/* ─── Daily bonus ─── */}
+            {/* ─── Daily bonus + Streak Freeze ─── */}
             {shouldShowDailyBonus && (
-              <Section>
+              <Section gap={8}>
                 <DailyBonusCard
                   variant="compact"
                   dailyAvailable={user.daily_luck_available ?? false}
                   streak={user.daily_bonus_streak || 0}
                   haptic={haptic}
                   onBonusClaimed={handleBonusClaimed}
+                />
+                <StreakFreezeCard
+                  streak={user.daily_bonus_streak || 0}
+                  bonusBalance={user.bonus_balance + optimisticBonusAdd}
+                  onPurchaseFreeze={handlePurchaseFreeze}
+                  haptic={haptic}
                 />
               </Section>
             )}
@@ -394,6 +462,45 @@ export function HomePage({ user, onRefresh }: Props) {
                   bonusExpiry={user.bonus_expiry}
                   bonusBalance={user.bonus_balance}
                   onUseBonus={handleNewOrder}
+                />
+              </Section>
+            )}
+
+            {/* ─── Achievement badges ─── */}
+            <Section>
+              <AchievementBadges user={user} haptic={haptic} />
+            </Section>
+
+            {/* ─── Price calculator ─── */}
+            <Section>
+              <PriceCalculator
+                onCreateOrder={handleNewOrderWithType}
+                haptic={haptic}
+                cashbackPercent={user.rank.cashback}
+              />
+            </Section>
+
+            {/* ─── Work in progress feed ─── */}
+            <Section>
+              <WorkInProgressFeed />
+            </Section>
+
+            {/* ─── Share discount card ─── */}
+            <Section>
+              <ShareDiscountCard
+                referralCode={user.referral_code}
+                botUsername={botUsername}
+                telegramId={user.telegram_id}
+                haptic={haptic}
+              />
+            </Section>
+
+            {/* ─── Referral Battle ─── */}
+            {user.referrals_count > 0 && (
+              <Section>
+                <ReferralBattle
+                  userReferrals={user.referrals_count}
+                  haptic={haptic}
                 />
               </Section>
             )}
@@ -413,6 +520,11 @@ export function HomePage({ user, onRefresh }: Props) {
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}
               onTelegramShare={handleTelegramShare}
             />
+
+            {/* ─── Seasonal banner ─── */}
+            <Section>
+              <SeasonalBanner onAction={handleNewOrder} />
+            </Section>
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
           </>
@@ -469,6 +581,15 @@ export function HomePage({ user, onRefresh }: Props) {
           onCreateOrder={handleNewOrder}
         />
       </Suspense>
+
+      {/* Spin Wheel modal */}
+      <SpinWheel
+        isOpen={state.modals.spinWheel}
+        onClose={() => actions.closeModal('spinWheel')}
+        onSpin={handleSpinWheel}
+        haptic={haptic}
+        streakDay={(user.daily_bonus_streak || 0) % 7}
+      />
     </main>
 
       <AnimatePresence>

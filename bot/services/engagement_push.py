@@ -182,6 +182,82 @@ class EngagementPushService:
                     await self._increment_count(user.id)
 
     # ══════════════════════════════════════════════════════════
+    #  MORNING STREAK PUSH — "День X! Зайди забрать бонус"
+    # ══════════════════════════════════════════════════════════
+
+    async def _check_morning_streak_push(self):
+        """
+        Morning push for users with active streaks.
+        Sent between 9:00-11:00 MSK to drive early engagement.
+        Deep links directly to mini-app home page.
+        """
+        hour = datetime.now(MSK).hour
+        if hour < 9 or hour > 11:
+            return
+
+        async with self.session_maker() as session:
+            now = datetime.now(MSK)
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # Users with active streaks >= 3 days who haven't claimed today
+            query = (
+                select(User)
+                .where(
+                    User.daily_bonus_streak >= 3,
+                    User.is_banned.is_(False),
+                    (User.last_daily_bonus_at < today_start) | (User.last_daily_bonus_at.is_(None)),
+                )
+                .limit(30)
+            )
+            result = await session.execute(query)
+            users = result.scalars().all()
+
+            for user in users:
+                key = f"morning_streak:{user.id}:{now.strftime('%Y%m%d')}"
+                if await self._was_sent(key) or not await self._can_push(user.id):
+                    continue
+
+                streak = user.daily_bonus_streak or 0
+                day_number = streak + 1
+
+                # Escalating rewards hint
+                bonus_hints = {3: 20, 5: 30, 7: 50, 14: 100, 30: 200}
+                bonus_hint = bonus_hints.get(day_number, "")
+                bonus_text = f" — забери +{bonus_hint}₽" if bonus_hint else ""
+
+                # Vary messages based on streak length
+                if streak >= 30:
+                    emoji = "💎"
+                    title = f"День {day_number}! Легенда!"
+                elif streak >= 14:
+                    emoji = "🔥"
+                    title = f"День {day_number}! Серия горит!"
+                elif streak >= 7:
+                    emoji = "⚡"
+                    title = f"День {day_number}! Неделя подряд!"
+                else:
+                    emoji = "☀️"
+                    title = f"Доброе утро! День {day_number}"
+
+                name = (user.fullname or "").split()[0] or ""
+                greeting = f", {name}" if name else ""
+
+                text = (
+                    f"{emoji} <b>{title}{greeting}</b>\n\n"
+                    f"Ваша серия: <b>{streak} дн.</b>{bonus_text}\n"
+                    f"Зайдите, чтобы не потерять прогресс!"
+                )
+
+                sent = await self._send(
+                    user.telegram_id,
+                    text,
+                    self._webapp_button("Забрать бонус 🎁", "/"),
+                )
+                if sent:
+                    await self._mark_sent(key)
+                    await self._increment_count(user.id)
+
+    # ══════════════════════════════════════════════════════════
     #  SOCIAL PROOF NUDGE
     # ══════════════════════════════════════════════════════════
 
@@ -409,6 +485,7 @@ class EngagementPushService:
             return
 
         for check_name, check_fn in [
+            ("morning_streak", self._check_morning_streak_push),
             ("daily_bonus", self._check_daily_bonus_reminders),
             ("social_proof", self._check_social_proof),
             ("savings", self._check_savings_insights),
