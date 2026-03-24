@@ -628,7 +628,7 @@ export const HomeHeader = memo(function HomeHeader({
                     weight={700}
                     style={{ whiteSpace: 'nowrap', fontSize: 12 }}
                   >
-                    {cashback}% возврат
+                    {cashback}% кешбэк
                   </GoldText>
                 </div>
 
@@ -676,7 +676,7 @@ export const HomeHeader = memo(function HomeHeader({
                       zIndex: 1,
                     }}
                   >
-                    Статус
+                    Бонусы
                   </span>
                   <motion.span
                     animate={{ x: [0, 3, 0] }}
