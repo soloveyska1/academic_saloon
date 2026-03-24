@@ -38,13 +38,9 @@ import {
   PricingAnchor,
   FAQSection,
   // New features
-  PriceCalculator,
   SpinWheel,
   StreakFreezeCard,
-  WorkInProgressFeed,
   SeasonalBanner,
-  ShareDiscountCard,
-  ReferralBattle,
   SmartReorderCard,
 } from '../components/home'
 
@@ -344,20 +340,6 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <LiveActivityFeed />
-
-            {/* ─── Price calculator ─── */}
-            <Section>
-              <PriceCalculator
-                onCreateOrder={handleNewOrderWithType}
-                haptic={haptic}
-              />
-            </Section>
-
-            {/* ─── Work in progress feed ─── */}
-            <Section>
-              <WorkInProgressFeed />
-            </Section>
-
             <TrustStatsStrip />
             <HowItWorks />
             <TestimonialsSection />
@@ -438,40 +420,6 @@ export function HomePage({ user, onRefresh }: Props) {
                   bonusExpiry={user.bonus_expiry}
                   bonusBalance={user.bonus_balance}
                   onUseBonus={handleNewOrder}
-                />
-              </Section>
-            )}
-
-            {/* ─── Price calculator ─── */}
-            <Section>
-              <PriceCalculator
-                onCreateOrder={handleNewOrderWithType}
-                haptic={haptic}
-                cashbackPercent={user.rank.cashback}
-              />
-            </Section>
-
-            {/* ─── Work in progress feed ─── */}
-            <Section>
-              <WorkInProgressFeed />
-            </Section>
-
-            {/* ─── Share discount card ─── */}
-            <Section>
-              <ShareDiscountCard
-                referralCode={user.referral_code}
-                botUsername={botUsername}
-                telegramId={user.telegram_id}
-                haptic={haptic}
-              />
-            </Section>
-
-            {/* ─── Referral Battle ─── */}
-            {user.referrals_count > 0 && (
-              <Section>
-                <ReferralBattle
-                  userReferrals={user.referrals_count}
-                  haptic={haptic}
                 />
               </Section>
             )}
