@@ -459,7 +459,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             )}
           </div>
 
-          {/* Headline */}
+          {/* Headline — warm ivory, not harsh white */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -470,7 +470,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               fontWeight: 700,
               lineHeight: 1.2,
               letterSpacing: '-0.02em',
-              color: 'var(--text-primary)',
+              color: 'rgba(245, 240, 225, 0.92)',
               marginBottom: 8,
             }}
           >

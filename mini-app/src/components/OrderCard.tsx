@@ -107,7 +107,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
             <h3 style={{
               fontSize: 16,
               fontWeight: 700,
-              color: 'var(--text-main)',
+              color: 'rgba(245, 240, 225, 0.90)',
               margin: 0,
               marginBottom: 4,
             }}>
@@ -115,7 +115,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
             </h3>
             <p style={{
               fontSize: 14,
-              color: 'var(--text-muted)',
+              color: 'rgba(255,255,255,0.35)',
               margin: 0,
               maxWidth: 180,
               overflow: 'hidden',
@@ -264,7 +264,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           <span style={{
             fontSize: 18,
             fontWeight: 700,
-            color: order.promo_code ? 'var(--success-text)' : 'var(--gold-200)',
+            color: order.promo_code ? 'var(--success-text)' : 'var(--gold-400)',
             fontFamily: "var(--font-mono)",
           }}>
             {(order.final_price || order.price).toLocaleString('ru-RU')} ₽
