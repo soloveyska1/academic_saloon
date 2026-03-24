@@ -281,37 +281,62 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           </div>
         </m.div>
 
-        {/* ═══════ STATS — for max-rank users (reward for loyalty) ═══════ */}
+        {/* ═══════ LOYALTY STATS — premium grid for max-rank ═══════ */}
         {isMaxRank && (
           <m.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             style={{
-              padding: '12px 14px', borderRadius: 10,
-              background: 'rgba(212,175,55,0.03)',
-              border: '1px solid rgba(212,175,55,0.08)',
-              marginBottom: 0,
+              display: 'grid',
+              gridTemplateColumns: since ? '1fr 1fr 1fr' : '1fr 1fr',
+              gap: 8,
             }}
           >
-            <div style={{ display: 'grid', gap: 6 }}>
-              {[
-                { label: 'Заказов', value: String(user.orders_count) },
-                { label: 'Потрачено', value: fmt(user.total_spent) },
-                ...(since ? [{ label: 'С нами с', value: since }] : []),
-              ].map((row, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            {[
+              { value: String(user.orders_count), label: 'Заказов' },
+              { value: fmt(user.total_spent), label: 'Потрачено' },
+              ...(since ? [{ value: since, label: 'С нами' }] : []),
+            ].map((stat, i) => (
+              <m.div
+                key={i}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.22 + i * 0.06 }}
+                style={{
+                  position: 'relative',
+                  padding: '14px 10px 12px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)',
+                  border: '1px solid rgba(212,175,55,0.10)',
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Subtle top shine */}
+                <div aria-hidden="true" style={{
+                  position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
+                }} />
+                <div style={{
+                  fontSize: 14, fontWeight: 800, lineHeight: 1.2,
+                  background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: 4,
                 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-                    {row.label}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}>
-                    {row.value}
-                  </span>
+                  {stat.value}
                 </div>
-              ))}
-            </div>
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}>
+                  {stat.label}
+                </div>
+              </m.div>
+            ))}
           </m.div>
         )}
 
