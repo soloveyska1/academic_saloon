@@ -133,7 +133,7 @@ function AnimatedCardBorder() {
       style={{
         position: 'absolute',
         inset: 0,
-        borderRadius: 22,
+        borderRadius: 20,
         padding: 1,
         background:
           'linear-gradient(135deg, rgba(191,149,63,0.30), rgba(252,246,186,0.10), rgba(212,175,55,0.25), rgba(179,135,40,0.08), rgba(251,245,183,0.18), rgba(191,149,63,0.30))',
@@ -396,8 +396,9 @@ export const HomeHeader = memo(function HomeHeader({
             variants={stagger.item}
             style={{
               width: '100%',
+              maxWidth: 340,
               position: 'relative',
-              borderRadius: 22,
+              borderRadius: 20,
               padding: 1,
             }}
           >
@@ -407,12 +408,12 @@ export const HomeHeader = memo(function HomeHeader({
             {/* Inner card body */}
             <div
               style={{
-                borderRadius: 21,
+                borderRadius: 19,
                 background:
                   'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '28px 24px 22px',
+                padding: '24px 20px 18px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -462,18 +463,18 @@ export const HomeHeader = memo(function HomeHeader({
               />
 
               {/* Balance — hero */}
-              <div style={{ textAlign: 'center', marginBottom: 22, position: 'relative' }}>
+              <div style={{ textAlign: 'center', marginBottom: 18, position: 'relative' }}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   {/* Breathing glow */}
                   <motion.div
-                    animate={{ opacity: [0.1, 0.4, 0.1] }}
+                    animate={{ opacity: [0.1, 0.35, 0.1] }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
                       position: 'absolute',
                       top: '50%',
                       left: '50%',
-                      width: 220,
-                      height: 70,
+                      width: 180,
+                      height: 56,
                       transform: 'translate(-50%, -50%)',
                       borderRadius: '50%',
                       background:
@@ -489,13 +490,13 @@ export const HomeHeader = memo(function HomeHeader({
                       size="3xl"
                       weight={700}
                       style={{
-                        filter: 'drop-shadow(0 2px 10px rgba(212,175,55,0.15))',
-                        fontSize: 46,
+                        filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.12))',
+                        fontSize: 38,
                         lineHeight: 1.1,
                       }}
                     >
                       <AnimatedNumber value={balance} />
-                      <span style={{ fontSize: 30, marginLeft: 4, opacity: 0.7 }}>₽</span>
+                      <span style={{ fontSize: 24, marginLeft: 3, opacity: 0.6 }}>₽</span>
                     </GoldText>
                   </div>
                 </div>
@@ -504,10 +505,10 @@ export const HomeHeader = memo(function HomeHeader({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 0.5 }}
                   style={{
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 500,
-                    color: 'rgba(255,255,255,0.22)',
-                    marginTop: 8,
+                    color: 'rgba(255,255,255,0.20)',
+                    marginTop: 6,
                     letterSpacing: '0.02em',
                   }}
                 >
@@ -518,7 +519,7 @@ export const HomeHeader = memo(function HomeHeader({
               </div>
 
               {/* Separator — animated gold gradient */}
-              <div style={{ position: 'relative', height: 1, marginBottom: 20 }}>
+              <div style={{ position: 'relative', height: 1, marginBottom: 16 }}>
                 <div
                   style={{
                     position: 'absolute',
