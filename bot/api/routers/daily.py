@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -57,7 +57,7 @@ def _get_msk_tz():
         return timezone.utc
 
 
-def _to_msk_date(dt: datetime | None, msk_tz) -> datetime.date | None:
+def _to_msk_date(dt: datetime | None, msk_tz) -> date | None:
     if not dt:
         return None
     if dt.tzinfo is None:
