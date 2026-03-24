@@ -105,6 +105,7 @@ class UserResponse(BaseModel):
     referral_refs_to_next: int = 0  # Refs needed for next tier
     daily_luck_available: bool
     daily_bonus_streak: int = 0  # Days in a row claimed daily bonus
+    streak_freeze_count: int = 0  # Available streak freezes
     free_spins: int = 0  # Legacy roulette field (kept for frontend compat)
     roulette_onboarding_seen: bool = True  # Legacy roulette field (kept for frontend compat)
     rank: RankInfo
@@ -161,6 +162,16 @@ class DailyBonusInfoResponse(BaseModel):
     next_bonus: int  # Bonus amount for current/next day
     cooldown_remaining: Optional[str] = None  # "Xч Yмин" or None if can claim
     bonuses: List[int]  # Array of bonus amounts [10, 20, 30, 40, 50, 100, 150]
+    streak_freeze_count: int = 0  # Available freeze passes
+    streak_freeze_active: bool = False  # Whether freeze is protecting current streak
+
+
+class StreakFreezeResponse(BaseModel):
+    """Response for buying/using streak freeze"""
+    success: bool
+    message: str
+    freeze_count: int = 0  # Remaining freezes after purchase
+    bonus_balance: float = 0  # Remaining bonus balance
 
 
 class DailyBonusClaimResponse(BaseModel):

@@ -1,45 +1,48 @@
 import { memo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, ShieldPlus, AlertCircle } from 'lucide-react'
-import { Reveal } from '../ui/StaggerReveal'
+import { ShieldCheck, ShieldPlus } from 'lucide-react'
+import { buyStreakFreeze } from '../../api/userApi'
 
 interface StreakFreezeCardProps {
   streak: number
   bonusBalance: number
-  hasFreezeActive?: boolean
-  freezeCost?: number
-  onPurchaseFreeze: () => Promise<boolean>
+  freezeCount?: number
   haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'error') => void
+  onBalanceChanged?: () => void
 }
+
+const FREEZE_COST = 100
 
 export const StreakFreezeCard = memo(function StreakFreezeCard({
   streak,
   bonusBalance,
-  hasFreezeActive = false,
-  freezeCost = 100,
-  onPurchaseFreeze,
+  freezeCount = 0,
   haptic,
+  onBalanceChanged,
 }: StreakFreezeCardProps) {
   const [purchasing, setPurchasing] = useState(false)
-  const [justPurchased, setJustPurchased] = useState(false)
+  const [localFreezeCount, setLocalFreezeCount] = useState(freezeCount)
   const [error, setError] = useState<string | null>(null)
-  const canAfford = bonusBalance >= freezeCost
-  const isActive = hasFreezeActive || justPurchased
+
+  const canAfford = bonusBalance >= FREEZE_COST
+  const hasFreeze = localFreezeCount > 0 || freezeCount > 0
+  const displayCount = Math.max(localFreezeCount, freezeCount)
 
   const handlePurchase = useCallback(async () => {
-    if (purchasing || isActive || !canAfford) return
+    if (purchasing || !canAfford) return
     setPurchasing(true)
     setError(null)
     haptic('medium')
 
     try {
-      const success = await onPurchaseFreeze()
-      if (success) {
+      const result = await buyStreakFreeze()
+      if (result.success) {
         haptic('success')
-        setJustPurchased(true)
+        setLocalFreezeCount(result.freeze_count)
+        onBalanceChanged?.()
       } else {
         haptic('error')
-        setError('Не удалось активировать')
+        setError(result.message)
       }
     } catch {
       haptic('error')
@@ -47,158 +50,106 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
     } finally {
       setPurchasing(false)
     }
-  }, [purchasing, isActive, canAfford, onPurchaseFreeze, haptic])
+  }, [purchasing, canAfford, haptic, onBalanceChanged])
 
   // Only show for streaks worth protecting
   if (streak < 3) return null
 
   return (
-    <Reveal animation="fade" delay={0.1}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '12px 14px',
-          borderRadius: 12,
-          background: isActive
-            ? 'var(--gold-glass-subtle)'
-            : 'rgba(255,255,255,0.025)',
-          border: isActive
-            ? '1px solid rgba(212,175,55,0.15)'
-            : '1px solid var(--border-default)',
-          boxShadow: isActive ? '0 0 20px -8px rgba(212,175,55,0.10)' : 'none',
-          transition: 'all 0.3s var(--ease-out)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              background: isActive
-                ? 'rgba(212,175,55,0.12)'
-                : 'rgba(255,255,255,0.04)',
-              border: isActive
-                ? '1px solid rgba(212,175,55,0.18)'
-                : '1px solid var(--border-default)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {isActive ? (
-              <ShieldCheck size={15} strokeWidth={2} color="var(--gold-400)" />
-            ) : (
-              <ShieldPlus size={15} strokeWidth={2} color="var(--text-muted)" />
-            )}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: isActive ? 'var(--gold-300)' : 'var(--text-primary)',
-              lineHeight: 1.3,
-            }}>
-              {isActive ? 'Заморозка активна' : 'Заморозить серию'}
-            </div>
-            <div style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              lineHeight: 1.3,
-            }}>
-              {isActive
-                ? `Серия в ${streak} дн. защищена на 1 день`
-                : `Пропустите день без потери ${streak} дн. серии`}
-            </div>
-          </div>
-        </div>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '10px 14px',
+        borderRadius: 10,
+        background: hasFreeze
+          ? 'rgba(212,175,55,0.04)'
+          : 'transparent',
+        border: hasFreeze
+          ? '1px solid rgba(212,175,55,0.10)'
+          : '1px solid rgba(255,255,255,0.04)',
+      }}
+    >
+      {/* Icon */}
+      <div style={{
+        width: 28,
+        height: 28,
+        borderRadius: 8,
+        background: hasFreeze ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.04)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        {hasFreeze ? (
+          <ShieldCheck size={13} strokeWidth={2.2} color="var(--gold-400)" />
+        ) : (
+          <ShieldPlus size={13} strokeWidth={2} color="var(--text-muted)" />
+        )}
+      </div>
 
-        <AnimatePresence mode="wait">
-          {isActive ? (
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: hasFreeze ? 'var(--gold-300)' : 'var(--text-primary)',
+          lineHeight: 1.3,
+        }}>
+          {hasFreeze
+            ? `Заморозка${displayCount > 1 ? ` ×${displayCount}` : ''}`
+            : 'Защитить серию'
+          }
+        </div>
+        <div style={{
+          fontSize: 9,
+          fontWeight: 600,
+          color: 'var(--text-muted)',
+          lineHeight: 1.3,
+        }}>
+          {hasFreeze
+            ? 'Пропустите день без потери серии'
+            : `${FREEZE_COST}₽ бонусов — 1 пропуск`
+          }
+        </div>
+        <AnimatePresence>
+          {error && (
             <motion.div
-              key="active"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '5px 10px',
-                borderRadius: 8,
-                background: 'rgba(212,175,55,0.08)',
-              }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ fontSize: 9, fontWeight: 600, color: 'var(--error-text)', marginTop: 2 }}
             >
-              <ShieldCheck size={11} strokeWidth={2.5} color="var(--gold-400)" />
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: 'var(--gold-400)',
-                letterSpacing: '0.04em',
-              }}>
-                Активна
-              </span>
+              {error}
             </motion.div>
-          ) : (
-            <motion.button
-              key="buy"
-              type="button"
-              whileTap={{ scale: 0.95 }}
-              onClick={handlePurchase}
-              disabled={purchasing || !canAfford}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: 'none',
-                background: canAfford
-                  ? 'var(--gold-glass-medium)'
-                  : 'rgba(255,255,255,0.04)',
-                color: canAfford
-                  ? 'var(--gold-300)'
-                  : 'var(--text-muted)',
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: canAfford ? 'pointer' : 'not-allowed',
-                opacity: purchasing ? 0.6 : 1,
-                whiteSpace: 'nowrap',
-                letterSpacing: '0.02em',
-              }}
-            >
-              {canAfford ? `${freezeCost} ₽` : 'Мало бонусов'}
-            </motion.button>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Error message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 14px',
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--error-text)',
-            }}
-          >
-            <AlertCircle size={12} />
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Reveal>
+      {/* Action */}
+      {!hasFreeze && (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.95 }}
+          onClick={handlePurchase}
+          disabled={purchasing || !canAfford}
+          style={{
+            padding: '5px 10px',
+            borderRadius: 6,
+            border: 'none',
+            background: canAfford ? 'var(--gold-glass-medium)' : 'rgba(255,255,255,0.04)',
+            color: canAfford ? 'var(--gold-300)' : 'var(--text-muted)',
+            fontSize: 10,
+            fontWeight: 700,
+            cursor: canAfford ? 'pointer' : 'not-allowed',
+            opacity: purchasing ? 0.5 : 1,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {purchasing ? '...' : `${FREEZE_COST}₽`}
+        </motion.button>
+      )}
+    </div>
   )
 })

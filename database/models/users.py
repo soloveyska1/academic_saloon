@@ -34,6 +34,7 @@ class User(Base):
     # Ежедневный бонус (Daily Luck)
     last_daily_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     daily_bonus_streak: Mapped[int] = mapped_column(Integer, default=0)  # Текущий стрик ежедневного бонуса
+    streak_freeze_count: Mapped[int] = mapped_column(Integer, default=0)  # Количество заморозок серии
 
     # Сгорание бонусов
     last_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Дата последнего начисления
