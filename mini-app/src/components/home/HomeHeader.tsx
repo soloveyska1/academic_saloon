@@ -1,7 +1,8 @@
-import { useState, memo, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { useState, memo, useMemo, useEffect } from 'react'
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
+import { GoldText } from '../ui/GoldText'
 
 interface HomeHeaderProps {
   user: {
@@ -43,10 +44,26 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Доброй ночи'
   }, [])
 
+  // Animated spinning ring angle
+  const ringRotation = useMotionValue(0)
+  useEffect(() => {
+    const controls = animate(ringRotation, 360, {
+      duration: 10,
+      ease: 'linear',
+      repeat: Infinity,
+    })
+    return controls.stop
+  }, [ringRotation])
+
+  const ringGradient = useTransform(
+    ringRotation,
+    (v) => `conic-gradient(from ${v}deg, rgba(191,149,63,0.6), rgba(252,246,186,0.3), rgba(212,175,55,0.6), rgba(179,135,40,0.3), rgba(251,245,183,0.4), rgba(191,149,63,0.6))`
+  )
+
   return (
-    <header className={s.header} style={{ marginBottom: 16 }}>
+    <header className={s.header} style={{ marginBottom: 12 }}>
       <motion.div
-        initial={{ opacity: 0, y: -6 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0 }}
         style={{
@@ -55,51 +72,59 @@ export const HomeHeader = memo(function HomeHeader({
           gap: 14,
         }}
       >
-        {/* Avatar — left, small, clean */}
+        {/* Avatar with animated spinning gold ring */}
         <div
           onClick={onSecretTap}
           style={{
             position: 'relative',
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             flexShrink: 0,
             cursor: 'pointer',
           }}
         >
-          <div
+          {/* Spinning conic gradient ring */}
+          <motion.div
             style={{
               position: 'absolute',
-              inset: -1.5,
+              inset: -2,
               borderRadius: '50%',
-              background: 'conic-gradient(from 45deg, rgba(212,175,55,0.5), rgba(245,225,160,0.3), rgba(212,175,55,0.5))',
-              mask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
-              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
+              background: ringGradient,
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
             }}
           />
+
+          {/* Outer glow */}
+          <motion.div
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute',
+              inset: -6,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.10) 30%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+
           <div
             style={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
-              background: 'var(--bg-elevated)',
+              background: 'linear-gradient(135deg, #1a1816 0%, #0e0d0c 100%)',
               overflow: 'hidden',
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5)',
             }}
           >
-            <span
-              style={{
-                color: 'var(--gold-400)',
-                fontWeight: 700,
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 16,
-                lineHeight: 1,
-              }}
-            >
+            <GoldText variant="static" size="md" weight={700}>
               {firstName.charAt(0).toUpperCase()}
-            </span>
+            </GoldText>
 
             {shouldShowAvatar && (
               <img
@@ -123,41 +148,41 @@ export const HomeHeader = memo(function HomeHeader({
           </div>
         </div>
 
-        {/* Greeting + name — one line, baseline aligned */}
+        {/* Greeting (muted) + Name (gold gradient) */}
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 6,
-              overflow: 'hidden',
-            }}
+          {/* Two-line layout: greeting above, name below */}
+          <motion.div
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
           >
-            <span
+            <div
               style={{
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
-                color: 'var(--text-secondary)',
-                flexShrink: 0,
+                letterSpacing: '0.06em',
+                color: 'rgba(255,255,255,0.30)',
+                marginBottom: 2,
               }}
             >
-              {isNewUser ? 'Привет,' : `${greeting},`}
-            </span>
-            <span
+              {isNewUser ? 'Добро пожаловать' : greeting}
+            </div>
+            <GoldText
+              variant="liquid"
+              size="lg"
+              weight={700}
               style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: 'var(--text-primary)',
+                letterSpacing: '-0.02em',
+                display: 'block',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
             >
               {firstName}
-            </span>
-          </div>
+            </GoldText>
+          </motion.div>
         </div>
       </motion.div>
     </header>
