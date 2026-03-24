@@ -1,6 +1,6 @@
 import { useState, memo, useMemo, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { ArrowUpRight, Crown } from 'lucide-react'
+import { ArrowUpRight, Crown, Sparkles } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { GoldText } from '../ui/GoldText'
@@ -25,7 +25,14 @@ interface HomeHeaderProps {
   isNewUser?: boolean
 }
 
-const spring = { type: 'spring' as const, stiffness: 400, damping: 28 }
+/* ─── Stagger children helper ─── */
+const stagger = {
+  container: { animate: { transition: { staggerChildren: 0.08 } } },
+  item: {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  },
+}
 
 /* ─── Animated counting number ─── */
 function AnimatedNumber({ value }: { value: number }) {
@@ -35,7 +42,7 @@ function AnimatedNumber({ value }: { value: number }) {
 
   useEffect(() => {
     const controls = animate(motionVal, value, {
-      duration: 1.2,
+      duration: 1.4,
       ease: [0.16, 1, 0.3, 1],
     })
     return controls.stop
@@ -63,23 +70,140 @@ function useGreeting(isNewUser: boolean, rankName?: string) {
   }, [isNewUser, rankName])
 }
 
-/* ─── Shimmer overlay for buttons ─── */
+/* ─── Floating sparkle dots around balance ─── */
+function BalanceSparkles() {
+  const dots = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100 - 50,
+        y: Math.random() * 40 - 20,
+        size: 2 + Math.random() * 2,
+        delay: Math.random() * 3,
+        duration: 2.5 + Math.random() * 2,
+      })),
+    [],
+  )
+
+  return (
+    <>
+      {dots.map((dot) => (
+        <motion.div
+          key={dot.id}
+          animate={{
+            opacity: [0, 0.6, 0],
+            scale: [0.5, 1, 0.5],
+            y: [dot.y, dot.y - 8, dot.y],
+          }}
+          transition={{
+            duration: dot.duration,
+            repeat: Infinity,
+            delay: dot.delay,
+            ease: 'easeInOut',
+          }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: dot.size,
+            height: dot.size,
+            borderRadius: '50%',
+            background: 'rgba(252,246,186,0.7)',
+            transform: `translate(${dot.x}px, ${dot.y}px)`,
+            pointerEvents: 'none',
+            boxShadow: '0 0 4px rgba(252,246,186,0.4)',
+          }}
+        />
+      ))}
+    </>
+  )
+}
+
+/* ─── Animated border gradient for card ─── */
+function AnimatedCardBorder() {
+  return (
+    <motion.div
+      animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+      transition={{ duration: 8, ease: 'linear', repeat: Infinity }}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 22,
+        padding: 1,
+        background:
+          'linear-gradient(135deg, rgba(191,149,63,0.30), rgba(252,246,186,0.10), rgba(212,175,55,0.25), rgba(179,135,40,0.08), rgba(251,245,183,0.18), rgba(191,149,63,0.30))',
+        backgroundSize: '300% 300%',
+        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
+        pointerEvents: 'none',
+      }}
+    />
+  )
+}
+
+/* ─── Shimmer sweep for buttons ─── */
 function ShimmerOverlay() {
   return (
     <motion.div
       animate={{ x: ['-120%', '220%'] }}
-      transition={{ duration: 2.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 4 }}
+      transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity, repeatDelay: 5 }}
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '40%',
+        width: '35%',
         height: '100%',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(252,246,186,0.12) 50%, transparent 100%)',
+        background:
+          'linear-gradient(90deg, transparent 0%, rgba(252,246,186,0.15) 50%, transparent 100%)',
         pointerEvents: 'none',
         borderRadius: 'inherit',
       }}
     />
+  )
+}
+
+/* ─── Decorative divider dots ─── */
+function DiamondDivider() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scaleX: 0 }}
+      animate={{ opacity: 1, scaleX: 1 }}
+      transition={{ delay: 0.3, duration: 0.6 }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        margin: '4px 0 2px',
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15))',
+        }}
+      />
+      <div
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: 1,
+          transform: 'rotate(45deg)',
+          background: 'rgba(212,175,55,0.25)',
+          boxShadow: '0 0 6px rgba(212,175,55,0.15)',
+        }}
+      />
+      <div
+        style={{
+          width: 32,
+          height: 1,
+          background: 'linear-gradient(90deg, rgba(212,175,55,0.15), transparent)',
+        }}
+      />
+    </motion.div>
   )
 }
 
@@ -106,7 +230,7 @@ export const HomeHeader = memo(function HomeHeader({
   const ringRotation = useMotionValue(0)
   useEffect(() => {
     const controls = animate(ringRotation, 360, {
-      duration: 10,
+      duration: 8,
       ease: 'linear',
       repeat: Infinity,
     })
@@ -119,18 +243,20 @@ export const HomeHeader = memo(function HomeHeader({
       `conic-gradient(from ${v}deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)`,
   )
 
-  const AVATAR_SIZE = 76
+  const AVATAR_SIZE = 80
 
   return (
     <header className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: 0 }}
+        initial="initial"
+        animate="animate"
+        variants={stagger.container}
         style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       >
-        {/* ═══ Avatar — centered hero ═══ */}
-        <div
+        {/* ═══ Avatar — centered, interactive ═══ */}
+        <motion.div
+          variants={stagger.item}
+          whileTap={{ scale: 0.92 }}
           onClick={onSecretTap}
           style={{
             position: 'relative',
@@ -140,20 +266,33 @@ export const HomeHeader = memo(function HomeHeader({
             marginBottom: 16,
           }}
         >
-          {/* Deep ambient glow — layered */}
+          {/* Deep layered ambient glow */}
           <motion.div
-            animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.08, 1] }}
+            animate={{ opacity: [0.25, 0.55, 0.25], scale: [1, 1.1, 1] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              inset: -24,
+              inset: -28,
               borderRadius: '50%',
               background:
-                'radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.04) 50%, transparent 70%)',
+                'radial-gradient(circle, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.05) 45%, transparent 70%)',
               pointerEvents: 'none',
             }}
           />
-          {/* Spinning ring — full gold, thicker */}
+          {/* Second glow layer — wider, softer */}
+          <motion.div
+            animate={{ opacity: [0.1, 0.2, 0.1] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            style={{
+              position: 'absolute',
+              inset: -44,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(252,246,186,0.06) 0%, transparent 60%)',
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Spinning ring */}
           <motion.div
             style={{
               position: 'absolute',
@@ -163,10 +302,10 @@ export const HomeHeader = memo(function HomeHeader({
               mask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
               WebkitMask:
                 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
-              filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.25))',
+              filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.30))',
             }}
           />
-          {/* Avatar circle */}
+          {/* Avatar image / fallback */}
           <div
             style={{
               width: AVATAR_SIZE,
@@ -179,7 +318,7 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow:
-                'inset 0 2px 6px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.4)',
+                'inset 0 2px 8px rgba(0,0,0,0.6), 0 6px 24px rgba(0,0,0,0.5)',
             }}
           >
             <GoldText variant="static" size="xl" weight={700}>
@@ -205,14 +344,12 @@ export const HomeHeader = memo(function HomeHeader({
               />
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* ═══ Greeting + Name — centered ═══ */}
+        {/* ═══ Greeting + Name ═══ */}
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.5 }}
-          style={{ textAlign: 'center', marginBottom: showFinance ? 26 : 0 }}
+          variants={stagger.item}
+          style={{ textAlign: 'center', marginBottom: showFinance ? 6 : 0 }}
         >
           <div
             style={{
@@ -220,7 +357,7 @@ export const HomeHeader = memo(function HomeHeader({
               fontWeight: 500,
               color: 'rgba(255,255,255,0.35)',
               marginBottom: 4,
-              letterSpacing: '0.04em',
+              letterSpacing: '0.05em',
             }}
           >
             {greeting}
@@ -233,139 +370,150 @@ export const HomeHeader = memo(function HomeHeader({
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               letterSpacing: '-0.01em',
               display: 'block',
-              fontSize: 26,
-              filter: 'drop-shadow(0 1px 3px rgba(212,175,55,0.15))',
+              fontSize: 28,
+              filter: 'drop-shadow(0 2px 6px rgba(212,175,55,0.18))',
             }}
           >
             {firstName}
           </GoldText>
         </motion.div>
 
+        {/* ═══ Decorative diamond divider ═══ */}
+        {showFinance && (
+          <motion.div variants={stagger.item} style={{ marginBottom: 18 }}>
+            <DiamondDivider />
+          </motion.div>
+        )}
+
         {/* ═══ Finance card ═══ */}
         {showFinance && (
           <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.15, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            variants={stagger.item}
             style={{
               width: '100%',
               position: 'relative',
               borderRadius: 22,
               padding: 1,
-              /* Gradient border via wrapper */
-              background:
-                'linear-gradient(135deg, rgba(191,149,63,0.25) 0%, rgba(212,175,55,0.08) 30%, rgba(179,135,40,0.15) 60%, rgba(252,246,186,0.12) 100%)',
             }}
           >
-            {/* Inner card */}
+            {/* Animated gradient border */}
+            <AnimatedCardBorder />
+
+            {/* Inner card body */}
             <div
               style={{
                 borderRadius: 21,
                 background:
-                  'linear-gradient(165deg, rgba(22,20,18,0.97) 0%, rgba(14,13,12,0.98) 40%, rgba(18,16,14,0.97) 100%)',
-                padding: '26px 24px 22px',
+                  'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                padding: '28px 24px 22px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
             >
-              {/* Top glow accent — wider, softer */}
-              <div
+              {/* Top glow accent line */}
+              <motion.div
+                animate={{ opacity: [0.15, 0.30, 0.15] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  width: '70%',
+                  width: '75%',
                   height: 1,
                   background:
-                    'linear-gradient(90deg, transparent, rgba(252,246,186,0.20), transparent)',
+                    'linear-gradient(90deg, transparent, rgba(252,246,186,0.30), transparent)',
                 }}
               />
 
-              {/* Corner glow — top-left subtle radial */}
+              {/* Ambient radials in corners */}
               <div
                 style={{
                   position: 'absolute',
-                  top: -30,
-                  left: -30,
+                  top: -40,
+                  left: -40,
+                  width: 140,
+                  height: 140,
+                  borderRadius: '50%',
+                  background:
+                    'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -30,
+                  right: -30,
                   width: 120,
                   height: 120,
                   borderRadius: '50%',
                   background:
-                    'radial-gradient(circle, rgba(212,175,55,0.04) 0%, transparent 70%)',
+                    'radial-gradient(circle, rgba(252,246,186,0.03) 0%, transparent 70%)',
                   pointerEvents: 'none',
                 }}
               />
 
-              {/* Corner glow — bottom-right */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: -20,
-                  right: -20,
-                  width: 100,
-                  height: 100,
-                  borderRadius: '50%',
-                  background:
-                    'radial-gradient(circle, rgba(212,175,55,0.03) 0%, transparent 70%)',
-                  pointerEvents: 'none',
-                }}
-              />
-
-              {/* Balance — centered hero */}
-              <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+              {/* Balance — hero */}
+              <div style={{ textAlign: 'center', marginBottom: 22, position: 'relative' }}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
-                  {/* Breathing glow — bigger, richer */}
+                  {/* Breathing glow */}
                   <motion.div
-                    animate={{ opacity: [0.15, 0.45, 0.15] }}
+                    animate={{ opacity: [0.1, 0.4, 0.1] }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
                       position: 'absolute',
                       top: '50%',
                       left: '50%',
-                      width: 200,
-                      height: 60,
+                      width: 220,
+                      height: 70,
                       transform: 'translate(-50%, -50%)',
                       borderRadius: '50%',
                       background:
-                        'radial-gradient(ellipse, rgba(212,175,55,0.10) 0%, rgba(252,246,186,0.03) 40%, transparent 70%)',
+                        'radial-gradient(ellipse, rgba(212,175,55,0.12) 0%, rgba(252,246,186,0.04) 35%, transparent 70%)',
                       pointerEvents: 'none',
                     }}
                   />
+                  {/* Floating sparkle particles */}
+                  <BalanceSparkles />
                   <div style={{ position: 'relative', zIndex: 1 }}>
                     <GoldText
                       variant="liquid"
                       size="3xl"
                       weight={700}
                       style={{
-                        filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.12))',
-                        fontSize: 44,
+                        filter: 'drop-shadow(0 2px 10px rgba(212,175,55,0.15))',
+                        fontSize: 46,
+                        lineHeight: 1.1,
                       }}
                     >
                       <AnimatedNumber value={balance} />
+                      <span style={{ fontSize: 30, marginLeft: 4, opacity: 0.7 }}>₽</span>
                     </GoldText>
                   </div>
                 </div>
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
                   style={{
                     fontSize: 12,
                     fontWeight: 500,
-                    color: 'rgba(255,255,255,0.25)',
-                    marginTop: 6,
+                    color: 'rgba(255,255,255,0.22)',
+                    marginTop: 8,
                     letterSpacing: '0.02em',
                   }}
                 >
                   {bonusBalance > 0
-                    ? `из них ${formatMoney(bonusBalance)} бонусов`
+                    ? `из них ${formatMoney(bonusBalance)} ₽ бонусов`
                     : 'Личный счёт'}
                 </motion.div>
               </div>
 
-              {/* Separator — animated gold gradient line */}
-              <div style={{ position: 'relative', height: 1, marginBottom: 18 }}>
+              {/* Separator — animated gold gradient */}
+              <div style={{ position: 'relative', height: 1, marginBottom: 20 }}>
                 <div
                   style={{
                     position: 'absolute',
@@ -381,9 +529,24 @@ export const HomeHeader = memo(function HomeHeader({
                     position: 'absolute',
                     inset: 0,
                     background:
-                      'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.22) 50%, transparent 100%)',
+                      'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.25) 50%, transparent 100%)',
                     backgroundSize: '200% 100%',
                     borderRadius: 1,
+                  }}
+                />
+                {/* Glow under separator */}
+                <motion.div
+                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity }}
+                  style={{
+                    position: 'absolute',
+                    top: -2,
+                    left: '25%',
+                    width: '50%',
+                    height: 5,
+                    background:
+                      'radial-gradient(ellipse, rgba(212,175,55,0.08) 0%, transparent 80%)',
+                    pointerEvents: 'none',
                   }}
                 />
               </div>
@@ -402,16 +565,21 @@ export const HomeHeader = memo(function HomeHeader({
                   {user.rank.name && (
                     <>
                       <motion.div
-                        animate={{ rotate: [0, -8, 8, 0] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
+                        animate={{ rotate: [0, -6, 6, 0] }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          repeatDelay: 4,
+                        }}
                         style={{ display: 'flex', flexShrink: 0 }}
                       >
                         <Crown
                           size={14}
                           strokeWidth={2}
                           style={{
-                            color: 'rgba(212,175,55,0.55)',
-                            filter: 'drop-shadow(0 0 3px rgba(212,175,55,0.2))',
+                            color: 'rgba(212,175,55,0.60)',
+                            filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.25))',
                           }}
                         />
                       </motion.div>
@@ -428,43 +596,59 @@ export const HomeHeader = memo(function HomeHeader({
                       </span>
                       <span
                         style={{
-                          fontSize: 10,
-                          color: 'rgba(255,255,255,0.10)',
+                          width: 3,
+                          height: 3,
+                          borderRadius: '50%',
+                          background: 'rgba(212,175,55,0.20)',
                           flexShrink: 0,
                         }}
-                      >
-                        ·
-                      </span>
+                      />
                     </>
                   )}
-                  <GoldText variant="static" size="md" weight={700} style={{ whiteSpace: 'nowrap' }}>
+                  <GoldText
+                    variant="static"
+                    size="md"
+                    weight={700}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
                     {cashback}% возврат
                   </GoldText>
                 </div>
 
-                {/* Right: status link — pill button with shimmer */}
+                {/* Right: status button with shimmer */}
                 <motion.button
                   type="button"
-                  whileTap={{ scale: 0.93 }}
-                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.04 }}
                   onClick={() => onOpenLounge()}
                   style={{
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
+                    gap: 6,
                     background:
-                      'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(191,149,63,0.04) 100%)',
-                    border: '1px solid rgba(212,175,55,0.14)',
+                      'linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(191,149,63,0.05) 100%)',
+                    border: '1px solid rgba(212,175,55,0.16)',
                     borderRadius: 12,
-                    padding: '7px 14px',
+                    padding: '7px 14px 7px 12px',
                     cursor: 'pointer',
                     flexShrink: 0,
                     overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(252,246,186,0.04)',
+                    boxShadow:
+                      '0 2px 10px rgba(0,0,0,0.20), 0 0 20px rgba(212,175,55,0.04), inset 0 1px 0 rgba(252,246,186,0.06)',
                   }}
                 >
                   <ShimmerOverlay />
+                  <Sparkles
+                    size={11}
+                    strokeWidth={2}
+                    style={{
+                      color: 'var(--gold-400)',
+                      opacity: 0.6,
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                  />
                   <span
                     style={{
                       fontSize: 12,
@@ -480,7 +664,12 @@ export const HomeHeader = memo(function HomeHeader({
                   <motion.span
                     animate={{ x: [0, 3, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    style={{ display: 'flex', color: 'var(--gold-400)', position: 'relative', zIndex: 1 }}
+                    style={{
+                      display: 'flex',
+                      color: 'var(--gold-400)',
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
                   >
                     <ArrowUpRight size={12} strokeWidth={2.5} />
                   </motion.span>
