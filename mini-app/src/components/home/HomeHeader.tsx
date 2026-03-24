@@ -1,6 +1,6 @@
 import { useState, memo, useMemo, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Crown } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { GoldText } from '../ui/GoldText'
@@ -51,22 +51,14 @@ function AnimatedNumber({ value }: { value: number }) {
   return <span ref={ref}>{formatMoney(0)}</span>
 }
 
-/* ─── Time-based greeting with personality ─── */
+/* ─── Time-based greeting ─── */
 function useGreeting(isNewUser: boolean, rankName?: string) {
   return useMemo(() => {
     if (isNewUser) return 'Добро пожаловать в Салун'
-
     const hour = new Date().getHours()
-
-    if (hour >= 5 && hour < 12) {
-      return 'Доброе утро'
-    }
-    if (hour >= 12 && hour < 18) {
-      return rankName ? 'С возвращением' : 'Добрый день'
-    }
-    if (hour >= 18 && hour < 23) {
-      return 'Добрый вечер'
-    }
+    if (hour >= 5 && hour < 12) return 'Доброе утро'
+    if (hour >= 12 && hour < 18) return rankName ? 'С возвращением' : 'Добрый день'
+    if (hour >= 18 && hour < 23) return 'Добрый вечер'
     return 'Салун не спит'
   }, [isNewUser, rankName])
 }
@@ -90,7 +82,7 @@ export const HomeHeader = memo(function HomeHeader({
   const cashback = summary?.cashback ?? 0
   const showFinance = !isNewUser && summary
 
-  // Spinning gold ring
+  // Spinning gold ring for avatar
   const ringRotation = useMotionValue(0)
   useEffect(() => {
     const controls = animate(ringRotation, 360, {
@@ -103,156 +95,177 @@ export const HomeHeader = memo(function HomeHeader({
 
   const ringGradient = useTransform(
     ringRotation,
-    (v) => `conic-gradient(from ${v}deg, rgba(191,149,63,0.6), rgba(252,246,186,0.3), rgba(212,175,55,0.6), rgba(179,135,40,0.3), rgba(251,245,183,0.4), rgba(191,149,63,0.6))`
+    (v) =>
+      `conic-gradient(from ${v}deg, rgba(191,149,63,0.7), rgba(252,246,186,0.4), rgba(212,175,55,0.7), rgba(179,135,40,0.4), rgba(251,245,183,0.5), rgba(191,149,63,0.7))`,
   )
 
+  const AVATAR_SIZE = 72
+
   return (
-    <header className={s.header} style={{ marginBottom: showFinance ? 18 : 12 }}>
+    <header className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0 }}
+        style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       >
-        {/* ═══ Row 1: Avatar + Greeting + Name ═══ */}
+        {/* ═══ Avatar — centered hero ═══ */}
         <div
+          onClick={onSecretTap}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            marginBottom: showFinance ? 20 : 0,
+            position: 'relative',
+            width: AVATAR_SIZE,
+            height: AVATAR_SIZE,
+            cursor: 'pointer',
+            marginBottom: 14,
           }}
         >
-          {/* Avatar with animated spinning ring */}
-          <div
-            onClick={onSecretTap}
+          {/* Soft ambient glow */}
+          <motion.div
+            animate={{ opacity: [0.15, 0.35, 0.15], scale: [1, 1.05, 1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
+              position: 'absolute',
+              inset: -16,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Spinning ring */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              inset: -3,
+              borderRadius: '50%',
+              background: ringGradient,
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
+              WebkitMask:
+                'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
+            }}
+          />
+          {/* Avatar image / fallback */}
+          <div
+            style={{
+              width: AVATAR_SIZE,
+              height: AVATAR_SIZE,
+              borderRadius: '50%',
+              background: 'linear-gradient(145deg, #1a1816, #0e0d0c)',
+              overflow: 'hidden',
               position: 'relative',
-              width: 48,
-              height: 48,
-              flexShrink: 0,
-              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.5)',
             }}
           >
-            <motion.div
-              style={{
-                position: 'absolute',
-                inset: -2,
-                borderRadius: '50%',
-                background: ringGradient,
-                mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-                WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-              }}
-            />
-            <motion.div
-              animate={{ opacity: [0.2, 0.45, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute',
-                inset: -8,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(212,175,55,0.08) 30%, transparent 70%)',
-                pointerEvents: 'none',
-              }}
-            />
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1a1816, #0e0d0c)',
-                overflow: 'hidden',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5)',
-              }}
-            >
-              <GoldText variant="static" size="lg" weight={700}>
-                {firstName.charAt(0).toUpperCase()}
-              </GoldText>
-              {shouldShowAvatar && (
-                <img
-                  src={avatarSrc}
-                  alt={firstName}
-                  loading="eager"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    zIndex: 2,
-                    borderRadius: '50%',
-                  }}
-                  onError={() => setAvatarError(true)}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Greeting + Name */}
-          <motion.div
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            style={{ minWidth: 0, flex: 1 }}
-          >
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.30)',
-                marginBottom: 2,
-              }}
-            >
-              {greeting}
-            </div>
-            <GoldText
-              variant="liquid"
-              size="xl"
-              weight={700}
-              style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                letterSpacing: '-0.02em',
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {firstName}
+            <GoldText variant="static" size="xl" weight={700}>
+              {firstName.charAt(0).toUpperCase()}
             </GoldText>
-          </motion.div>
+            {shouldShowAvatar && (
+              <img
+                src={avatarSrc}
+                alt={firstName}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 2,
+                  borderRadius: '50%',
+                }}
+                onError={() => setAvatarError(true)}
+              />
+            )}
+          </div>
         </div>
 
-        {/* ═══ Row 2: Finance strip (returning users only) ═══ */}
+        {/* ═══ Greeting + Name — centered ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.5 }}
+          style={{ textAlign: 'center', marginBottom: showFinance ? 24 : 0 }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.30)',
+              marginBottom: 3,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {greeting}
+          </div>
+          <GoldText
+            variant="liquid"
+            size="xl"
+            weight={700}
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              letterSpacing: '-0.02em',
+              display: 'block',
+            }}
+          >
+            {firstName}
+          </GoldText>
+        </motion.div>
+
+        {/* ═══ Finance card (returning users) ═══ */}
         {showFinance && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              width: '100%',
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(212,175,55,0.03) 50%, rgba(255,255,255,0.02) 100%)',
+              borderRadius: 20,
+              border: '1px solid rgba(212,175,55,0.08)',
+              padding: '24px 22px 20px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
-            {/* Balance — hero element */}
-            <div style={{ marginBottom: 14 }}>
+            {/* Subtle inner glow at top */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '60%',
+                height: 1,
+                background:
+                  'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+              }}
+            />
+
+            {/* Balance — centered hero */}
+            <div style={{ textAlign: 'center', marginBottom: 18 }}>
               <div style={{ position: 'relative', display: 'inline-block' }}>
-                {/* Breathing glow behind balance */}
+                {/* Breathing glow */}
                 <motion.div
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   style={{
                     position: 'absolute',
                     top: '50%',
-                    left: '30%',
-                    width: 120,
-                    height: 40,
+                    left: '50%',
+                    width: 160,
+                    height: 50,
                     transform: 'translate(-50%, -50%)',
                     borderRadius: '50%',
-                    background: 'radial-gradient(ellipse, rgba(212,175,55,0.10) 0%, transparent 70%)',
+                    background:
+                      'radial-gradient(ellipse, rgba(212,175,55,0.08) 0%, transparent 70%)',
                     pointerEvents: 'none',
-                    zIndex: 0,
                   }}
                 />
                 <div style={{ position: 'relative', zIndex: 1 }}>
@@ -264,9 +277,10 @@ export const HomeHeader = memo(function HomeHeader({
               <div
                 style={{
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   color: 'rgba(255,255,255,0.22)',
-                  marginTop: 3,
+                  marginTop: 4,
+                  letterSpacing: '0.01em',
                 }}
               >
                 {bonusBalance > 0
@@ -276,12 +290,13 @@ export const HomeHeader = memo(function HomeHeader({
             </div>
 
             {/* Separator — animated gold gradient */}
-            <div style={{ position: 'relative', height: 1, marginBottom: 14 }}>
+            <div style={{ position: 'relative', height: 1, marginBottom: 16 }}>
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
                   background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 1,
                 }}
               />
               <motion.div
@@ -290,13 +305,15 @@ export const HomeHeader = memo(function HomeHeader({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.20) 50%, transparent 100%)',
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.18) 50%, transparent 100%)',
                   backgroundSize: '200% 100%',
+                  borderRadius: 1,
                 }}
               />
             </div>
 
-            {/* Bottom row: Rank+Cashback | Club */}
+            {/* Bottom row: Rank + Cashback | Status */}
             <div
               style={{
                 display: 'flex',
@@ -306,55 +323,41 @@ export const HomeHeader = memo(function HomeHeader({
               }}
             >
               {/* Left: rank + cashback */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 6,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                 {user.rank.name && (
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: 'rgba(245,240,225,0.70)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {user.rank.name}
-                  </span>
+                  <>
+                    <Crown
+                      size={13}
+                      strokeWidth={2}
+                      style={{ color: 'rgba(212,175,55,0.5)', flexShrink: 0 }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: 'rgba(245,240,225,0.60)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {user.rank.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.12)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      ·
+                    </span>
+                  </>
                 )}
-                {user.rank.name && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'rgba(255,255,255,0.18)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    ·
-                  </span>
-                )}
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <GoldText variant="static" size="md" weight={700} style={{ whiteSpace: 'nowrap' }}>
                   {cashback}% возврат
-                </span>
+                </GoldText>
               </div>
 
-              {/* Right: club link */}
+              {/* Right: status link */}
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.95 }}
@@ -362,29 +365,31 @@ export const HomeHeader = memo(function HomeHeader({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
+                  gap: 5,
+                  background: 'rgba(212,175,55,0.06)',
+                  border: '1px solid rgba(212,175,55,0.10)',
+                  borderRadius: 10,
+                  padding: '6px 12px',
                   cursor: 'pointer',
                   flexShrink: 0,
                 }}
               >
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: 'var(--gold-400)',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Ваш статус
                 </span>
                 <motion.span
-                  animate={{ x: [0, 3, 0] }}
+                  animate={{ x: [0, 2, 0] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                   style={{ display: 'flex', color: 'var(--gold-400)' }}
                 >
-                  <ArrowUpRight size={13} strokeWidth={2.5} />
+                  <ArrowUpRight size={12} strokeWidth={2.5} />
                 </motion.span>
               </motion.button>
             </div>
