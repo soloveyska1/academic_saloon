@@ -1,5 +1,5 @@
 import { motion, HTMLMotionProps } from 'framer-motion'
-import { ReactNode, CSSProperties } from 'react'
+import { ReactNode, CSSProperties, useRef, useState, useEffect } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GOLD TEXT — LIQUID METALLIC GRADIENT TEXT EFFECT
@@ -55,6 +55,10 @@ export function GoldText({
   style,
 }: GoldTextProps) {
   const { fontSize, lineHeight } = sizeStyles[size]
+  const ref = useRef<HTMLSpanElement>(null)
+  const isVisible = useInViewport(ref, variant === 'liquid')
+
+  const shouldAnimate = variant === 'liquid' && isVisible
 
   const baseStyle: React.CSSProperties = {
     background: variant === 'static' ? STATIC_GOLD_GRADIENT : LIQUID_GOLD_GRADIENT,
@@ -69,14 +73,14 @@ export function GoldText({
     textTransform: uppercase ? 'uppercase' : 'none',
     letterSpacing: trackingStyles[tracking],
     display: 'inline-block',
-    animation: variant === 'liquid' ? 'liquid-gold-shift 4s ease-in-out infinite' : undefined,
+    animation: shouldAnimate ? 'liquid-gold-shift 4s ease-in-out infinite' : undefined,
     ...style,
   }
 
   // For shimmer variant, add an overlay effect
   if (variant === 'shimmer') {
     return (
-      <span style={{ position: 'relative', display: 'inline-block' }}>
+      <span ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
         <span style={baseStyle}>
           {children}
         </span>
@@ -90,19 +94,38 @@ export function GoldText({
             height: '100%',
             background: 'linear-gradient(90deg, transparent 0%, rgba(251, 245, 183, 0.4) 50%, transparent 100%)',
             pointerEvents: 'none',
-            animation: 'shimmer-pass 2.5s ease-in-out infinite',
+            animation: isVisible ? 'shimmer-pass 2.5s ease-in-out infinite' : undefined,
           }}
         />
       </span>
     )
   }
 
-  // Use regular span to avoid framer-motion type issues
   return (
-    <span style={baseStyle}>
+    <span ref={ref} style={baseStyle}>
       {children}
     </span>
   )
+}
+
+/* ─── Viewport-aware animation: only animate when visible ─── */
+function useInViewport(ref: React.RefObject<HTMLElement | null>, enabled: boolean): boolean {
+  const [visible, setVisible] = useState(true) // default true so first paint shows animation
+
+  useEffect(() => {
+    if (!enabled || typeof IntersectionObserver === 'undefined') return
+    const el = ref.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { rootMargin: '100px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref, enabled])
+
+  return visible
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
