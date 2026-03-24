@@ -102,27 +102,44 @@ export function HomePage({ user, onRefresh }: Props) {
     [user?.orders]
   )
 
+  // Prefetch CreateOrderPage on first hover/focus
+  const prefetchedRef = useRef(false)
+  const prefetchCreateOrder = useCallback(() => {
+    if (prefetchedRef.current) return
+    prefetchedRef.current = true
+    import('../pages/CreateOrderPage').catch(() => {})
+  }, [])
+
+  // View Transition wrapper — progressive enhancement
+  const navWithTransition = useCallback((path: string, opts?: { state?: unknown }) => {
+    if ('startViewTransition' in document) {
+      (document as any).startViewTransition(() => navigate(path, opts))
+    } else {
+      navigate(path, opts)
+    }
+  }, [navigate])
+
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
-    navigate('/create-order')
-  }, [haptic, navigate])
+    navWithTransition('/create-order')
+  }, [haptic, navWithTransition])
 
   const handleNewOrderWithType = useCallback((workType: string) => {
     haptic('heavy')
-    navigate('/create-order', {
+    navWithTransition('/create-order', {
       state: { prefill: { work_type: workType } },
     })
-  }, [haptic, navigate])
+  }, [haptic, navWithTransition])
 
   const handleOpenLounge = useCallback(() => {
     haptic('light')
-    navigate('/club')
-  }, [haptic, navigate])
+    navWithTransition('/club')
+  }, [haptic, navWithTransition])
 
   const handleReorder = useCallback((orderId: number) => {
     const order = user?.orders.find(o => o.id === orderId)
     if (!order) return
-    navigate('/create-order', {
+    navWithTransition('/create-order', {
       state: {
         prefill: {
           work_type: order.work_type,
@@ -131,7 +148,7 @@ export function HomePage({ user, onRefresh }: Props) {
         },
       },
     })
-  }, [user?.orders, navigate])
+  }, [user?.orders, navWithTransition])
 
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
@@ -154,9 +171,26 @@ export function HomePage({ user, onRefresh }: Props) {
     window.open(shareUrl, '_blank')
   }, [user, haptic, botUsername])
 
-  const handleBonusClaimed = useCallback(() => {
-    if (onRefresh) void onRefresh()
+  // Optimistic balance state for instant UI updates
+  const [optimisticBonusAdd, setOptimisticBonusAdd] = useState(0)
+
+  const handleBonusClaimed = useCallback((claimedAmount?: number) => {
+    // Optimistic: update UI instantly, then refetch in background
+    if (claimedAmount && claimedAmount > 0) {
+      setOptimisticBonusAdd(prev => prev + claimedAmount)
+    }
+    if (onRefresh) {
+      void onRefresh().then(() => setOptimisticBonusAdd(0))
+    }
   }, [onRefresh])
+
+  // Calculate total savings from cashback transactions
+  const totalSaved = useMemo(() => {
+    if (!user) return 0
+    return user.transactions
+      .filter(t => t.type === 'credit' && (t.reason.includes('cashback') || t.reason.includes('кешбэк') || t.reason.includes('реферал') || t.reason.includes('promo')))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+  }, [user?.transactions])
 
   const handleOpenModal = useCallback((modal: ModalName) => {
     if (modal === 'cashback') actions.openModal('cashback')
@@ -257,9 +291,10 @@ export function HomePage({ user, onRefresh }: Props) {
           }}
           summary={{
             balance: user.balance,
-            bonusBalance: user.bonus_balance,
+            bonusBalance: user.bonus_balance + optimisticBonusAdd,
             cashback: user.rank.cashback,
             activeOrders,
+            totalSaved,
           }}
           userPhoto={userPhoto}
           onSecretTap={handleSecretTap}
@@ -272,7 +307,7 @@ export function HomePage({ user, onRefresh }: Props) {
             ═══════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            <div ref={heroCTARef as React.RefObject<HTMLDivElement>}>
+            <div ref={heroCTARef as React.RefObject<HTMLDivElement>} onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
 
@@ -315,7 +350,9 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {/* ─── New order CTA ─── */}
             <Section>
-              <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+              <div onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
+                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+              </div>
             </Section>
 
             {/* ─── Quick actions row ─── */}
@@ -356,10 +393,13 @@ export function HomePage({ user, onRefresh }: Props) {
             {/* ─── Club & Referrals ─── */}
             <LoungeVault
               rank={user.rank}
-              bonusBalance={user.bonus_balance}
+              bonusBalance={user.bonus_balance + optimisticBonusAdd}
               referralCode={user.referral_code}
               referralsCount={user.referrals_count}
               referralEarnings={user.referral_earnings}
+              ordersCount={user.orders_count}
+              totalSpent={user.total_spent}
+              dailyStreak={user.daily_bonus_streak || 0}
               copied={referralCopied}
               onCopy={handleCopyReferral}
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}

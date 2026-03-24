@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react'
+import React, { memo, useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -109,6 +109,29 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
 }
 
 const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision']
+
+/* ─── Live elapsed time for in-progress orders ─── */
+function useElapsedTime(updatedAt: string | null | undefined, active: boolean): string | null {
+  const [now, setNow] = useState(Date.now)
+
+  useEffect(() => {
+    if (!active || !updatedAt) return
+    const id = setInterval(() => setNow(Date.now()), 60_000) // update every minute
+    return () => clearInterval(id)
+  }, [active, updatedAt])
+
+  if (!active || !updatedAt) return null
+
+  const diffMs = now - new Date(updatedAt).getTime()
+  if (diffMs < 60_000) return null // less than a minute
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 60) return `${mins} мин`
+  const hours = Math.floor(mins / 60)
+  const remainMins = mins % 60
+  if (hours < 24) return remainMins > 0 ? `${hours}ч ${remainMins}мин` : `${hours}ч`
+  const days = Math.floor(hours / 24)
+  return `${days}д ${hours % 24}ч`
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Animated shimmer line that sweeps across the card
@@ -333,6 +356,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
   const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
   const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
+  const isWorking = ['in_progress', 'revision'].includes(visibleStatus)
+  const elapsed = useElapsedTime(activeOrder.updated_at, isWorking)
   const footerHint = otherActiveCount > 0
     ? `Ещё ${otherActiveCount} ${otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе`
     : null
@@ -491,6 +516,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               <Clock3 size={11} strokeWidth={2} style={{ verticalAlign: 'middle', opacity: 0.7 }} />
               {deadlineText}
             </span>
+            {elapsed && (
+              <span style={{ display: 'block', marginTop: 4, fontSize: 11, color: 'rgba(212,175,55,0.45)' }}>
+                В работе {elapsed}
+              </span>
+            )}
           </div>
         </div>
 

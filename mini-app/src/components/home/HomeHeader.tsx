@@ -1,6 +1,6 @@
 import { useState, memo, useMemo, useEffect, useRef, useCallback, Component, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
-import { ArrowUpRight, Crown, Eye, EyeOff } from 'lucide-react'
+import { ArrowUpRight, Crown, Eye, EyeOff, TrendingUp } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../../utils/animation'
@@ -19,6 +19,7 @@ interface HomeHeaderProps {
     bonusBalance: number
     cashback: number
     activeOrders: number
+    totalSaved?: number
   }
   userPhoto?: string
   onSecretTap: () => void
@@ -52,9 +53,25 @@ function formatNum(v: number): string {
   return Math.max(0, Math.round(v)).toLocaleString('ru-RU')
 }
 
-/* ─── Per-character reveal ─── */
+/* ─── Per-character reveal with haptic drumroll ─── */
 function BalanceReveal({ value, reduced }: { value: string; reduced: boolean }) {
   if (reduced) return <span>{value}</span>
+
+  // Haptic drumroll: light taps synced with char reveal
+  useEffect(() => {
+    const chars = value.split('')
+    const timers: ReturnType<typeof setTimeout>[] = []
+    // Fire haptic on every 3rd character for subtle rhythm
+    chars.forEach((_, i) => {
+      if (i % 3 === 0 && i > 0) {
+        timers.push(setTimeout(() => haptic('light'), i * 30))
+      }
+    })
+    // Final medium tap at the end
+    timers.push(setTimeout(() => haptic('medium'), chars.length * 30))
+    return () => timers.forEach(clearTimeout)
+  }, [value])
+
   return (
     <span style={{ display: 'inline-flex' }}>
       {value.split('').map((char, i) => (
@@ -222,7 +239,22 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const balance = summary?.balance ?? 0
   const bonusBalance = summary?.bonusBalance ?? 0
   const cashback = summary?.cashback ?? 0
+  const totalSaved = summary?.totalSaved ?? 0
   const showFinance = !isNewUser && summary
+
+  // Sticky mini-bar: track when header scrolls out of view
+  const headerRef = useRef<HTMLElement>(null)
+  const [showStickyBar, setShowStickyBar] = useState(false)
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el || !showFinance) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-60px 0px 0px 0px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [showFinance])
 
   const toggleBalance = useCallback(() => {
     setBalanceHidden((h) => {
@@ -258,7 +290,53 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const AVATAR_SIZE = 64
 
   return (
-    <header className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
+    <>
+    {/* ═══ Sticky mini-balance bar ═══ */}
+    <AnimatePresence>
+      {showStickyBar && showFinance && (
+        <motion.div
+          initial={{ y: -40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -40, opacity: 0 }}
+          transition={{ duration: reduced ? 0 : 0.2, ease: EASE_PREMIUM as unknown as number[] }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            padding: '8px 16px',
+            paddingTop: 'max(8px, env(safe-area-inset-top))',
+            background: 'rgba(10,10,10,0.85)',
+            backdropFilter: 'blur(16px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(120%)',
+            borderBottom: '1px solid rgba(212,175,55,0.08)',
+          }}
+        >
+          <GoldText variant="static" size="sm" weight={700}>
+            {firstName}
+          </GoldText>
+          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)' }} />
+          <GoldText variant="static" size="sm" weight={700} style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {balanceHidden ? '• • •' : `${formatNum(balance)} ₽`}
+          </GoldText>
+          {user.rank.name && (
+            <>
+              <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)' }} />
+              <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                {user.rank.name}
+              </span>
+            </>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
       <motion.div
         initial="initial"
         animate="animate"
@@ -584,6 +662,30 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 >
                   {!online ? 'Нет связи' : bonusBalance > 0 ? 'Бонусный счёт' : 'Личный счёт'}
                 </motion.div>
+
+                {/* Savings storytelling — emotional anchor */}
+                {totalSaved > 0 && online && !balanceHidden && (
+                  <motion.div
+                    initial={reduced ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : 1.2, duration: reduced ? 0 : 0.4 }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      marginTop: 10,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      background: 'rgba(74,222,128,0.06)',
+                      border: '1px solid rgba(74,222,128,0.10)',
+                    }}
+                  >
+                    <TrendingUp size={10} strokeWidth={2} style={{ color: 'rgba(74,222,128,0.7)' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(74,222,128,0.7)', letterSpacing: '0.02em' }}>
+                      Сэкономлено {formatNum(totalSaved)} ₽
+                    </span>
+                  </motion.div>
+                )}
               </div>
 
               {/* ── Bottom row ── */}
@@ -674,6 +776,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
         )}
       </motion.div>
     </header>
+    </>
   )
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
   return prev.userPhoto === next.userPhoto &&
@@ -684,6 +787,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
     prev.summary?.bonusBalance === next.summary?.bonusBalance &&
     prev.summary?.cashback === next.summary?.cashback &&
     prev.summary?.activeOrders === next.summary?.activeOrders &&
+    prev.summary?.totalSaved === next.summary?.totalSaved &&
     prev.user.orders_count === next.user.orders_count &&
     prev.isNewUser === next.isNewUser
 })

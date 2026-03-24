@@ -1,8 +1,40 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Copy, ArrowRight, Clock } from 'lucide-react'
+import { Copy, ArrowRight, Clock, CalendarClock } from 'lucide-react'
 import { Order } from '../../types'
 import { Reveal } from '../ui/StaggerReveal'
+
+/* ─── Smart temporal suggestion based on season + last order ─── */
+function useTemporalHint(workType: string): string | null {
+  return useMemo(() => {
+    const now = new Date()
+    const month = now.getMonth() + 1 // 1-12
+    const day = now.getDate()
+
+    // Winter session: Dec 15 - Jan 31
+    if ((month === 12 && day >= 15) || month === 1) {
+      if (['coursework', 'diploma', 'masters'].includes(workType)) {
+        return 'Сессия на носу — закажите заранее'
+      }
+      return 'Сессия скоро — самое время'
+    }
+
+    // Summer session: May 1 - Jun 30
+    if (month === 5 || month === 6) {
+      if (['diploma', 'masters'].includes(workType)) {
+        return 'Защита близко — не откладывайте'
+      }
+      return 'Летняя сессия — успейте вовремя'
+    }
+
+    // Start of semester: Sep 1-30
+    if (month === 9) {
+      return 'Новый семестр — начните с чистого листа'
+    }
+
+    return null
+  }, [workType])
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  QUICK REORDER CARD — One-click reorder based on previous order
@@ -42,6 +74,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
 
   const workTypeLabel = lastOrder.work_type_label || WORK_TYPE_LABELS[lastOrder.work_type] || lastOrder.work_type
   const subject = lastOrder.subject || 'Предмет не указан'
+  const temporalHint = useTemporalHint(lastOrder.work_type)
 
   if (embedded) {
     return (
@@ -336,6 +369,27 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             gap: 12,
           }}
         >
+          {temporalHint && !embedded && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 10,
+                padding: '5px 10px',
+                borderRadius: 999,
+                background: 'rgba(212,175,55,0.06)',
+                border: '1px solid rgba(212,175,55,0.12)',
+                width: 'fit-content',
+              }}
+            >
+              <CalendarClock size={11} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.6)' }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(212,175,55,0.6)', letterSpacing: '0.02em' }}>
+                {temporalHint}
+              </span>
+            </div>
+          )}
+
           <div
             style={{
               display: 'flex',
