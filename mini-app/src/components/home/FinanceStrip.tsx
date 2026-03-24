@@ -2,9 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { formatMoney } from '../../lib/utils'
-import { StaggerReveal } from '../ui/StaggerReveal'
-import { useCapability } from '../../contexts/DeviceCapabilityContext'
-import { HolographicCard } from '../ui/HolographicCard'
+import { GoldText } from '../ui/GoldText'
 
 interface FinanceStripProps {
   balance: number
@@ -15,43 +13,6 @@ interface FinanceStripProps {
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-const PILL = {
-  flexShrink: 0,
-  padding: '12px 16px',
-  borderRadius: 12,
-} as const
-
-const GOLD_PILL = {
-  ...PILL,
-  border: '1px solid rgba(212,175,55,0.14)',
-  background: 'rgba(212,175,55,0.06)',
-} as const
-
-const NEUTRAL_PILL = {
-  ...PILL,
-  border: '1px solid rgba(255,255,255,0.06)',
-  background: 'rgba(255,255,255,0.03)',
-} as const
-
-const LABEL = {
-  fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase' as const,
-  color: 'rgba(255,255,255,0.34)',
-  marginBottom: 4,
-  whiteSpace: 'nowrap' as const,
-}
-
-const NUMBER = {
-  fontFamily: "'Manrope', system-ui, sans-serif",
-  fontSize: 18,
-  fontWeight: 700,
-  letterSpacing: '-0.03em',
-  whiteSpace: 'nowrap' as const,
-  lineHeight: 1.1,
-}
-
 export const FinanceStrip = memo(function FinanceStrip({
   balance,
   bonusBalance,
@@ -59,86 +20,75 @@ export const FinanceStrip = memo(function FinanceStrip({
   onOpenLounge,
   haptic,
 }: FinanceStripProps) {
-  const capability = useCapability()
-  // Combine balance + bonus into one "Счёт" pill
   const totalBalance = balance + bonusBalance
-  const hasBonus = bonusBalance > 0
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.1, duration: 0.4 }}
+      style={{
+        marginBottom: 20,
+        padding: '14px 0',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}
+    >
+      {/* Single elegant row: balance · cashback · club */}
       <div
         style={{
           display: 'flex',
-          gap: 8,
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          paddingBottom: 2,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
         }}
       >
-        <StaggerReveal
-          direction="left"
-          animation="slide"
-          staggerDelay={0.05}
-          style={{ display: 'flex', gap: 8 }}
-        >
-          {/* Combined balance pill — the hero number */}
-          {capability.tier === 3 ? (
-            <HolographicCard
-              variant="gold"
-              intensity="subtle"
-              style={{ ...GOLD_PILL, flexShrink: 0 }}
-            >
-              <div style={LABEL}>Счёт</div>
-              <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
-                {formatMoney(totalBalance)}
-              </div>
-              {hasBonus && (
-                <div
-                  style={{
-                    marginTop: 4,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'rgba(212,175,55,0.50)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {formatMoney(bonusBalance)} бонусов
-                </div>
-              )}
-            </HolographicCard>
-          ) : (
-            <div style={GOLD_PILL}>
-              <div style={LABEL}>Счёт</div>
-              <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
-                {formatMoney(totalBalance)}
-              </div>
-              {hasBonus && (
-                <div
-                  style={{
-                    marginTop: 4,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'rgba(212,175,55,0.50)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {formatMoney(bonusBalance)} бонусов
-                </div>
-              )}
-            </div>
-          )}
+        {/* Balance — the star */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <GoldText variant="liquid" size="xl" weight={700}>
+            {formatMoney(totalBalance)}
+          </GoldText>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.30)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            на счёте
+          </span>
+        </div>
 
-          {/* Cashback pill */}
-          <div style={NEUTRAL_PILL}>
-            <div style={LABEL}>Кэшбэк</div>
-            <div style={{ ...NUMBER, color: 'var(--text-primary)' }}>
-              {cashback}%
-            </div>
+        {/* Right side: cashback + club */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          {/* Cashback */}
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {cashback}%
+            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.30)', marginLeft: 4 }}>
+              кэшбэк
+            </span>
           </div>
 
-          {/* Club button */}
+          {/* Divider dot */}
+          <div
+            style={{
+              width: 3,
+              height: 3,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)',
+              flexShrink: 0,
+            }}
+          />
+
+          {/* Club link */}
           <motion.button
             type="button"
             whileTap={{ scale: 0.95 }}
@@ -147,24 +97,26 @@ export const FinanceStrip = memo(function FinanceStrip({
               onOpenLounge()
             }}
             style={{
-              ...GOLD_PILL,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              color: 'var(--gold-300)',
-              fontSize: 11,
+              gap: 3,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: 'var(--gold-400)',
+              fontSize: 12,
               fontWeight: 700,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
-              cursor: 'pointer',
             }}
           >
             Клуб
-            <ArrowUpRight size={13} strokeWidth={2.2} />
+            <ArrowUpRight size={12} strokeWidth={2.2} />
           </motion.button>
-        </StaggerReveal>
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 })
