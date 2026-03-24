@@ -302,35 +302,56 @@ export const HomeHeader = memo(function HomeHeader({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                gap: 12,
               }}
             >
               {/* Left: rank + cashback */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 6,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+              >
                 {user.rank.name && (
-                  <>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: 'rgba(245,240,225,0.70)',
-                      }}
-                    >
-                      {user.rank.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: 'rgba(255,255,255,0.18)',
-                      }}
-                    >
-                      ·
-                    </span>
-                  </>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'rgba(245,240,225,0.70)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {user.rank.name}
+                  </span>
                 )}
-                <GoldText variant="static" size="md" weight={700}>
+                {user.rank.name && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'rgba(255,255,255,0.18)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ·
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {cashback}% возврат
-                </GoldText>
+                </span>
               </div>
 
               {/* Right: club link */}
@@ -346,6 +367,7 @@ export const HomeHeader = memo(function HomeHeader({
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
                 <span
