@@ -6,6 +6,10 @@ import {
   claimDailyBonus,
   type DailyBonusInfo,
 } from '../../api/userApi'
+import { useCapability } from '../../contexts/DeviceCapabilityContext'
+import { ScratchCard } from '../ui/ScratchCard'
+import { Confetti } from '../ui/Confetti'
+import { Reveal } from '../ui/StaggerReveal'
 import s from '../../pages/HomePage.module.css'
 
 interface DailyBonusCardProps {
@@ -63,11 +67,14 @@ function DailyBonusCardInner({
     boxShadow: embedded ? 'none' : '0 24px 40px -34px rgba(0, 0, 0, 0.78)',
   }
 
+  const capability = useCapability()
   const [info, setInfo] = useState<DailyBonusInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [claimedAmount, setClaimedAmount] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showScratchCard, setShowScratchCard] = useState(false)
+  const [showGoldConfetti, setShowGoldConfetti] = useState(false)
 
   const canClaim = info ? info.can_claim : dailyAvailable
   const currentStreak = info ? info.streak : streak
@@ -137,246 +144,312 @@ function DailyBonusCardInner({
 
   if (variant === 'compact') {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        style={compactCardStyle}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: -58,
-            right: -36,
-            width: 180,
-            height: 180,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 32%, transparent 74%)',
-            pointerEvents: 'none',
-          }}
+      <Reveal direction="up" animation="slide">
+        <Confetti
+          active={showGoldConfetti}
+          colors={['#d4af37', '#f5d061', '#b38728', '#FCF6BA', '#fff']}
+          intensity="medium"
+          onComplete={() => setShowGoldConfetti(false)}
         />
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <AnimatePresence>
+          {showScratchCard && (
+            <ScratchCard
+              prize={`Ежедневный бонус — день ${streakDay + 1}`}
+              prizeAmount={nextClaimBonus}
+              onReveal={() => {
+                handleClaim()
+                setShowGoldConfetti(true)
+              }}
+              onClose={() => setShowScratchCard(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          style={compactCardStyle}
+        >
           <div
+            aria-hidden="true"
             style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 16,
+              position: 'absolute',
+              top: -58,
+              right: -36,
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 32%, transparent 74%)',
+              pointerEvents: 'none',
             }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(212, 175, 55, 0.72)',
-                  marginBottom: 8,
-                }}
-              >
-                Ежедневный бонус
-              </div>
+          />
 
-              <AnimatePresence mode="wait">
-                {claimedAmount !== null ? (
-                  <motion.div
-                    key="compact-claimed"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                        fontSize: 28,
-                        lineHeight: 0.95,
-                        letterSpacing: '-0.05em',
-                        color: 'var(--gold-300)',
-                        marginBottom: 8,
-                      }}
-                    >
-                      +{claimedAmount} ₽
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                      Бонус уже зачислен. Новое начисление откроется по следующему таймеру.
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="compact-default"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                          fontSize: 30,
-                          lineHeight: 0.95,
-                          letterSpacing: '-0.05em',
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        {Math.max(0, currentStreak)}
-                      </span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {currentStreak === 1 ? 'день подряд' : currentStreak >= 2 && currentStreak <= 4 ? 'дня подряд' : 'дней подряд'}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                      {canClaim
-                        ? `Сегодня можно забрать ещё ${nextClaimBonus} ₽ и продолжить серию.`
-                        : `Следующее начисление откроется через ${cooldownText}.`}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div style={{ flexShrink: 0 }}>
-              {canClaim ? (
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleClaim}
-                  disabled={claiming}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '12px 14px',
-                    borderRadius: 12,
-                    border: 'none',
-                    background: claiming ? 'rgba(212,175,55,0.16)' : 'var(--gold-metallic)',
-                    color: claiming ? 'var(--gold-200)' : 'var(--text-on-gold)',
-                    cursor: claiming ? 'not-allowed' : 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: '0.03em',
-                    boxShadow: claiming ? 'none' : '0 16px 26px -22px rgba(212,175,55,0.72)',
-                    opacity: claiming ? 0.7 : 1,
-                  }}
-                >
-                  {claiming ? (
-                    <>
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-                        style={{ display: 'inline-flex' }}
-                      >
-                        <Gift size={15} />
-                      </motion.span>
-                      Получаем
-                    </>
-                  ) : (
-                    <>
-                      <Gift size={15} />
-                      Забрать
-                    </>
-                  )}
-                </motion.button>
-              ) : (
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '11px 12px',
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  <Clock size={15} color="var(--gold-300)" />
-                  {cooldownText}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-              gap: 8,
-            }}
-          >
-            {bonuses.map((bonus, index) => {
-              const isClaimed = index < streakDay
-              const isCurrent = index === streakDay && canClaim
-              const isLocked = index > streakDay || (index === streakDay && !canClaim && !isClaimed)
-
-              return (
-                <div
-                  key={`${bonus}-${index}`}
-                  style={{
-                    padding: '10px 6px 8px',
-                    borderRadius: 12,
-                    textAlign: 'center',
-                    background: isClaimed
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.96) 0%, rgba(180,141,36,0.88) 100%)'
-                      : isCurrent
-                        ? 'rgba(212,175,55,0.10)'
-                        : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isClaimed ? 'rgba(212,175,55,0.28)' : isCurrent ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
-                    boxShadow: isCurrent ? '0 16px 24px -24px rgba(212,175,55,0.5)' : 'none',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: isClaimed ? 'var(--text-on-gold)' : isCurrent ? 'var(--gold-200)' : 'var(--text-muted)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: isClaimed ? 'var(--text-on-gold)' : isLocked ? 'var(--text-secondary)' : 'var(--text-primary)',
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    +{bonus}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {error && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
             <div
               style={{
-                marginTop: 8,
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--error-text)',
-                lineHeight: 1.35,
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 16,
               }}
             >
-              {error}
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(212, 175, 55, 0.72)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Ежедневный бонус
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {claimedAmount !== null ? (
+                    <motion.div
+                      key="compact-claimed"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                          fontSize: 28,
+                          lineHeight: 0.95,
+                          letterSpacing: '-0.05em',
+                          color: 'var(--gold-300)',
+                          marginBottom: 8,
+                        }}
+                      >
+                        +{claimedAmount} ₽
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        Бонус уже зачислен. Новое начисление откроется по следующему таймеру.
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="compact-default"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                            fontSize: 30,
+                            lineHeight: 0.95,
+                            letterSpacing: '-0.05em',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {Math.max(0, currentStreak)}
+                        </span>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {currentStreak === 1 ? 'день подряд' : currentStreak >= 2 && currentStreak <= 4 ? 'дня подряд' : 'дней подряд'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        {canClaim
+                          ? `Сегодня можно забрать ещё ${nextClaimBonus} ₽ и продолжить серию.`
+                          : `Следующее начисление откроется через ${cooldownText}.`}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div style={{ flexShrink: 0 }}>
+                {canClaim ? (
+                  capability.tier === 3 ? (
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setShowScratchCard(true)}
+                      disabled={claiming}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: 'none',
+                        background: claiming ? 'rgba(212,175,55,0.16)' : 'var(--gold-metallic)',
+                        color: claiming ? 'var(--gold-200)' : 'var(--text-on-gold)',
+                        cursor: claiming ? 'not-allowed' : 'pointer',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: '0.03em',
+                        boxShadow: claiming ? 'none' : '0 16px 26px -22px rgba(212,175,55,0.72)',
+                        opacity: claiming ? 0.7 : 1,
+                      }}
+                    >
+                      {claiming ? (
+                        <>
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                            style={{ display: 'inline-flex' }}
+                          >
+                            <Gift size={15} />
+                          </motion.span>
+                          Получаем
+                        </>
+                      ) : (
+                        <>
+                          <Gift size={15} />
+                          Сотри приз
+                        </>
+                      )}
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleClaim}
+                      disabled={claiming}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: 'none',
+                        background: claiming ? 'rgba(212,175,55,0.16)' : 'var(--gold-metallic)',
+                        color: claiming ? 'var(--gold-200)' : 'var(--text-on-gold)',
+                        cursor: claiming ? 'not-allowed' : 'pointer',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: '0.03em',
+                        boxShadow: claiming ? 'none' : '0 16px 26px -22px rgba(212,175,55,0.72)',
+                        opacity: claiming ? 0.7 : 1,
+                      }}
+                    >
+                      {claiming ? (
+                        <>
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                            style={{ display: 'inline-flex' }}
+                          >
+                            <Gift size={15} />
+                          </motion.span>
+                          Получаем
+                        </>
+                      ) : (
+                        <>
+                          <Gift size={15} />
+                          Забрать
+                        </>
+                      )}
+                    </motion.button>
+                  )
+                ) : (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '11px 12px',
+                      borderRadius: 12,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      color: 'var(--text-secondary)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    <Clock size={15} color="var(--gold-300)" />
+                    {cooldownText}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </motion.div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                gap: 8,
+              }}
+            >
+              {bonuses.map((bonus, index) => {
+                const isClaimed = index < streakDay
+                const isCurrent = index === streakDay && canClaim
+                const isLocked = index > streakDay || (index === streakDay && !canClaim && !isClaimed)
+
+                return (
+                  <div
+                    key={`${bonus}-${index}`}
+                    style={{
+                      padding: '10px 6px 8px',
+                      borderRadius: 12,
+                      textAlign: 'center',
+                      background: isClaimed
+                        ? 'linear-gradient(180deg, rgba(212,175,55,0.96) 0%, rgba(180,141,36,0.88) 100%)'
+                        : isCurrent
+                          ? 'rgba(212,175,55,0.10)'
+                          : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${isClaimed ? 'rgba(212,175,55,0.28)' : isCurrent ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
+                      boxShadow: isCurrent ? '0 16px 24px -24px rgba(212,175,55,0.5)' : 'none',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: isClaimed ? 'var(--text-on-gold)' : isCurrent ? 'var(--gold-200)' : 'var(--text-muted)',
+                        marginBottom: 8,
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: isClaimed ? 'var(--text-on-gold)' : isLocked ? 'var(--text-secondary)' : 'var(--text-primary)',
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      +{bonus}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {error && (
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--error-text)',
+                  lineHeight: 1.35,
+                }}
+              >
+                {error}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </Reveal>
     )
   }
 

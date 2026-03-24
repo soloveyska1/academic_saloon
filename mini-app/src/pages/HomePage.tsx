@@ -1,6 +1,6 @@
 import { useCallback, useRef, useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -223,6 +223,24 @@ export function HomePage({ user, onRefresh }: Props) {
         paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))',
       }}>
       <PullIndicator />
+
+      {/* Breathing gold orb — fades on scroll */}
+      <motion.div
+        aria-hidden="true"
+        animate={{ scale: [1, 1.04, 1] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'fixed',
+          top: -120,
+          right: -80,
+          width: 320,
+          height: 320,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 40%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
