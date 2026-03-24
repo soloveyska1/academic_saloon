@@ -136,52 +136,75 @@ export const QuickActionsRow = memo(function QuickActionsRow({
     )
   }
 
-  // ── Non-embedded: slim horizontal chips ──
+  // ── Non-embedded: premium horizontal cards with unique identity ──
   return (
     <div style={{ display: 'flex', gap: 8 }}>
-      {actions.map((action) => (
-        <motion.button
-          key={action.id}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => handleClick(action)}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 12px',
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            cursor: 'pointer',
-            appearance: 'none' as const,
-            textAlign: 'left' as const,
-          }}
-        >
-          <action.icon size={14} strokeWidth={2} style={{ color: 'var(--gold-400)', flexShrink: 0 }} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{
-              fontSize: 12,
-              fontWeight: 700,
-              lineHeight: 1.2,
-              color: 'var(--text-primary)',
-              whiteSpace: 'nowrap',
-            }}>
-              {action.title}
-            </div>
-            <div style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              whiteSpace: 'nowrap',
+      {actions.map((action) => {
+        const isCashback = action.id === 'cashback'
+        const accentColor = isCashback ? 'var(--gold-400)' : 'var(--success-text)'
+
+        return (
+          <motion.button
+            key={action.id}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => handleClick(action)}
+            style={{
+              flex: 1,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '14px 12px 14px 16px',
+              borderRadius: 12,
+              background: isCashback ? 'var(--gold-glass-subtle)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isCashback ? 'rgba(212,175,55,0.14)' : 'var(--border-default)'}`,
+              cursor: 'pointer',
+              appearance: 'none' as const,
+              textAlign: 'left' as const,
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>
-              {action.subtitle}
+            }}
+          >
+            {/* Left accent bar */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: '20%',
+                bottom: '20%',
+                width: 2,
+                borderRadius: 1,
+                background: accentColor,
+                opacity: 0.5,
+              }}
+            />
+
+            <action.icon
+              size={18}
+              strokeWidth={2}
+              style={{ color: accentColor, flexShrink: 0 }}
+            />
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontSize: 13,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: 'var(--text-primary)',
+              }}>
+                {action.title}
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.3,
+              }}>
+                {action.subtitle}
+              </div>
             </div>
-          </div>
-        </motion.button>
-      ))}
+          </motion.button>
+        )
+      })}
     </div>
   )
 })
