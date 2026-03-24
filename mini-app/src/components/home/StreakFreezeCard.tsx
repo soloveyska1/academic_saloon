@@ -1,32 +1,35 @@
 import { memo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Snowflake, Shield, Check } from 'lucide-react'
+import { ShieldCheck, ShieldPlus, AlertCircle } from 'lucide-react'
+import { Reveal } from '../ui/StaggerReveal'
 
 interface StreakFreezeCardProps {
   streak: number
   bonusBalance: number
   hasFreezeActive?: boolean
+  freezeCost?: number
   onPurchaseFreeze: () => Promise<boolean>
   haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'error') => void
 }
-
-const FREEZE_COST = 100
 
 export const StreakFreezeCard = memo(function StreakFreezeCard({
   streak,
   bonusBalance,
   hasFreezeActive = false,
+  freezeCost = 100,
   onPurchaseFreeze,
   haptic,
 }: StreakFreezeCardProps) {
   const [purchasing, setPurchasing] = useState(false)
   const [justPurchased, setJustPurchased] = useState(false)
-  const canAfford = bonusBalance >= FREEZE_COST
+  const [error, setError] = useState<string | null>(null)
+  const canAfford = bonusBalance >= freezeCost
   const isActive = hasFreezeActive || justPurchased
 
   const handlePurchase = useCallback(async () => {
     if (purchasing || isActive || !canAfford) return
     setPurchasing(true)
+    setError(null)
     haptic('medium')
 
     try {
@@ -36,131 +39,166 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
         setJustPurchased(true)
       } else {
         haptic('error')
+        setError('Не удалось активировать')
       }
     } catch {
       haptic('error')
+      setError('Ошибка, попробуйте позже')
     } finally {
       setPurchasing(false)
     }
   }, [purchasing, isActive, canAfford, onPurchaseFreeze, haptic])
 
+  // Only show for streaks worth protecting
   if (streak < 3) return null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        padding: '12px 14px',
-        borderRadius: 10,
-        background: isActive
-          ? 'rgba(147, 197, 253, 0.06)'
-          : 'rgba(255,255,255,0.025)',
-        border: isActive
-          ? '1px solid rgba(147, 197, 253, 0.15)'
-          : '1px solid rgba(255,255,255,0.05)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: isActive
-              ? 'rgba(147, 197, 253, 0.12)'
-              : 'rgba(147, 197, 253, 0.06)',
-            border: '1px solid rgba(147, 197, 253, 0.12)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
+    <Reveal animation="fade" delay={0.1}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '12px 14px',
+          borderRadius: 12,
+          background: isActive
+            ? 'var(--gold-glass-subtle)'
+            : 'rgba(255,255,255,0.025)',
+          border: isActive
+            ? '1px solid rgba(212,175,55,0.15)'
+            : '1px solid var(--border-default)',
+          boxShadow: isActive ? '0 0 20px -8px rgba(212,175,55,0.10)' : 'none',
+          transition: 'all 0.3s var(--ease-out)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              background: isActive
+                ? 'rgba(212,175,55,0.12)'
+                : 'rgba(255,255,255,0.04)',
+              border: isActive
+                ? '1px solid rgba(212,175,55,0.18)'
+                : '1px solid var(--border-default)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {isActive ? (
+              <ShieldCheck size={15} strokeWidth={2} color="var(--gold-400)" />
+            ) : (
+              <ShieldPlus size={15} strokeWidth={2} color="var(--text-muted)" />
+            )}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: isActive ? 'var(--gold-300)' : 'var(--text-primary)',
+              lineHeight: 1.3,
+            }}>
+              {isActive ? 'Заморозка активна' : 'Заморозить серию'}
+            </div>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              lineHeight: 1.3,
+            }}>
+              {isActive
+                ? `Серия в ${streak} дн. защищена на 1 день`
+                : `Пропустите день без потери ${streak} дн. серии`}
+            </div>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
           {isActive ? (
-            <Shield size={15} color="rgba(147, 197, 253, 0.8)" />
+            <motion.div
+              key="active"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '5px 10px',
+                borderRadius: 8,
+                background: 'rgba(212,175,55,0.08)',
+              }}
+            >
+              <ShieldCheck size={11} strokeWidth={2.5} color="var(--gold-400)" />
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--gold-400)',
+                letterSpacing: '0.04em',
+              }}>
+                Активна
+              </span>
+            </motion.div>
           ) : (
-            <Snowflake size={15} color="rgba(147, 197, 253, 0.6)" />
+            <motion.button
+              key="buy"
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePurchase}
+              disabled={purchasing || !canAfford}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 12px',
+                borderRadius: 8,
+                border: 'none',
+                background: canAfford
+                  ? 'var(--gold-glass-medium)'
+                  : 'rgba(255,255,255,0.04)',
+                color: canAfford
+                  ? 'var(--gold-300)'
+                  : 'var(--text-muted)',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: canAfford ? 'pointer' : 'not-allowed',
+                opacity: purchasing ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {canAfford ? `${freezeCost} ₽` : 'Мало бонусов'}
+            </motion.button>
           )}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: isActive ? 'rgba(147, 197, 253, 0.9)' : 'var(--text-primary)',
-            marginBottom: 1,
-          }}>
-            {isActive ? 'Заморозка активна' : 'Заморозка серии'}
-          </div>
-          <div style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-          }}>
-            {isActive
-              ? 'Пропустите 1 день без потери серии'
-              : `Защитите серию из ${streak} дней`}
-          </div>
-        </div>
+        </AnimatePresence>
       </div>
 
-      <AnimatePresence mode="wait">
-        {isActive ? (
+      {/* Error message */}
+      <AnimatePresence>
+        {error && (
           <motion.div
-            key="active"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '6px 10px',
-              borderRadius: 8,
-              background: 'rgba(147, 197, 253, 0.08)',
-            }}
-          >
-            <Check size={12} color="rgba(147, 197, 253, 0.8)" strokeWidth={3} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(147, 197, 253, 0.8)' }}>
-              Активна
-            </span>
-          </motion.div>
-        ) : (
-          <motion.button
-            key="buy"
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={handlePurchase}
-            disabled={purchasing || !canAfford}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 12px',
-              borderRadius: 8,
-              border: 'none',
-              background: canAfford
-                ? 'rgba(147, 197, 253, 0.12)'
-                : 'rgba(255,255,255,0.04)',
-              color: canAfford
-                ? 'rgba(147, 197, 253, 0.9)'
-                : 'var(--text-muted)',
+              padding: '6px 14px',
               fontSize: 11,
-              fontWeight: 700,
-              cursor: canAfford ? 'pointer' : 'not-allowed',
-              opacity: purchasing ? 0.6 : 1,
-              whiteSpace: 'nowrap',
+              fontWeight: 600,
+              color: 'var(--error-text)',
             }}
           >
-            <Snowflake size={11} />
-            {FREEZE_COST} ₽
-          </motion.button>
+            <AlertCircle size={12} />
+            {error}
+          </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </Reveal>
   )
 })

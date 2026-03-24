@@ -31,7 +31,6 @@ export { PricingAnchor } from './PricingAnchor'
 export { FAQSection } from './FAQSection'
 // New features
 export { StreakFreezeCard } from './StreakFreezeCard'
-export { StoryCards } from './StoryCards'
 export { PriceCalculator } from './PriceCalculator'
 export { SpinWheel } from './SpinWheel'
 export { WorkInProgressFeed } from './WorkInProgressFeed'

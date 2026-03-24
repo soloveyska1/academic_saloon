@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Sparkles, BookOpen } from 'lucide-react'
+import { ArrowRight, RotateCcw, Lightbulb } from 'lucide-react'
 import { Order } from '../../types'
 import { Reveal } from '../ui/StaggerReveal'
 
@@ -18,15 +18,15 @@ const WORK_TYPE_LABELS: Record<string, string> = {
   other: 'Другое',
 }
 
-// Subject families — suggest related subjects
+// Related subject suggestions
 const SUBJECT_FAMILIES: Record<string, string[]> = {
-  'Макроэкономика': ['Микроэкономика', 'Экономическая теория', 'Мировая экономика'],
+  'Макроэкономика': ['Микроэкономика', 'Экономическая теория'],
   'Микроэкономика': ['Макроэкономика', 'Институциональная экономика'],
-  'Гражданское право': ['Уголовное право', 'Трудовое право', 'Семейное право'],
+  'Гражданское право': ['Трудовое право', 'Семейное право'],
   'Уголовное право': ['Гражданское право', 'Конституционное право'],
   'Финансовый менеджмент': ['Финансовый анализ', 'Бухгалтерский учёт'],
-  'Маркетинг': ['Менеджмент', 'Стратегический маркетинг', 'Digital-маркетинг'],
-  'Менеджмент': ['Маркетинг', 'Управление проектами', 'Стратегический менеджмент'],
+  'Маркетинг': ['Менеджмент', 'Digital-маркетинг'],
+  'Менеджмент': ['Маркетинг', 'Управление проектами'],
   'Психология': ['Социальная психология', 'Возрастная психология'],
 }
 
@@ -47,14 +47,11 @@ export const SmartReorderCard = memo(function SmartReorderCard({
 
   const suggestion = useMemo(() => {
     const subject = lastOrder.subject || ''
-    const related = Object.entries(SUBJECT_FAMILIES).find(([key]) =>
-      subject.toLowerCase().includes(key.toLowerCase())
-    )
-    if (related) {
-      const suggestion = related[1][Math.floor(Math.random() * related[1].length)]
-      return {
-        subject: suggestion,
-        reason: `Дополнит «${lastOrder.subject}»`,
+    for (const [key, related] of Object.entries(SUBJECT_FAMILIES)) {
+      if (subject.toLowerCase().includes(key.toLowerCase())) {
+        // Pick a deterministic suggestion based on subject length
+        const idx = subject.length % related.length
+        return { subject: related[idx], baseSubject: key }
       }
     }
     return null
@@ -68,8 +65,9 @@ export const SmartReorderCard = memo(function SmartReorderCard({
         borderRadius: 12,
         overflow: 'hidden',
         background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        border: '1px solid var(--border-default)',
         backdropFilter: 'blur(16px)',
+        boxShadow: '0 4px 12px -4px rgba(0,0,0,0.2)',
       }}>
         {/* Main reorder */}
         <motion.button
@@ -95,14 +93,14 @@ export const SmartReorderCard = memo(function SmartReorderCard({
             width: 40,
             height: 40,
             borderRadius: 12,
-            background: 'rgba(212,175,55,0.06)',
+            background: 'var(--gold-glass-subtle)',
             border: '1px solid rgba(212,175,55,0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <BookOpen size={18} color="var(--gold-300)" />
+            <RotateCcw size={17} strokeWidth={2} color="var(--gold-400)" />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -125,11 +123,11 @@ export const SmartReorderCard = memo(function SmartReorderCard({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}>
-              {lastOrder.subject || 'Повторить похожий заказ'}
+              {lastOrder.subject || 'Повторить заказ'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                Данные подтянутся
+                Все данные сохранены
               </span>
               {cashbackPercent > 0 && (
                 <span style={{
@@ -140,22 +138,22 @@ export const SmartReorderCard = memo(function SmartReorderCard({
                   borderRadius: 4,
                   background: 'rgba(52, 211, 153, 0.08)',
                 }}>
-                  +{cashbackPercent}% кешбэк
+                  +{cashbackPercent}%
                 </span>
               )}
             </div>
           </div>
 
-          <ArrowRight size={16} color="var(--gold-400)" style={{ opacity: 0.4, flexShrink: 0 }} />
+          <ArrowRight size={16} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.4, flexShrink: 0 }} />
         </motion.button>
 
-        {/* Smart suggestion */}
+        {/* Smart suggestion — only if we have a match */}
         {suggestion && (
           <>
             <div style={{
               margin: '0 16px',
               height: 1,
-              background: 'rgba(255,255,255,0.05)',
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
             }} />
 
             <motion.button
@@ -177,20 +175,16 @@ export const SmartReorderCard = memo(function SmartReorderCard({
                 textAlign: 'left',
               }}
             >
-              <Sparkles size={14} color="rgba(167, 139, 250, 0.6)" />
+              <Lightbulb size={14} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.6 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: 'rgba(167, 139, 250, 0.9)',
-                }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-300)' }}>
                   {suggestion.subject}
                 </div>
                 <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {suggestion.reason}
+                  Смежный предмет к «{suggestion.baseSubject}»
                 </div>
               </div>
-              <ArrowRight size={12} color="var(--text-muted)" />
+              <ArrowRight size={12} strokeWidth={2} color="var(--text-muted)" />
             </motion.button>
           </>
         )}
