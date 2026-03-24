@@ -1,12 +1,7 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  TESTIMONIALS — Static cards, no carousel.
-//  Mixed ratings (not all 5★ — perfect scores look fake).
-//  Outcome badges on each card for scanning.
-// ═══════════════════════════════════════════════════════════════════════════
+import { StaggerReveal } from '../ui/StaggerReveal'
+import { TiltCard } from '../ui/TiltCard'
 
 interface Testimonial {
   name: string
@@ -62,12 +57,7 @@ function StarRating({ count }: { count: number }) {
 
 export const TestimonialsSection = memo(function TestimonialsSection() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.22 }}
-      style={{ marginBottom: 24 }}
-    >
+    <div style={{ marginBottom: 24 }}>
       {/* Section header */}
       <div
         style={{
@@ -93,82 +83,115 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Star size={11} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}>4.8</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>· 2 400+</span>
+          <Star
+            size={11}
+            fill="var(--gold-400)"
+            color="var(--gold-400)"
+            strokeWidth={0}
+          />
+          <span
+            style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}
+          >
+            4.8
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+            }}
+          >
+            · 2 400+
+          </span>
         </div>
       </div>
 
-      {/* Static testimonial cards — vertical stack */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {TESTIMONIALS.map((t, i) => (
-          <motion.div
-            key={t.name}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 + i * 0.06 }}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              background: 'rgba(255, 255, 255, 0.025)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-            }}
-          >
-            {/* Top row: outcome badge + stars */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--gold-400)',
-                  padding: '3px 8px',
-                  borderRadius: 8,
-                  background: 'rgba(201, 162, 39, 0.05)',
-                }}
-              >
-                ✓ {t.outcome}
-              </span>
-              <StarRating count={t.stars} />
-            </div>
-
-            {/* Quote */}
-            <p
+      {/* Testimonial cards */}
+      <StaggerReveal
+        direction="up"
+        animation="spring"
+        staggerDelay={0.06}
+        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+      >
+        {TESTIMONIALS.map((t) => (
+          <TiltCard key={t.name} tiltMaxAngle={3}>
+            <div
               style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.55,
-                marginBottom: 8,
+                padding: 16,
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid rgba(255,255,255,0.05)',
               }}
             >
-              «{t.text}»
-            </p>
-
-            {/* Author — compact */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Top row: outcome badge + stars */}
               <div
                 style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  background: 'rgba(201, 162, 39, 0.06)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--gold-400)',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
                 }}
               >
-                {t.name.charAt(0)}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--gold-400)',
+                    padding: '3px 8px',
+                    borderRadius: 8,
+                    background: 'rgba(201,162,39,0.05)',
+                  }}
+                >
+                  ✓ {t.outcome}
+                </span>
+                <StarRating count={t.stars} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-                {t.name} · {t.workType} · {t.university}
-              </span>
+
+              {/* Quote */}
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.55,
+                  marginBottom: 8,
+                }}
+              >
+                «{t.text}»
+              </p>
+
+              {/* Author */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: 'rgba(201,162,39,0.06)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--gold-400)',
+                  }}
+                >
+                  {t.name.charAt(0)}
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  {t.name} · {t.workType} · {t.university}
+                </span>
+              </div>
             </div>
-          </motion.div>
+          </TiltCard>
         ))}
-      </div>
-    </motion.div>
+      </StaggerReveal>
+    </div>
   )
 })

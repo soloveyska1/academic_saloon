@@ -1,10 +1,6 @@
 import { memo, useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  TRUST STATS STRIP — 3 metrics with count-up.
-//  Visually distinct: full-width gold-accent bar
-// ═══════════════════════════════════════════════════════════════════════════
+import { GoldText } from '../ui/GoldText'
+import { Reveal } from '../ui/StaggerReveal'
 
 interface StatConfig {
   value: number
@@ -20,7 +16,11 @@ const STATS: StatConfig[] = [
   { value: 98, suffix: '%', prefix: '', label: 'в срок', decimals: 0 },
 ]
 
-function AnimatedCounter({ target, decimals, duration = 1.6 }: {
+function AnimatedCounter({
+  target,
+  decimals,
+  duration = 1.6,
+}: {
   target: number
   decimals: number
   duration?: number
@@ -51,64 +51,60 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
     }
   }, [target, duration])
 
-  return <>{decimals > 0 ? value.toFixed(decimals) : Math.floor(value).toLocaleString('ru-RU')}</>
+  return (
+    <>
+      {decimals > 0
+        ? value.toFixed(decimals)
+        : Math.floor(value).toLocaleString('ru-RU')}
+    </>
+  )
 }
 
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.12 }}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginBottom: 20,
-        padding: '18px 16px',
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.05)',
-      }}
-    >
-      {STATS.map((stat) => (
-        <div
-          key={stat.label}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
-          }}
-        >
+    <Reveal animation="spring" delay={0.12}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+          marginBottom: 20,
+          padding: '18px 16px',
+          borderRadius: 12,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        {STATS.map((stat) => (
           <div
+            key={stat.label}
             style={{
-              fontFamily: "var(--font-display, 'Playfair Display', serif)",
-              fontSize: 24,
-              fontWeight: 700,
-              letterSpacing: '-0.04em',
-              color: 'var(--gold-200)',
-              lineHeight: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
             }}
           >
-            {stat.prefix}
-            <AnimatedCounter target={stat.value} decimals={stat.decimals} />
-            {stat.suffix}
-          </div>
+            <GoldText variant="static" size="xl" weight={700}>
+              {stat.prefix}
+              <AnimatedCounter target={stat.value} decimals={stat.decimals} />
+              {stat.suffix}
+            </GoldText>
 
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.03em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {stat.label}
-          </span>
-        </div>
-      ))}
-    </motion.div>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                letterSpacing: '0.03em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {stat.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Reveal>
   )
 })

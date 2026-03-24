@@ -1,10 +1,6 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
 import { MessageSquareText, CreditCard, FileCheck } from 'lucide-react'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  HOW IT WORKS — 3-step timeline with connecting line.
-// ═══════════════════════════════════════════════════════════════════════════
+import { Reveal } from '../ui/StaggerReveal'
 
 const STEPS = [
   {
@@ -26,12 +22,7 @@ const STEPS = [
 
 export const HowItWorks = memo(function HowItWorks() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.26 }}
-      style={{ marginBottom: 24 }}
-    >
+    <Reveal animation="spring" style={{ marginBottom: 24 }}>
       {/* Section header */}
       <div
         style={{
@@ -49,7 +40,7 @@ export const HowItWorks = memo(function HowItWorks() {
 
       {/* Timeline steps */}
       <div style={{ position: 'relative' }}>
-        {/* Connecting line */}
+        {/* Connecting gold line */}
         <div
           aria-hidden="true"
           style={{
@@ -58,7 +49,8 @@ export const HowItWorks = memo(function HowItWorks() {
             top: 44,
             bottom: 44,
             width: 1,
-            background: 'linear-gradient(180deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.08) 100%)',
+            background:
+              'linear-gradient(180deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.08) 100%)',
           }}
         />
 
@@ -66,11 +58,11 @@ export const HowItWorks = memo(function HowItWorks() {
           {STEPS.map((step, i) => {
             const Icon = step.icon
             return (
-              <motion.div
+              <Reveal
                 key={step.title}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.30 + i * 0.08 }}
+                delay={0.1 * i}
+                animation="spring"
+                direction="left"
                 style={{
                   display: 'flex',
                   gap: 14,
@@ -78,16 +70,21 @@ export const HowItWorks = memo(function HowItWorks() {
                   position: 'relative',
                 }}
               >
-                {/* Step circle with number */}
+                {/* Step circle */}
                 <div
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: '50%',
-                    background: i === 0
-                      ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))'
-                      : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${i === 0 ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    background:
+                      i === 0
+                        ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))'
+                        : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${
+                      i === 0
+                        ? 'rgba(212,175,55,0.2)'
+                        : 'rgba(255,255,255,0.06)'
+                    }`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -146,11 +143,11 @@ export const HowItWorks = memo(function HowItWorks() {
                     {step.description}
                   </div>
                 </div>
-              </motion.div>
+              </Reveal>
             )
           })}
         </div>
       </div>
-    </motion.div>
+    </Reveal>
   )
 })

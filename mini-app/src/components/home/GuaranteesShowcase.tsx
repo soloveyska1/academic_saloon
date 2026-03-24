@@ -1,11 +1,6 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
 import { ShieldCheck, RefreshCcw, EyeOff, Banknote } from 'lucide-react'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  GUARANTEES — Loss-aversion framing.
-//  Unified card style. 2-column grid. No decorative bloat.
-// ═══════════════════════════════════════════════════════════════════════════
+import { StaggerGrid } from '../ui/StaggerReveal'
 
 const GUARANTEES = [
   {
@@ -32,12 +27,7 @@ const GUARANTEES = [
 
 export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.30 }}
-      style={{ marginBottom: 24 }}
-    >
+    <div style={{ marginBottom: 24 }}>
       {/* Section header */}
       <div
         style={{
@@ -51,9 +41,9 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
         <ShieldCheck size={12} color="var(--gold-400)" strokeWidth={2} />
         <span
           style={{
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
             color: 'var(--text-muted)',
           }}
@@ -62,34 +52,25 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
         </span>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 8,
-        }}
-      >
-        {GUARANTEES.map((g, i) => {
+      <StaggerGrid columns={2} gap={8} animation="scale">
+        {GUARANTEES.map((g) => {
           const Icon = g.icon
           return (
-            <motion.div
+            <div
               key={g.title}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.34 + i * 0.05 }}
               style={{
                 padding: 16,
                 borderRadius: 12,
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid rgba(255,255,255,0.05)',
               }}
             >
               <div
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(201, 162, 39, 0.05)',
+                  borderRadius: 8,
+                  background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -100,7 +81,6 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
               </div>
               <div
                 style={{
-                  fontFamily: 'var(--font-display)',
                   fontSize: 14,
                   fontWeight: 700,
                   color: 'var(--text-primary)',
@@ -120,10 +100,10 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
               >
                 {g.description}
               </div>
-            </motion.div>
+            </div>
           )
         })}
-      </div>
-    </motion.div>
+      </StaggerGrid>
+    </div>
   )
 })
