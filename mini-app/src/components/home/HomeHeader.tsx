@@ -44,7 +44,7 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Доброй ночи'
   }, [])
 
-  // Animated spinning ring angle
+  // Spinning gold ring
   const ringRotation = useMotionValue(0)
   useEffect(() => {
     const controls = animate(ringRotation, 360, {
@@ -61,7 +61,7 @@ export const HomeHeader = memo(function HomeHeader({
   )
 
   return (
-    <header className={s.header} style={{ marginBottom: 12 }}>
+    <header className={s.header} style={{ marginBottom: 6 }}>
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -72,18 +72,18 @@ export const HomeHeader = memo(function HomeHeader({
           gap: 14,
         }}
       >
-        {/* Avatar with animated spinning gold ring */}
+        {/* Avatar with spinning gold ring */}
         <div
           onClick={onSecretTap}
           style={{
             position: 'relative',
-            width: 44,
-            height: 44,
+            width: 46,
+            height: 46,
             flexShrink: 0,
             cursor: 'pointer',
           }}
         >
-          {/* Spinning conic gradient ring */}
+          {/* Spinning ring */}
           <motion.div
             style={{
               position: 'absolute',
@@ -95,25 +95,25 @@ export const HomeHeader = memo(function HomeHeader({
             }}
           />
 
-          {/* Outer glow */}
+          {/* Soft glow */}
           <motion.div
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              inset: -6,
+              inset: -8,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(212,175,55,0.10) 30%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.08) 30%, transparent 70%)',
               pointerEvents: 'none',
             }}
           />
 
           <div
             style={{
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1a1816 0%, #0e0d0c 100%)',
+              background: 'linear-gradient(135deg, #1a1816, #0e0d0c)',
               overflow: 'hidden',
               position: 'relative',
               display: 'flex',
@@ -122,7 +122,7 @@ export const HomeHeader = memo(function HomeHeader({
               boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5)',
             }}
           >
-            <GoldText variant="static" size="md" weight={700}>
+            <GoldText variant="static" size="lg" weight={700}>
               {firstName.charAt(0).toUpperCase()}
             </GoldText>
 
@@ -148,9 +148,8 @@ export const HomeHeader = memo(function HomeHeader({
           </div>
         </div>
 
-        {/* Greeting (muted) + Name (gold gradient) */}
+        {/* Greeting + Name */}
         <div style={{ minWidth: 0, flex: 1 }}>
-          {/* Two-line layout: greeting above, name below */}
           <motion.div
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
@@ -158,9 +157,8 @@ export const HomeHeader = memo(function HomeHeader({
           >
             <div
               style={{
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 600,
-                letterSpacing: '0.06em',
                 color: 'rgba(255,255,255,0.30)',
                 marginBottom: 2,
               }}
@@ -169,7 +167,7 @@ export const HomeHeader = memo(function HomeHeader({
             </div>
             <GoldText
               variant="liquid"
-              size="lg"
+              size="xl"
               weight={700}
               style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
