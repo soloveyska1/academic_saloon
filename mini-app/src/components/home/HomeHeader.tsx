@@ -1,10 +1,9 @@
-import { useState, memo, useMemo, useEffect, useRef } from 'react'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { ArrowUpRight, Crown, Sparkles } from 'lucide-react'
+import { useState, memo, useMemo, useEffect, useRef, useCallback } from 'react'
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
+import { ArrowUpRight, Crown, Sparkles, Eye, EyeOff } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { GoldText } from '../ui/GoldText'
-// formatMoney from utils includes ₽; we use formatNum locally for separate ₽ styling
 
 interface HomeHeaderProps {
   user: {
@@ -34,7 +33,7 @@ const stagger = {
   },
 }
 
-/* ─── Format number without ₽ for separate styling ─── */
+/* ─── Format number without ₽ ─── */
 function formatNum(v: number): string {
   return Math.max(0, Math.round(v)).toLocaleString('ru-RU')
 }
@@ -79,11 +78,11 @@ function useGreeting(isNewUser: boolean, rankName?: string) {
 function BalanceSparkles() {
   const dots = useMemo(
     () =>
-      Array.from({ length: 5 }, (_, i) => ({
+      Array.from({ length: 4 }, (_, i) => ({
         id: i,
-        x: Math.random() * 100 - 50,
-        y: Math.random() * 40 - 20,
-        size: 2 + Math.random() * 2,
+        x: Math.random() * 80 - 40,
+        y: Math.random() * 30 - 15,
+        size: 1.5 + Math.random() * 1.5,
         delay: Math.random() * 3,
         duration: 2.5 + Math.random() * 2,
       })),
@@ -96,9 +95,9 @@ function BalanceSparkles() {
         <motion.div
           key={dot.id}
           animate={{
-            opacity: [0, 0.6, 0],
+            opacity: [0, 0.5, 0],
             scale: [0.5, 1, 0.5],
-            y: [dot.y, dot.y - 8, dot.y],
+            y: [dot.y, dot.y - 6, dot.y],
           }}
           transition={{
             duration: dot.duration,
@@ -113,10 +112,10 @@ function BalanceSparkles() {
             width: dot.size,
             height: dot.size,
             borderRadius: '50%',
-            background: 'rgba(252,246,186,0.7)',
+            background: 'rgba(252,246,186,0.6)',
             transform: `translate(${dot.x}px, ${dot.y}px)`,
             pointerEvents: 'none',
-            boxShadow: '0 0 4px rgba(252,246,186,0.4)',
+            boxShadow: '0 0 3px rgba(252,246,186,0.3)',
           }}
         />
       ))}
@@ -148,12 +147,39 @@ function AnimatedCardBorder() {
   )
 }
 
-/* ─── Shimmer sweep for buttons ─── */
+/* ─── Shimmer: one-shot on mount, then rare repeats ─── */
 function ShimmerOverlay() {
+  const [shouldAnimate, setShouldAnimate] = useState(true)
+
+  useEffect(() => {
+    // After initial animation, schedule rare repeats
+    const scheduleNext = () => {
+      const delay = 8000 + Math.random() * 6000 // 8–14s
+      return setTimeout(() => {
+        setShouldAnimate(true)
+        setTimeout(() => setShouldAnimate(false), 1800)
+        timerId = scheduleNext()
+      }, delay)
+    }
+    // Initial one-shot
+    const initTimer = setTimeout(() => {
+      setShouldAnimate(false)
+      timerId = scheduleNext()
+    }, 1800)
+    let timerId: ReturnType<typeof setTimeout>
+    return () => {
+      clearTimeout(initTimer)
+      clearTimeout(timerId)
+    }
+  }, [])
+
+  if (!shouldAnimate) return null
+
   return (
     <motion.div
-      animate={{ x: ['-120%', '220%'] }}
-      transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity, repeatDelay: 5 }}
+      initial={{ x: '-120%' }}
+      animate={{ x: '220%' }}
+      transition={{ duration: 1.8, ease: 'easeInOut' }}
       style={{
         position: 'absolute',
         top: 0,
@@ -169,7 +195,7 @@ function ShimmerOverlay() {
   )
 }
 
-/* ─── Decorative divider dots ─── */
+/* ─── Decorative divider ─── */
 function DiamondDivider() {
   return (
     <motion.div
@@ -186,15 +212,15 @@ function DiamondDivider() {
     >
       <div
         style={{
-          width: 32,
+          width: 28,
           height: 1,
           background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15))',
         }}
       />
       <div
         style={{
-          width: 4,
-          height: 4,
+          width: 3.5,
+          height: 3.5,
           borderRadius: 1,
           transform: 'rotate(45deg)',
           background: 'rgba(212,175,55,0.25)',
@@ -203,13 +229,21 @@ function DiamondDivider() {
       />
       <div
         style={{
-          width: 32,
+          width: 28,
           height: 1,
           background: 'linear-gradient(90deg, rgba(212,175,55,0.15), transparent)',
         }}
       />
     </motion.div>
   )
+}
+
+/* ─── Smart bonus subtitle ─── */
+function bonusSubtitle(balance: number, bonusBalance: number): string {
+  if (bonusBalance <= 0) return 'Личный счёт'
+  if (bonusBalance >= balance) return 'Весь баланс — бонусные'
+  const pct = Math.round((bonusBalance / balance) * 100)
+  return `${formatNum(bonusBalance)} ₽ бонусов (${pct}%)`
 }
 
 export const HomeHeader = memo(function HomeHeader({
@@ -221,6 +255,7 @@ export const HomeHeader = memo(function HomeHeader({
   isNewUser,
 }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+  const [balanceHidden, setBalanceHidden] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
@@ -231,13 +266,16 @@ export const HomeHeader = memo(function HomeHeader({
   const cashback = summary?.cashback ?? 0
   const showFinance = !isNewUser && summary
 
-  // Spinning gold ring for avatar
+  const toggleBalance = useCallback(() => setBalanceHidden((h) => !h), [])
+
+  // One-shot gold ring rotation on mount, then static glow
   const ringRotation = useMotionValue(0)
+  const [ringDone, setRingDone] = useState(false)
   useEffect(() => {
     const controls = animate(ringRotation, 360, {
-      duration: 8,
-      ease: 'linear',
-      repeat: Infinity,
+      duration: 1.6,
+      ease: [0.16, 1, 0.3, 1],
+      onComplete: () => setRingDone(true),
     })
     return controls.stop
   }, [ringRotation])
@@ -248,7 +286,7 @@ export const HomeHeader = memo(function HomeHeader({
       `conic-gradient(from ${v}deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)`,
   )
 
-  const AVATAR_SIZE = 80
+  const AVATAR_SIZE = 64
 
   return (
     <header className={s.header} style={{ marginBottom: showFinance ? 8 : 12 }}>
@@ -258,7 +296,7 @@ export const HomeHeader = memo(function HomeHeader({
         variants={stagger.container}
         style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       >
-        {/* ═══ Avatar — centered, interactive ═══ */}
+        {/* ═══ Avatar — 64px, one-shot ring ═══ */}
         <motion.div
           variants={stagger.item}
           whileTap={{ scale: 0.92 }}
@@ -268,49 +306,38 @@ export const HomeHeader = memo(function HomeHeader({
             width: AVATAR_SIZE,
             height: AVATAR_SIZE,
             cursor: 'pointer',
-            marginBottom: 16,
+            marginBottom: 14,
           }}
         >
-          {/* Deep layered ambient glow */}
+          {/* Ambient glow — single layer, subtle */}
           <motion.div
-            animate={{ opacity: [0.25, 0.55, 0.25], scale: [1, 1.1, 1] }}
+            animate={{ opacity: [0.2, 0.4, 0.2] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              inset: -28,
+              inset: -20,
               borderRadius: '50%',
               background:
-                'radial-gradient(circle, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.05) 45%, transparent 70%)',
+                'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 50%, transparent 70%)',
               pointerEvents: 'none',
             }}
           />
-          {/* Second glow layer — wider, softer */}
-          <motion.div
-            animate={{ opacity: [0.1, 0.2, 0.1] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            style={{
-              position: 'absolute',
-              inset: -44,
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle, rgba(252,246,186,0.06) 0%, transparent 60%)',
-              pointerEvents: 'none',
-            }}
-          />
-          {/* Spinning ring */}
+          {/* Gold ring — spins once, then static */}
           <motion.div
             style={{
               position: 'absolute',
-              inset: -3,
+              inset: -2.5,
               borderRadius: '50%',
-              background: ringGradient,
-              mask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
+              background: ringDone
+                ? 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)'
+                : ringGradient,
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
               WebkitMask:
-                'radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px))',
-              filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.30))',
+                'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+              filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.25))',
             }}
           />
-          {/* Avatar image / fallback */}
+          {/* Avatar circle */}
           <div
             style={{
               width: AVATAR_SIZE,
@@ -323,10 +350,10 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow:
-                'inset 0 2px 8px rgba(0,0,0,0.6), 0 6px 24px rgba(0,0,0,0.5)',
+                'inset 0 2px 6px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.4)',
             }}
           >
-            <GoldText variant="static" size="xl" weight={700}>
+            <GoldText variant="static" size="lg" weight={700}>
               {firstName.charAt(0).toUpperCase()}
             </GoldText>
             {shouldShowAvatar && (
@@ -375,7 +402,7 @@ export const HomeHeader = memo(function HomeHeader({
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               letterSpacing: '-0.01em',
               display: 'block',
-              fontSize: 28,
+              fontSize: 26,
               filter: 'drop-shadow(0 2px 6px rgba(212,175,55,0.18))',
             }}
           >
@@ -383,7 +410,7 @@ export const HomeHeader = memo(function HomeHeader({
           </GoldText>
         </motion.div>
 
-        {/* ═══ Decorative diamond divider ═══ */}
+        {/* ═══ Diamond divider ═══ */}
         {showFinance && (
           <motion.div variants={stagger.item} style={{ marginBottom: 16, marginTop: 4 }}>
             <DiamondDivider />
@@ -402,10 +429,8 @@ export const HomeHeader = memo(function HomeHeader({
               padding: 1,
             }}
           >
-            {/* Animated gradient border */}
             <AnimatedCardBorder />
 
-            {/* Inner card body */}
             <div
               style={{
                 borderRadius: 19,
@@ -413,12 +438,12 @@ export const HomeHeader = memo(function HomeHeader({
                   'linear-gradient(165deg, rgba(24,22,19,0.98) 0%, rgba(14,13,12,0.99) 40%, rgba(20,18,15,0.98) 100%)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '24px 20px 18px',
+                padding: '22px 20px 16px',
                 position: 'relative',
                 overflow: 'hidden',
               }}
             >
-              {/* Top glow accent line */}
+              {/* Top glow accent */}
               <motion.div
                 animate={{ opacity: [0.15, 0.30, 0.15] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -427,79 +452,149 @@ export const HomeHeader = memo(function HomeHeader({
                   top: 0,
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  width: '75%',
+                  width: '70%',
                   height: 1,
                   background:
-                    'linear-gradient(90deg, transparent, rgba(252,246,186,0.30), transparent)',
+                    'linear-gradient(90deg, transparent, rgba(252,246,186,0.25), transparent)',
                 }}
               />
 
-              {/* Ambient radials in corners */}
+              {/* Corner radials */}
               <div
                 style={{
                   position: 'absolute',
-                  top: -40,
-                  left: -40,
-                  width: 140,
-                  height: 140,
+                  top: -30,
+                  left: -30,
+                  width: 100,
+                  height: 100,
                   borderRadius: '50%',
                   background:
-                    'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: -30,
-                  right: -30,
-                  width: 120,
-                  height: 120,
-                  borderRadius: '50%',
-                  background:
-                    'radial-gradient(circle, rgba(252,246,186,0.03) 0%, transparent 70%)',
+                    'radial-gradient(circle, rgba(212,175,55,0.04) 0%, transparent 70%)',
                   pointerEvents: 'none',
                 }}
               />
 
-              {/* Balance — hero */}
-              <div style={{ textAlign: 'center', marginBottom: 18, position: 'relative' }}>
-                <div style={{ position: 'relative', display: 'inline-block' }}>
+              {/* ── Balance area with hide/show ── */}
+              <div style={{ textAlign: 'center', marginBottom: 16, position: 'relative' }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                  onClick={toggleBalance}
+                >
                   {/* Breathing glow */}
                   <motion.div
-                    animate={{ opacity: [0.1, 0.35, 0.1] }}
+                    animate={{ opacity: [0.08, 0.3, 0.08] }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
                       position: 'absolute',
                       top: '50%',
                       left: '50%',
-                      width: 180,
-                      height: 56,
+                      width: 160,
+                      height: 50,
                       transform: 'translate(-50%, -50%)',
                       borderRadius: '50%',
                       background:
-                        'radial-gradient(ellipse, rgba(212,175,55,0.12) 0%, rgba(252,246,186,0.04) 35%, transparent 70%)',
+                        'radial-gradient(ellipse, rgba(212,175,55,0.10) 0%, transparent 70%)',
                       pointerEvents: 'none',
                     }}
                   />
-                  {/* Floating sparkle particles */}
                   <BalanceSparkles />
+
+                  {/* Balance number or dots */}
                   <div style={{ position: 'relative', zIndex: 1 }}>
-                    <GoldText
-                      variant="liquid"
-                      size="3xl"
-                      weight={700}
-                      style={{
-                        filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.12))',
-                        fontSize: 38,
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      <AnimatedNumber value={balance} />
-                      <span style={{ fontSize: 24, marginLeft: 3, opacity: 0.6 }}>₽</span>
-                    </GoldText>
+                    <AnimatePresence mode="wait">
+                      {balanceHidden ? (
+                        <motion.div
+                          key="hidden"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <GoldText
+                            variant="static"
+                            size="3xl"
+                            weight={700}
+                            style={{
+                              fontSize: 38,
+                              lineHeight: 1.1,
+                              letterSpacing: '4px',
+                              filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.12))',
+                            }}
+                          >
+                            {'•••••'}
+                          </GoldText>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="visible"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <GoldText
+                            variant="liquid"
+                            size="3xl"
+                            weight={700}
+                            style={{
+                              filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.12))',
+                              fontSize: 38,
+                              lineHeight: 1.1,
+                              letterSpacing: '-0.5px',
+                            }}
+                          >
+                            <AnimatedNumber value={balance} />
+                            <span
+                              style={{
+                                fontSize: 20,
+                                marginLeft: 2,
+                                opacity: 0.5,
+                                verticalAlign: 'super',
+                                lineHeight: 1,
+                              }}
+                            >
+                              ₽
+                            </span>
+                          </GoldText>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
+
+                  {/* Eye toggle icon */}
+                  <motion.div
+                    whileTap={{ scale: 0.85 }}
+                    style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: 4,
+                    }}
+                  >
+                    {balanceHidden ? (
+                      <EyeOff
+                        size={14}
+                        strokeWidth={1.5}
+                        style={{ color: 'rgba(255,255,255,0.25)' }}
+                      />
+                    ) : (
+                      <Eye
+                        size={14}
+                        strokeWidth={1.5}
+                        style={{ color: 'rgba(255,255,255,0.25)' }}
+                      />
+                    )}
+                  </motion.div>
                 </div>
+
+                {/* Subtitle — smart bonus text */}
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -512,127 +607,59 @@ export const HomeHeader = memo(function HomeHeader({
                     letterSpacing: '0.02em',
                   }}
                 >
-                  {bonusBalance > 0
-                    ? `из них ${formatNum(bonusBalance)} ₽ бонусов`
-                    : 'Личный счёт'}
+                  {balanceHidden ? 'Нажмите чтобы показать' : bonusSubtitle(balance, bonusBalance)}
                 </motion.div>
               </div>
 
-              {/* Separator — animated gold gradient */}
-              <div style={{ position: 'relative', height: 1, marginBottom: 16 }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 1,
-                  }}
-                />
-                <motion.div
-                  animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                  transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background:
-                      'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.25) 50%, transparent 100%)',
-                    backgroundSize: '200% 100%',
-                    borderRadius: 1,
-                  }}
-                />
-                {/* Glow under separator */}
-                <motion.div
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity }}
-                  style={{
-                    position: 'absolute',
-                    top: -2,
-                    left: '25%',
-                    width: '50%',
-                    height: 5,
-                    background:
-                      'radial-gradient(ellipse, rgba(212,175,55,0.08) 0%, transparent 80%)',
-                    pointerEvents: 'none',
-                  }}
-                />
-              </div>
-
-              {/* Bottom row: Rank + Cashback | Status */}
+              {/* ── Bottom section — no separator line ── */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 10,
-                  flexWrap: 'wrap',
                 }}
               >
-                {/* Left: rank + cashback */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    minWidth: 0,
-                    flex: '1 1 auto',
-                  }}
-                >
+                {/* Left: rank badge + cashback stacked */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                   {user.rank.name && (
-                    <>
-                      <motion.div
-                        animate={{ rotate: [0, -6, 6, 0] }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          repeatDelay: 4,
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Crown
+                        size={11}
+                        strokeWidth={2}
+                        style={{
+                          color: 'rgba(212,175,55,0.50)',
+                          filter: 'drop-shadow(0 0 3px rgba(212,175,55,0.2))',
+                          flexShrink: 0,
                         }}
-                        style={{ display: 'flex', flexShrink: 0 }}
-                      >
-                        <Crown
-                          size={13}
-                          strokeWidth={2}
-                          style={{
-                            color: 'rgba(212,175,55,0.60)',
-                            filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.25))',
-                          }}
-                        />
-                      </motion.div>
+                      />
                       <span
                         style={{
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: 600,
-                          color: 'rgba(245,240,225,0.50)',
+                          color: 'rgba(245,240,225,0.40)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          letterSpacing: '0.01em',
                         }}
                       >
                         {user.rank.name}
                       </span>
-                      <span
-                        style={{
-                          width: 3,
-                          height: 3,
-                          borderRadius: '50%',
-                          background: 'rgba(212,175,55,0.20)',
-                          flexShrink: 0,
-                        }}
-                      />
-                    </>
+                    </div>
                   )}
                   <GoldText
                     variant="static"
                     size="sm"
                     weight={700}
-                    style={{ whiteSpace: 'nowrap', fontSize: 12 }}
+                    style={{ whiteSpace: 'nowrap', fontSize: 13 }}
                   >
                     {cashback}% кешбэк
                   </GoldText>
                 </div>
 
-                {/* Right: status button with shimmer */}
+                {/* Right: bonus button */}
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.92 }}
@@ -652,7 +679,7 @@ export const HomeHeader = memo(function HomeHeader({
                     flexShrink: 0,
                     overflow: 'hidden',
                     boxShadow:
-                      '0 2px 10px rgba(0,0,0,0.20), 0 0 20px rgba(212,175,55,0.04), inset 0 1px 0 rgba(252,246,186,0.06)',
+                      '0 2px 10px rgba(0,0,0,0.20), inset 0 1px 0 rgba(252,246,186,0.06)',
                   }}
                 >
                   <ShimmerOverlay />
@@ -679,8 +706,8 @@ export const HomeHeader = memo(function HomeHeader({
                     Бонусы
                   </span>
                   <motion.span
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={{ x: [0, 2, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
                       display: 'flex',
                       color: 'var(--gold-400)',
