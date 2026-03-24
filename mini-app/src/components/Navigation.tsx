@@ -17,7 +17,6 @@ export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { impactOccurred: haptic } = useHapticFeedback()
-  // Context & Scroll State
   const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
   const [isVisible, setIsVisible] = useState(true)
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
@@ -28,11 +27,9 @@ export const Navigation = () => {
       : 0
   )
 
-  // Pages where nav is completely removed
   const isHiddenPage = shouldHideBottomNavigation(location.pathname)
   const shouldHideNav = isHiddenPage || isHidden || isForcedHidden || isModalOpen || isKeyboardOpen
 
-  // Find the actual scrollable container (HomePage uses overflowY: auto on <main>)
   const getScrollContainer = useCallback((): HTMLElement | null => {
     return document.querySelector('main[role="main"]') as HTMLElement | null
   }, [])
@@ -64,7 +61,6 @@ export const Navigation = () => {
     }
   }, [])
 
-  // Smart Hide Logic — listens to both window scroll and main container scroll
   useEffect(() => {
     const container = getScrollContainer()
 
@@ -74,7 +70,6 @@ export const Navigation = () => {
         return
       }
 
-      // Read from whichever is actually scrolling
       const latest = container ? container.scrollTop : window.scrollY
       const diff = latest - lastScrollY.current
       const isScrollingDown = diff > 10
@@ -96,14 +91,12 @@ export const Navigation = () => {
     return () => target.removeEventListener('scroll', handleScroll)
   }, [shouldHideNav, getScrollContainer])
 
-  // Recalculate visibility on location/context change
   useEffect(() => {
     if (shouldHideNav) {
       setIsVisible(false)
     } else {
       setIsVisible(true)
     }
-    // Reset scroll tracking on route change
     lastScrollY.current = 0
   }, [location.pathname, shouldHideNav])
 
@@ -120,74 +113,39 @@ export const Navigation = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.nav
-          initial={{ y: 150, opacity: 0 }}
+          initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 150, opacity: 0 }}
+          exit={{ y: 100, opacity: 0 }}
           transition={{
             type: 'spring',
-            damping: 20,
-            stiffness: 300,
-            mass: 0.8
+            damping: 22,
+            stiffness: 280,
           }}
           style={{
             position: 'fixed',
-            bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+            bottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
             left: 0,
             right: 0,
             zIndex: 900,
             display: 'flex',
             justifyContent: 'center',
-            padding: '0 12px',
             pointerEvents: 'none',
           }}
         >
           <div style={{
-            position: 'relative',
-            overflow: 'hidden',
-            width: 'min(100%, 382px)',
-            maxWidth: '100%',
-            padding: '10px 12px 12px',
-            borderRadius: 12,
-            background: 'linear-gradient(180deg, rgba(17, 16, 15, 0.95) 0%, rgba(9, 9, 11, 0.98) 100%)',
+            width: 'min(92%, 360px)',
+            height: 52,
+            borderRadius: 9999,
+            background: 'rgba(12, 12, 12, 0.92)',
             backdropFilter: 'blur(16px) saturate(120%)',
             WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            boxShadow: '0 24px 54px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 8px 32px -12px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04)',
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
             pointerEvents: 'auto',
           }}>
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: '0 auto auto 0',
-                width: '100%',
-                height: 1,
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.02) 100%)',
-              }}
-            />
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                top: -64,
-                right: 16,
-                width: 132,
-                height: 132,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(212,175,55,0.11) 0%, rgba(212,175,55,0.03) 42%, transparent 76%)',
-                pointerEvents: 'none',
-              }}
-            />
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 1,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                alignItems: 'stretch',
-                gap: 4,
-              }}
-            >
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
@@ -196,7 +154,6 @@ export const Navigation = () => {
                 <motion.button
                   key={item.id}
                   type="button"
-                  layout
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => {
@@ -205,132 +162,83 @@ export const Navigation = () => {
                       scrollToTop()
                       return
                     }
-
                     navigate(item.path)
                   }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                  whileTap={{ scale: 0.92 }}
                   style={{
-                    position: 'relative',
+                    flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 7,
-                    minWidth: 0,
-                    width: '100%',
-                    height: 72,
-                    padding: '8px 4px 9px',
-                    borderRadius: 12,
-                    border: isActive
-                      ? '1px solid rgba(212,175,55,0.14)'
-                      : '1px solid transparent',
-                    background: isActive
-                      ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(212,175,55,0.05) 100%)'
-                      : 'transparent',
-                    boxShadow: isActive
-                      ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
-                      : 'none',
+                    gap: 2,
+                    height: 52,
+                    background: 'transparent',
+                    border: 'none',
                     cursor: 'pointer',
-                    overflow: 'hidden',
+                    padding: 0,
+                    position: 'relative',
+                    WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="navActiveSurface"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: 12,
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%)',
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  )}
-
-                  <motion.div
-                    layout
-                    transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
-                    style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      width: isActive ? 48 : 38,
-                      height: isActive ? 48 : 38,
-                      borderRadius: isActive ? 18 : 14,
-                      background: isActive
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.28) 0%, rgba(212,175,55,0.12) 100%)'
-                        : 'rgba(255,255,255,0.035)',
-                      border: isActive
-                        ? '1px solid rgba(212,175,55,0.26)'
-                        : '1px solid rgba(255,255,255,0.05)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: isActive
-                        ? '0 16px 24px -18px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.09)'
-                        : 'none',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon
-                      size={isActive ? 22 : 19}
-                      strokeWidth={isActive ? 2.1 : 1.95}
-                      color={isActive ? 'var(--gold-100)' : 'var(--text-secondary)'}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    layout
-                    transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
-                    style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: 0,
-                      gap: 3,
-                    }}
-                  >
-                    <motion.span
-                      animate={{
-                        color: isActive ? 'var(--gold-200)' : 'rgba(255,255,255,0.7)',
-                        opacity: isActive ? 1 : 0.82,
-                      }}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: isActive ? 700 : 600,
-                        letterSpacing: isActive ? '0.01em' : '0.01em',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '100%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {item.label}
-                    </motion.span>
-
+                  {/* Active dot indicator above icon */}
+                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {isActive && (
-                      <motion.span
-                        initial={{ opacity: 0, y: 3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 3 }}
+                      <motion.div
+                        layoutId="navDot"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: 'spring',
+                          stiffness: 380,
+                          damping: 24,
+                        }}
                         style={{
-                          width: 16,
-                          height: 2,
-                          borderRadius: 999,
-                          background: 'linear-gradient(90deg, rgba(212,175,55,0.92), rgba(255,248,214,0.7))',
-                          boxShadow: '0 0 12px rgba(212,175,55,0.28)',
+                          width: 4,
+                          height: 4,
+                          borderRadius: '50%',
+                          background: 'var(--gold-400, #C5A028)',
+                          boxShadow: '0 0 8px rgba(212,175,55,0.4)',
                         }}
                       />
                     )}
+                  </div>
+
+                  {/* Icon */}
+                  <motion.div
+                    animate={{
+                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)',
+                    }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon
+                      size={20}
+                      strokeWidth={isActive ? 2.0 : 1.6}
+                      color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
+                    />
                   </motion.div>
+
+                  {/* Label */}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: isActive ? 700 : 600,
+                      letterSpacing: '0.02em',
+                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.35)',
+                      whiteSpace: 'nowrap',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {item.label}
+                  </span>
                 </motion.button>
               )
             })}
-            </div>
           </div>
         </motion.nav>
       )}

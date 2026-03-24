@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { formatMoney } from '../../lib/utils'
@@ -13,17 +13,25 @@ interface FinanceStripProps {
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-const ACCENT_STYLE = {
+const PILL = {
+  flexShrink: 0,
+  padding: '12px 16px',
+  borderRadius: 12,
+} as const
+
+const GOLD_PILL = {
+  ...PILL,
   border: '1px solid rgba(212,175,55,0.14)',
   background: 'rgba(212,175,55,0.06)',
 } as const
 
-const NEUTRAL_STYLE = {
+const NEUTRAL_PILL = {
+  ...PILL,
   border: '1px solid rgba(255,255,255,0.06)',
   background: 'rgba(255,255,255,0.03)',
 } as const
 
-const LABEL_STYLE = {
+const LABEL = {
   fontSize: 10,
   fontWeight: 700,
   letterSpacing: '0.1em',
@@ -33,7 +41,7 @@ const LABEL_STYLE = {
   whiteSpace: 'nowrap' as const,
 }
 
-const NUMBER_BASE_STYLE = {
+const NUMBER = {
   fontFamily: "'Manrope', system-ui, sans-serif",
   fontSize: 18,
   fontWeight: 700,
@@ -42,50 +50,16 @@ const NUMBER_BASE_STYLE = {
   lineHeight: 1.1,
 }
 
-const PILL_BASE = {
-  flexShrink: 0,
-  padding: '12px 16px',
-  borderRadius: 12,
-} as const
-
 export const FinanceStrip = memo(function FinanceStrip({
   balance,
   bonusBalance,
   cashback,
-  activeOrders,
   onOpenLounge,
   haptic,
 }: FinanceStripProps) {
-  const items = useMemo(() => {
-    const result: Array<{ label: string; value: string; accent?: boolean }> = []
-
-    result.push({
-      label: 'Баланс',
-      value: formatMoney(balance),
-      accent: true,
-    })
-
-    result.push({
-      label: 'Кэшбэк',
-      value: `${cashback}%`,
-    })
-
-    if (bonusBalance > 0) {
-      result.push({
-        label: 'Бонусы',
-        value: formatMoney(bonusBalance),
-      })
-    }
-
-    if (activeOrders > 0) {
-      result.push({
-        label: 'В работе',
-        value: String(activeOrders),
-      })
-    }
-
-    return result
-  }, [balance, bonusBalance, cashback, activeOrders])
+  // Combine balance + bonus into one "Счёт" pill
+  const totalBalance = balance + bonusBalance
+  const hasBonus = bonusBalance > 0
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -106,25 +80,34 @@ export const FinanceStrip = memo(function FinanceStrip({
           staggerDelay={0.05}
           style={{ display: 'flex', gap: 8 }}
         >
-          {items.map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...PILL_BASE,
-                ...(item.accent ? ACCENT_STYLE : NEUTRAL_STYLE),
-              }}
-            >
-              <div style={LABEL_STYLE}>{item.label}</div>
+          {/* Combined balance pill — the hero number */}
+          <div style={GOLD_PILL}>
+            <div style={LABEL}>Счёт</div>
+            <div style={{ ...NUMBER, color: 'var(--gold-200)' }}>
+              {formatMoney(totalBalance)}
+            </div>
+            {hasBonus && (
               <div
                 style={{
-                  ...NUMBER_BASE_STYLE,
-                  color: item.accent ? 'var(--gold-200)' : 'var(--text-primary)',
+                  marginTop: 4,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: 'rgba(212,175,55,0.50)',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {item.value}
+                {formatMoney(bonusBalance)} бонусов
               </div>
+            )}
+          </div>
+
+          {/* Cashback pill */}
+          <div style={NEUTRAL_PILL}>
+            <div style={LABEL}>Кэшбэк</div>
+            <div style={{ ...NUMBER, color: 'var(--text-primary)' }}>
+              {cashback}%
             </div>
-          ))}
+          </div>
 
           {/* Club button */}
           <motion.button
@@ -135,8 +118,7 @@ export const FinanceStrip = memo(function FinanceStrip({
               onOpenLounge()
             }}
             style={{
-              ...PILL_BASE,
-              ...ACCENT_STYLE,
+              ...GOLD_PILL,
               display: 'flex',
               alignItems: 'center',
               gap: 6,

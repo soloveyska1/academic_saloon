@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Copy, ArrowRight, Clock } from 'lucide-react'
 import { Order } from '../../types'
+import { Reveal } from '../ui/StaggerReveal'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  QUICK REORDER CARD — One-click reorder based on previous order
@@ -60,10 +61,11 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 16,
-          padding: 0,
+          padding: 16,
           marginBottom: 0,
-          background: 'none',
-          border: 'none',
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: 12,
           cursor: 'pointer',
           textAlign: 'left',
         }}
@@ -71,15 +73,36 @@ export const QuickReorderCard = memo(function QuickReorderCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              color: 'rgba(255,255,255,0.56)',
-              textTransform: 'uppercase',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               marginBottom: 8,
             }}
           >
-            Повтор заказа
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'rgba(212,175,55,0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Copy size={13} color="var(--gold-300)" strokeWidth={1.8} />
+            </div>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                color: 'rgba(255,255,255,0.56)',
+                textTransform: 'uppercase',
+              }}
+            >
+              Повтор заказа
+            </span>
           </div>
 
           <div
@@ -112,7 +135,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
                 border: '1px solid rgba(255,255,255,0.06)',
                 fontSize: 10,
                 fontWeight: 700,
-                color: 'var(--text-secondary)',
+                color: 'rgba(212,175,55,0.55)',
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
               }}
@@ -165,6 +188,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
   }
 
   return (
+    <Reveal animation="spring">
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -177,15 +201,15 @@ export const QuickReorderCard = memo(function QuickReorderCard({
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: embedded ? 22 : 28,
-        padding: embedded ? 0 : 22,
+        borderRadius: 12,
+        padding: 22,
         marginBottom: 0,
-        background: embedded ? 'transparent' : 'linear-gradient(160deg, rgba(25, 21, 13, 0.96) 0%, rgba(13, 13, 14, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
-        border: embedded ? 'none' : '1px solid rgba(212,175,55,0.10)',
-        backdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
-        WebkitBackdropFilter: embedded ? 'none' : 'blur(16px) saturate(120%)',
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        backdropFilter: 'blur(16px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(120%)',
         cursor: 'pointer',
-        boxShadow: embedded ? 'none' : '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
+        boxShadow: '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
       {!embedded && (
@@ -220,7 +244,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
                 width: 36,
                 height: 36,
                 borderRadius: 12,
-                background: 'rgba(212,175,55,0.10)',
+                background: 'rgba(212,175,55,0.06)',
                 border: '1px solid rgba(212,175,55,0.16)',
                 display: 'flex',
                 alignItems: 'center',
@@ -274,7 +298,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: embedded ? 'rgba(255,255,255,0.36)' : 'rgba(212,175,55,0.68)',
+              color: embedded ? 'rgba(255,255,255,0.36)' : 'rgba(212,175,55,0.55)',
               marginBottom: 8,
             }}
           >
@@ -344,5 +368,6 @@ export const QuickReorderCard = memo(function QuickReorderCard({
         </div>
       </div>
     </motion.div>
+    </Reveal>
   )
 })
