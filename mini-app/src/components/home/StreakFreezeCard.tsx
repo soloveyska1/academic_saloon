@@ -43,10 +43,11 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
       } else {
         haptic('error')
         setError(result.message)
+        setTimeout(() => setError(null), 3000)
       }
     } catch {
-      haptic('error')
-      setError('Ошибка, попробуйте позже')
+      // Silently fail on network errors — feature is not critical
+      haptic('light')
     } finally {
       setPurchasing(false)
     }
