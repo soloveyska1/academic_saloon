@@ -42,7 +42,6 @@ import {
   SpinWheel,
   StreakFreezeCard,
   WorkInProgressFeed,
-  AchievementBadges,
   SeasonalBanner,
   ShareDiscountCard,
   ReferralBattle,
@@ -227,13 +226,6 @@ export function HomePage({ user, onRefresh }: Props) {
     }
     throw new Error(result.message || 'Failed')
   }, [handleBonusClaimed])
-
-  // Streak freeze handler (mock — would call API)
-  const handlePurchaseFreeze = useCallback(async () => {
-    // TODO: connect to real API endpoint
-    haptic('success')
-    return true
-  }, [haptic])
 
   // User state detection
   const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
@@ -432,8 +424,9 @@ export function HomePage({ user, onRefresh }: Props) {
                 <StreakFreezeCard
                   streak={user.daily_bonus_streak || 0}
                   bonusBalance={user.bonus_balance + optimisticBonusAdd}
-                  onPurchaseFreeze={handlePurchaseFreeze}
+                  freezeCount={user.streak_freeze_count || 0}
                   haptic={haptic}
+                  onBalanceChanged={onRefresh}
                 />
               </Section>
             )}
@@ -448,11 +441,6 @@ export function HomePage({ user, onRefresh }: Props) {
                 />
               </Section>
             )}
-
-            {/* ─── Achievement badges ─── */}
-            <Section>
-              <AchievementBadges user={user} haptic={haptic} />
-            </Section>
 
             {/* ─── Price calculator ─── */}
             <Section>

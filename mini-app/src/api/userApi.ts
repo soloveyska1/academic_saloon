@@ -854,3 +854,14 @@ export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
   return apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
 }
 
+export interface StreakFreezeResult {
+  success: boolean
+  message: string
+  freeze_count: number
+  bonus_balance: number
+}
+
+export async function buyStreakFreeze(): Promise<StreakFreezeResult> {
+  return apiFetch<StreakFreezeResult>('/daily-bonus/buy-freeze', { method: 'POST' })
+}
+

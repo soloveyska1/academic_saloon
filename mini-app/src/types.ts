@@ -24,6 +24,7 @@ export interface UserData {
   // Legacy fields kept for API compatibility
   daily_luck_available?: boolean
   daily_bonus_streak?: number
+  streak_freeze_count?: number
   free_spins?: number
   roulette_onboarding_seen?: boolean
 }

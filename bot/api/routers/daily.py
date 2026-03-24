@@ -229,9 +229,17 @@ async def claim_daily_bonus(
             # Perfect streak
             new_streak = current_streak + 1
         elif last_claim_date < yesterday_msk:
-            # Streak broken
-            new_streak = 1
-            logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Missed day.")
+            # Missed day — check for freeze
+            freeze_count = user.streak_freeze_count or 0
+            if freeze_count > 0 and current_streak >= 3:
+                # Use freeze to preserve streak
+                user.streak_freeze_count = freeze_count - 1
+                new_streak = current_streak + 1
+                logger.info(f"[DailyBonus] Freeze used for {tg_user.id}. Streak preserved at {current_streak}.")
+            else:
+                # Streak broken
+                new_streak = 1
+                logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Missed day.")
         else:
             # Future claim?!
             new_streak = current_streak + 1
@@ -306,6 +314,77 @@ async def claim_daily_bonus(
         message=msg,
         next_claim_at=next_midnight.isoformat()
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  STREAK FREEZE — Buy freeze with bonus balance
+# ═══════════════════════════════════════════════════════════════════════════
+
+STREAK_FREEZE_COST = 100  # Cost in bonus rubles
+MAX_FREEZE_COUNT = 3  # Max freezes a user can hold
+
+
+@router.post("/daily-bonus/buy-freeze")
+async def buy_streak_freeze(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Buy a streak freeze for 100₽ bonus balance.
+    Freeze automatically protects streak if user misses a day.
+    Max 3 freezes at a time.
+    """
+    from bot.api.schemas import StreakFreezeResponse
+
+    user = await session.get(User, tg_user.db_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    # Check limits
+    current_freezes = user.streak_freeze_count or 0
+    if current_freezes >= MAX_FREEZE_COUNT:
+        return StreakFreezeResponse(
+            success=False,
+            message=f"Максимум {MAX_FREEZE_COUNT} заморозки",
+            freeze_count=current_freezes,
+            bonus_balance=float(user.balance),
+        )
+
+    # Check balance
+    if float(user.balance) < STREAK_FREEZE_COST:
+        return StreakFreezeResponse(
+            success=False,
+            message=f"Нужно {STREAK_FREEZE_COST}₽ бонусов",
+            freeze_count=current_freezes,
+            bonus_balance=float(user.balance),
+        )
+
+    # Deduct balance and add freeze
+    try:
+        await BonusService.add_bonus(
+            session=session,
+            user_id=tg_user.id,
+            amount=-STREAK_FREEZE_COST,
+            reason=BonusReason.DAILY_LUCK,
+            description=f"Покупка заморозки серии ({current_freezes + 1}/{MAX_FREEZE_COUNT})",
+            bot=None,
+            auto_commit=False,
+        )
+        user.streak_freeze_count = current_freezes + 1
+        await session.commit()
+
+        logger.info(f"[StreakFreeze] User {tg_user.id} bought freeze #{current_freezes + 1}")
+
+        return StreakFreezeResponse(
+            success=True,
+            message="Заморозка куплена!",
+            freeze_count=current_freezes + 1,
+            bonus_balance=float(user.balance),
+        )
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"[StreakFreeze] Error: {e}")
+        raise HTTPException(500, "Ошибка покупки заморозки")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
