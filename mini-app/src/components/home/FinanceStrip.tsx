@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { formatMoney } from '../../lib/utils'
+import { StaggerReveal } from '../ui/StaggerReveal'
 
 interface FinanceStripProps {
   balance: number
@@ -11,6 +12,41 @@ interface FinanceStripProps {
   onOpenLounge: () => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
+
+const ACCENT_STYLE = {
+  border: '1px solid rgba(212,175,55,0.14)',
+  background: 'rgba(212,175,55,0.06)',
+} as const
+
+const NEUTRAL_STYLE = {
+  border: '1px solid rgba(255,255,255,0.06)',
+  background: 'rgba(255,255,255,0.03)',
+} as const
+
+const LABEL_STYLE = {
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase' as const,
+  color: 'rgba(255,255,255,0.34)',
+  marginBottom: 4,
+  whiteSpace: 'nowrap' as const,
+}
+
+const NUMBER_BASE_STYLE = {
+  fontFamily: "'Manrope', system-ui, sans-serif",
+  fontSize: 18,
+  fontWeight: 700,
+  letterSpacing: '-0.03em',
+  whiteSpace: 'nowrap' as const,
+  lineHeight: 1.1,
+}
+
+const PILL_BASE = {
+  flexShrink: 0,
+  padding: '12px 16px',
+  borderRadius: 12,
+} as const
 
 export const FinanceStrip = memo(function FinanceStrip({
   balance,
@@ -52,13 +88,7 @@ export const FinanceStrip = memo(function FinanceStrip({
   }, [balance, bonusBalance, cashback, activeOrders])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1, duration: 0.4 }}
-      style={{ marginBottom: 16 }}
-    >
-      {/* Horizontal scrollable strip */}
+    <div style={{ marginBottom: 16 }}>
       <div
         style={{
           display: 'flex',
@@ -70,75 +100,60 @@ export const FinanceStrip = memo(function FinanceStrip({
           paddingBottom: 2,
         }}
       >
-        {items.map((item) => (
-          <div
-            key={item.label}
+        <StaggerReveal
+          direction="left"
+          animation="slide"
+          staggerDelay={0.05}
+          style={{ display: 'flex', gap: 8 }}
+        >
+          {items.map((item) => (
+            <div
+              key={item.label}
+              style={{
+                ...PILL_BASE,
+                ...(item.accent ? ACCENT_STYLE : NEUTRAL_STYLE),
+              }}
+            >
+              <div style={LABEL_STYLE}>{item.label}</div>
+              <div
+                style={{
+                  ...NUMBER_BASE_STYLE,
+                  color: item.accent ? 'var(--gold-200)' : 'var(--text-primary)',
+                }}
+              >
+                {item.value}
+              </div>
+            </div>
+          ))}
+
+          {/* Club button */}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              haptic('light')
+              onOpenLounge()
+            }}
             style={{
-              flexShrink: 0,
-              padding: '12px 16px',
-              borderRadius: 12,
-              background: item.accent
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(212,175,55,0.03) 100%)'
-                : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
-              minWidth: 0,
+              ...PILL_BASE,
+              ...ACCENT_STYLE,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'var(--gold-300)',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.38)',
-                marginBottom: 4,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {item.label}
-            </div>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: item.accent ? 'var(--gold-200)' : 'var(--text-primary)',
-                whiteSpace: 'nowrap',
-                lineHeight: 1.1,
-              }}
-            >
-              {item.value}
-            </div>
-          </div>
-        ))}
-
-        {/* Club button at the end */}
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.95 }}
-          onClick={() => { haptic('light'); onOpenLounge() }}
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '12px 16px',
-            borderRadius: 12,
-            background: 'rgba(212,175,55,0.06)',
-            border: '1px solid rgba(212,175,55,0.14)',
-            color: 'var(--gold-300)',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-          }}
-        >
-          Клуб
-          <ArrowUpRight size={13} strokeWidth={2.2} />
-        </motion.button>
+            Клуб
+            <ArrowUpRight size={13} strokeWidth={2.2} />
+          </motion.button>
+        </StaggerReveal>
       </div>
-    </motion.div>
+    </div>
   )
 })

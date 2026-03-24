@@ -2,6 +2,7 @@ import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
+import { GoldAvatar } from '../ui/GoldText'
 
 interface HomeHeaderProps {
   user: {
@@ -22,6 +23,8 @@ interface HomeHeaderProps {
   isNewUser?: boolean
 }
 
+const springTransition = { type: 'spring' as const, stiffness: 400, damping: 28 }
+
 export const HomeHeader = memo(function HomeHeader({
   user,
   userPhoto,
@@ -41,14 +44,10 @@ export const HomeHeader = memo(function HomeHeader({
     return 'Доброй ночи'
   }, [])
 
+  const initial = firstName.charAt(0).toUpperCase()
+
   return (
-    <motion.header
-      className={s.header}
-      style={{ marginBottom: 20 }}
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <header className={s.header} style={{ marginBottom: 20 }}>
       <div
         style={{
           display: 'flex',
@@ -59,8 +58,12 @@ export const HomeHeader = memo(function HomeHeader({
       >
         {/* Left: greeting + name */}
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0, ...springTransition }}
             style={{
+              fontFamily: "'Manrope', system-ui, sans-serif",
               fontSize: 13,
               fontWeight: 600,
               color: 'var(--text-secondary)',
@@ -68,8 +71,11 @@ export const HomeHeader = memo(function HomeHeader({
             }}
           >
             {isNewUser ? 'Добро пожаловать' : greeting},
-          </div>
-          <div
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, ...springTransition }}
             style={{
               fontFamily: "var(--font-display, 'Playfair Display', serif)",
               fontSize: 28,
@@ -83,83 +89,43 @@ export const HomeHeader = memo(function HomeHeader({
             }}
           >
             {firstName}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Right: avatar */}
-        <div
+        {/* Right: avatar with gold ring */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, ...springTransition }}
           onClick={onSecretTap}
-          style={{
-            position: 'relative',
-            width: 44,
-            height: 44,
-            flexShrink: 0,
-            cursor: 'pointer',
-          }}
+          style={{ cursor: 'pointer', position: 'relative' }}
         >
-          {/* Gold ring */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: -2,
-              borderRadius: '50%',
-              background: 'conic-gradient(from 45deg, rgba(212,175,55,0.55), rgba(245,225,160,0.35), rgba(212,175,55,0.55))',
-              mask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
-              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px))',
-            }}
-          />
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              background: 'var(--bg-elevated)',
-              overflow: 'hidden',
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span
-              style={{
-                color: 'var(--gold-400)',
-                fontWeight: 700,
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 18,
-                lineHeight: 1,
-                textTransform: 'uppercase',
-              }}
-            >
-              {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
-            </span>
+          <GoldAvatar initials={initial} size={44} />
 
-            {shouldShowAvatar && (
-              <img
-                src={avatarSrc}
-                alt={firstName}
-                loading="eager"
-                decoding="async"
-                referrerPolicy="no-referrer"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  zIndex: 2,
-                  borderRadius: '50%',
-                }}
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  setAvatarError(true)
-                }}
-              />
-            )}
-          </div>
-        </div>
+          {/* Photo overlay on top of GoldAvatar if available */}
+          {shouldShowAvatar && (
+            <img
+              src={avatarSrc}
+              alt={firstName}
+              loading="eager"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: 3,
+                width: 38,
+                height: 38,
+                objectFit: 'cover',
+                borderRadius: '50%',
+                zIndex: 2,
+              }}
+              onError={() => setAvatarError(true)}
+            />
+          )}
+        </motion.div>
       </div>
-    </motion.header>
+    </header>
   )
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
   return prev.userPhoto === next.userPhoto &&

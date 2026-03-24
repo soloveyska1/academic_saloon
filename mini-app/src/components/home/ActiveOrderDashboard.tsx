@@ -12,6 +12,9 @@ import { Order } from '../../types'
 import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
+import { GoldText, GoldBadge, LiquidGoldButton } from '../ui/GoldText'
+import { TiltCard } from '../ui/TiltCard'
+import { Reveal } from '../ui/StaggerReveal'
 
 interface ActiveOrderDashboardProps {
   orders: Order[]
@@ -105,6 +108,8 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
   }
 }
 
+const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision']
+
 export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   orders,
   onNavigate,
@@ -146,7 +151,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   const workType = stripEmoji(activeOrder.work_type_label ?? activeOrder.work_type ?? 'Заказ')
   const headline = getOrderHeadlineSafe(activeOrder)
   const deadlineText = activeOrder.deadline ? formatOrderDeadlineRu(activeOrder.deadline) : 'Срок уточняется'
-  const needsAction = ['waiting_payment', 'waiting_estimation', 'review', 'revision'].includes(visibleStatus)
+  const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
   const narrative = getStatusNarrative(visibleStatus, remaining, paid, activeOrder.progress)
   const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
   const footerHint = otherActiveCount > 0
@@ -154,74 +159,51 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     : null
 
   // Finance display
-  const financeLabel = total <= 0 ? 'Расчёт' : remaining > 0 ? (paid > 0 ? 'К доплате' : 'К оплате') : 'Оплачено'
-  const financeValue = total <= 0 ? 'Уточняется' : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
+  const financeAmount = total <= 0 ? 'Уточняется' : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 16 }}
-    >
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.985 }}
-        onClick={() => {
-          haptic('light')
-          onNavigate(`/order/${activeOrder.id}`)
-        }}
-        style={{
-          position: 'relative',
-          display: 'block',
-          width: '100%',
-          padding: 0,
-          borderRadius: 12,
-          background: needsAction
-            ? 'linear-gradient(155deg, rgba(30, 24, 12, 0.98) 0%, rgba(14, 14, 15, 0.97) 50%, rgba(8, 8, 10, 1) 100%)'
-            : 'linear-gradient(155deg, rgba(20, 18, 14, 0.97) 0%, rgba(12, 12, 13, 0.98) 50%, rgba(8, 8, 10, 1) 100%)',
-          border: `1px solid ${needsAction ? 'rgba(212, 175, 55, 0.14)' : 'rgba(255,255,255,0.06)'}`,
-          boxShadow: '0 24px 48px -32px rgba(0, 0, 0, 0.8)',
-          textAlign: 'left',
-          cursor: 'pointer',
-          appearance: 'none',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Gold top accent line for action-needed */}
-        {needsAction && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 2,
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent)',
-            }}
-          />
-        )}
+    <Reveal animation="spring" delay={0.1} style={{ marginBottom: 16 }}>
+      <TiltCard tiltMaxAngle={5} style={{ borderRadius: 12 }}>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.985 }}
+          onClick={() => {
+            haptic('light')
+            onNavigate(`/order/${activeOrder.id}`)
+          }}
+          style={{
+            position: 'relative',
+            display: 'block',
+            width: '100%',
+            padding: 0,
+            borderRadius: 12,
+            background: needsAction
+              ? 'linear-gradient(155deg, rgba(30,24,12,0.98) 0%, rgba(14,14,15,0.97) 50%, rgba(8,8,10,1) 100%)'
+              : 'linear-gradient(155deg, rgba(20,18,14,0.97) 0%, rgba(12,12,13,0.98) 50%, rgba(8,8,10,1) 100%)',
+            border: `1px solid ${needsAction ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
+            boxShadow: '0 24px 48px -32px rgba(0,0,0,0.8)',
+            textAlign: 'left',
+            cursor: 'pointer',
+            appearance: 'none',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Gold top accent line for action-needed */}
+          {needsAction && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 2,
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent)',
+              }}
+            />
+          )}
 
-        {/* ─── Top section: Order info ─── */}
-        <div style={{ padding: '22px 20px 18px', position: 'relative' }}>
-          {/* Subtle orb */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: -70,
-              right: -30,
-              width: 180,
-              height: 180,
-              borderRadius: '50%',
-              background: needsAction
-                ? 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 60%)'
-                : 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%)',
-              pointerEvents: 'none',
-            }}
-          />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* ─── Zone 1: Identity (top) ─── */}
+          <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             {/* Work type + status row */}
             <div
               style={{
@@ -238,37 +220,42 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   fontWeight: 700,
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  color: needsAction ? 'rgba(212, 175, 55, 0.72)' : 'rgba(255,255,255,0.40)',
+                  color: 'rgba(212,175,55,0.55)',
                 }}
               >
-                {workType} · #{activeOrder.id}
+                {workType} #{activeOrder.id}
               </div>
 
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: statusInfo?.bg ?? 'rgba(212,175,55,0.08)',
-                  border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.14)'}`,
-                  color: statusInfo?.color ?? 'var(--gold-300)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {statusInfo?.label ?? visibleStatus}
-              </span>
+              {needsAction ? (
+                <GoldBadge>{statusInfo?.label ?? visibleStatus}</GoldBadge>
+              ) : (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '5px 10px',
+                    borderRadius: 999,
+                    background: statusInfo?.bg ?? 'rgba(212,175,55,0.08)',
+                    border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.14)'}`,
+                    color: statusInfo?.color ?? 'var(--gold-300)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {statusInfo?.label ?? visibleStatus}
+                </span>
+              )}
             </div>
 
             {/* Headline */}
             <div
               style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 28,
-                lineHeight: 1.0,
-                letterSpacing: '-0.04em',
+                fontSize: 22,
+                fontWeight: 700,
+                lineHeight: 1.15,
+                letterSpacing: '-0.03em',
                 color: 'var(--text-primary)',
                 marginBottom: 8,
               }}
@@ -283,51 +270,36 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 fontWeight: 600,
                 lineHeight: 1.45,
                 color: 'var(--text-secondary)',
-                marginBottom: 0,
               }}
             >
               {narrative}{' '}
-              <span style={{ color: 'rgba(255,255,255,0.40)' }}>·</span>{' '}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Clock3 size={12} strokeWidth={2} style={{ verticalAlign: 'middle' }} />
                 {deadlineText}
               </span>
             </div>
           </div>
-        </div>
 
-        {/* ─── Finance + Progress bar ─── */}
-        <div
-          style={{
-            padding: '16px 20px',
-            borderTop: '1px solid rgba(255,255,255,0.05)',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
-            background: 'rgba(255,255,255,0.015)',
-          }}
-        >
-          {/* Finance row */}
+          {/* ─── Zone 2: Finance (middle) ─── */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 16,
+              padding: '16px 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+              background: 'rgba(255,255,255,0.015)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 32,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  letterSpacing: '-0.05em',
-                  color: remaining > 0 && total > 0 ? 'var(--gold-300)' : 'var(--text-primary)',
-                }}
-              >
-                {financeValue}
-              </span>
+            {/* Finance row */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              <GoldText variant="liquid" size="2xl" weight={700}>
+                {financeAmount}
+              </GoldText>
               <span
                 style={{
                   fontSize: 11,
@@ -337,133 +309,151 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   color: 'rgba(255,255,255,0.34)',
                 }}
               >
-                {financeLabel}
+                К ОПЛАТЕ
               </span>
-            </div>
 
-            {hasPartialPayment && (
-              <span
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'rgba(212,175,55,0.08)',
-                  border: '1px solid rgba(212,175,55,0.14)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: 'var(--gold-300)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Аванс внесён
-              </span>
-            )}
-          </div>
-
-          {/* Stage progress */}
-          <div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
-                gap: 6,
-                marginBottom: 6,
-              }}
-            >
-              {STAGES.map((stage, index) => (
-                <div
-                  key={stage.key}
+              {hasPartialPayment && (
+                <span
                   style={{
-                    height: 4,
+                    marginLeft: 'auto',
+                    padding: '5px 10px',
                     borderRadius: 999,
-                    background: index <= stageIdx
-                      ? 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))'
-                      : 'rgba(255,255,255,0.06)',
-                    boxShadow: index === stageIdx ? '0 0 12px rgba(212,175,55,0.2)' : 'none',
-                    transition: 'background 0.3s ease',
-                  }}
-                />
-              ))}
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
-                gap: 6,
-              }}
-            >
-              {STAGES.map((stage, index) => (
-                <div
-                  key={stage.key}
-                  style={{
+                    background: 'rgba(212,175,55,0.08)',
+                    border: '1px solid rgba(212,175,55,0.14)',
                     fontSize: 10,
-                    fontWeight: index === stageIdx ? 700 : 600,
-                    color: index <= stageIdx ? 'var(--gold-300)' : 'var(--text-muted)',
-                    textAlign: 'center',
+                    fontWeight: 700,
+                    color: 'var(--gold-300)',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {stage.label}
-                </div>
-              ))}
+                  Аванс внесён
+                </span>
+              )}
             </div>
-          </div>
-        </div>
 
-        {/* ─── Bottom action row ─── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            padding: '16px 20px',
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                lineHeight: 1.2,
-                color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
-                marginBottom: footerHint ? 3 : 0,
-              }}
-            >
-              {primaryAction}
-            </div>
-            {footerHint && (
+            {/* Stage progress bar */}
+            <div>
               <div
                 style={{
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  color: 'var(--text-secondary)',
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+                  gap: 6,
+                  marginBottom: 6,
                 }}
               >
-                {footerHint}
+                {STAGES.map((stage, index) => (
+                  <div
+                    key={stage.key}
+                    style={{
+                      height: 4,
+                      borderRadius: 999,
+                      background: index <= stageIdx
+                        ? 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))'
+                        : 'rgba(255,255,255,0.06)',
+                      boxShadow: index === stageIdx ? '0 0 12px rgba(212,175,55,0.2)' : 'none',
+                      transition: 'background 0.3s ease',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+                  gap: 6,
+                }}
+              >
+                {STAGES.map((stage, index) => (
+                  <div
+                    key={stage.key}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: index === stageIdx ? 700 : 600,
+                      color: index <= stageIdx ? 'var(--gold-300)' : 'var(--text-muted)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {stage.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Zone 3: Action (bottom) ─── */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '16px 20px',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
+                  marginBottom: footerHint ? 3 : 0,
+                }}
+              >
+                {primaryAction}
+              </div>
+              {footerHint && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {footerHint}
+                </div>
+              )}
+            </div>
+
+            {needsAction ? (
+              <LiquidGoldButton
+                fullWidth={false}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  haptic('medium')
+                  onNavigate(`/order/${activeOrder.id}`)
+                }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  padding: 0,
+                  borderRadius: 12,
+                  flexShrink: 0,
+                }}
+              >
+                <ArrowRight size={18} strokeWidth={2.2} />
+              </LiquidGoldButton>
+            ) : (
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <ArrowRight size={18} strokeWidth={2.2} />
               </div>
             )}
           </div>
-
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: needsAction
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))'
-                : 'rgba(255,255,255,0.06)',
-              color: needsAction ? 'var(--text-on-gold)' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: needsAction ? '0 12px 24px -16px rgba(212, 175, 55, 0.4)' : 'none',
-            }}
-          >
-            <ArrowRight size={18} strokeWidth={2.2} />
-          </div>
-        </div>
-      </motion.button>
-    </motion.section>
+        </motion.button>
+      </TiltCard>
+    </Reveal>
   )
 })
