@@ -1,15 +1,10 @@
-import { useCallback, useMemo, useState, memo } from 'react'
-import { m, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Crown, TrendingUp, Check, Lock } from 'lucide-react'
+import { useCallback, useMemo, memo } from 'react'
+import { m } from 'framer-motion'
+import { ArrowRight, TrendingUp, Check, Lock } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 import { RANKS, getRankIndexByCashback } from '../../../lib/ranks'
 import { useAdmin } from '../../../contexts/AdminContext'
 import type { UserData } from '../../../types'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  CASHBACK MODAL — «Клуб привилегий»
-//  Compact, premium. Everything visible without scroll on most devices.
-// ═══════════════════════════════════════════════════════════════════════════
 
 export interface CashbackModalProps {
   isOpen: boolean
@@ -22,15 +17,13 @@ function fmt(v: number): string {
   return `${Math.max(0, Math.round(v)).toLocaleString('ru-RU')} ₽`
 }
 
-/* ── Tier row — memoized ── */
+/* ── Compact tier row ── */
 const TierRow = memo(function TierRow({
-  rank, index, currentRankIndex, isSelected, onSelect,
+  rank, index, currentRankIndex,
 }: {
   rank: typeof RANKS[0]
   index: number
   currentRankIndex: number
-  isSelected: boolean
-  onSelect: (i: number) => void
 }) {
   const isPassed = index < currentRankIndex
   const isCurrent = index === currentRankIndex
@@ -38,91 +31,68 @@ const TierRow = memo(function TierRow({
   const Icon = rank.icon
 
   return (
-    <m.button
-      type="button"
-      whileTap={{ scale: 0.985 }}
-      onClick={() => onSelect(index)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.2 + index * 0.04 }}
+    <div
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: '10px 12px',
-        borderRadius: 10,
-        border: 'none',
-        background: isCurrent
-          ? 'var(--gold-glass-subtle)'
-          : isSelected ? 'rgba(255,255,255,0.025)' : 'transparent',
-        outline: isCurrent
-          ? '1px solid rgba(212,175,55,0.14)'
-          : isSelected ? '1px solid var(--border-default)' : 'none',
-        cursor: 'pointer',
-        textAlign: 'left',
-        width: '100%',
+        padding: isCurrent ? '8px 10px' : '6px 10px',
+        borderRadius: 8,
+        background: isCurrent ? 'var(--gold-glass-subtle)' : 'transparent',
+        opacity: isLocked ? 0.45 : 1,
       }}
     >
-      {/* Small icon — gold monochrome for all states */}
+      {/* Icon */}
       <div style={{
-        width: 28,
-        height: 28,
-        borderRadius: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 7,
         background: isPassed || isCurrent ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${isPassed || isCurrent ? 'rgba(212,175,55,0.15)' : 'var(--border-subtle)'}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
       }}>
         {isPassed ? (
-          <Check size={12} strokeWidth={2.5} color="var(--gold-400)" style={{ opacity: 0.6 }} />
+          <Check size={11} strokeWidth={2.5} color="var(--gold-400)" style={{ opacity: 0.6 }} />
+        ) : isLocked ? (
+          <Lock size={10} strokeWidth={2} color="var(--text-muted)" />
         ) : (
-          <Icon size={12} strokeWidth={1.8} color={isPassed || isCurrent ? 'var(--gold-400)' : 'var(--text-muted)'} style={{ opacity: isLocked ? 0.4 : 1 }} />
+          <Icon size={11} strokeWidth={1.8} color="var(--gold-400)" />
         )}
       </div>
 
-      {/* Name + threshold */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: isCurrent ? 'var(--text-primary)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
-        }}>
-          {rank.displayName}
-        </span>
-        {rank.minSpent > 0 && (
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            marginLeft: 6,
-            opacity: 0.7,
-          }}>
-            от {fmt(rank.minSpent)}
+      {/* Name */}
+      <span style={{
+        flex: 1,
+        fontSize: 12,
+        fontWeight: isCurrent ? 700 : 600,
+        color: isCurrent ? 'var(--text-primary)' : isPassed ? 'var(--text-secondary)' : 'var(--text-muted)',
+      }}>
+        {rank.displayName}
+        {/* Show threshold only for locked ranks */}
+        {isLocked && rank.minSpent > 0 && (
+          <span style={{ color: 'var(--text-muted)', marginLeft: 4, fontWeight: 600, fontSize: 11 }}>
+            · от {fmt(rank.minSpent)}
           </span>
         )}
-      </div>
+      </span>
 
-      {/* Cashback % */}
+      {/* % */}
       <span style={{
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 700,
-        color: isCurrent ? 'var(--gold-400)' : isLocked ? 'var(--text-muted)' : 'var(--text-secondary)',
+        color: isCurrent ? 'var(--gold-400)' : 'var(--text-muted)',
         flexShrink: 0,
-        opacity: isLocked ? 0.5 : 1,
       }}>
         {rank.cashback}%
       </span>
-
-      {isLocked && <Lock size={10} strokeWidth={2} color="var(--text-muted)" style={{ opacity: 0.3, flexShrink: 0 }} />}
-    </m.button>
+    </div>
   )
 })
 
 export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: CashbackModalProps) {
   const admin = useAdmin()
-  const [selectedRankIndex, setSelectedRankIndex] = useState<number | null>(null)
 
   const effectiveCashback = useMemo(
     () => admin.simulatedRank !== null ? admin.simulatedRank : user.rank.cashback,
@@ -151,103 +121,74 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
   }, [admin.simulatedRank, currentRank.minSpent, nextRank, user.rank.spent_to_next])
 
   const handleCTA = useCallback(() => { onClose(); onCreateOrder?.() }, [onClose, onCreateOrder])
-  const handleRankSelect = useCallback((i: number) => setSelectedRankIndex(prev => prev === i ? null : i), [])
-
-  const viewedRank = selectedRankIndex !== null ? RANKS[selectedRankIndex] : null
-  const isViewingLocked = selectedRankIndex !== null && selectedRankIndex > currentRankIndex
 
   return (
     <ModalWrapper
       isOpen={isOpen}
       onClose={onClose}
       modalId="cashback-modal"
-      title="Клуб привилегий"
+      title="Кэшбэк"
       accentColor="var(--gold-400)"
     >
-      <div style={{ padding: '0 20px 24px', overflowX: 'hidden' }}>
+      <div style={{ padding: '0 20px 24px' }}>
 
-        {/* ═══════ HERO — % + status + savings in one block ═══════ */}
+        {/* ═══════ HERO CARD ═══════ */}
         <m.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           style={{
             position: 'relative',
-            padding: '20px',
+            padding: '18px',
             borderRadius: 14,
             background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
             border: '1px solid rgba(212,175,55,0.12)',
-            marginBottom: 16,
+            marginBottom: 14,
             overflow: 'hidden',
           }}
         >
           {/* Ambient glow */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: -40, right: -20,
-              width: 140, height: 140,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(212,175,55,0.10) 0%, transparent 60%)',
-              pointerEvents: 'none',
-            }}
-          />
-          {/* Top shine */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: 0, left: '15%', right: '15%',
-              height: 1,
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
-            }}
-          />
+          <div aria-hidden="true" style={{
+            position: 'absolute', top: -40, right: -20,
+            width: 140, height: 140, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.10) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }} />
+          <div aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
+          }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Row: rank badge + cashback % */}
+            {/* Top row: icon + name ... big % */}
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 12,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {(() => { const Icon = currentRank.icon; return (
                   <div style={{
-                    width: 32, height: 32, borderRadius: 10,
+                    width: 30, height: 30, borderRadius: 9,
                     background: 'var(--gold-glass-medium)',
                     border: '1px solid rgba(212,175,55,0.18)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Icon size={15} strokeWidth={1.8} color="var(--gold-400)" />
+                    <Icon size={14} strokeWidth={1.8} color="var(--gold-400)" />
                   </div>
                 ) })()}
                 <div>
                   <div style={{
-                    fontSize: 10, fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    color: 'rgba(212,175,55,0.45)',
-                    marginBottom: 1,
-                  }}>
-                    Ваш статус
-                  </div>
-                  <div style={{
-                    fontSize: 15, fontWeight: 700,
+                    fontSize: 14, fontWeight: 700,
                     color: 'var(--text-primary)',
-                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
                   }}>
                     {currentRank.displayName}
                   </div>
                 </div>
               </div>
 
-              {/* Big % */}
               <div style={{
                 fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 36,
-                fontWeight: 700,
-                lineHeight: 1,
+                fontSize: 34, fontWeight: 700, lineHeight: 1,
                 letterSpacing: '-0.04em',
                 background: 'var(--gold-metallic)',
                 WebkitBackgroundClip: 'text',
@@ -258,34 +199,22 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               </div>
             </div>
 
-            {/* Savings + description inline */}
+            {/* Bottom: description + savings badge */}
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <div style={{
-                fontSize: 13, fontWeight: 600,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.4,
-              }}>
-                Возвращается с каждого заказа
-              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                возвращается с каждого заказа
+              </span>
               {totalSaved > 0 && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '4px 10px',
-                  borderRadius: 8,
+                  padding: '3px 8px', borderRadius: 6,
                   background: 'rgba(212,175,55,0.06)',
                   border: '1px solid rgba(212,175,55,0.10)',
-                  flexShrink: 0,
                 }}>
-                  <TrendingUp size={11} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.6 }} />
-                  <span style={{
-                    fontSize: 11, fontWeight: 700,
-                    color: 'var(--gold-300)',
-                  }}>
+                  <TrendingUp size={10} strokeWidth={2} color="var(--gold-400)" style={{ opacity: 0.5 }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold-300)' }}>
                     {fmt(totalSaved)}
                   </span>
                 </div>
@@ -294,36 +223,35 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           </div>
         </m.div>
 
-        {/* ═══════ PROGRESS ═══════ */}
+        {/* ═══════ PROGRESS (only for non-max users) ═══════ */}
         {nextRank && (
           <m.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
+            transition={{ delay: 0.1 }}
             style={{
-              padding: '14px 16px',
-              borderRadius: 12,
+              padding: '12px 14px',
+              borderRadius: 10,
               background: 'rgba(255,255,255,0.025)',
               border: '1px solid var(--border-default)',
-              marginBottom: 16,
+              marginBottom: 14,
             }}
           >
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              marginBottom: 10,
+              marginBottom: 8,
             }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
-                До «{nextRank.displayName}» — {nextRank.cashback}%
+                До «{nextRank.displayName}»
               </span>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                {fmt(spentToNext)}
+                осталось {fmt(spentToNext)}
               </span>
             </div>
 
             <div style={{
               height: 4, borderRadius: 2,
-              background: 'rgba(255,255,255,0.06)',
-              overflow: 'hidden',
+              background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
             }}>
               <m.div
                 initial={{ width: 0 }}
@@ -332,7 +260,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 style={{
                   height: '100%', borderRadius: 2,
                   background: 'linear-gradient(90deg, rgba(212,175,55,0.4), var(--gold-400))',
-                  boxShadow: '0 0 8px rgba(212,175,55,0.25)',
+                  boxShadow: '0 0 8px rgba(212,175,55,0.20)',
                   position: 'relative', overflow: 'hidden',
                 }}
               >
@@ -350,113 +278,37 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           </m.div>
         )}
 
-        {isMaxRank && (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.12 }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '12px 14px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.025)',
-              border: '1px solid var(--border-default)',
-              marginBottom: 16,
-            }}
-          >
-            <Crown size={14} strokeWidth={1.8} color="var(--gold-400)" style={{ opacity: 0.7 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Высший уровень — 10% с каждого заказа
-            </span>
-          </m.div>
-        )}
-
-        {/* ═══════ TIER LADDER — compact list ═══════ */}
+        {/* ═══════ TIER LIST — tight, clean ═══════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.18 }}
-          style={{ marginBottom: 16 }}
+          transition={{ delay: 0.15 }}
+          style={{ marginBottom: onCreateOrder && !isMaxRank ? 16 : 0 }}
         >
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            color: 'var(--text-muted)',
-            marginBottom: 8,
-          }}>
-            Уровни
-          </div>
-
-          <div style={{ display: 'grid', gap: 2 }}>
+          <div style={{ display: 'grid', gap: 0 }}>
             {RANKS.map((rank, index) => (
               <TierRow
                 key={rank.id}
                 rank={rank}
                 index={index}
                 currentRankIndex={currentRankIndex}
-                isSelected={selectedRankIndex === index}
-                onSelect={handleRankSelect}
               />
             ))}
           </div>
         </m.div>
 
-        {/* ═══════ LOCKED RANK DETAIL ═══════ */}
-        <AnimatePresence>
-          {viewedRank && isViewingLocked && (
-            <m.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              style={{ overflow: 'hidden', marginBottom: 12 }}
-            >
-              <div style={{
-                padding: '12px 14px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid var(--border-subtle)',
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Возврат {viewedRank.cashback}% с каждого заказа.
-                  {viewedRank.cashback >= 7 && ' Приоритетная поддержка.'}
-                  {viewedRank.cashback >= 10 && ' Персональный менеджер.'}
-                </div>
-              </div>
-            </m.div>
-          )}
-        </AnimatePresence>
-
-        {/* ═══════ INFO ═══════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          style={{
-            display: 'flex', gap: 16,
-            padding: '10px 0',
-            marginBottom: 16,
-          }}
-        >
-          {['Автоматически', 'Навсегда'].map((text, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Check size={10} strokeWidth={3} color="var(--gold-400)" style={{ opacity: 0.5 }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                {text}
-              </span>
-            </div>
-          ))}
-        </m.div>
-
-        {/* ═══════ CTA ═══════ */}
-        {onCreateOrder && (
+        {/* ═══════ CTA — only for users who have room to grow ═══════ */}
+        {onCreateOrder && !isMaxRank && (
           <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={handleCTA}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.25 }}
             style={{
               width: '100%',
-              padding: '14px 20px',
+              padding: '13px 20px',
               borderRadius: 12,
               background: 'var(--gold-metallic)',
               border: 'none',
@@ -468,11 +320,8 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               boxShadow: 'var(--glow-gold)',
             }}
           >
-            <span style={{
-              fontSize: 14, fontWeight: 700,
-              color: 'var(--text-on-gold)',
-            }}>
-              {isMaxRank ? 'Новый заказ' : 'Сделать заказ'}
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-on-gold)' }}>
+              Сделать заказ
             </span>
             <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" />
           </m.button>
