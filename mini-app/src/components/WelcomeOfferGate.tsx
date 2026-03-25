@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowRight, ExternalLink, LockKeyhole, ScrollText, ShieldCheck, Sparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowRight, CheckCircle2, ExternalLink, LockKeyhole, ScrollText, ShieldCheck, Sparkles } from 'lucide-react'
 import { acceptTerms, fetchConfig } from '../api/userApi'
 import { OfferModal } from './modals/OfferModal'
 import type { UserData } from '../types'
@@ -51,9 +51,16 @@ const featureCards = [
   },
 ]
 
+const stageLabels = [
+  { id: 1, title: 'Приветствие', subtitle: 'Короткий входной экран' },
+  { id: 2, title: 'Оферта', subtitle: 'Ознакомление и акцепт' },
+  { id: 3, title: 'Доступ', subtitle: 'Кабинет, чат и заказы' },
+]
+
 export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: WelcomeOfferGateProps) {
   const [showOffer, setShowOffer] = useState(false)
   const [accepting, setAccepting] = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [offerUrl, setOfferUrl] = useState<string>('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
 
@@ -80,10 +87,28 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
     return trimmed ? trimmed.split(/\s+/)[0] : 'друг'
   }, [user.fullname])
 
+  const monogram = useMemo(() => {
+    const trimmed = (user.fullname || '').trim()
+    if (!trimmed) return 'A'
+    return trimmed
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || '')
+      .join('')
+      .slice(0, 2) || 'A'
+  }, [user.fullname])
+
+  const currentStep = useMemo(() => {
+    if (unlocking || accepting) return 3
+    if (showOffer) return 2
+    return 1
+  }, [accepting, showOffer, unlocking])
+
   const openOffer = useCallback(() => {
+    if (unlocking) return
     setError(null)
     setShowOffer(true)
-  }, [])
+  }, [unlocking])
 
   const handleAccept = useCallback(async () => {
     if (accepting) return
@@ -95,12 +120,16 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
       if (!previewMode) {
         await acceptTerms()
       }
+      setShowOffer(false)
+      setUnlocking(true)
+      await new Promise((resolve) => setTimeout(resolve, 850))
       await onAccepted()
       triggerNotificationHaptic('success')
     } catch (err) {
       triggerNotificationHaptic('error')
       setShowOffer(false)
       setAccepting(false)
+      setUnlocking(false)
       setError(err instanceof Error ? err.message : 'Не удалось сохранить принятие оферты. Попробуйте ещё раз.')
     }
   }, [accepting, onAccepted, previewMode])
@@ -187,25 +216,93 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05, duration: 0.45 }}
                 style={{
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: '78px 1fr',
+                  gap: 18,
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 24,
+                  marginBottom: 22,
                 }}
               >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.08, duration: 0.45 }}
+                  style={{
+                    width: 78,
+                    height: 78,
+                    borderRadius: 24,
+                    background: 'linear-gradient(145deg, rgba(252,246,186,0.18), rgba(212,175,55,0.04))',
+                    border: '1px solid rgba(212,175,55,0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 10,
+                      borderRadius: 18,
+                      border: '1px solid rgba(212,175,55,0.12)',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                      fontSize: 28,
+                      lineHeight: 1,
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    {monogram}
+                  </span>
+                </motion.div>
+
                 <div>
                   <div
                     style={{
-                      fontSize: 12,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(212,175,55,0.86)',
-                      fontWeight: 700,
-                      marginBottom: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      marginBottom: 10,
+                      flexWrap: 'wrap',
                     }}
                   >
-                    Личный вход
+                    <div
+                      style={{
+                        fontSize: 12,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(212,175,55,0.86)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      Первый вход
+                    </div>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '10px 14px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(212,175,55,0.12)',
+                        color: 'rgba(212,175,55,0.88)',
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      <LockKeyhole size={14} strokeWidth={1.8} />
+                      Обязательный акцепт
+                    </div>
                   </div>
+
                   <div
                     style={{
                       fontSize: 11,
@@ -218,24 +315,6 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                     Academic Saloon
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 14px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(212,175,55,0.12)',
-                    color: 'rgba(212,175,55,0.88)',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  <LockKeyhole size={14} strokeWidth={1.8} />
-                  Обязательный акцепт
-                </div>
               </motion.div>
 
               <motion.div
@@ -246,7 +325,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
               >
                 <div
                   style={{
-                    fontSize: 18,
+                    fontSize: 17,
                     color: 'rgba(212,175,55,0.88)',
                     marginBottom: 10,
                     fontWeight: 600,
@@ -258,7 +337,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                   style={{
                     margin: 0,
                     fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: 46,
+                    fontSize: 48,
                     lineHeight: 0.95,
                     letterSpacing: '-0.05em',
                     color: 'var(--text-primary)',
@@ -269,7 +348,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 </h1>
                 <div
                   style={{
-                    width: 92,
+                    width: 108,
                     height: 2,
                     borderRadius: 999,
                     background: 'linear-gradient(90deg, rgba(212,175,55,0.95), rgba(212,175,55,0.08))',
@@ -282,12 +361,86 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                     fontSize: 16,
                     lineHeight: 1.65,
                     color: 'rgba(255,255,255,0.70)',
-                    maxWidth: 340,
+                    maxWidth: 360,
                   }}
                 >
-                  Перед первым входом откроем короткое приветствие и публичную оферту.
-                  После акцепта станут доступны заказы, чат, оплата и файлы.
+                  Перед первым входом покажем приветствие и публичную оферту.
+                  После акцепта откроются кабинет, чат, статусы, оплата и файлы заказа.
                 </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.16, duration: 0.42 }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 10,
+                  marginBottom: 22,
+                }}
+              >
+                {stageLabels.map((stage) => {
+                  const isActive = currentStep === stage.id
+                  const isCompleted = currentStep > stage.id
+                  return (
+                    <div
+                      key={stage.id}
+                      style={{
+                        padding: '12px 10px',
+                        borderRadius: 18,
+                        background: isActive
+                          ? 'linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.06))'
+                          : 'rgba(255,255,255,0.03)',
+                        border: isActive
+                          ? '1px solid rgba(212,175,55,0.22)'
+                          : '1px solid rgba(255,255,255,0.05)',
+                        boxShadow: isActive ? '0 12px 26px rgba(212,175,55,0.08)' : 'none',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 999,
+                          marginBottom: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: isCompleted
+                            ? 'linear-gradient(180deg, rgba(252,246,186,0.96), rgba(212,175,55,1))'
+                            : isActive
+                              ? 'rgba(212,175,55,0.16)'
+                              : 'rgba(255,255,255,0.06)',
+                          color: isCompleted ? '#16120c' : isActive ? 'rgba(252,246,186,0.95)' : 'rgba(255,255,255,0.55)',
+                          fontSize: 11,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {isCompleted ? <CheckCircle2 size={14} strokeWidth={2.2} /> : stage.id}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          color: isActive ? 'var(--text-primary)' : 'rgba(255,255,255,0.76)',
+                          marginBottom: 4,
+                        }}
+                      >
+                        {stage.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10.5,
+                          lineHeight: 1.4,
+                          color: 'rgba(255,255,255,0.44)',
+                        }}
+                      >
+                        {stage.subtitle}
+                      </div>
+                    </div>
+                  )
+                })}
               </motion.div>
 
               <div
@@ -311,7 +464,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                         gap: 12,
                         padding: 14,
                         borderRadius: 18,
-                        background: 'rgba(255,255,255,0.03)',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
                         border: '1px solid rgba(255,255,255,0.05)',
                       }}
                     >
@@ -379,6 +532,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 transition={{ delay: 0.32, duration: 0.45 }}
                 whileTap={{ scale: 0.985 }}
                 onClick={openOffer}
+                disabled={unlocking}
                 style={{
                   width: '100%',
                   padding: '18px 20px',
@@ -394,7 +548,8 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                   justifyContent: 'center',
                   gap: 10,
                   boxShadow: '0 18px 50px rgba(212,175,55,0.18)',
-                  cursor: 'pointer',
+                  cursor: unlocking ? 'default' : 'pointer',
+                  opacity: unlocking ? 0.7 : 1,
                   marginBottom: 12,
                 }}
               >
@@ -444,6 +599,102 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 </button>
               </div>
             </div>
+
+            <AnimatePresence>
+              {unlocking && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 4,
+                    background: 'linear-gradient(180deg, rgba(12,12,14,0.72) 0%, rgba(9,9,11,0.92) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 28,
+                  }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    transition={{ duration: 0.35 }}
+                    style={{
+                      width: '100%',
+                      maxWidth: 320,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <motion.div
+                      initial={{ scale: 0.88, opacity: 0.7 }}
+                      animate={{ scale: [0.96, 1.03, 0.98], opacity: 1 }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{
+                        width: 84,
+                        height: 84,
+                        margin: '0 auto 18px',
+                        borderRadius: 24,
+                        background: 'linear-gradient(180deg, rgba(252,246,186,0.18), rgba(212,175,55,0.08))',
+                        border: '1px solid rgba(212,175,55,0.22)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 22px 50px rgba(212,175,55,0.10)',
+                      }}
+                    >
+                      <CheckCircle2 size={34} strokeWidth={1.9} color="rgba(252,246,186,0.95)" />
+                    </motion.div>
+
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                        fontSize: 34,
+                        lineHeight: 0.96,
+                        letterSpacing: '-0.05em',
+                        color: 'var(--text-primary)',
+                        marginBottom: 12,
+                      }}
+                    >
+                      Салон открывается
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: 'rgba(255,255,255,0.62)',
+                        marginBottom: 16,
+                      }}
+                    >
+                      Акцепт зафиксирован. Подготавливаем кабинет, чат и рабочие инструменты.
+                    </div>
+                    <div
+                      style={{
+                        height: 3,
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.08)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <motion.div
+                        initial={{ width: '0%' }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 0.85, ease: 'easeInOut' }}
+                        style={{
+                          height: '100%',
+                          borderRadius: 999,
+                          background: 'linear-gradient(90deg, rgba(212,175,55,0.52), rgba(252,246,186,0.96))',
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </div>
