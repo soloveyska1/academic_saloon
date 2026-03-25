@@ -190,8 +190,8 @@ const SquadPromoCard = memo(function SquadPromoCard() {
         width: '100%',
         padding: '16px 18px',
         borderRadius: 12,
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(20,18,14,0.95)',
+        border: '1px solid rgba(212,175,55,0.08)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -443,8 +443,8 @@ export const LoungeVault = memo(function LoungeVault({
                 style={{
                   padding: 14,
                   borderRadius: 12,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  background: 'rgba(20,18,14,0.95)',
+                  border: '1px solid rgba(212,175,55,0.08)',
                 }}
               >
                 <div
@@ -513,8 +513,8 @@ export const LoungeVault = memo(function LoungeVault({
         style={{
           padding: 18,
           borderRadius: 12,
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(20,18,14,0.95)',
+          border: '1px solid rgba(212,175,55,0.08)',
         }}
       >
         <div
@@ -565,8 +565,8 @@ export const LoungeVault = memo(function LoungeVault({
         style={{
           padding: 20,
           borderRadius: 12,
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(20,18,14,0.95)',
+          border: '1px solid rgba(212,175,55,0.08)',
         }}
       >
         {/* Header */}

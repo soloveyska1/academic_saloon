@@ -6,6 +6,7 @@ import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../../utils/animation'
 import { useReducedMotion } from '../../hooks/useDeviceCapability'
 import { GoldText } from '../ui/GoldText'
+import { getRankByCashback, getNextRank } from '../../lib/ranks'
 
 interface HomeHeaderProps {
   user: {
@@ -13,6 +14,7 @@ interface HomeHeaderProps {
     rank: { is_max: boolean; name?: string; cashback?: number }
     orders_count?: number
     has_active_orders?: boolean
+    total_spent?: number
   }
   summary?: {
     balance: number
@@ -368,6 +370,24 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const variants = reduced ? staggerReduced : stagger
   const AVATAR_SIZE = 48
 
+  // ── Rank progress calculation ──
+  const rankProgress = useMemo(() => {
+    const cashbackVal = user.rank.cashback ?? 0
+    const isMax = user.rank.is_max
+    if (isMax) return { progress: 1, isMax: true, nextRankName: null }
+    const currentRank = getRankByCashback(cashbackVal)
+    const nextRank = getNextRank(cashbackVal)
+    if (!currentRank || !nextRank) return { progress: 0, isMax: false, nextRankName: null }
+    const spent = user.total_spent ?? 0
+    const rangeStart = currentRank.minSpent
+    const rangeEnd = nextRank.minSpent
+    const progress = rangeEnd > rangeStart
+      ? Math.min(1, Math.max(0, (spent - rangeStart) / (rangeEnd - rangeStart)))
+      : 0
+    return { progress, isMax: false, nextRankName: nextRank.displayName }
+  }, [user.rank.cashback, user.rank.is_max, user.total_spent])
+  const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * 24
+
   return (
     <>
     {/* ═══ Sticky mini-balance bar ═══ */}
@@ -457,18 +477,63 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 }}
               />
             )}
-            {/* Gold ring */}
-            <motion.div
-              style={{
-                position: 'absolute',
-                inset: -2.5,
-                borderRadius: '50%',
-                background: ringDone ? staticRing : ringGradient,
-                mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-                WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-                filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.20))',
-              }}
-            />
+            {/* Gold ring — full conic gradient for max rank, SVG progress arc otherwise */}
+            {rankProgress.isMax ? (
+              <>
+                <motion.div
+                  style={{
+                    position: 'absolute',
+                    inset: -2.5,
+                    borderRadius: '50%',
+                    background: ringDone ? staticRing : ringGradient,
+                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+                    filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.20))',
+                  }}
+                />
+                {/* Shimmer overlay for max rank */}
+                {!reduced && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                      position: 'absolute',
+                      inset: -2.5,
+                      borderRadius: '50%',
+                      background: 'conic-gradient(from 0deg, transparent 0%, rgba(252,246,186,0.25) 10%, transparent 20%)',
+                      mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+                      WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </>
+            ) : (
+              <svg
+                viewBox="0 0 52 52"
+                style={{
+                  position: 'absolute',
+                  inset: -2,
+                  width: AVATAR_SIZE + 8,
+                  height: AVATAR_SIZE + 8,
+                  filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.20))',
+                }}
+              >
+                {/* Background track */}
+                <circle cx="26" cy="26" r="24" fill="none"
+                  stroke="rgba(212,175,55,0.12)" strokeWidth="2" />
+                {/* Progress arc */}
+                <motion.circle cx="26" cy="26" r="24" fill="none"
+                  stroke="var(--gold-400, #d4af37)" strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeDasharray={PROGRESS_CIRCUMFERENCE}
+                  initial={{ strokeDashoffset: PROGRESS_CIRCUMFERENCE }}
+                  animate={{ strokeDashoffset: PROGRESS_CIRCUMFERENCE * (1 - rankProgress.progress) }}
+                  transition={{ duration: reduced ? 0 : 1.2, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : 0.5 }}
+                  style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
+                />
+              </svg>
+            )}
             {/* Avatar circle */}
             <div
               style={{
@@ -508,6 +573,25 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               )}
             </div>
           </motion.button>
+          {/* Rank progress label — only for non-max rank */}
+          {!rankProgress.isMax && rankProgress.nextRankName && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: reduced ? 0 : 0.8, duration: reduced ? 0 : 0.5, ease: EASE_PREMIUM as unknown as number[] }}
+              style={{
+                marginTop: 4,
+                fontSize: 9,
+                fontWeight: 600,
+                color: 'rgba(212,175,55,0.50)',
+                textAlign: 'center',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {Math.round(rankProgress.progress * 100)}% до {rankProgress.nextRankName}
+            </motion.div>
+          )}
         </motion.div>
 
         {/* ═══ Greeting + Name ═══ */}
@@ -546,12 +630,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
           </GoldText>
         </motion.div>
 
-        {/* ═══ Diamond divider ═══ */}
-        {showFinance && (
-          <motion.div variants={variants.item} style={{ margin: '2px 0 10px' }}>
-            <DiamondDivider reduced={reduced} />
-          </motion.div>
-        )}
+        {/* ═══ Diamond divider — removed to save 16px vertical space ═══ */}
 
         {/* ═══ Finance card — full-width ═══ */}
         {showFinance && (
