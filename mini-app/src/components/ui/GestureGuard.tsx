@@ -41,6 +41,72 @@ interface GestureGuardContextType {
 
 const GestureGuardContext = createContext<GestureGuardContextType | null>(null)
 
+const SCROLLABLE_OVERFLOW_VALUES = new Set(['auto', 'scroll', 'overlay'])
+
+function getPrimaryScrollContainer(): HTMLElement | null {
+  return document.querySelector('main[role="main"], [data-scroll-container="true"]') as HTMLElement | null
+}
+
+function isVerticallyScrollable(el: HTMLElement): boolean {
+  const style = window.getComputedStyle(el)
+  return SCROLLABLE_OVERFLOW_VALUES.has(style.overflowY) && el.scrollHeight > el.clientHeight + 1
+}
+
+function isHorizontallyScrollable(el: HTMLElement): boolean {
+  const style = window.getComputedStyle(el)
+  return SCROLLABLE_OVERFLOW_VALUES.has(style.overflowX) && el.scrollWidth > el.clientWidth + 1
+}
+
+function canRootScroll(deltaX: number, deltaY: number): boolean {
+  const root = document.scrollingElement || document.documentElement
+  const isHorizontalIntent = Math.abs(deltaX) > Math.abs(deltaY)
+
+  if (isHorizontalIntent) {
+    const maxScrollLeft = Math.max(0, root.scrollWidth - root.clientWidth)
+    if (deltaX > 0) {
+      return root.scrollLeft > 0
+    }
+    return root.scrollLeft < maxScrollLeft
+  }
+
+  const maxScrollTop = Math.max(0, root.scrollHeight - root.clientHeight)
+  if (deltaY > 0) {
+    return root.scrollTop > 0
+  }
+  return root.scrollTop < maxScrollTop
+}
+
+function canScrollableAncestorConsumeGesture(target: EventTarget | null, deltaX: number, deltaY: number): boolean {
+  const isHorizontalIntent = Math.abs(deltaX) > Math.abs(deltaY)
+  let el = target instanceof HTMLElement ? target : null
+
+  while (el && el !== document.body) {
+    if (isHorizontalIntent && isHorizontallyScrollable(el)) {
+      const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth)
+      if (deltaX > 0 && el.scrollLeft > 0) {
+        return true
+      }
+      if (deltaX < 0 && el.scrollLeft < maxScrollLeft) {
+        return true
+      }
+    }
+
+    if (!isHorizontalIntent && isVerticallyScrollable(el)) {
+      const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+      if (deltaY > 0 && el.scrollTop > 0) {
+        return true
+      }
+      if (deltaY < 0 && el.scrollTop < maxScrollTop) {
+        return true
+      }
+    }
+
+    el = el.parentElement
+  }
+
+  return canRootScroll(deltaX, deltaY)
+}
+
 // Утилита для haptic feedback
 const triggerHaptic = (style: 'light' | 'medium' | 'rigid' = 'light') => {
   try {
@@ -91,7 +157,7 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
 
     if (scrollLockCount === 1) {
       savedScrollY = window.scrollY
-      savedContainer = document.querySelector('main[role="main"]') as HTMLElement | null
+      savedContainer = getPrimaryScrollContainer()
       savedContainerScrollTop = savedContainer?.scrollTop ?? 0
 
       // Block page scroll via overflow only — do NOT set position:fixed
@@ -165,7 +231,7 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
 
       // Блокируем только быстрые горизонтальные свайпы с края
       // которые явно направлены на back/forward navigation
-      if (isHorizontalSwipe && velocityX > 0.3) {
+      if (isHorizontalSwipe && velocityX > 0.3 && !canScrollableAncestorConsumeGesture(e.target, deltaX, deltaY)) {
         const wasLeftEdge = touchStartRef.current.x < edgeZoneLeft
         const wasRightEdge = touchStartRef.current.x > window.innerWidth - edgeZoneRight
 
@@ -192,27 +258,17 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
       const touch = e.touches[0]
       if (!touch || !touchStartRef.current) return
 
+      const deltaX = touch.clientX - touchStartRef.current.x
       const deltaY = touch.clientY - touchStartRef.current.y
+
+      // Never interfere with horizontal gestures or tiny movements
+      if (Math.abs(deltaX) > Math.abs(deltaY)) return
 
       // Only care about downward pulls
       if (deltaY <= 10) return
 
-      // Walk up from touch target to find the nearest scrollable container
-      let el = e.target as HTMLElement | null
-      while (el && el !== document.body) {
-        // Managed scroll containers (modals, sheets) — never interfere
-        if (el.getAttribute('data-scroll-container') === 'true') {
-          return
-        }
-        // Check if this element is truly scrollable (has overflow-y: auto/scroll AND overflowing content)
-        if (el.scrollHeight > el.clientHeight) {
-          const style = window.getComputedStyle(el)
-          const ov = style.overflowY
-          if (ov === 'auto' || ov === 'scroll') {
-            return
-          }
-        }
-        el = el.parentElement
+      if (canScrollableAncestorConsumeGesture(e.target, deltaX, deltaY)) {
+        return
       }
 
       // No scrollable parent found — prevent Telegram pull-to-close
@@ -354,7 +410,12 @@ export const SafeScrollContainer = memo(function SafeScrollContainer({
     overflowX: direction === 'vertical' ? 'hidden' : 'auto',
     overscrollBehavior: 'contain',
     WebkitOverflowScrolling: 'touch',
-    touchAction: direction === 'horizontal' ? 'pan-x' : 'pan-y',
+    touchAction:
+      direction === 'horizontal'
+        ? 'pan-x pinch-zoom'
+        : direction === 'both'
+          ? 'pan-x pan-y pinch-zoom'
+          : 'pan-y pinch-zoom',
     ...style
   }
 

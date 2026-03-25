@@ -321,7 +321,7 @@ function ServiceCard({
         WebkitTapHighlightColor: 'transparent',
         position: 'relative',
         overflow: 'hidden',
-        touchAction: 'pan-y',
+        touchAction: 'manipulation',
         userSelect: 'none',
         transition: 'border-color 0.2s, background 0.2s',
         ...premiumBorderStyle,
@@ -520,7 +520,7 @@ function PhotoTaskCard({ onPress, index }: { onPress: () => void; index: number 
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
         userSelect: 'none',
-        touchAction: 'pan-y',
+        touchAction: 'manipulation',
       }}
     >
       <Camera size={16} color="var(--gold-400)" strokeWidth={1.7} style={{ flexShrink: 0 }} />
@@ -566,7 +566,7 @@ function CustomRequestCard({ onPress, index }: { onPress: () => void; index: num
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
         userSelect: 'none',
-        touchAction: 'pan-y',
+        touchAction: 'manipulation',
       }}
     >
       <HelpCircle size={16} color="var(--text-muted)" strokeWidth={1.7} style={{ flexShrink: 0 }} />
@@ -616,7 +616,7 @@ function AssistCard({ onPress, index }: { onPress: () => void; index: number }) 
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
         userSelect: 'none',
-        touchAction: 'pan-y',
+        touchAction: 'manipulation',
       }}
     >
       <div style={{
