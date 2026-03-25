@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { m } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Crown, Lock } from 'lucide-react'
-import { ModalWrapper } from '../shared'
+import { ModalWrapper, triggerHaptic } from '../shared'
 import { RANKS, getRankIndexByCashback, getDisplayName } from '../../../lib/ranks'
+import { formatMoney } from '../../../lib/utils'
 import type { UserData } from '../../../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -39,9 +40,6 @@ const RANK_FLAVOR: Record<string, { tagline: string; perks: string[] }> = {
   },
 }
 
-function formatMoney(value: number): string {
-  return `${Math.max(0, Math.round(value)).toLocaleString('ru-RU')} ₽`
-}
 
 export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalProps) {
   const displayRankName = useMemo(() => getDisplayName(user.rank.name), [user.rank.name])
@@ -474,7 +472,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             <m.button
               type="button"
               whileTap={{ scale: 0.97 }}
-              onClick={() => { onClose(); onCreateOrder() }}
+              onClick={() => { triggerHaptic('medium'); onClose(); onCreateOrder() }}
               style={{
                 width: '100%',
                 padding: '16px 20px',

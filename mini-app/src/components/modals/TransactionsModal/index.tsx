@@ -57,6 +57,7 @@ const REASON_HINTS: Record<string, string> = {
 function formatMoney(value: number): string {
   return `${Math.round(Math.abs(value)).toLocaleString('ru-RU')} ₽`
 }
+// NOTE: uses Math.abs — intentionally differs from shared formatMoney
 
 function formatDateTime(value: string): string {
   return new Date(value).toLocaleString('ru-RU', {

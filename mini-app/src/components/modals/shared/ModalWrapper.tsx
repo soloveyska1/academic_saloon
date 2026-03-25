@@ -250,14 +250,14 @@ export function ModalWrapper({
                 zIndex: 5,
               }} />
 
-              {/* Handle — drag to dismiss */}
+              {/* Handle row — drag handle + close button in one line */}
               <div
                 style={{
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '15px 0 10px',
+                  padding: '14px 16px 8px',
                   cursor: 'grab',
                   touchAction: 'none',
                   position: 'relative',
@@ -273,32 +273,29 @@ export function ModalWrapper({
                   borderRadius: 999,
                   background: 'linear-gradient(90deg, rgba(255,255,255,0.1), rgba(212,175,55,0.35), rgba(255,255,255,0.1))',
                 }} />
-              </div>
 
-              {/* Close button */}
-              <m.button
-                onClick={handleClose}
-                whileTap={{ scale: 0.9 }}
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  width: 38,
-                  height: 38,
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  boxShadow: '0 12px 24px -20px rgba(0,0,0,0.7)',
-                }}
-                aria-label="Закрыть"
-              >
-                <X size={16} color="rgba(255,255,255,0.7)" />
-              </m.button>
+                {/* Close button — anchored to the right of handle row */}
+                <m.button
+                  onClick={(e) => { e.stopPropagation(); handleClose() }}
+                  whileTap={{ scale: 0.9 }}
+                  style={{
+                    position: 'absolute',
+                    right: 16,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Закрыть"
+                >
+                  <X size={14} strokeWidth={2.5} color="rgba(255,255,255,0.5)" />
+                </m.button>
+              </div>
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
 
