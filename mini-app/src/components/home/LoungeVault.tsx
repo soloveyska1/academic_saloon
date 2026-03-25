@@ -276,7 +276,7 @@ export const LoungeVault = memo(function LoungeVault({
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 20, display: 'grid', gap: 6 }}
     >
-      {/* ═══ Card A — Rank & Club Progress (balance is in header) ═══ */}
+      {/* ═══ Card A — Rank Progress (next level motivation) ═══ */}
       <Reveal animation="spring" delay={0.2}>
         <div
           className="glass-card"
@@ -328,11 +328,15 @@ export const LoungeVault = memo(function LoungeVault({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                marginBottom: 16,
+                marginBottom: 14,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Crown size={14} color="var(--gold-300)" strokeWidth={1.9} />
+                {rank.is_max ? (
+                  <Sparkles size={14} color="var(--gold-300)" strokeWidth={1.9} />
+                ) : (
+                  <Crown size={14} color="var(--gold-300)" strokeWidth={1.9} />
+                )}
                 <span
                   style={{
                     fontSize: 11,
@@ -342,11 +346,11 @@ export const LoungeVault = memo(function LoungeVault({
                     color: 'rgba(212, 175, 55, 0.72)',
                   }}
                 >
-                  {rank.name || 'Клуб'}
+                  {rank.is_max ? 'Максимальный уровень' : 'Следующий уровень'}
                 </span>
               </div>
 
-              {rank.is_max ? (
+              {rank.is_max && (
                 <span
                   style={{
                     display: 'inline-flex',
@@ -365,143 +369,67 @@ export const LoungeVault = memo(function LoungeVault({
                   }}
                 >
                   <Sparkles size={10} strokeWidth={2} />
-                  Макс. уровень
-                </span>
-              ) : (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: 'var(--gold-300)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {rank.progress}%
+                  {rank.name}
                 </span>
               )}
             </div>
 
-            {/* How bonuses work */}
-            <div
-              style={{
-                fontSize: 13,
-                lineHeight: 1.5,
-                color: 'var(--text-secondary)',
-                marginBottom: 16,
-                maxWidth: 320,
-              }}
-            >
-              Бонусы списываются при оплате новых заказов вместе с кешбэком клуба.
-            </div>
-
-            {/* Stats grid — 2 columns */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 8,
-              }}
-            >
-              {/* Cashback — accent card */}
-              <div
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  background: 'rgba(212,175,55,0.06)',
-                  border: '1px solid rgba(212,175,55,0.10)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 6,
-                  }}
-                >
-                  Кешбэк
+            {rank.is_max ? (
+              /* ─── Max rank: show active perks ─── */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                  Все привилегии активны
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Percent size={14} color="var(--gold-300)" strokeWidth={2} />
-                  <span
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: 'var(--gold-300)',
-                      letterSpacing: '-0.03em',
-                    }}
-                  >
-                    {rank.cashback}%
-                  </span>
-                </div>
+                {[
+                  `Кешбэк ${rank.cashback}% с каждого заказа`,
+                  'Приоритетная поддержка',
+                  'Эксклюзивные условия',
+                ].map((perk) => (
+                  <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 4, height: 4, borderRadius: 2,
+                      background: 'var(--gold-400)', flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      {perk}
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              {/* Level — neutral card */}
-              <div
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  background: 'rgba(20,18,14,0.95)',
-                  border: '1px solid rgba(212,175,55,0.08)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 6,
-                  }}
-                >
-                  {rank.is_max ? 'Бонусы' : 'До уровня'}
+            ) : (
+              /* ─── Not max rank: show progress to next ─── */
+              <>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
+                  До ранга «{rank.next_rank}»
                 </div>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    letterSpacing: '-0.03em',
-                  }}
-                >
-                  {rank.is_max ? formatMoney(bonusBalance) : formatMoney(rank.spent_to_next)}
-                </div>
-              </div>
-            </div>
 
-            {/* Progress bar (only if not max rank) */}
-            {!rank.is_max && (
-              <div style={{ marginTop: 12 }}>
-                <div
-                  style={{
-                    height: 5,
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.06)',
-                    overflow: 'hidden',
-                  }}
-                >
+                {/* Progress bar */}
+                <div style={{
+                  height: 5, borderRadius: 999,
+                  background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 10,
+                }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(4, rank.progress)}%` }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 100,
-                      damping: 20,
-                      delay: 0.3,
-                    }}
+                    transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.3 }}
                     style={{
-                      height: '100%',
-                      borderRadius: 999,
-                      background:
-                        'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))',
+                      height: '100%', borderRadius: 999,
+                      background: 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(245,225,160,0.7))',
                       boxShadow: '0 8px 16px -12px rgba(212,175,55,0.4)',
                     }}
                   />
                 </div>
-              </div>
+
+                {/* Bottom row: remaining + next perk */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Осталось {formatMoney(rank.spent_to_next)}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold-300)' }}>
+                    {rank.progress}%
+                  </span>
+                </div>
+              </>
             )}
           </div>
         </div>
