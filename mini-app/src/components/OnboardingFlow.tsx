@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import { acceptTerms, fetchConfig } from '../api/userApi'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
@@ -259,27 +259,23 @@ export const OnboardingFlow = memo(function OnboardingFlow({
       }
       addTimer(() => setPhase('value'), reduced ? 1200 : 2000)
     }
-    if (phase === 'value') {
-      if (!reduced) addTimer(() => haptic('light'), 400)
-      valueTimerRef.current = addTimer(() => setPhase('offer'), reduced ? 2000 : 5000)
-    }
+    // Value and offer phases: NO auto-advance — user controls the pace
   }, [phase, reduced, addTimer])
 
   /* ─── Handlers ─── */
 
   const advanceFromValue = useCallback(() => {
     if (phase === 'value') {
-      if (valueTimerRef.current) clearTimeout(valueTimerRef.current)
+      haptic('light')
       setPhase('offer')
     }
   }, [phase])
 
-  const resetValueTimer = useCallback(() => {
-    if (valueTimerRef.current && phase === 'value') {
-      clearTimeout(valueTimerRef.current)
-      valueTimerRef.current = addTimer(() => setPhase('offer'), 5000)
-    }
-  }, [phase, addTimer])
+  const handleBack = useCallback(() => {
+    haptic('light')
+    if (phase === 'offer') setPhase('value')
+    else if (phase === 'value') setPhase('reveal')
+  }, [phase])
 
   const handleSkip = useCallback(() => {
     haptic('light')
@@ -375,40 +371,81 @@ export const OnboardingFlow = memo(function OnboardingFlow({
           ))}
         </div>
 
-        {/* ─── Skip button (hidden in offer/exit phases) ─── */}
-        {phase !== 'offer' && phase !== 'exit' && (
-          <motion.button
-            type="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: reduced ? 0 : 0.8, duration: 0.3 }}
-            whileTap={{ scale: TAP_SCALE }}
-            onClick={handleSkip}
-            aria-label={phase === 'reveal' ? 'Пропустить приветствие' : 'Перейти к условиям'}
-            style={{
-              position: 'absolute',
-              top: `calc(${SAFE_PAD} + 4px)`,
-              right: `calc(${SAFE_PAD_X} + 4px)`,
-              zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '8px 14px',
-              borderRadius: 999,
-              border: 'none',
-              background: 'rgba(255,255,255,0.06)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              color: 'rgba(255,255,255,0.50)',
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: FONT_BODY,
-              cursor: 'pointer',
-            }}
-          >
-            {phase === 'reveal' ? 'Пропустить' : 'К условиям'}
-            <ChevronRight size={14} strokeWidth={2} />
-          </motion.button>
+        {/* ─── Navigation buttons ─── */}
+        {phase !== 'exit' && (
+          <>
+            {/* Back button — left side, shown in value & offer phases */}
+            {(phase === 'value' || phase === 'offer') && (
+              <motion.button
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduced ? 0 : 0.3, duration: 0.2 }}
+                whileTap={{ scale: TAP_SCALE }}
+                onClick={handleBack}
+                aria-label="Назад"
+                style={{
+                  position: 'absolute',
+                  top: `calc(${SAFE_PAD} + 4px)`,
+                  left: `calc(${SAFE_PAD_X} + 4px)`,
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  padding: '8px 12px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  color: 'rgba(255,255,255,0.50)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: FONT_BODY,
+                  cursor: 'pointer',
+                }}
+              >
+                <ChevronLeft size={14} strokeWidth={2} />
+                Назад
+              </motion.button>
+            )}
+
+            {/* Skip/forward button — right side, hidden in offer phase */}
+            {phase !== 'offer' && (
+              <motion.button
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduced ? 0 : 0.8, duration: 0.3 }}
+                whileTap={{ scale: TAP_SCALE }}
+                onClick={handleSkip}
+                aria-label={phase === 'reveal' ? 'Пропустить приветствие' : 'Перейти к условиям'}
+                style={{
+                  position: 'absolute',
+                  top: `calc(${SAFE_PAD} + 4px)`,
+                  right: `calc(${SAFE_PAD_X} + 4px)`,
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  color: 'rgba(255,255,255,0.50)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: FONT_BODY,
+                  cursor: 'pointer',
+                }}
+              >
+                {phase === 'reveal' ? 'Пропустить' : 'К условиям'}
+                <ChevronRight size={14} strokeWidth={2} />
+              </motion.button>
+            )}
+          </>
         )}
 
         {/* ─── Phase content ─── */}
@@ -540,18 +577,13 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               animate={phaseTransitions.visible}
               exit={phaseTransitions.valueExit}
               transition={{ duration: dur, ease: EASE }}
-              onClick={advanceFromValue}
-              onTouchStart={resetValueTimer}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.15}
               onDragEnd={(_e, info) => {
                 if (info.offset.x < -50 || info.velocity.x < -300) advanceFromValue()
+                if (info.offset.x > 50 || info.velocity.x > 300) handleBack()
               }}
-              role="button"
-              tabIndex={0}
-              aria-label="Нажмите или свайпните, чтобы продолжить"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') advanceFromValue() }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -559,7 +591,6 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 textAlign: 'center',
                 width: '100%',
                 maxWidth: 360,
-                cursor: 'pointer',
               }}
             >
               {/* Small monogram 48x48 */}
@@ -700,7 +731,35 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 })}
               </div>
 
-              {/* Progress dots moved to global level */}
+              {/* Explicit "Далее" CTA */}
+              <motion.button
+                type="button"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.7, duration: reduced ? 0 : 0.4, ease: EASE }}
+                whileTap={{ scale: TAP_SCALE }}
+                onClick={advanceFromValue}
+                style={{
+                  width: '100%',
+                  padding: '14px 24px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(212,175,55,0.15)',
+                  background: 'rgba(212,175,55,0.06)',
+                  color: 'var(--gold-400, #d4af37)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: FONT_BODY,
+                  letterSpacing: '0.02em',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                Далее
+                <ChevronRight size={16} strokeWidth={2} />
+              </motion.button>
             </motion.div>
           )}
 
