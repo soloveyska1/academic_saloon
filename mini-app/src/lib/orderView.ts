@@ -206,7 +206,11 @@ export function getOrderDisplaySubtitle(order: Order): string {
 }
 
 export function getOrderHeadlineSafe(order: Order): string {
-  return toSafeString(order.topic) || toSafeString(order.subject) || 'Тема уточняется в заявке'
+  const topic = toSafeString(order.topic)
+  const subject = toSafeString(order.subject)
+  // Fallback if topic is too short or garbled (< 3 chars)
+  const headline = topic && topic.length >= 3 ? topic : subject && subject.length >= 3 ? subject : null
+  return headline || toSafeString(order.work_type_label) || 'Тема уточняется'
 }
 
 export function getOrderSublineSafe(order: Order): string {

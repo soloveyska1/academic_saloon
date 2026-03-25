@@ -31,7 +31,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
               fontWeight: 600,
             }}
           >
-            с 2020
+            est. 2020
           </span>
         </div>
 

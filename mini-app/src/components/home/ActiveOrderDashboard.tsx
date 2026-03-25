@@ -573,11 +573,11 @@ function OrderCard({
             padding: needsAction ? '14px 20px' : '10px 16px',
             borderRadius: 12,
             background: needsAction
-              ? 'linear-gradient(135deg, #E2C04C 0%, #D4AF37 50%, #C19B2A 100%)'
+              ? 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)'
               : 'rgba(255,255,255,0.04)',
             border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.06)',
             boxShadow: needsAction
-              ? '0 6px 24px -4px rgba(212,175,55,0.45), inset 0 1px 0 rgba(255,248,200,0.35)'
+              ? '0 0 30px -5px rgba(212,175,55,0.5), 0 10px 30px -10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1)'
               : 'none',
           }}
         >

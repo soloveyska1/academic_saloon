@@ -52,7 +52,7 @@ function useAchievements(
     {
       id: 'first',
       icon: Star,
-      label: 'Первый шаг',
+      label: 'Дебют',
       description: 'Первый заказ',
       unlocked: ordersCount >= 1,
       progress: Math.min(1, ordersCount / 1),
@@ -60,7 +60,7 @@ function useAchievements(
     {
       id: 'five',
       icon: Zap,
-      label: 'Постоянный',
+      label: 'Завсегдатай',
       description: '5 заказов',
       unlocked: ordersCount >= 5,
       progress: Math.min(1, ordersCount / 5),
@@ -76,7 +76,7 @@ function useAchievements(
     {
       id: 'streak',
       icon: Flame,
-      label: 'Огонь',
+      label: 'Марафонец',
       description: 'Серия 7 дней',
       unlocked: dailyStreak >= 7,
       progress: Math.min(1, dailyStreak / 7),
@@ -84,7 +84,7 @@ function useAchievements(
     {
       id: 'whale',
       icon: Crown,
-      label: 'Топ-клиент',
+      label: 'Патрон',
       description: 'Потрачено 10K₽',
       unlocked: totalSpent >= 10000,
       progress: Math.min(1, totalSpent / 10000),
@@ -163,12 +163,12 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
       </div>
       <span
         style={{
-          fontSize: 8,
+          fontSize: 10,
           fontWeight: 700,
-          letterSpacing: '0.04em',
-          color: unlocked ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.20)',
+          letterSpacing: '0.02em',
+          color: unlocked ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.25)',
           textAlign: 'center',
-          maxWidth: 52,
+          maxWidth: 60,
           lineHeight: 1.2,
         }}
       >
