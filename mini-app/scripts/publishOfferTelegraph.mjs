@@ -18,26 +18,116 @@ function toHeading(tag, text) {
   return { tag, children: [text] }
 }
 
-function buildSummaryList(summaryCards) {
-  return {
-    tag: 'ul',
-    children: summaryCards.map((card) => ({
-      tag: 'li',
-      children: [
-        { tag: 'strong', children: [card.title] },
-        ` — ${card.hook}. `,
-        card.text,
-        ' ',
-        { tag: 'em', children: [`${card.proof} ${card.proofLabel}`] },
-      ],
-    })),
+function splitClauseNumber(clause) {
+  const match = clause.match(/^(\d+\.\d+\.)\s*(.*)$/)
+  if (!match) {
+    return { prefix: null, body: clause }
   }
+
+  return {
+    prefix: match[1],
+    body: match[2],
+  }
+}
+
+function buildHeroNodes(meta) {
+  return [
+    toParagraph(meta.subtitle),
+    {
+      tag: 'blockquote',
+      children: [
+        'Это публичная оферта Academic Saloon. Клиент принимает её перед первым входом в сервис, а текст ниже синхронизирован с той же редакцией, что и внутри Mini App.',
+      ],
+    },
+    {
+      tag: 'aside',
+      children: [
+        `Редакция ${meta.version} · действует с ${meta.effectiveDate}`,
+      ],
+    },
+  ]
+}
+
+function buildValueManifest(summaryCards) {
+  return [
+    toHeading('h3', 'Если коротко'),
+    {
+      tag: 'ul',
+      children: [
+        {
+          tag: 'li',
+          children: ['До первого заказа клиент видит ключевые условия, гарантии, схему оплаты и право на возврат.'],
+        },
+        {
+          tag: 'li',
+          children: ['Акцепт фиксируется кнопкой в приложении и означает согласие с офертой по ст. 438 ГК РФ.'],
+        },
+        {
+          tag: 'li',
+          children: ['Полная редакция ниже не сокращена и соответствует той, что зашита в приложение.'],
+        },
+      ],
+    },
+    {
+      tag: 'aside',
+      children: ['Клиентская выжимка'],
+    },
+    ...summaryCards.flatMap((card, index) => [
+      toHeading('h4', card.title),
+      {
+        tag: 'p',
+        children: [{ tag: 'em', children: [card.hook] }],
+      },
+      toParagraph(card.text),
+      {
+        tag: 'aside',
+        children: [`${card.proof} · ${card.proofLabel}`],
+      },
+      ...(index < summaryCards.length - 1 ? [{ tag: 'hr' }] : []),
+    ]),
+  ]
+}
+
+function buildAcceptanceNodes() {
+  return [
+    { tag: 'hr' },
+    toHeading('h3', 'Как работает акцепт'),
+    {
+      tag: 'ol',
+      children: [
+        {
+          tag: 'li',
+          children: ['Клиент открывает приветственный экран и получает доступ к краткой выжимке по условиям.'],
+        },
+        {
+          tag: 'li',
+          children: ['Полный текст оферты доступен прямо перед входом и может быть открыт до нажатия кнопки акцепта.'],
+        },
+        {
+          tag: 'li',
+          children: ['Нажатие кнопки принятия означает согласие с офертой и открывает доступ к кабинету, заказам, чату, оплате и файлам.'],
+        },
+      ],
+    },
+  ]
 }
 
 function buildSectionNodes(sections) {
   return sections.flatMap((section) => [
+    { tag: 'hr' },
     toHeading('h4', section.title),
-    ...section.clauses.map((clause) => toParagraph(clause)),
+    {
+      tag: 'ol',
+      children: section.clauses.map((clause) => {
+        const { prefix, body } = splitClauseNumber(clause)
+        return {
+          tag: 'li',
+          children: prefix
+            ? [{ tag: 'strong', children: [`${prefix} `] }, body]
+            : [body],
+        }
+      }),
+    },
   ])
 }
 
@@ -55,27 +145,16 @@ function buildTelegraphContent({ summaryCards, sections, meta, imageUrl }) {
   }
 
   content.push(
-    toParagraph(meta.subtitle),
-    {
-      tag: 'blockquote',
-      children: [
-        'Перед первым входом в сервис клиент принимает публичную оферту. Ниже — та же редакция, что и внутри приложения: ключевые условия, а ниже полный текст без сокращений.',
-      ],
-    },
-    toHeading('h3', 'Кратко о главном'),
-    buildSummaryList(summaryCards),
-    {
-      tag: 'aside',
-      children: [
-        'Нажатие кнопки акцепта в приложении означает согласие с офертой в соответствии со ст. 438 ГК РФ. Полная редакция размещена ниже.',
-      ],
-    },
+    ...buildHeroNodes(meta),
+    ...buildValueManifest(summaryCards),
+    ...buildAcceptanceNodes(),
+    { tag: 'hr' },
     toHeading('h3', 'Полная редакция'),
     ...buildSectionNodes(sections),
     {
       tag: 'aside',
       children: [
-        `Редакция ${meta.version} · действует с ${meta.effectiveDate}. Текст синхронизирован с Mini App Academic Saloon.`,
+        `Текст синхронизирован с Mini App Academic Saloon. Если оферта обновляется в приложении, эта Telegraph-версия публикуется из того же источника.`,
       ],
     },
   )
