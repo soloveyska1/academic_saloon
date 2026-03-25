@@ -151,80 +151,7 @@ function useAchievements(
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PREMIUM SVG PROGRESS RING — Circular progress indicator (Starbucks-style)
-   ═══════════════════════════════════════════════════════════════════════════ */
-const RING_SIZE = 56
-const RING_RADIUS = 24
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
-const RING_STROKE = 2.5
-
-function ProgressRing({
-  progress,
-  unlocked,
-  index,
-}: {
-  progress: number
-  unlocked: boolean
-  index: number
-}) {
-  const offset = RING_CIRCUMFERENCE * (1 - progress)
-
-  return (
-    <svg
-      width={RING_SIZE}
-      height={RING_SIZE}
-      viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        pointerEvents: 'none',
-        transform: 'rotate(-90deg)',
-      }}
-    >
-      {/* Трек (фоновое кольцо) */}
-      <circle
-        cx={RING_SIZE / 2}
-        cy={RING_SIZE / 2}
-        r={RING_RADIUS}
-        fill="none"
-        stroke={unlocked ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.06)'}
-        strokeWidth={RING_STROKE}
-      />
-      {/* Прогресс (заполненная дуга) */}
-      {progress > 0 && (
-        <motion.circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke={unlocked ? 'url(#goldGrad)' : 'rgba(212,175,55,0.45)'}
-          strokeWidth={RING_STROKE}
-          strokeLinecap="round"
-          strokeDasharray={RING_CIRCUMFERENCE}
-          initial={{ strokeDashoffset: RING_CIRCUMFERENCE }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{
-            delay: 0.2 + index * 0.07,
-            duration: 1.0,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        />
-      )}
-      {/* SVG градиент для золотого кольца */}
-      <defs>
-        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#D4AF37" />
-          <stop offset="50%" stopColor="#FFF8D6" />
-          <stop offset="100%" stopColor="#B38728" />
-        </linearGradient>
-      </defs>
-    </svg>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   OVERALL PROGRESS RING — Mini-кольцо для header секции
+   OVERALL PROGRESS RING — Mini-кольцо для header секции (thin stroke)
    ═══════════════════════════════════════════════════════════════════════════ */
 const HEADER_RING_SIZE = 32
 const HEADER_RING_R = 12
@@ -243,45 +170,35 @@ function OverallProgressRing({ progress }: { progress: number }) {
         cy={HEADER_RING_SIZE / 2}
         r={HEADER_RING_R}
         fill="none"
-        stroke="rgba(212,175,55,0.10)"
-        strokeWidth={2}
+        stroke="rgba(212,175,55,0.08)"
+        strokeWidth={1.5}
       />
       <motion.circle
         cx={HEADER_RING_SIZE / 2}
         cy={HEADER_RING_SIZE / 2}
         r={HEADER_RING_R}
         fill="none"
-        stroke="url(#headerGoldGrad)"
-        strokeWidth={2}
+        stroke="#D4AF37"
+        strokeWidth={1.5}
         strokeLinecap="round"
         strokeDasharray={HEADER_RING_C}
         initial={{ strokeDashoffset: HEADER_RING_C }}
         animate={{ strokeDashoffset: HEADER_RING_C * (1 - progress) }}
         transition={{ delay: 0.3, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       />
-      <defs>
-        <linearGradient id="headerGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#D4AF37" />
-          <stop offset="50%" stopColor="#FFF8D6" />
-          <stop offset="100%" stopColor="#B38728" />
-        </linearGradient>
-      </defs>
     </svg>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PREMIUM ACHIEVEMENT CARD — 2-column grid card component
-   Вдохновлено: Nike Run Club trophies + Starbucks Rewards challenges
+   PREMIUM ACHIEVEMENT CARD — Dark glass tile with gold accents
    ═══════════════════════════════════════════════════════════════════════════ */
 const AchievementCard = memo(function AchievementCard({
   achievement,
   index,
-  isRecent,
 }: {
   achievement: Achievement
   index: number
-  isRecent: boolean
 }) {
   const Icon = achievement.icon
   const unlocked = achievement.unlocked
@@ -315,54 +232,13 @@ const AchievementCard = memo(function AchievementCard({
         borderRadius: 14,
         cursor: 'pointer',
         overflow: 'hidden',
-        background: unlocked
-          ? 'linear-gradient(145deg, rgba(212,175,55,0.08) 0%, rgba(183,142,38,0.03) 100%)'
-          : 'rgba(255,255,255,0.015)',
-        border: `1px solid ${unlocked ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
+        background: unlocked ? '#0E0D0C' : '#0A0A0A',
+        border: `1px solid ${unlocked ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)'}`,
         boxShadow: unlocked
-          ? '0 4px 20px -4px rgba(212,175,55,0.10), 0 1px 3px rgba(0,0,0,0.2)'
-          : '0 2px 8px -2px rgba(0,0,0,0.15)',
+          ? '0 2px 12px rgba(0,0,0,0.4)'
+          : '0 1px 4px rgba(0,0,0,0.2)',
       }}
     >
-      {/* ─── "Недавно открыто" ribbon ─── */}
-      {isRecent && unlocked && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 + index * 0.06, type: 'spring', stiffness: 200 }}
-          style={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #D4AF37, #FFF8D6)',
-            boxShadow: '0 0 8px rgba(212,175,55,0.5)',
-          }}
-        />
-      )}
-
-      {/* ─── Background shimmer для unlocked ─── */}
-      {unlocked && (
-        <motion.div
-          animate={{
-            opacity: [0.03, 0.08, 0.03],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(ellipse at 30% 20%, rgba(212,175,55,0.15), transparent 60%)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
       {/* ─── Top shine line для unlocked ─── */}
       {unlocked && (
         <div
@@ -372,17 +248,17 @@ const AchievementCard = memo(function AchievementCard({
             left: 0,
             right: 0,
             height: 1,
-            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.20) 50%, transparent 90%)',
+            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.15) 50%, transparent 90%)',
             pointerEvents: 'none',
           }}
         />
       )}
 
-      {/* ─── Icon с SVG progress ring ─── */}
+      {/* ─── Icon with subtle circular glow ─── */}
       <div
         style={{
-          width: RING_SIZE,
-          height: RING_SIZE,
+          width: 52,
+          height: 52,
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
@@ -390,57 +266,28 @@ const AchievementCard = memo(function AchievementCard({
           flexShrink: 0,
         }}
       >
-        {/* Circular progress ring */}
-        <ProgressRing progress={progress} unlocked={unlocked} index={index} />
-
-        {/* Inner circle background */}
+        {/* Icon circle background */}
         <div
           style={{
-            width: 40,
-            height: 40,
+            width: 52,
+            height: 52,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            overflow: 'hidden',
             background: unlocked
-              ? 'linear-gradient(145deg, rgba(212,175,55,0.18) 0%, rgba(142,110,39,0.12) 100%)'
-              : 'rgba(255,255,255,0.03)',
-            boxShadow: unlocked
-              ? '0 0 20px rgba(212,175,55,0.12), inset 0 1px 1px rgba(255,248,214,0.15)'
-              : 'inset 0 1px 2px rgba(0,0,0,0.2)',
+              ? 'rgba(212,175,55,0.08)'
+              : 'rgba(255,255,255,0.04)',
           }}
         >
-          {/* Gold shimmer sweep для unlocked (one-shot) */}
-          {unlocked && (
-            <motion.div
-              initial={{ x: '-120%' }}
-              animate={{ x: '220%' }}
-              transition={{
-                delay: 0.6 + index * 0.07,
-                duration: 0.8,
-                ease: 'easeInOut',
-              }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '40%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,248,214,0.35), transparent)',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-
           {/* Icon */}
           <Icon
-            size={unlocked ? 20 : 18}
+            size={24}
             strokeWidth={unlocked ? 1.8 : 1.5}
             style={{
-              color: unlocked ? '#D4AF37' : 'rgba(255,255,255,0.18)',
-              filter: unlocked ? 'drop-shadow(0 1px 4px rgba(212,175,55,0.4))' : 'none',
+              color: unlocked ? '#D4AF37' : 'rgba(255,255,255,0.12)',
+              filter: unlocked ? 'drop-shadow(0 0 6px rgba(212,175,55,0.3))' : 'none',
               position: 'relative',
               zIndex: 1,
             }}
@@ -456,15 +303,15 @@ const AchievementCard = memo(function AchievementCard({
                 width: 16,
                 height: 16,
                 borderRadius: '50%',
-                background: 'rgba(20,18,14,0.9)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: '#0A0A0A',
+                border: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 2,
               }}
             >
-              <Lock size={8} strokeWidth={2.5} color="rgba(255,255,255,0.3)" />
+              <Lock size={8} strokeWidth={2.5} color="rgba(255,255,255,0.25)" />
             </div>
           )}
 
@@ -487,7 +334,7 @@ const AchievementCard = memo(function AchievementCard({
                 height: 16,
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #D4AF37, #B38728)',
-                border: '1.5px solid rgba(20,18,14,0.8)',
+                border: '1.5px solid #0E0D0C',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -495,23 +342,23 @@ const AchievementCard = memo(function AchievementCard({
                 boxShadow: '0 2px 6px rgba(212,175,55,0.3)',
               }}
             >
-              <Check size={9} strokeWidth={3} color="#1a1810" />
+              <Check size={9} strokeWidth={3} color="#0A0A0A" />
             </motion.div>
           )}
         </div>
       </div>
 
-      {/* ─── Label (премиальный шрифт) ─── */}
+      {/* ─── Label (Manrope, clean) ─── */}
       <span
         style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 700,
-          letterSpacing: unlocked ? '0.03em' : '0.01em',
-          color: unlocked ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.35)',
+          letterSpacing: '0.01em',
+          color: unlocked ? 'var(--text-primary, rgba(255,255,255,0.92))' : 'rgba(255,255,255,0.28)',
           textAlign: 'center',
           maxWidth: 110,
           lineHeight: 1.25,
-          fontFamily: unlocked ? "var(--font-display, 'Playfair Display', serif)" : 'inherit',
+          fontFamily: 'inherit',
         }}
       >
         {achievement.label}
@@ -522,7 +369,7 @@ const AchievementCard = memo(function AchievementCard({
         <span
           style={{
             fontSize: 11,
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'var(--text-muted, rgba(255,255,255,0.45))',
             textAlign: 'center',
             lineHeight: 1.3,
@@ -533,14 +380,14 @@ const AchievementCard = memo(function AchievementCard({
         </span>
       ) : progress > 0 && achievement.current !== undefined && achievement.target !== undefined ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: '100%', padding: '0 4px' }}>
-          {/* Progress bar (вместо сухих цифр) */}
+          {/* Thin progress bar at bottom */}
           <div
             style={{
               width: '100%',
               maxWidth: 80,
-              height: 3,
-              borderRadius: 2,
-              background: 'rgba(212,175,55,0.08)',
+              height: 2,
+              borderRadius: 1,
+              background: 'rgba(212,175,55,0.06)',
               overflow: 'hidden',
             }}
           >
@@ -554,17 +401,17 @@ const AchievementCard = memo(function AchievementCard({
               }}
               style={{
                 height: '100%',
-                borderRadius: 2,
-                background: 'linear-gradient(90deg, rgba(212,175,55,0.5), rgba(212,175,55,0.8))',
+                borderRadius: 1,
+                background: '#D4AF37',
               }}
             />
           </div>
-          {/* Мотивационный текст */}
+          {/* Progress text */}
           <span
             style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'rgba(212,175,55,0.50)',
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--gold-400, #D4AF37)',
               textAlign: 'center',
               lineHeight: 1.2,
             }}
@@ -583,7 +430,7 @@ const AchievementCard = memo(function AchievementCard({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.30)',
+                color: 'rgba(255,255,255,0.25)',
                 textAlign: 'center',
                 lineHeight: 1.3,
                 maxWidth: 110,
@@ -596,7 +443,7 @@ const AchievementCard = memo(function AchievementCard({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.18)',
+                color: 'rgba(255,255,255,0.15)',
                 textAlign: 'center',
                 letterSpacing: '0.04em',
               }}
@@ -629,14 +476,6 @@ export const LoungeVault = memo(function LoungeVault({
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const overallProgress = unlockedCount / achievements.length
 
-  // Определяем самый "свежий" разблокированный (последний в списке unlocked)
-  // Для простоты считаем "недавним" последний unlocked, если не все открыты
-  const recentUnlockedId = useMemo(() => {
-    if (unlockedCount === 0 || unlockedCount === achievements.length) return null
-    const lastUnlocked = [...achievements].reverse().find(a => a.unlocked)
-    return lastUnlocked?.id ?? null
-  }, [achievements, unlockedCount])
-
   // Сортировка: unlocked первыми, потом с прогрессом, потом locked
   const sortedAchievements = useMemo(() => {
     return [...achievements].sort((a, b) => {
@@ -662,42 +501,16 @@ export const LoungeVault = memo(function LoungeVault({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         style={{
-          padding: '20px 16px 18px',
+          padding: 16,
           borderRadius: 14,
-          background: 'linear-gradient(180deg, rgba(20,18,14,0.97) 0%, rgba(16,14,10,0.95) 100%)',
-          border: '1px solid rgba(212,175,55,0.10)',
+          background: '#0E0D0C',
+          border: '1px solid rgba(255,255,255,0.04)',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 8px 32px -8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
+          boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4)',
         }}
       >
-        {/* Gold orb top-right (усиленный) */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 140,
-            height: 140,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 65%)',
-            pointerEvents: 'none',
-          }}
-        />
-        {/* Gold orb bottom-left (новый) */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -50,
-            left: -30,
-            width: 120,
-            height: 120,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 65%)',
-            pointerEvents: 'none',
-          }}
-        />
-        {/* Top shine line (ярче) */}
+        {/* Top accent line — thin gold */}
         <div
           style={{
             position: 'absolute',
@@ -705,7 +518,7 @@ export const LoungeVault = memo(function LoungeVault({
             left: 0,
             right: 0,
             height: 1,
-            background: 'linear-gradient(90deg, transparent 5%, rgba(212,175,55,0.18) 30%, rgba(255,248,214,0.12) 50%, rgba(212,175,55,0.18) 70%, transparent 95%)',
+            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.08) 50%, transparent 90%)',
             pointerEvents: 'none',
           }}
         />
@@ -786,7 +599,7 @@ export const LoungeVault = memo(function LoungeVault({
                 boxShadow: '0 0 16px rgba(212,175,55,0.3)',
               }}
             >
-              <CheckCircle size={16} strokeWidth={2.5} color="#1a1810" />
+              <CheckCircle size={16} strokeWidth={2.5} color="#0A0A0A" />
             </motion.div>
           )}
         </motion.div>
@@ -804,7 +617,6 @@ export const LoungeVault = memo(function LoungeVault({
               key={a.id}
               achievement={a}
               index={i}
-              isRecent={a.id === recentUnlockedId}
             />
           ))}
         </div>
