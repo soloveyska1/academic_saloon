@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "Pre-push: TypeScript check..."
-cd mini-app && npx tsc --noEmit
+cd mini-app && ./node_modules/.bin/tsc --noEmit --incremental
 if [ $? -ne 0 ]; then
   echo "TypeScript errors found. Push blocked."
   echo "Fix errors and try again."
