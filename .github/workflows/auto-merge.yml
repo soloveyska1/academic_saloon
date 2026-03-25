@@ -10,6 +10,9 @@ on:
         description: 'Branch to merge (leave empty for current)'
         required: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
   pull-requests: write
