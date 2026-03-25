@@ -104,7 +104,7 @@ def get_codex_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="Подробные условия",
-                url="https://telegra.ph/Kodeks-Saluna-Polnaya-versiya-11-29"
+                url=settings.OFFER_URL
             )
         ],
         [

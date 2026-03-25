@@ -1,7 +1,7 @@
 import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import {
-  Shield, ChevronDown, ArrowRight, Check,
+  Shield, ChevronDown, ArrowRight,
   FileText, Star,
 } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
@@ -26,9 +26,9 @@ export interface OfferModalProps {
 
 const EASE = [0.16, 1, 0.3, 1] as const
 
-// ═══════════ CHECKLIST ITEM ═══════════
-const ChecklistItem = memo(function ChecklistItem({ card, index, checked, onToggle }: {
-  card: typeof SUMMARY_CARDS[0]; index: number; checked: boolean; onToggle: () => void
+// ═══════════ SUMMARY ITEM ═══════════
+const SummaryItem = memo(function SummaryItem({ card, index }: {
+  card: typeof SUMMARY_CARDS[0]; index: number
 }) {
   const Icon = card.icon
 
@@ -37,76 +37,68 @@ const ChecklistItem = memo(function ChecklistItem({ card, index, checked, onTogg
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.2 + index * 0.04, ease: EASE }}
-      onClick={onToggle}
       style={{
         display: 'flex', alignItems: 'flex-start', gap: 10,
-        padding: '13px 14px',
-        cursor: 'pointer',
+        padding: '14px 14px',
         borderBottom: index < SUMMARY_CARDS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-        transition: 'background 0.15s',
       }}
     >
-      {/* Checkbox */}
-      <m.div
-        animate={{
-          background: checked
-            ? 'linear-gradient(135deg, var(--gold-400), var(--gold-600))'
-            : 'transparent',
-          borderColor: checked ? 'transparent' : 'rgba(255,255,255,0.12)',
-        }}
-        transition={{ duration: 0.15 }}
+      <div
         style={{
-          width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-          border: '1.5px solid rgba(255,255,255,0.12)',
+          width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+          border: '1px solid rgba(212,175,55,0.12)',
+          background: 'linear-gradient(180deg, rgba(212,175,55,0.14), rgba(212,175,55,0.05))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginTop: 1,
+          marginTop: 1, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
-        <AnimatePresence>
-          {checked && (
-            <m.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              transition={{ type: 'spring', damping: 15, stiffness: 500 }}
-            >
-              <Check size={11} strokeWidth={3} color="var(--text-on-gold)" />
-            </m.div>
-          )}
-        </AnimatePresence>
-      </m.div>
+        <Icon size={15} color="var(--gold-400)" strokeWidth={1.9} style={{ opacity: 0.88 }} />
+      </div>
 
-      {/* Icon + text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2,
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap',
         }}>
-          <Icon size={12} color="var(--gold-400)" strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
           <span style={{
             fontSize: 13, fontWeight: 700,
-            color: checked ? 'var(--text-primary)' : 'var(--text-secondary)',
-            transition: 'color 0.2s', lineHeight: 1.3,
+            color: 'var(--text-primary)', lineHeight: 1.3,
           }}>
             {card.title}
           </span>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: 'rgba(212,175,55,0.10)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              color: 'var(--gold-400)',
+              fontSize: 10.5,
+              fontWeight: 800,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {card.proof}
+            <span style={{ color: 'rgba(255,255,255,0.48)', fontWeight: 700 }}>
+              {card.proofLabel}
+            </span>
+          </span>
         </div>
         <div style={{
-          fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)',
-          fontWeight: 500, paddingLeft: 18,
+          fontSize: 11, lineHeight: 1.45, color: 'rgba(212,175,55,0.72)',
+          fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          {card.hook}
+        </div>
+        <div style={{
+          fontSize: 12, lineHeight: 1.55, color: 'var(--text-muted)',
+          fontWeight: 500,
         }}>
           {card.text}
         </div>
       </div>
-
-      {/* Proof — right-aligned */}
-      <span style={{
-        fontSize: 11, fontWeight: 800,
-        color: checked ? 'var(--gold-400)' : 'var(--text-muted)',
-        flexShrink: 0, marginTop: 2,
-        transition: 'color 0.2s',
-      }}>
-        {card.proof}
-      </span>
     </m.div>
   )
 })
@@ -173,21 +165,8 @@ const LegalSection = memo(function LegalSection({ section, isOpen, onToggle }: {
 
 // ═══════════ MAIN MODAL ═══════════
 export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, accepting = false }: OfferModalProps) {
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
   const [showFullText, setShowFullText] = useState(false)
   const [openSections, setOpenSections] = useState<Set<string>>(new Set())
-
-  const progress = checkedItems.size / SUMMARY_CARDS.length
-
-  const toggleCheck = useCallback((index: number) => {
-    triggerHaptic('light')
-    setCheckedItems(prev => {
-      const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
-      return next
-    })
-  }, [])
 
   const toggleSection = useCallback((id: string) => {
     triggerHaptic('light')
@@ -338,58 +317,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           </span>
         </m.div>
 
-        {/* ═══════════ PROGRESS ═══════════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          style={{ marginBottom: 8 }}
-        >
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 5,
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>
-              Ключевые условия
-            </span>
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              color: progress === 1 ? 'var(--gold-400)' : 'var(--text-muted)',
-            }}>
-              {checkedItems.size} из {SUMMARY_CARDS.length}
-            </span>
-          </div>
-          <div style={{
-            height: 3, borderRadius: 2,
-            background: 'rgba(255,255,255,0.05)', overflow: 'hidden',
-          }}>
-            <m.div
-              animate={{ width: `${Math.max(progress * 100, 1)}%` }}
-              transition={{ duration: 0.4, ease: EASE }}
-              style={{
-                height: '100%', borderRadius: 2,
-                background: progress === 1
-                  ? 'var(--gold-400)'
-                  : 'linear-gradient(90deg, rgba(212,175,55,0.3), var(--gold-400))',
-                position: 'relative', overflow: 'hidden',
-              }}
-            >
-              {progress > 0 && progress < 1 && (
-                <m.div
-                  animate={{ x: ['-100%', '250%'] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  style={{
-                    position: 'absolute', top: 0, left: 0,
-                    width: '30%', height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
-                  }}
-                />
-              )}
-            </m.div>
-          </div>
-        </m.div>
-
-        {/* ═══════════ INTERACTIVE CHECKLIST ═══════════ */}
+        {/* ═══════════ SUMMARY CARDS ═══════════ */}
         <div style={{
           borderRadius: 12,
           background: 'var(--bg-glass)',
@@ -398,12 +326,10 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           marginBottom: 12,
         }}>
           {SUMMARY_CARDS.map((card, i) => (
-            <ChecklistItem
+            <SummaryItem
               key={card.title}
               card={card}
               index={i}
-              checked={checkedItems.has(i)}
-              onToggle={() => toggleCheck(i)}
             />
           ))}
         </div>
@@ -468,11 +394,25 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           transition={{ delay: 0.5 }}
           style={{ marginTop: 16 }}
         >
+          <div
+            style={{
+              marginBottom: 10,
+              padding: '12px 14px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              fontSize: 11.5,
+              lineHeight: 1.55,
+              color: 'var(--text-muted)',
+            }}
+          >
+            Нажимая кнопку ниже, ты принимаешь условия публичной оферты. Полный текст можно открыть выше в этом окне.
+          </div>
           <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={handleAccept}
-            aria-label="Принять условия оферты"
+            aria-label="Принять оферту и открыть кабинет"
             disabled={accepting}
             style={{
               width: '100%', padding: '14px 24px', borderRadius: 12,

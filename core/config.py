@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ORDERS_CHANNEL_ID: int = -1003331104298  # Канал для Live-карточек заказов
     ADMIN_GROUP_ID: int = -1003352978651  # Супергруппа с Forum Topics для тикетов
     SUPPORT_USERNAME: str = "Thisissaymoon"
-    OFFER_URL: str = "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30"  # Юридическая оферта
+    OFFER_URL: str = "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25"  # Юридическая оферта
 
     # Mini App URL (Web App для Telegram)
     # Hosted on server via nginx at academic-saloon.duckdns.org
