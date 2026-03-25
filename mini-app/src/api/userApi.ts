@@ -18,6 +18,7 @@ export interface OrderCreateResponse {
 
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
+const DEFAULT_OFFER_URL = 'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30'
 
 // Known production API host — used as fallback when VITE_API_URL is not set
 const PRODUCTION_API_URL = 'https://academic-saloon.duckdns.org/api'
@@ -97,6 +98,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     let errorMessage = `Ошибка сервера (${response.status})`
     try {
       const error = await response.json()
+      const errorCode = typeof error.code === 'string' ? error.code : ''
       if (error.detail) {
         // Ensure detail is a string - convert objects/arrays to JSON string
         const detailStr = typeof error.detail === 'string'
@@ -107,6 +109,8 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
           errorMessage = 'Сессия истекла. Перезапустите приложение.'
         } else if (detailStr.includes('Missing X-Telegram')) {
           errorMessage = 'Откройте приложение через Telegram'
+        } else if (errorCode === 'TERMS_ACCEPTANCE_REQUIRED' || detailStr.includes('TERMS_ACCEPTANCE_REQUIRED') || detailStr.includes('Требуется принять условия оферты')) {
+          errorMessage = 'Сначала примите условия оферты'
         } else if (detailStr.includes('Rate limit')) {
           errorMessage = 'Слишком много запросов. Подождите минуту.'
         } else {
@@ -126,11 +130,22 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 //  CORE API
 // ═══════════════════════════════════════════════════════════════════════════
 
-export async function fetchConfig(): Promise<{ bot_username: string; support_username: string }> {
+export interface PublicConfig {
+  bot_username: string
+  support_username: string
+  reviews_channel?: string
+  offer_url?: string
+}
+
+export async function fetchConfig(): Promise<PublicConfig> {
   try {
-    return await apiFetch<{ bot_username: string; support_username: string }>('/config')
+    return await apiFetch<PublicConfig>('/config')
   } catch {
-    return { bot_username: 'Kladovaya_GIPSR_bot', support_username: 'Thisissaymoon' }
+    return {
+      bot_username: 'Kladovaya_GIPSR_bot',
+      support_username: 'Thisissaymoon',
+      offer_url: DEFAULT_OFFER_URL,
+    }
   }
 }
 
@@ -140,6 +155,17 @@ export async function fetchUserData(): Promise<UserData> {
   }
 
   return await apiFetch<UserData>('/user')
+}
+
+export interface AcceptTermsResult {
+  success: boolean
+  accepted_at: string
+}
+
+export async function acceptTerms(): Promise<AcceptTermsResult> {
+  return await apiFetch<AcceptTermsResult>('/user/accept-terms', {
+    method: 'POST',
+  })
 }
 
 export async function fetchOrders(status?: string): Promise<Order[]> {

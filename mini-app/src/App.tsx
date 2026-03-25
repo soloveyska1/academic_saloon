@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { PremiumSplashScreen } from './components/PremiumSplashScreen'
+import { WelcomeOfferGate } from './components/WelcomeOfferGate'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RouteNavigationController } from './components/RouteNavigationController'
 import { ToastProvider } from './components/ui/Toast'
@@ -210,7 +211,7 @@ function NotFoundPage() {
 }
 
 function AppContent() {
-  const { userData, loading: userDataLoading, error, refetch } = useUserData()
+  const { userData, loading: userDataLoading, error, refetch, refreshUserData } = useUserData()
   const [isReady, setIsReady] = useState(false)
   const [splashComplete, setSplashComplete] = useState(false)
   const [showSplash, setShowSplash] = useState(true)
@@ -360,6 +361,10 @@ function AppContent() {
     setSplashComplete(true)
     setShowSplash(false)
   }, [])
+
+  const handleTermsAccepted = useCallback(async () => {
+    await refreshUserData()
+  }, [refreshUserData])
 
   // Get telegram ID for WebSocket - need it before loading check
   const telegramId = userData?.telegram_id || null
@@ -552,6 +557,14 @@ function AppContent() {
             </motion.div>
           </div>
         </WebSocketProvider>
+      </ErrorBoundary>
+    )
+  }
+
+  if (userData && userData.has_accepted_terms === false) {
+    return (
+      <ErrorBoundary>
+        <WelcomeOfferGate user={userData} onAccepted={handleTermsAccepted} />
       </ErrorBoundary>
     )
   }

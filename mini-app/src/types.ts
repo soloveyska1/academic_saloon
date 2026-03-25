@@ -3,6 +3,8 @@ export interface UserData {
   id: number
   telegram_id: number
   created_at?: string | null
+  terms_accepted_at?: string | null
+  has_accepted_terms?: boolean
   username: string | null
   fullname: string
   balance: number

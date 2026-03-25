@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { UserData } from '../types'
@@ -35,21 +35,6 @@ export function ProfilePageNew({ user }: Props) {
   const [showQR, setShowQR] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
   const [showOffer, setShowOffer] = useState(false)
-
-  /* ═══════ Auto-show offer for new users ═══════ */
-
-  useEffect(() => {
-    if (!user) return
-    const key = `offer_accepted_${user.telegram_id}`
-    if (!localStorage.getItem(key)) {
-      setShowOffer(true)
-    }
-  }, [user?.telegram_id])
-
-  const handleOfferAccepted = useCallback(() => {
-    if (!user) return
-    localStorage.setItem(`offer_accepted_${user.telegram_id}`, new Date().toISOString())
-  }, [user?.telegram_id])
 
   /* ═══════ Computed ═══════ */
 
@@ -239,7 +224,6 @@ export function ProfilePageNew({ user }: Props) {
         <OfferModal
           isOpen={showOffer}
           onClose={() => setShowOffer(false)}
-          onAccept={handleOfferAccepted}
         />
 
         {showQR && inviteLink && (

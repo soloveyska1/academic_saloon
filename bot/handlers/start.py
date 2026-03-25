@@ -41,7 +41,7 @@ WELCOME_MESSAGE = """<b>Добро пожаловать в Academic Saloon.</b>
 
 Премиальный сервис по академическим задачам готов к работе. Здесь удобно оформить заказ, следить за этапами и быстро связаться с поддержкой.
 
-<i>Откройте приложение кнопкой ниже.</i>"""
+<i>При первом входе в приложении мы покажем короткое приветствие и условия сервиса.</i>"""
 
 
 # Message for returning users (shorter)
@@ -241,11 +241,10 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot, state: FS
 
 async def process_start(message: Message, session: AsyncSession, bot: Bot, state: FSMContext, deep_link: str | None):
     """
-    Основная логика (БЕЗ БАРЬЕРА ОФЕРТЫ):
-    - Новый пользователь → сразу главное меню (implicit consent)
+    Основная логика:
+    - Новый пользователь → приветствие и вход в Mini App
     - Существующий пользователь → главное меню
     """
-    from datetime import datetime
 
     # Очищаем FSM состояние при /start
     await state.clear()
@@ -278,7 +277,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             except ValueError:
                 pass
 
-        # Создаём пользователя С IMPLICIT CONSENT (оферта принята по факту использования)
+        # Создаём пользователя без implicit consent — акцепт переносится в Mini App
         user = User(
             telegram_id=telegram_id,
             username=message.from_user.username,
@@ -286,7 +285,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             role="user",
             referrer_id=referrer_id,
             deep_link=deep_link,
-            terms_accepted_at=datetime.utcnow(),  # Implicit consent
         )
         session.add(user)
         await session.commit()
@@ -307,9 +305,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         # Обновляем данные существующего пользователя
         user.username = message.from_user.username
         user.fullname = message.from_user.full_name
-        # Если оферта не была принята — принимаем implicit
-        if not user.terms_accepted_at:
-            user.terms_accepted_at = datetime.utcnow()
         await session.commit()
 
         # Логируем возврат

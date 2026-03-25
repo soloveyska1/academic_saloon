@@ -116,6 +116,8 @@ class UserResponse(BaseModel):
     streak_freeze_count: int = 0  # Available streak freezes
     free_spins: int = 0  # Legacy roulette field (kept for frontend compat)
     roulette_onboarding_seen: bool = True  # Legacy roulette field (kept for frontend compat)
+    terms_accepted_at: Optional[str] = None
+    has_accepted_terms: bool = False
     rank: RankInfo
     loyalty: LoyaltyInfo
     bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов
@@ -219,6 +221,13 @@ class ConfigResponse(BaseModel):
     bot_username: str
     support_username: str
     reviews_channel: str
+    offer_url: str
+
+
+class AcceptTermsResponse(BaseModel):
+    """Response after accepting public offer."""
+    success: bool
+    accepted_at: str
 
 
 # ═══════════════════════════════════════════════════════════════════════════

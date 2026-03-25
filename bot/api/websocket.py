@@ -122,10 +122,24 @@ async def websocket_endpoint(
         try:
             from bot.api.auth import validate_init_data
             from core.config import settings
+            from database.db import async_session_maker
+            from database.models.users import User
+            from sqlalchemy import select
             user, error = validate_init_data(init_data, settings.BOT_TOKEN.get_secret_value())
             if not user or user.id != telegram_id:
                 logger.warning(f"[WS] Auth failed for telegram_id={telegram_id}: {error}")
                 await websocket.close(code=4001, reason="Authentication failed")
+                return
+
+            async with async_session_maker() as session:
+                result = await session.execute(
+                    select(User.terms_accepted_at).where(User.telegram_id == telegram_id)
+                )
+                terms_accepted_at = result.scalar_one_or_none()
+
+            if not terms_accepted_at:
+                logger.warning(f"[WS] Terms not accepted for telegram_id={telegram_id}")
+                await websocket.close(code=4003, reason="Terms acceptance required")
                 return
         except Exception as e:
             logger.error(f"[WS] Auth error: {e}")

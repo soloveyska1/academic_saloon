@@ -19,6 +19,8 @@ export interface OfferModalProps {
   isOpen: boolean
   onClose: () => void
   onAccept?: () => void
+  dismissible?: boolean
+  accepting?: boolean
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const
@@ -176,7 +178,7 @@ const LegalSection = memo(function LegalSection({ section, isOpen, onToggle }: {
 })
 
 // ═══════════ MAIN MODAL ═══════════
-export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
+export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, accepting = false }: OfferModalProps) {
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
   const [showFullText, setShowFullText] = useState(false)
   const [openSections, setOpenSections] = useState<Set<string>>(new Set())
@@ -204,10 +206,11 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
   }, [])
 
   const handleAccept = useCallback(() => {
+    if (accepting) return
     triggerHaptic('medium')
     onAccept?.()
-    onClose()
-  }, [onAccept, onClose])
+    if (dismissible) onClose()
+  }, [accepting, onAccept, onClose, dismissible])
 
   return (
     <ModalWrapper
@@ -216,6 +219,7 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
       modalId="offer-modal"
       title="Публичная оферта"
       accentColor="var(--gold-400)"
+      dismissible={dismissible}
     >
       <div style={{ padding: '0 20px 24px' }}>
 
@@ -487,17 +491,19 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
           <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
-            onClick={handleAccept}
-            aria-label="Принять условия оферты"
-            style={{
-              width: '100%', padding: '14px 24px', borderRadius: 12,
-              background: 'var(--gold-metallic)',
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 8, position: 'relative', overflow: 'hidden',
-              boxShadow: 'var(--glow-gold)',
-            }}
-          >
+              onClick={handleAccept}
+              aria-label="Принять условия оферты"
+              disabled={accepting}
+              style={{
+                width: '100%', padding: '14px 24px', borderRadius: 12,
+                background: 'var(--gold-metallic)',
+                border: 'none', cursor: accepting ? 'wait' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 8, position: 'relative', overflow: 'hidden',
+                boxShadow: 'var(--glow-gold)',
+                opacity: accepting ? 0.72 : 1,
+              }}
+            >
             <m.div
               aria-hidden="true"
               animate={{ x: ['-100%', '250%'] }}
@@ -508,12 +514,12 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
                 background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
               }}
             />
-            <span style={{
-              fontSize: 14, fontWeight: 700,
-              color: 'var(--text-on-gold)', position: 'relative',
-            }}>
-              Принять условия
-            </span>
+              <span style={{
+                fontSize: 14, fontWeight: 700,
+                color: 'var(--text-on-gold)', position: 'relative',
+              }}>
+                {accepting ? 'Фиксируем акцепт...' : 'Принять условия'}
+              </span>
             <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" style={{ position: 'relative' }} />
           </m.button>
         </m.div>

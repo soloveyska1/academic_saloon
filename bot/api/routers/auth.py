@@ -14,7 +14,7 @@ from database.models.transactions import BalanceTransaction
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
-    UserResponse, ConfigResponse, BonusExpiryInfo, BalanceTransactionResponse
+    UserResponse, ConfigResponse, BonusExpiryInfo, BalanceTransactionResponse, AcceptTermsResponse
 )
 from bot.api.dependencies import (
     get_rank_levels, get_loyalty_levels, get_rank_info, get_loyalty_info, order_to_response
@@ -34,7 +34,8 @@ async def get_config(request: Request):
     return ConfigResponse(
         bot_username=settings.BOT_USERNAME,
         support_username=settings.SUPPORT_USERNAME,
-        reviews_channel=settings.REVIEWS_CHANNEL
+        reviews_channel=settings.REVIEWS_CHANNEL,
+        offer_url=settings.OFFER_URL,
     )
 
 @router.get("/user", response_model=UserResponse)
@@ -60,7 +61,6 @@ async def get_user_profile(
             username=tg_user.username,
             fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
             role="user",
-            terms_accepted_at=datetime.now(timezone.utc),  # Implicit consent via Mini App
         )
         session.add(user)
         await session.commit()
@@ -145,6 +145,8 @@ async def get_user_profile(
         daily_luck_available=daily_available,
         daily_bonus_streak=user.daily_bonus_streak or 0,
         streak_freeze_count=user.streak_freeze_count or 0,
+        terms_accepted_at=user.terms_accepted_at.isoformat() if user.terms_accepted_at else None,
+        has_accepted_terms=bool(user.terms_accepted_at),
         rank=rank_info,  # Use actual total spent
         loyalty=loyalty_info,
         bonus_expiry=bonus_expiry,
@@ -160,6 +162,34 @@ async def get_user_profile(
             for tx in transactions
         ],
         orders=[order_to_response(o) for o in orders]
+    )
+
+
+@router.post("/user/accept-terms", response_model=AcceptTermsResponse)
+async def accept_terms(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Persist explicit offer acceptance for Mini App access."""
+    result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        user = User(
+            telegram_id=tg_user.id,
+            username=tg_user.username,
+            fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
+            role="user",
+        )
+        session.add(user)
+
+    accepted_at = user.terms_accepted_at or datetime.now(timezone.utc)
+    user.terms_accepted_at = accepted_at
+    await session.commit()
+
+    return AcceptTermsResponse(
+        success=True,
+        accepted_at=accepted_at.isoformat(),
     )
 
 @router.get("/qr/referral")

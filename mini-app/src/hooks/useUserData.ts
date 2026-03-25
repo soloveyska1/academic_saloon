@@ -54,6 +54,15 @@ export function useUserData() {
   const [error, setError] = useState<string | null>(null)
   const [isStale, setIsStale] = useState<boolean>(() => readCache() !== null)
 
+  const refreshUserData = useCallback(async () => {
+    const data = await fetchUserData()
+    setRawUserData(data)
+    writeCache(data)
+    setIsStale(false)
+    setError(null)
+    return data
+  }, [])
+
   useEffect(() => {
     async function loadUserData() {
       try {
@@ -66,11 +75,7 @@ export function useUserData() {
           throw new Error('Откройте приложение через Telegram')
         }
 
-        const data = await fetchUserData()
-        setRawUserData(data)
-        writeCache(data)
-        setIsStale(false)
-        setError(null)
+        await refreshUserData()
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
       } finally {
@@ -79,18 +84,15 @@ export function useUserData() {
     }
 
     loadUserData()
-  }, [])
+  }, [refreshUserData])
 
   const refetch = useCallback(async () => {
     try {
-      const data = await fetchUserData()
-      setRawUserData(data)
-      writeCache(data)
-      setIsStale(false)
+      await refreshUserData()
     } catch {
       // Silent refetch failure - user data stays unchanged
     }
-  }, [])
+  }, [refreshUserData])
 
   const userData = useMemo(() => {
     if (!rawUserData) return null
@@ -134,7 +136,7 @@ export function useUserData() {
     }
   }, [admin.simulateNewUser, rawUserData])
 
-  return { userData, loading, error, refetch, isStale }
+  return { userData, loading, error, refetch, refreshUserData, isStale }
 }
 
 // Bot username - правильное имя!

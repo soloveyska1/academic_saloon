@@ -51,6 +51,7 @@ export interface ModalWrapperProps {
   modalId: string
   title: string
   accentColor?: string
+  dismissible?: boolean
 }
 
 export function ModalWrapper({
@@ -60,6 +61,7 @@ export function ModalWrapper({
   modalId,
   title,
   accentColor = '#D4AF37',
+  dismissible = true,
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -82,9 +84,10 @@ export function ModalWrapper({
 
   // Close with haptic
   const handleClose = useCallback(() => {
+    if (!dismissible) return
     triggerHaptic('light')
     onClose()
-  }, [onClose])
+  }, [dismissible, onClose])
 
   // ─── Handle drag-to-dismiss (ONLY on the grabber) ─────────────────
   const onHandleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -117,12 +120,12 @@ export function ModalWrapper({
 
     if (totalDy > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
       triggerHaptic('light')
-      onClose()
+      if (dismissible) onClose()
     }
     setDragY(0)
     setIsDragging(false)
     dragStartRef.current = null
-  }, [onClose])
+  }, [dismissible, onClose])
 
   // ─── Focus management ─────────────────────────────────────────────
   useEffect(() => {
@@ -137,10 +140,10 @@ export function ModalWrapper({
   // Escape key
   useEffect(() => {
     if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && dismissible) handleClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [isOpen, handleClose])
+  }, [isOpen, dismissible, handleClose])
 
   // Reset drag state when closed
   useEffect(() => {
@@ -185,7 +188,7 @@ export function ModalWrapper({
               animate={{ opacity: backdropOpacity }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={handleClose}
+              onClick={dismissible ? handleClose : undefined}
               style={{
                 position: 'fixed',
                 inset: 0,
@@ -258,14 +261,14 @@ export function ModalWrapper({
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: '14px 16px 8px',
-                  cursor: 'grab',
-                  touchAction: 'none',
+                  cursor: dismissible ? 'grab' : 'default',
+                  touchAction: dismissible ? 'none' : 'auto',
                   position: 'relative',
                   zIndex: 2,
                 }}
-                onTouchStart={onHandleTouchStart}
-                onTouchMove={onHandleTouchMove}
-                onTouchEnd={onHandleTouchEnd}
+                onTouchStart={dismissible ? onHandleTouchStart : undefined}
+                onTouchMove={dismissible ? onHandleTouchMove : undefined}
+                onTouchEnd={dismissible ? onHandleTouchEnd : undefined}
               >
                 <div style={{
                   width: 42,
@@ -275,29 +278,31 @@ export function ModalWrapper({
                 }} />
 
                 {/* Close — ghost button, just the icon */}
-                <m.button
-                  onClick={(e) => { e.stopPropagation(); handleClose() }}
-                  whileTap={{ scale: 0.85, opacity: 0.6 }}
-                  style={{
-                    position: 'absolute',
-                    right: 20,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: 'transparent',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                  aria-label="Закрыть"
-                >
-                  <X size={18} strokeWidth={2} color="rgba(255,255,255,0.3)" />
-                </m.button>
+                {dismissible && (
+                  <m.button
+                    onClick={(e) => { e.stopPropagation(); handleClose() }}
+                    whileTap={{ scale: 0.85, opacity: 0.6 }}
+                    style={{
+                      position: 'absolute',
+                      right: 20,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: 'transparent',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    aria-label="Закрыть"
+                  >
+                    <X size={18} strokeWidth={2} color="rgba(255,255,255,0.3)" />
+                  </m.button>
+                )}
               </div>
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>

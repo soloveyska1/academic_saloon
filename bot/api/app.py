@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
 
@@ -42,6 +43,13 @@ DEV_ORIGINS = [
 # Build allowed origins based on environment
 IS_DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 ALLOWED_ORIGINS = PROD_ORIGINS + VERCEL_PREVIEW_ORIGINS + (DEV_ORIGINS if IS_DEBUG else [])
+
+TERMS_EXEMPT_PATHS = {
+    "/api/health",
+    "/api/config",
+    "/api/user",
+    "/api/user/accept-terms",
+}
 
 
 @asynccontextmanager
@@ -95,6 +103,10 @@ def create_app() -> FastAPI:
 
     # Include routers
     from .routers import auth, orders, daily, chat, admin, god_mode, payments, assistant
+    from database.db import async_session_maker
+    from database.models.users import User
+    from bot.api.auth import validate_init_data
+    from core.config import settings
 
     app.include_router(auth.router, prefix="/api")
     app.include_router(orders.router, prefix="/api")
@@ -105,6 +117,39 @@ def create_app() -> FastAPI:
     app.include_router(payments.router, prefix="/api")  # YooKassa payments
     app.include_router(assistant.router, prefix="/api")  # AI assistant (FAQ + complexity)
     app.include_router(ws_router)  # WebSocket for real-time updates
+
+    @app.middleware("http")
+    async def enforce_terms_acceptance(request: Request, call_next):
+        path = request.url.path
+
+        if not path.startswith("/api") or path in TERMS_EXEMPT_PATHS or path.startswith("/api/god"):
+            return await call_next(request)
+
+        init_data = request.headers.get("X-Telegram-Init-Data", "")
+        if not init_data:
+            return await call_next(request)
+
+        tg_user, error_reason = validate_init_data(init_data, settings.BOT_TOKEN.get_secret_value())
+        if not tg_user:
+            logger.warning(f"[Terms Gate] Auth skip for {path}: {error_reason}")
+            return await call_next(request)
+
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(User.terms_accepted_at).where(User.telegram_id == tg_user.id)
+            )
+            terms_accepted_at = result.scalar_one_or_none()
+
+        if not terms_accepted_at:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Требуется принять условия оферты",
+                    "code": "TERMS_ACCEPTANCE_REQUIRED",
+                },
+            )
+
+        return await call_next(request)
 
     # Health check with dependency verification
     @app.get("/api/health")

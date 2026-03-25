@@ -451,7 +451,6 @@ async def create_order(
                 username=tg_user.username,
                 fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
                 role="user",
-                terms_accepted_at=datetime.now(timezone.utc),
             )
             session.add(user)
             await session.commit()
