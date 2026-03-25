@@ -90,15 +90,29 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 + index * 0.05 }}
+      transition={{ delay: 0.4 + index * 0.06 }}
       style={{
-        borderRadius: 10,
-        background: open ? 'var(--gold-glass-subtle)' : 'var(--bg-glass)',
-        border: open ? '1px solid var(--gold-glass-subtle)' : '1px solid var(--border-default)',
+        position: 'relative',
+        borderRadius: 12,
+        background: open
+          ? 'linear-gradient(160deg, rgba(27,22,12,0.8) 0%, rgba(12,12,12,0.9) 100%)'
+          : 'var(--bg-glass)',
+        border: open
+          ? '1px solid rgba(212,175,55,0.18)'
+          : '1px solid var(--border-default)',
         overflow: 'hidden',
-        transition: 'background 0.2s, border-color 0.2s',
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
+      {/* Top shine on open state */}
+      {open && (
+        <div aria-hidden="true" style={{
+          position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+          pointerEvents: 'none',
+        }} />
+      )}
+
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
@@ -107,7 +121,7 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
         style={{
           width: '100%',
           padding: '14px 14px',
-          minHeight: 48,
+          minHeight: 50,
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -116,22 +130,31 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
           justifyContent: 'space-between',
           gap: 12,
           textAlign: 'left',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <span style={{
-          fontSize: 13, fontWeight: 600,
+          fontSize: 13, fontWeight: 700,
           color: open ? 'var(--text-primary)' : 'var(--text-secondary)',
           lineHeight: 1.4, flex: 1,
-          transition: 'color 0.2s',
+          letterSpacing: '-0.01em',
+          transition: 'color 0.3s',
         }}>
           {q}
         </span>
         <m.div
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          style={{ flexShrink: 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            flexShrink: 0,
+            width: 22, height: 22, borderRadius: 6,
+            background: open ? 'rgba(212,175,55,0.10)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 0.3s',
+          }}
         >
-          <ChevronDown size={14} color={open ? 'var(--gold-400)' : 'var(--text-muted)'} />
+          <ChevronDown size={14} strokeWidth={2} color={open ? 'var(--gold-400)' : 'var(--text-muted)'} />
         </m.div>
       </button>
 
@@ -143,15 +166,24 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
               padding: '0 14px 14px',
-              fontSize: 12, lineHeight: 1.6,
+              fontSize: 12.5, lineHeight: 1.6,
               color: 'var(--text-muted)', fontWeight: 600,
+              position: 'relative',
             }}>
-              {a}
+              {/* Left gold accent bar */}
+              <div aria-hidden="true" style={{
+                position: 'absolute', left: 0, top: 0, bottom: 14,
+                width: 2, borderRadius: 1,
+                background: 'linear-gradient(180deg, rgba(212,175,55,0.5), rgba(212,175,55,0.0))',
+              }} />
+              <div style={{ paddingLeft: 10 }}>
+                {a}
+              </div>
             </div>
           </m.div>
         )}
@@ -428,20 +460,26 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           style={{ marginTop: 20 }}
         >
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            marginBottom: 8, paddingLeft: 2,
+            display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 10, paddingLeft: 2,
           }}>
-            <Sparkles size={10} color="var(--gold-400)" strokeWidth={2} />
+            <div style={{
+              width: 20, height: 20, borderRadius: 6,
+              background: 'rgba(212,175,55,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Sparkles size={10} color="var(--gold-400)" strokeWidth={2.2} />
+            </div>
             <span style={{
-              fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'var(--text-muted)',
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: 'var(--gold-300)',
             }}>
               Частые вопросы
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {FAQ.map((item, i) => (
               <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
             ))}
