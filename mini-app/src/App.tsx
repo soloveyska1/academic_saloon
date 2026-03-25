@@ -580,11 +580,15 @@ function AppContent() {
   if ((requiresTermsAcceptance || requiresSimulatedTermsGate) && currentUser) {
     return (
       <ErrorBoundary>
-        <WelcomeOfferGate
-          user={currentUser}
-          onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
-          previewMode={requiresSimulatedTermsGate}
-        />
+        <NavigationProvider>
+          <GestureGuardProvider>
+            <WelcomeOfferGate
+              user={currentUser}
+              onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
+              previewMode={requiresSimulatedTermsGate}
+            />
+          </GestureGuardProvider>
+        </NavigationProvider>
       </ErrorBoundary>
     )
   }
