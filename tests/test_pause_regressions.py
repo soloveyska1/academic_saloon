@@ -15,3 +15,13 @@ def test_realtime_notifications_cover_pause_and_paid_full():
     assert paused["action"] == "view_order"
     assert paid_full["type"] == NotificationType.PAYMENT_CONFIRMED
     assert paid_full["celebration"] is True
+
+
+def test_realtime_notifications_cover_pending_and_rejected():
+    pending = ORDER_STATUS_NOTIFICATIONS["pending"]
+    rejected = ORDER_STATUS_NOTIFICATIONS["rejected"]
+
+    assert pending["type"] == NotificationType.ORDER_PENDING
+    assert pending["icon"] == "clock"
+    assert rejected["type"] == NotificationType.ORDER_REJECTED
+    assert rejected["priority"] == "high"

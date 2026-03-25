@@ -18,6 +18,8 @@ MSK_TZ = ZoneInfo("Europe/Moscow")
 class NotificationType(str, Enum):
     """Типы уведомлений"""
     ORDER_CREATED = "order_created"
+    ORDER_PENDING = "order_pending"
+    ORDER_REJECTED = "order_rejected"
     PRICE_SET = "price_set"
     WAITING_PAYMENT = "waiting_payment"
     PAYMENT_PENDING = "payment_pending"
@@ -38,6 +40,16 @@ class NotificationType(str, Enum):
 # ═══════════════════════════════════════════════════════════════════════════
 
 ORDER_STATUS_NOTIFICATIONS = {
+    # Заказ принят и передан на оценку
+    "pending": {
+        "type": NotificationType.ORDER_PENDING,
+        "title": "Заявка принята",
+        "message": "Менеджер изучает вводные и готовит расчёт",
+        "icon": "clock",
+        "color": "#d4af37",
+        "priority": "normal",
+    },
+
     # Заказ создан
     "waiting_estimation": {
         "type": NotificationType.ORDER_CREATED,
@@ -163,6 +175,15 @@ ORDER_STATUS_NOTIFICATIONS = {
         "icon": "x-circle",
         "color": "#ef4444",
         "priority": "normal",
+    },
+
+    "rejected": {
+        "type": NotificationType.ORDER_REJECTED,
+        "title": "Заказ отклонён",
+        "message": "Мы не можем взять этот заказ в работу. Поддержка поможет подобрать альтернативу.",
+        "icon": "x-circle",
+        "color": "#ef4444",
+        "priority": "high",
     },
 }
 
