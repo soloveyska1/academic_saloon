@@ -244,20 +244,33 @@ export function HomePage({ user, onRefresh }: Props) {
   )
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
 
-  /* ─── Loading skeleton ─── */
+  /* ─── Gold shimmer skeleton ─── */
+  const goldSkeletonStyle: React.CSSProperties = {
+    background: 'linear-gradient(90deg, rgba(212,175,55,0.04) 25%, rgba(212,175,55,0.08) 50%, rgba(212,175,55,0.04) 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'gold-skeleton 1.5s ease infinite',
+  }
+
   if (!user) return (
-    <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))' }}>
+    <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))', background: '#0A0A0A' }}>
+      <style>{`@keyframes gold-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
       <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Header: avatar + name + balance card */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ width: 100, height: 14, borderRadius: 4, background: 'var(--surface-hover)', opacity: 0.5 }} />
-            <div style={{ width: 140, height: 24, borderRadius: 8, background: 'var(--surface-hover)' }} />
+            <div style={{ width: 100, height: 14, borderRadius: 4, ...goldSkeletonStyle }} />
+            <div style={{ width: 140, height: 24, borderRadius: 8, ...goldSkeletonStyle }} />
           </div>
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface-hover)' }} />
+          <div style={{ width: 48, height: 48, borderRadius: '50%', ...goldSkeletonStyle }} />
         </div>
-        <div style={{ height: 56, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.4 }} />
-        <div style={{ height: 180, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.3 }} />
-        <div style={{ height: 100, borderRadius: 12, background: 'var(--surface-hover)', opacity: 0.2 }} />
+        {/* Balance card */}
+        <div style={{ height: 120, borderRadius: 12, ...goldSkeletonStyle }} />
+        {/* Order card */}
+        <div style={{ height: 80, borderRadius: 12, ...goldSkeletonStyle }} />
+        {/* CTA */}
+        <div style={{ height: 52, borderRadius: 12, ...goldSkeletonStyle }} />
+        {/* Daily bonus */}
+        <div style={{ height: 80, borderRadius: 12, ...goldSkeletonStyle }} />
       </div>
     </main>
   )

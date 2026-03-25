@@ -214,6 +214,7 @@ export const Navigation = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      position: 'relative',
                     }}
                   >
                     <Icon
@@ -221,6 +222,18 @@ export const Navigation = () => {
                       strokeWidth={isActive ? 2.0 : 1.6}
                       color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
                     />
+                    {item.path === '/club' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: -2,
+                        right: -4,
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: '#D4AF37',
+                        boxShadow: '0 0 6px rgba(212,175,55,0.5)',
+                      }} />
+                    )}
                   </motion.div>
 
                   {/* Label */}
