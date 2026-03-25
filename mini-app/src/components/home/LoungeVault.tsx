@@ -8,11 +8,12 @@ import type { Order } from '../../types'
 /* ─── Rarity System ─── */
 type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
 
+/* All rarity tiers use GOLD on BLACK — differ by intensity, not color */
 const RARITY = {
-  common:    { primary: '#D4AF37', glow: 'rgba(212,175,55,0.15)', bg: 'rgba(212,175,55,0.06)', border: 'rgba(212,175,55,0.12)', label: 'Обычная', labelColor: 'rgba(212,175,55,0.5)' },
-  rare:      { primary: '#5B8DEF', glow: 'rgba(91,141,239,0.20)', bg: 'rgba(91,141,239,0.06)', border: 'rgba(91,141,239,0.15)', label: 'Редкая', labelColor: 'rgba(91,141,239,0.6)' },
-  epic:      { primary: '#A855F7', glow: 'rgba(168,85,247,0.20)', bg: 'rgba(168,85,247,0.06)', border: 'rgba(168,85,247,0.15)', label: 'Эпическая', labelColor: 'rgba(168,85,247,0.6)' },
-  legendary: { primary: '#F59E0B', glow: 'rgba(245,158,11,0.25)', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.18)', label: 'Легендарная', labelColor: 'rgba(245,158,11,0.7)' },
+  common:    { primary: '#D4AF37', glow: 'rgba(212,175,55,0.10)', bg: 'rgba(212,175,55,0.04)', border: 'rgba(212,175,55,0.10)', label: '●', labelColor: 'rgba(212,175,55,0.35)' },
+  rare:      { primary: '#D4AF37', glow: 'rgba(212,175,55,0.18)', bg: 'rgba(212,175,55,0.06)', border: 'rgba(212,175,55,0.14)', label: '● ●', labelColor: 'rgba(212,175,55,0.50)' },
+  epic:      { primary: '#D4AF37', glow: 'rgba(212,175,55,0.25)', bg: 'rgba(212,175,55,0.08)', border: 'rgba(212,175,55,0.18)', label: '● ● ●', labelColor: 'rgba(212,175,55,0.65)' },
+  legendary: { primary: '#FFF8D6', glow: 'rgba(212,175,55,0.35)', bg: 'rgba(212,175,55,0.10)', border: 'rgba(212,175,55,0.25)', label: '★', labelColor: 'rgba(255,248,214,0.75)' },
 } as const
 
 interface Rank {
