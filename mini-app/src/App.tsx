@@ -211,10 +211,12 @@ function NotFoundPage() {
 }
 
 function AppContent() {
+  const admin = useAdmin()
   const { userData, loading: userDataLoading, error, refetch, refreshUserData } = useUserData()
   const [isReady, setIsReady] = useState(false)
   const [splashComplete, setSplashComplete] = useState(false)
   const [showSplash, setShowSplash] = useState(true)
+  const [simulateOfferAccepted, setSimulateOfferAccepted] = useState(false)
 
   // Smart notification state - handles all notification types
   const [notification, setNotification] = useState<SmartNotificationData | null>(null)
@@ -365,6 +367,16 @@ function AppContent() {
   const handleTermsAccepted = useCallback(async () => {
     await refreshUserData()
   }, [refreshUserData])
+
+  const handleSimulatedTermsAccepted = useCallback(() => {
+    setSimulateOfferAccepted(true)
+  }, [])
+
+  useEffect(() => {
+    if (admin.simulateNewUser) {
+      setSimulateOfferAccepted(false)
+    }
+  }, [admin.simulateNewUser])
 
   // Get telegram ID for WebSocket - need it before loading check
   const telegramId = userData?.telegram_id || null
@@ -561,10 +573,18 @@ function AppContent() {
     )
   }
 
-  if (userData && userData.has_accepted_terms === false) {
+  const currentUser = userData
+  const requiresTermsAcceptance = currentUser?.has_accepted_terms === false
+  const requiresSimulatedTermsGate = Boolean(currentUser) && admin.simulateNewUser && !requiresTermsAcceptance && !simulateOfferAccepted
+
+  if ((requiresTermsAcceptance || requiresSimulatedTermsGate) && currentUser) {
     return (
       <ErrorBoundary>
-        <WelcomeOfferGate user={userData} onAccepted={handleTermsAccepted} />
+        <WelcomeOfferGate
+          user={currentUser}
+          onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
+          previewMode={requiresSimulatedTermsGate}
+        />
       </ErrorBoundary>
     )
   }

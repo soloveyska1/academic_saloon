@@ -7,7 +7,8 @@ import type { UserData } from '../types'
 
 interface WelcomeOfferGateProps {
   user: UserData
-  onAccepted: () => Promise<unknown>
+  onAccepted: () => Promise<unknown> | unknown
+  previewMode?: boolean
 }
 
 function triggerNotificationHaptic(type: 'success' | 'error') {
@@ -50,7 +51,7 @@ const featureCards = [
   },
 ]
 
-export function WelcomeOfferGate({ user, onAccepted }: WelcomeOfferGateProps) {
+export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: WelcomeOfferGateProps) {
   const [showOffer, setShowOffer] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +92,9 @@ export function WelcomeOfferGate({ user, onAccepted }: WelcomeOfferGateProps) {
     setError(null)
 
     try {
-      await acceptTerms()
+      if (!previewMode) {
+        await acceptTerms()
+      }
       await onAccepted()
       triggerNotificationHaptic('success')
     } catch (err) {
@@ -100,7 +103,7 @@ export function WelcomeOfferGate({ user, onAccepted }: WelcomeOfferGateProps) {
       setAccepting(false)
       setError(err instanceof Error ? err.message : 'Не удалось сохранить принятие оферты. Попробуйте ещё раз.')
     }
-  }, [accepting, onAccepted])
+  }, [accepting, onAccepted, previewMode])
 
   const handleOpenExternalOffer = useCallback(() => {
     openExternalUrl(offerUrl)
@@ -230,8 +233,8 @@ export function WelcomeOfferGate({ user, onAccepted }: WelcomeOfferGateProps) {
                     fontWeight: 700,
                   }}
                 >
-                  <LockKeyhole size={14} strokeWidth={1.8} />
-                  Обязательный акцепт
+                    <LockKeyhole size={14} strokeWidth={1.8} />
+                    {previewMode ? 'Предпросмотр первого входа' : 'Обязательный акцепт'}
                 </div>
               </motion.div>
 
@@ -285,6 +288,19 @@ export function WelcomeOfferGate({ user, onAccepted }: WelcomeOfferGateProps) {
                   Перед первым входом откроем короткое приветствие и публичную оферту.
                   После акцепта станут доступны заказы, чат, оплата и файлы.
                 </p>
+                {previewMode && (
+                  <p
+                    style={{
+                      margin: '12px 0 0',
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      color: 'rgba(212,175,55,0.72)',
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    Это админский просмотр сценария нового клиента. Реальный акцепт в аккаунт не записывается.
+                  </p>
+                )}
               </motion.div>
 
               <div
