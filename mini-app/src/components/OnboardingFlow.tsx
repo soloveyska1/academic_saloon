@@ -207,7 +207,6 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-  const valueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const addTimer = useCallback((fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms)
