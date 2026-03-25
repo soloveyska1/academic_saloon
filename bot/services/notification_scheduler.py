@@ -12,7 +12,7 @@ Uses Redis for dedup (each notification sent only once per order).
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pytz
@@ -23,7 +23,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from core.config import settings
 from core.redis_pool import get_redis
-from database.models.orders import Order, OrderStatus
+from database.models.orders import Order, OrderStatus, get_status_meta
+from database.models.users import User
+from bot.services.order_pause import auto_resume_if_needed
 from bot.utils.formatting import format_price
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,84 @@ class NotificationScheduler:
                 web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/orders/{order_id}")
             )],
         ])
+
+    # ══════════════════════════════════════════════════════════
+    #  PAUSED ORDER AUTO-RESUME
+    # ══════════════════════════════════════════════════════════
+
+    async def _check_paused_orders(self):
+        """Resume paused orders whose freeze window has expired."""
+        async with self.session_maker() as session:
+            now = datetime.now(timezone.utc)
+            query = select(Order).where(
+                Order.status == OrderStatus.PAUSED.value,
+                Order.pause_until.isnot(None),
+                Order.pause_until <= now,
+            )
+            result = await session.execute(query)
+            orders = result.scalars().all()
+
+            resumed_orders: list[tuple[Order, str]] = []
+            for order in orders:
+                resumed_status = auto_resume_if_needed(order, now=now)
+                if resumed_status:
+                    resumed_orders.append((order, resumed_status))
+
+            if not resumed_orders:
+                return
+
+            await session.commit()
+
+            for order, resumed_status in resumed_orders:
+                user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+                user = user_result.scalar_one_or_none()
+
+                try:
+                    from bot.services.realtime_notifications import send_order_status_notification
+                    await send_order_status_notification(
+                        telegram_id=order.user_id,
+                        order_id=order.id,
+                        new_status=order.status,
+                        old_status=OrderStatus.PAUSED.value,
+                        extra_data={"pause_event": "expired"},
+                    )
+                except Exception as e:
+                    logger.warning(f"[Scheduler] Failed to send pause-resume WS for order #{order.id}: {e}")
+
+                try:
+                    from bot.services.live_cards import send_or_update_card
+                    from bot.handlers.order_chat import get_or_create_topic
+                    await send_or_update_card(
+                        bot=self.bot,
+                        order=order,
+                        session=session,
+                        client_username=user.username if user else None,
+                        client_name=user.fullname if user else None,
+                        extra_text="▶️ Пауза завершилась автоматически",
+                    )
+                    conv, topic_id = await get_or_create_topic(self.bot, session, order.user_id, order.id)
+                    if topic_id:
+                        await self.bot.send_message(
+                            chat_id=settings.ADMIN_GROUP_ID,
+                            message_thread_id=topic_id,
+                            text=(
+                                "<b>Пауза завершилась автоматически</b>\n\n"
+                                f"Заказ <code>#{order.id}</code> снова активен."
+                            ),
+                        )
+                except Exception as e:
+                    logger.warning(f"[Scheduler] Failed to update paused card for order #{order.id}: {e}")
+
+                try:
+                    await self._send(
+                        order.user_id,
+                        f"<b>Пауза завершена</b>\n\n"
+                        f"Заказ #{order.id} снова активен.\n"
+                        f"Статус: <b>{get_status_meta(resumed_status).get('label', resumed_status)}</b>",
+                        self._order_keyboard(order.id),
+                    )
+                except Exception as e:
+                    logger.warning(f"[Scheduler] Failed to notify user about auto-resume for order #{order.id}: {e}")
 
     # ══════════════════════════════════════════════════════════
     #  PAYMENT REMINDERS
@@ -361,6 +441,11 @@ class NotificationScheduler:
 
     async def _run_checks(self):
         """Run all notification checks."""
+        try:
+            await self._check_paused_orders()
+        except Exception as e:
+            logger.error(f"[Scheduler] Paused order check error: {e}")
+
         try:
             await self._check_payment_reminders()
         except Exception as e:

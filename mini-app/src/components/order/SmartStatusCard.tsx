@@ -130,6 +130,17 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
     showProgress: true,
     pulseIcon: true,
   },
+  paused: {
+    icon: Clock,
+    label: 'На паузе',
+    description: 'Заказ временно заморожен по вашему запросу.',
+    nextStep: 'Возобновите заказ, когда будете готовы вернуться к работе.',
+    action: { label: 'Открыть', action: 'chat', icon: MessageCircle },
+    color: 'var(--gold-400)',
+    bgColor: 'rgba(212, 175, 55, 0.1)',
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+    glowColor: 'rgba(212, 175, 55, 0.2)',
+  },
   review: {
     icon: Eye,
     label: 'На проверке',

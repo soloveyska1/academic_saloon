@@ -51,6 +51,13 @@ export const ACTIONABLE_ORDER_META: Record<string, OrderActionMeta> = {
     color: '#fb923c',
     icon: Sparkles,
   },
+  paused: {
+    title: 'Возобновить заказ',
+    description: 'Заказ на паузе. Вернуться к работе можно в один тап.',
+    button: 'Открыть',
+    color: '#d4af37',
+    icon: ShieldCheck,
+  },
 }
 
 export const TRANSACTION_REASON_LABELS: Record<string, string> = {
@@ -199,6 +206,7 @@ export function getActionableOrder(orders: Order[]): Order | null {
     waiting_payment: 1,
     review: 2,
     revision: 3,
+    paused: 4,
     pending: 4,
     waiting_estimation: 4,
     verification_pending: 5,

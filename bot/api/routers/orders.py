@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from decimal import Decimal
 from datetime import datetime, timedelta, timezone
@@ -20,6 +22,7 @@ from bot.api.schemas import (
     PaymentConfirmRequest, PaymentConfirmResponse, PaymentInfoResponse,
     SubmitReviewRequest, SubmitReviewResponse, RevisionRequestData, RevisionRequestResponse,
     ConfirmWorkResponse,
+    PauseOrderRequest, PauseOrderResponse,
     BatchPaymentInfoRequest, BatchPaymentInfoResponse, BatchOrderItem,
     BatchPaymentConfirmRequest, BatchPaymentConfirmResponse
 )
@@ -37,6 +40,14 @@ from bot.utils.formatting import format_price
 from bot.services.order_message_formatter import (
     build_client_order_created_text,
     build_order_keyboard,
+)
+from bot.services.order_pause import (
+    MAX_ORDER_PAUSE_DAYS,
+    auto_resume_if_needed,
+    can_pause_order,
+    get_pause_available_days,
+    pause_order,
+    resume_order,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +116,111 @@ def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
     return final_price
 
 
+def format_pause_until(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    local_dt = value.astimezone(ZoneInfo("Europe/Moscow"))
+    return local_dt.strftime("%d.%m.%Y · %H:%M МСК")
+
+
+async def sync_order_pause_state(session: AsyncSession, order: Order | None) -> bool:
+    if order is None:
+        return False
+    resumed_status = auto_resume_if_needed(order)
+    if not resumed_status:
+        return False
+    await session.commit()
+    return True
+
+
+async def sync_orders_pause_state(session: AsyncSession, orders: list[Order]) -> bool:
+    changed = False
+    for order in orders:
+        if auto_resume_if_needed(order):
+            changed = True
+    if changed:
+        await session.commit()
+    return changed
+
+
+async def notify_pause_state_change(
+    session: AsyncSession,
+    order: Order,
+    user: User,
+    *,
+    event: str,
+    old_status: str | None,
+) -> None:
+    pause_until_label = format_pause_until(getattr(order, "pause_until", None))
+    event_text = {
+        "paused": (
+            "❄️ Заказ поставлен на паузу на 7 дней",
+            f"❄️ Клиент заморозил заказ до {pause_until_label or 'истечения срока'}",
+        ),
+        "resumed": (
+            "▶️ Заказ снова активен",
+            "▶️ Клиент досрочно возобновил заказ",
+        ),
+    }
+    client_title, card_text = event_text[event]
+
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=order.status,
+            old_status=old_status,
+            extra_data={
+                "pause_until": getattr(order, "pause_until", None).isoformat() if getattr(order, "pause_until", None) else None,
+                "paused_from_status": getattr(order, "paused_from_status", None),
+                "pause_available_days": get_pause_available_days(order),
+                "pause_event": event,
+            },
+        )
+    except Exception as e:
+        logger.warning(f"[Pause] Failed to send WS notification for order #{order.id}: {e}")
+
+    try:
+        bot = get_bot()
+        from bot.services.live_cards import send_or_update_card
+        from bot.handlers.order_chat import get_or_create_topic
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username,
+            client_name=user.fullname,
+            extra_text=card_text,
+        )
+        conv, topic_id = await get_or_create_topic(bot, session, order.user_id, order.id)
+        if topic_id:
+            admin_text = (
+                f"<b>{client_title}</b>\n\n"
+                f"Заказ <code>#{order.id}</code>\n"
+                + (f"До: <b>{pause_until_label}</b>\n" if event == "paused" and pause_until_label else "")
+                + (f"Причина: {order.pause_reason}\n" if event == "paused" and getattr(order, "pause_reason", None) else "")
+            )
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=topic_id,
+                text=admin_text,
+            )
+        await bot.send_message(
+            chat_id=user.telegram_id,
+            text=(
+                f"✅ <b>{client_title}</b>\n\n"
+                f"Заказ <code>#{order.id}</code>\n"
+                + (f"До: <b>{pause_until_label}</b>\n\n" if event == "paused" and pause_until_label else "\n")
+                + ("Вернуться к работе можно раньше в карточке заказа." if event == "paused" else "Работа продолжается с того этапа, на котором была остановлена.")
+            ),
+        )
+    except Exception as e:
+        logger.warning(f"[Pause] Failed to send bot notification for order #{order.id}: {e}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  ORDER LIST & DETAIL
 # ═══════════════════════════════════════════════════════════════════════════
@@ -151,6 +267,7 @@ async def get_orders(
     query = query.order_by(desc(Order.created_at)).offset(offset).limit(limit)
     result = await session.execute(query)
     orders = result.scalars().all()
+    await sync_orders_pause_state(session, list(orders))
 
     return OrdersListResponse(
         orders=[order_to_response(o) for o in orders],
@@ -354,6 +471,7 @@ async def get_order_detail(
             content={"success": False, "message": "Order not found"}
         )
 
+    await sync_order_pause_state(session, order)
     return order_to_response(order)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1001,6 +1119,7 @@ async def get_payment_info(
             content={"success": False, "message": "Order not found"}
         )
 
+    await sync_order_pause_state(session, order)
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
     card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
     
@@ -1026,6 +1145,115 @@ async def get_payment_info(
         remaining=remaining,
         card_number=card_formatted, card_holder=settings.PAYMENT_NAME.upper(),
         sbp_phone=phone_formatted, sbp_bank=settings.PAYMENT_BANKS,
+    )
+
+
+@router.post("/orders/{order_id}/pause", response_model=PauseOrderResponse)
+@rate_limit(limit=3, window=300, key_prefix="rl:pause_order")
+async def pause_client_order(
+    request: Request,
+    order_id: int,
+    data: PauseOrderRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    order_result = await session.execute(
+        select(Order).where(Order.id == order_id).with_for_update()
+    )
+    order = order_result.scalar_one_or_none()
+    if not order or order.user_id != tg_user.id:
+        return JSONResponse(status_code=404, content={"success": False, "message": "Order not found"})
+
+    await sync_order_pause_state(session, order)
+
+    if order.status == OrderStatus.PAUSED.value:
+        return PauseOrderResponse(
+            success=True,
+            message="Заказ уже на паузе",
+            new_status=order.status,
+            pause_until=getattr(order.pause_until, "isoformat", lambda: None)(),
+            paused_from_status=order.paused_from_status,
+            pause_available_days=get_pause_available_days(order),
+        )
+
+    if float(order.paid_amount or 0) <= 0:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Пауза доступна только после оплаты заказа"},
+        )
+
+    if get_pause_available_days(order) < MAX_ORDER_PAUSE_DAYS:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Лимит заморозки уже использован для этого заказа"},
+        )
+
+    if not can_pause_order(order):
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Заказ нельзя поставить на паузу в текущем статусе"},
+        )
+
+    old_status = order.status
+    pause_until = pause_order(order, data.reason)
+    await session.commit()
+    await notify_pause_state_change(session, order, user, event="paused", old_status=old_status)
+
+    return PauseOrderResponse(
+        success=True,
+        message="Заказ поставлен на паузу на 7 дней",
+        new_status=order.status,
+        pause_until=pause_until.isoformat(),
+        paused_from_status=order.paused_from_status,
+        pause_available_days=get_pause_available_days(order),
+    )
+
+
+@router.post("/orders/{order_id}/resume", response_model=PauseOrderResponse)
+@rate_limit(limit=5, window=300, key_prefix="rl:resume_order")
+async def resume_client_order(
+    request: Request,
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    order_result = await session.execute(
+        select(Order).where(Order.id == order_id).with_for_update()
+    )
+    order = order_result.scalar_one_or_none()
+    if not order or order.user_id != tg_user.id:
+        return JSONResponse(status_code=404, content={"success": False, "message": "Order not found"})
+
+    await sync_order_pause_state(session, order)
+
+    if order.status != OrderStatus.PAUSED.value:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Заказ сейчас не находится на паузе"},
+        )
+
+    old_status = order.status
+    resumed_status = resume_order(order)
+    await session.commit()
+    await notify_pause_state_change(session, order, user, event="resumed", old_status=old_status)
+
+    return PauseOrderResponse(
+        success=True,
+        message="Заказ снова активен",
+        new_status=resumed_status,
+        pause_until=None,
+        paused_from_status=None,
+        pause_available_days=get_pause_available_days(order),
     )
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -21,6 +21,7 @@ class OrderStatus(str, enum.Enum):
     PAID = "paid"                # Оплачен аванс
     PAID_FULL = "paid_full"      # Оплачен полностью
     IN_PROGRESS = "in_progress"  # В работе
+    PAUSED = "paused"            # Пауза по инициативе клиента
     REVIEW = "review"            # На проверке у клиента
     REVISION = "revision"        # Правки запрошены клиентом
     COMPLETED = "completed"      # Завершён
@@ -188,6 +189,16 @@ ORDER_STATUS_META = {
         "user_can_cancel": False,
         "show_in_history": False,
     },
+    OrderStatus.PAUSED: {
+        "emoji": "❄️",
+        "label": "На паузе",
+        "short_label": "Пауза",
+        "description": "Заказ заморожен на 7 дней",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
     OrderStatus.REVIEW: {
         "emoji": "🔍",
         "label": "Готово",
@@ -310,22 +321,34 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     OrderStatus.PAID.value: {
         OrderStatus.PAID_FULL.value,
         OrderStatus.IN_PROGRESS.value,
+        OrderStatus.PAUSED.value,
         OrderStatus.CANCELLED.value,
     },
     OrderStatus.PAID_FULL.value: {
         OrderStatus.IN_PROGRESS.value,
+        OrderStatus.PAUSED.value,
         OrderStatus.CANCELLED.value,
     },
     OrderStatus.IN_PROGRESS.value: {
         OrderStatus.REVIEW.value,
+        OrderStatus.PAUSED.value,
         OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.PAUSED.value: {
+        OrderStatus.PAID.value,
+        OrderStatus.PAID_FULL.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVISION.value,
+        OrderStatus.REVIEW.value,
     },
     OrderStatus.REVIEW.value: {
         OrderStatus.REVISION.value,
+        OrderStatus.PAUSED.value,
         OrderStatus.COMPLETED.value,
     },
     OrderStatus.REVISION.value: {
         OrderStatus.IN_PROGRESS.value,
+        OrderStatus.PAUSED.value,
         OrderStatus.REVIEW.value,
         OrderStatus.COMPLETED.value,
     },
@@ -376,6 +399,11 @@ class Order(Base):
 
     # Статус
     status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value, index=True)
+    paused_from_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    pause_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    pause_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    pause_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pause_days_used: Mapped[int] = mapped_column(Integer, default=0)
 
     # Прогресс выполнения (0-100%)
     progress: Mapped[int] = mapped_column(Integer, default=0)  # 0-100

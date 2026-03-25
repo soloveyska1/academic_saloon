@@ -64,6 +64,7 @@ STATUS_EMOJI = {
     OrderStatus.PAID.value: "🔵",
     OrderStatus.PAID_FULL.value: "🔵",
     OrderStatus.IN_PROGRESS.value: "🔵",
+    OrderStatus.PAUSED.value: "❄️",
     OrderStatus.REVIEW.value: "🟣",
     OrderStatus.REVISION.value: "🟠",
     OrderStatus.COMPLETED.value: "🟢",

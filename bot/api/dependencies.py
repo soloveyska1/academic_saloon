@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models.levels import RankLevel, LoyaltyLevel
 from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS
+from bot.services.order_pause import can_pause_order, get_pause_available_days
 from .schemas import RankInfo, LoyaltyInfo, OrderResponse
 from .cache import get_cached_rank_levels, get_cached_loyalty_levels
 from core.ranks import RANK_TIERS
@@ -135,6 +136,14 @@ def order_to_response(order: Order) -> OrderResponse:
         review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
         is_archived=getattr(order, 'is_archived', False),  # Whether order is archived
         revision_count=getattr(order, 'revision_count', 0) or 0,
+        paused_from_status=_normalize_text(getattr(order, 'paused_from_status', None)),
+        pause_started_at=_normalize_optional_iso(getattr(order, 'pause_started_at', None)),
+        pause_until=_normalize_optional_iso(getattr(order, 'pause_until', None)),
+        pause_reason=_normalize_text(getattr(order, 'pause_reason', None)),
+        pause_days_used=max(0, int(getattr(order, 'pause_days_used', 0) or 0)),
+        pause_available_days=get_pause_available_days(order),
+        can_pause=can_pause_order(order),
+        can_resume=normalized_status == OrderStatus.PAUSED.value,
         created_at=order.created_at.isoformat() if order.created_at else "",
         updated_at=_normalize_optional_iso(getattr(order, 'updated_at', None)),
         completed_at=_normalize_optional_iso(getattr(order, 'completed_at', None)),

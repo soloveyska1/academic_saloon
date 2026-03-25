@@ -65,6 +65,13 @@ NOTIFICATION_TEMPLATES = {
         "webapp_button": "Открыть заказ",
     },
 
+    OrderStatus.PAUSED.value: {
+        "title": "Заказ на паузе",
+        "message": "Пауза активна до указанной даты. Возобновить заказ можно раньше в приложении.",
+        "show_price": False,
+        "webapp_button": "Открыть заказ",
+    },
+
     # На проверке
     OrderStatus.REVIEW.value: {
         "title": "Готово к проверке",

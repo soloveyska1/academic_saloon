@@ -30,6 +30,7 @@ const ACTIVE_STATUSES = [
   'paid',
   'paid_full',
   'in_progress',
+  'paused',
   'review',
   'revision',
 ]
@@ -44,7 +45,7 @@ const STAGES = [
 function getStageIndex(status: string): number {
   if (['pending', 'waiting_estimation', 'waiting_payment', 'verification_pending'].includes(status)) return 0
   if (['confirmed', 'paid', 'paid_full'].includes(status)) return 1
-  if (['in_progress', 'revision'].includes(status)) return 2
+  if (['in_progress', 'revision', 'paused'].includes(status)) return 2
   if (['review', 'completed'].includes(status)) return 3
   return 0
 }
@@ -81,6 +82,8 @@ function getStatusNarrative(status: string, remaining: number, paid: number, pro
     case 'paid_full':
     case 'in_progress':
       return progress ? `Готовность ${progress}%` : 'В работе'
+    case 'paused':
+      return 'Пауза активна'
     case 'review':
       return 'Материал готов'
     case 'revision':
@@ -101,13 +104,14 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
     case 'review':
       return 'Посмотреть'
     case 'revision':
-      return 'Посмотреть'
+    case 'paused':
+      return status === 'paused' ? 'Возобновить' : 'Посмотреть'
     default:
       return 'Открыть'
   }
 }
 
-const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision']
+const ACTION_NEEDED_STATUSES = ['waiting_payment', 'waiting_estimation', 'review', 'revision', 'paused']
 
 /* ─── Deadline countdown hook ─── */
 function useDeadlineCountdown(deadline: string | null): { text: string; urgency: 'safe' | 'warning' | 'urgent' | 'unknown' } {

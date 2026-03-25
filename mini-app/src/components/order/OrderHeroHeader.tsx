@@ -107,6 +107,7 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   paid: { icon: Loader2, label: 'В работе', shortLabel: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)', isActive: true, step: 2 },
   paid_full: { icon: Loader2, label: 'В работе', shortLabel: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)', isActive: true, step: 2 },
   in_progress: { icon: Loader2, label: 'В работе', shortLabel: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)', isActive: true, step: 2 },
+  paused: { icon: Clock, label: 'На паузе', shortLabel: 'Пауза', color: '#D4AF37', bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.35)', step: 2 },
   review: { icon: Eye, label: 'На проверке', shortLabel: 'Проверка', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)', borderColor: 'rgba(139,92,246,0.3)', step: 3 },
   revision: { icon: RefreshCw, label: 'Правки', shortLabel: 'Правки', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', borderColor: 'rgba(249,115,22,0.3)', isActive: true, step: 2 },
   completed: { icon: CheckCircle2, label: 'Завершён', shortLabel: 'Готово', color: '#22c55e', bgColor: 'rgba(34,197,94,0.15)', borderColor: 'rgba(34,197,94,0.3)', step: 4 },

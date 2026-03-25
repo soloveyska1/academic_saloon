@@ -77,6 +77,14 @@ class OrderResponse(BaseModel):
     review_submitted: bool = False  # Whether review was submitted
     is_archived: bool = False  # Whether order is archived
     revision_count: int = 0  # Number of revision rounds (3 free included)
+    paused_from_status: Optional[str] = None
+    pause_started_at: Optional[str] = None
+    pause_until: Optional[str] = None
+    pause_reason: Optional[str] = None
+    pause_days_used: int = 0
+    pause_available_days: int = 0
+    can_pause: bool = False
+    can_resume: bool = False
     created_at: str
     updated_at: Optional[str] = None
     completed_at: Optional[str] = None
@@ -122,6 +130,21 @@ class OrdersListResponse(BaseModel):
     orders: List[OrderResponse]
     total: int
     has_more: bool
+
+
+class PauseOrderRequest(BaseModel):
+    """Pause a paid order for up to 7 days."""
+    reason: Optional[str] = Field(None, max_length=500)
+
+
+class PauseOrderResponse(BaseModel):
+    """Pause/resume order response."""
+    success: bool
+    message: str
+    new_status: str
+    pause_until: Optional[str] = None
+    paused_from_status: Optional[str] = None
+    pause_available_days: int = 0
 
 
 class PromoCodeRequest(BaseModel):

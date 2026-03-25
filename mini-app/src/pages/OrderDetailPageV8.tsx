@@ -67,6 +67,7 @@ import {
   CalendarCheck,
   Package,
   Globe,
+  Snowflake,
 } from 'lucide-react'
 import { Order, OrderStatus, ChatMessage } from '../types'
 import {
@@ -75,6 +76,8 @@ import {
   PaymentInfo,
   archiveOrder,
   unarchiveOrder,
+  pauseOrder,
+  resumeOrder,
   confirmPayment,
   uploadChatFile,
   createOnlinePayment,
@@ -185,6 +188,7 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   paid:                 { label: 'Аванс принят',     color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
   paid_full:            { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
   in_progress:          { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
+  paused:               { label: 'На паузе',         color: 'var(--gold-400)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Snowflake,    step: 3 },
   revision:             { label: 'На доработке',     color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 3 },
   review:               { label: 'На проверке',      color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 4 },
   completed:            { label: 'Выполнен',         color: 'var(--success-text)',     bgColor: 'var(--success-glass)',   borderColor: 'var(--success-border)', icon: CheckCircle2, step: 5 },
@@ -368,6 +372,10 @@ interface OrderAppBarProps {
   onContactManager: () => void
   onOpenFAQ: () => void
   onArchive: () => void
+  onPause: () => void
+  onResume: () => void
+  canPause: boolean
+  canResume: boolean
 }
 
 const OrderAppBar = memo(function OrderAppBar({
@@ -377,12 +385,18 @@ const OrderAppBar = memo(function OrderAppBar({
   onContactManager,
   onOpenFAQ,
   onArchive,
+  onPause,
+  onResume,
+  canPause,
+  canResume,
 }: OrderAppBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const menuItems = [
     { icon: Copy, label: 'Скопировать номер', onClick: () => { onCopyOrderId(); setMenuOpen(false) } },
     { icon: MessageCircle, label: 'Написать менеджеру', onClick: () => { onContactManager(); setMenuOpen(false) } },
+    ...(canPause ? [{ icon: Snowflake, label: 'Поставить на паузу', onClick: () => { onPause(); setMenuOpen(false) } }] : []),
+    ...(canResume ? [{ icon: ChevronRight, label: 'Возобновить заказ', onClick: () => { onResume(); setMenuOpen(false) } }] : []),
     { icon: HelpCircle, label: 'Центр помощи', onClick: () => { onOpenFAQ(); setMenuOpen(false) } },
     { icon: Archive, label: order.is_archived ? 'Из архива' : 'В архив', onClick: () => { onArchive(); setMenuOpen(false) } },
   ]
@@ -500,6 +514,10 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const hasPaymentRecorded = paidAmount > 0
   const hasPartialPayment = hasPaymentRecorded && remainingAmount > 0
   const isFullyPaid = hasPaymentRecorded && remainingAmount <= 0
+  const pauseUntil = order.pause_until ? new Date(order.pause_until) : null
+  const pauseUntilLabel = pauseUntil && !Number.isNaN(pauseUntil.getTime())
+    ? pauseUntil.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
   const paymentPlanLabel = order.payment_scheme === 'half'
     ? 'Схема 50/50'
     : isFullyPaid
@@ -811,6 +829,67 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           </motion.div>
         )}
 
+        {visibleStatus === 'paused' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.16, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              marginTop: 18,
+              padding: '16px 16px 14px',
+              borderRadius: 12,
+              background: 'linear-gradient(180deg, rgba(212,175,55,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(212,175,55,0.14)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: 'rgba(212,175,55,0.10)',
+                  border: '1px solid rgba(212,175,55,0.14)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Snowflake size={16} color="#E8D5A3" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#E8D5A3', lineHeight: 1.25 }}>
+                  Заказ временно на паузе
+                </div>
+                <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.45, color: 'rgba(255,255,255,0.45)' }}>
+                  {pauseUntilLabel
+                    ? `Заморозка активна до ${pauseUntilLabel}. Возобновить заказ можно раньше в любой момент.`
+                    : 'Заморозка активна. Возобновить заказ можно раньше в любой момент.'}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                paddingTop: 10,
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>
+                Заморозка использована
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.82)' }}>
+                {Math.min(order.pause_days_used || 0, 7)}/7 дней
+              </span>
+            </div>
+          </motion.div>
+        )}
+
         {/* ─── Row 4: Countdown timer ─── */}
         {isAwaitingPayment && countdown && (
           <motion.div
@@ -968,7 +1047,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 //                              STICKY ACTION BAR
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'completed' | 'cancelled' | 'revision_in_progress'
+type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'completed' | 'cancelled' | 'revision_in_progress' | 'paused'
 
 interface StickyActionBarProps {
   order: Order
@@ -979,6 +1058,7 @@ interface StickyActionBarProps {
   onDownloadFiles: () => void
   onAcceptWork: () => void
   onRequestRevision: () => void
+  onResumeOrder: () => void
 }
 
 const StickyActionBar = memo(function StickyActionBar({
@@ -990,6 +1070,7 @@ const StickyActionBar = memo(function StickyActionBar({
   onDownloadFiles,
   onAcceptWork,
   onRequestRevision,
+  onResumeOrder,
 }: StickyActionBarProps) {
   const visibleStatus = getClientVisibleStatus(order)
   const remainingAmount = getOrderRemainingAmount(order)
@@ -998,6 +1079,7 @@ const StickyActionBar = memo(function StickyActionBar({
   // Determine variant based on order status
   const getVariant = (): ActionBarVariant => {
     if (['cancelled', 'rejected'].includes(visibleStatus)) return 'cancelled'
+    if (visibleStatus === 'paused') return 'paused'
     if (needsSecondPayment && ['paid', 'in_progress'].includes(visibleStatus)) return 'payment'
     if (['waiting_payment', 'confirmed'].includes(visibleStatus)) return 'payment'
     if (visibleStatus === 'verification_pending') return 'verification'
@@ -1099,6 +1181,15 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonBg: 'rgba(212,175,55,0.08)',
       disabled: true,
       onClick: () => {},
+    },
+    paused: {
+      showAmount: false,
+      buttonText: 'Возобновить заказ',
+      buttonIcon: ChevronRight,
+      buttonColor: 'var(--text-on-gold)',
+      buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+      disabled: false,
+      onClick: onResumeOrder,
     },
     cancelled: {
       showAmount: false,
@@ -3117,6 +3208,52 @@ export function OrderDetailPageV8() {
     setRevisionSheetOpen(true)
   }, [haptic])
 
+  const [pauseConfirmOpen, setPauseConfirmOpen] = useState(false)
+  const [pauseLoading, setPauseLoading] = useState(false)
+  const canPauseOrder = Boolean(order?.can_pause)
+  const canResumeOrder = Boolean(order?.can_resume)
+
+  const handlePauseOrder = useCallback(async () => {
+    if (!order?.id || pauseLoading) return
+    setPauseLoading(true)
+    try {
+      const result = await pauseOrder(order.id)
+      if (!result.success) throw new Error(result.message)
+      haptic?.('success')
+      setPauseConfirmOpen(false)
+      showToast({
+        type: 'success',
+        title: 'Заказ на паузе',
+        message: result.pause_until
+          ? `Заморозка активна до ${new Date(result.pause_until).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`
+          : 'Заморозка активирована на 7 дней.',
+      })
+      await loadOrder()
+    } catch (err) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Не удалось включить паузу', message: err instanceof Error ? err.message : 'Попробуйте ещё раз' })
+    } finally {
+      setPauseLoading(false)
+    }
+  }, [order?.id, pauseLoading, haptic, showToast, loadOrder])
+
+  const handleResumeOrder = useCallback(async () => {
+    if (!order?.id || pauseLoading) return
+    setPauseLoading(true)
+    try {
+      const result = await resumeOrder(order.id)
+      if (!result.success) throw new Error(result.message)
+      haptic?.('success')
+      showToast({ type: 'success', title: 'Заказ возобновлён' })
+      await loadOrder()
+    } catch (err) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Не удалось возобновить заказ', message: err instanceof Error ? err.message : 'Попробуйте ещё раз' })
+    } finally {
+      setPauseLoading(false)
+    }
+  }, [order?.id, pauseLoading, haptic, showToast, loadOrder])
+
   const handleSubmitRevision = useCallback(async (message: string) => {
     if (!order) return
     const result = await requestRevision(order.id, message)
@@ -3441,6 +3578,13 @@ export function OrderDetailPageV8() {
               setArchiveConfirmOpen(true)
             }
           }}
+          onPause={() => {
+            haptic?.('light')
+            setPauseConfirmOpen(true)
+          }}
+          onResume={handleResumeOrder}
+          canPause={canPauseOrder}
+          canResume={canResumeOrder}
         />
       </SectionErrorBoundary>
 
@@ -3589,6 +3733,71 @@ export function OrderDetailPageV8() {
         )}
       </AnimatePresence>
 
+      {/* Pause Confirmation Modal */}
+      <AnimatePresence>
+        {pauseConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-5"
+            onClick={() => !pauseLoading && setPauseConfirmOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-[340px] rounded-xl p-5 text-center"
+              style={{
+                background: DS.colors.bgCard,
+                border: `1px solid ${DS.colors.borderLight}`,
+              }}
+            >
+              <div className="w-12 h-12 rounded-[12px] bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center mx-auto mb-4">
+                <Snowflake size={24} color="#d4af37" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-[16px] font-bold text-text-primary mb-2">
+                Поставить заказ на паузу?
+              </h3>
+              <p className="text-[12px] text-text-muted leading-[1.5] mb-6">
+                Заморозка активируется на 7 дней. Заказ можно будет возобновить раньше в карточке заказа.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPauseConfirmOpen(false)}
+                  disabled={pauseLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl text-text-secondary text-[14px] font-semibold cursor-pointer"
+                  style={{
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.borderLight}`,
+                  }}
+                >
+                  Не сейчас
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePauseOrder}
+                  disabled={pauseLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold flex items-center justify-center gap-1.5"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37, #b38728)',
+                    color: '#121212',
+                    cursor: pauseLoading ? 'wait' : 'pointer',
+                    opacity: pauseLoading ? 0.7 : 1,
+                    border: 'none',
+                  }}
+                >
+                  {pauseLoading ? <Loader2 size={16} className="animate-spin" /> : <Snowflake size={16} />}
+                  Пауза 7 дней
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Archive Confirmation Modal */}
       <AnimatePresence>
         {archiveConfirmOpen && (
@@ -3697,6 +3906,7 @@ export function OrderDetailPageV8() {
           onDownloadFiles={handleDownloadFiles}
           onAcceptWork={handleAcceptWork}
           onRequestRevision={handleRequestRevision}
+          onResumeOrder={handleResumeOrder}
         />
       </SectionErrorBoundary>
 

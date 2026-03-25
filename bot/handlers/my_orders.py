@@ -642,6 +642,7 @@ def build_order_detail_caption(order: Order) -> str:
         OrderStatus.PAID.value: ("⚙️", "В работе", None),
         OrderStatus.PAID_FULL.value: ("⚙️", "В работе", None),
         OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе", None),
+        OrderStatus.PAUSED.value: ("❄️", "На паузе", "Заморозка активна"),
         OrderStatus.REVIEW.value: ("📋", "На проверке", "Проверьте результат"),
         OrderStatus.COMPLETED.value: ("✅", "Завершён", None),
         OrderStatus.CANCELLED.value: ("✗", "Отменён", None),

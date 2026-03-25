@@ -19,6 +19,7 @@ from bot.api.schemas import (
 from bot.api.dependencies import (
     get_rank_levels, get_loyalty_levels, get_rank_info, get_loyalty_info, order_to_response
 )
+from bot.services.order_pause import auto_resume_if_needed
 from bot.services.qr_generator import generate_premium_qr_card, generate_simple_qr
 # Rate limiting done via nginx — slowapi crashes behind reverse proxy
 # from bot.api.rate_limit import limiter
@@ -77,6 +78,12 @@ async def get_user_profile(
         .limit(50)
     )
     orders = orders_result.scalars().all()
+    orders_changed = False
+    for order in orders:
+        if auto_resume_if_needed(order):
+            orders_changed = True
+    if orders_changed:
+        await session.commit()
 
     # OPTIMIZED: Single query for all order statistics (was 3 separate queries)
     # Combines: total_orders count, completed_orders count, and total_spent sum

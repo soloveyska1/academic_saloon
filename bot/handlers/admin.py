@@ -256,6 +256,7 @@ ORDER_STATUS_LABELS = {
     OrderStatus.VERIFICATION_PENDING.value: ("🔔", "Проверка оплаты"),
     OrderStatus.CONFIRMED.value: ("✅", "Подтверждён"),  # legacy
     OrderStatus.PAID.value: ("💰", "Оплачен"),
+    OrderStatus.PAUSED.value: ("❄️", "На паузе"),
     OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
     OrderStatus.REVIEW.value: ("👁", "На проверке"),
     OrderStatus.COMPLETED.value: ("✨", "Завершён"),
@@ -428,6 +429,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.PAID_FULL.value,  # Полностью оплаченные
+            OrderStatus.PAUSED.value,
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
         ]))
@@ -450,7 +452,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
-    in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+    in_progress = [o for o in orders if o.status in [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
 
     text = "📋 <b>Активные заявки</b>\n\n"
@@ -569,6 +571,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.PAID_FULL.value,  # Полностью оплаченные
+            OrderStatus.PAUSED.value,
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
         ]))
@@ -592,7 +595,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
-    in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+    in_progress = [o for o in orders if o.status in [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
 
     text = "📋 <b>Активные заявки</b>\n\n"
@@ -4954,7 +4957,7 @@ async def show_statistics(callback: CallbackQuery, session: AsyncSession):
     today_revenue = (await session.execute(today_revenue_query)).scalar() or 0
 
     # Активные заказы
-    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.VERIFICATION_PENDING.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
+    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.VERIFICATION_PENDING.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.PAUSED.value, OrderStatus.IN_PROGRESS.value]
     active_orders_query = select(func.count(Order.id)).where(
         Order.status.in_(active_statuses)
     )

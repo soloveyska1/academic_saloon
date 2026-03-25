@@ -66,6 +66,7 @@ export const ORDER_STATUS_MAP: Record<string, OrderStatusInfo> = {
   'paid': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
   'paid_full': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
   'in_progress': { label: 'В работе', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'paused': { label: 'На паузе', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
   'review': { label: 'На проверке', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
   'revision': { label: 'Доработка', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
   'completed': { label: 'Выполнен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },

@@ -173,6 +173,26 @@ export async function cancelOrder(orderId: number): Promise<{ success: boolean; 
   return await apiFetch<{ success: boolean; message: string }>(`/orders/${orderId}/cancel`, { method: 'POST' })
 }
 
+export interface PauseOrderResponse {
+  success: boolean
+  message: string
+  new_status: string
+  pause_until?: string | null
+  paused_from_status?: string | null
+  pause_available_days: number
+}
+
+export async function pauseOrder(orderId: number, reason?: string): Promise<PauseOrderResponse> {
+  return await apiFetch<PauseOrderResponse>(`/orders/${orderId}/pause`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason || null }),
+  })
+}
+
+export async function resumeOrder(orderId: number): Promise<PauseOrderResponse> {
+  return await apiFetch<PauseOrderResponse>(`/orders/${orderId}/resume`, { method: 'POST' })
+}
+
 export async function applyPromoCode(code: string): Promise<PromoResult> {
   return await apiFetch<PromoResult>('/promo', {
     method: 'POST',

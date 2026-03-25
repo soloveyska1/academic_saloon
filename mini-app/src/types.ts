@@ -92,6 +92,14 @@ export interface Order {
   bonus_used?: number
   payment_scheme?: 'full' | 'half' | null
   revision_count?: number  // Number of revision rounds (3 free included)
+  paused_from_status?: OrderStatus | null
+  pause_started_at?: string | null
+  pause_until?: string | null
+  pause_reason?: string | null
+  pause_days_used?: number
+  pause_available_days?: number
+  can_pause?: boolean
+  can_resume?: boolean
   completed_at?: string | null
   delivered_at?: string | null  // When work was delivered (30-day revision period starts)
   // Admin-specific fields
@@ -112,6 +120,7 @@ export type OrderStatus =
   | 'paid'
   | 'paid_full'
   | 'in_progress'
+  | 'paused'
   | 'review'
   | 'revision'
   | 'completed'

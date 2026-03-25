@@ -32,6 +32,7 @@ STATUS_PROGRESS = {
     OrderStatus.PAID.value: 20,
     OrderStatus.PAID_FULL.value: 25,
     OrderStatus.IN_PROGRESS.value: 30,  # Админ может увеличивать до 90
+    OrderStatus.PAUSED.value: 30,
     OrderStatus.REVIEW.value: 95,
     OrderStatus.COMPLETED.value: 100,
     OrderStatus.CANCELLED.value: 0,
@@ -126,7 +127,7 @@ def build_timeline(order: Order) -> str:
         ("📝", "Создан", [OrderStatus.DRAFT.value, OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value]),
         ("💵", "Оценён", [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]),
         ("💳", "Оплачен", [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value, OrderStatus.VERIFICATION_PENDING.value]),
-        ("⚙️", "В работе", [OrderStatus.IN_PROGRESS.value]),
+        ("⚙️", "В работе", [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]),
         ("✅", "Готово", [OrderStatus.REVIEW.value, OrderStatus.COMPLETED.value]),
     ]
 

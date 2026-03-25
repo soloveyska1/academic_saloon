@@ -77,6 +77,12 @@ CARD_STAGES = {
         "emoji": "🔵",
         "tag": "В работе",
     },
+    # На паузе
+    "paused": {
+        "statuses": [OrderStatus.PAUSED.value],
+        "emoji": "❄️",
+        "tag": "На паузе",
+    },
     # На проверке у клиента
     "review": {
         "statuses": [OrderStatus.REVIEW.value],

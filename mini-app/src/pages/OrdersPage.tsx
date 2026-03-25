@@ -173,6 +173,17 @@ const STATUS_META: Record<string, StatusMeta> = {
     needsAction: false,
     step: 3,
   },
+  paused: {
+    label: 'На паузе',
+    hint: 'Заморозка активна. Заказ можно возобновить раньше срока.',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.14)',
+    icon: Clock3,
+    priority: 5,
+    needsAction: true,
+    step: 3,
+    actionLabel: 'Открыть',
+  },
   review: {
     label: 'Готов',
     hint: 'Нужно открыть заказ и посмотреть готовый результат.',

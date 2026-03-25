@@ -88,6 +88,7 @@ function getTimelineProgress(status: OrderStatus): number {
     paid: 3,
     paid_full: 3,
     in_progress: 4,
+    paused: 4,
     revision: 4,
     review: 5,
     completed: 6,
