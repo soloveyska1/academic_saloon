@@ -274,7 +274,7 @@ export const LoungeVault = memo(function LoungeVault({
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 20, display: 'grid', gap: 10 }}
+      style={{ marginBottom: 20, display: 'grid', gap: 6 }}
     >
       {/* ═══ Card A — Rank & Club Progress (balance is in header) ═══ */}
       <Reveal animation="spring" delay={0.2}>
@@ -563,7 +563,7 @@ export const LoungeVault = memo(function LoungeVault({
       <div
         className="glass-card"
         style={{
-          padding: 20,
+          padding: 16,
           borderRadius: 12,
           background: 'rgba(20,18,14,0.95)',
           border: '1px solid rgba(212,175,55,0.08)',
@@ -575,8 +575,8 @@ export const LoungeVault = memo(function LoungeVault({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 12,
-            marginBottom: 14,
+            gap: 8,
+            marginBottom: 10,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -585,7 +585,7 @@ export const LoungeVault = memo(function LoungeVault({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                marginBottom: 4,
+                marginBottom: 2,
               }}
             >
               <Gift size={14} color="var(--gold-400)" strokeWidth={1.9} />
@@ -603,51 +603,20 @@ export const LoungeVault = memo(function LoungeVault({
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                lineHeight: 1.45,
+                lineHeight: 1.35,
                 color: 'var(--text-secondary)',
               }}
             >
-              Приглашайте друзей и открывайте бонусы
+              Рекомендуйте Салон — получайте привилегии
+              {(referralsCount > 0 || referralEarnings > 0) && (
+                <span style={{ color: 'var(--gold-300)', marginLeft: 6, fontSize: 11 }}>
+                  {referralsCount > 0 && `${referralsCount} ${referralsCount === 1 ? 'друг' : referralsCount < 5 ? 'друга' : 'друзей'}`}
+                  {referralsCount > 0 && referralEarnings > 0 && ' · '}
+                  {referralEarnings > 0 && `${formatMoney(referralEarnings)} заработано`}
+                </span>
+              )}
             </div>
           </div>
-
-          {/* Referral stats pills */}
-          {(referralsCount > 0 || referralEarnings > 0) && (
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              {referralsCount > 0 && (
-                <div
-                  style={{
-                    padding: '5px 8px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: 'var(--text-secondary)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {referralsCount} приглаш.
-                </div>
-              )}
-              {referralEarnings > 0 && (
-                <div
-                  style={{
-                    padding: '5px 8px',
-                    borderRadius: 999,
-                    background: 'rgba(212,175,55,0.08)',
-                    border: '1px solid rgba(212,175,55,0.14)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: 'var(--gold-300)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  +{formatMoney(referralEarnings)}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Referral code + action buttons */}
@@ -655,8 +624,8 @@ export const LoungeVault = memo(function LoungeVault({
           style={{
             display: 'grid',
             gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-            gap: 8,
-            marginBottom: 14,
+            gap: 6,
+            marginBottom: 10,
           }}
         >
           {/* Code button */}
@@ -666,21 +635,21 @@ export const LoungeVault = memo(function LoungeVault({
             onClick={onCopy}
             style={{
               minWidth: 0,
-              padding: '12px 14px',
-              borderRadius: 12,
+              padding: '9px 12px',
+              borderRadius: 10,
               border: '1px solid rgba(212,175,55,0.14)',
               background: 'rgba(212,175,55,0.06)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 8,
+              gap: 6,
               cursor: 'pointer',
             }}
           >
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 color: 'var(--gold-300)',
@@ -692,9 +661,9 @@ export const LoungeVault = memo(function LoungeVault({
               {referralCode}
             </span>
             {copied ? (
-              <Check size={16} color="var(--success-text)" strokeWidth={2} />
+              <Check size={14} color="var(--success-text)" strokeWidth={2} />
             ) : (
-              <Copy size={16} color="var(--text-secondary)" strokeWidth={2} />
+              <Copy size={14} color="var(--text-secondary)" strokeWidth={2} />
             )}
           </motion.button>
 
@@ -704,9 +673,9 @@ export const LoungeVault = memo(function LoungeVault({
             whileTap={{ scale: 0.95 }}
             onClick={onTelegramShare}
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
+              width: 40,
+              height: 40,
+              borderRadius: 10,
               border: '1px solid rgba(255,255,255,0.06)',
               background: 'rgba(255,255,255,0.03)',
               display: 'flex',
@@ -716,7 +685,7 @@ export const LoungeVault = memo(function LoungeVault({
               color: 'var(--text-secondary)',
             }}
           >
-            <Send size={17} strokeWidth={1.8} />
+            <Send size={15} strokeWidth={1.8} />
           </motion.button>
 
           {/* QR button */}
@@ -725,9 +694,9 @@ export const LoungeVault = memo(function LoungeVault({
             whileTap={{ scale: 0.95 }}
             onClick={onShowQR}
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
+              width: 40,
+              height: 40,
+              borderRadius: 10,
               border: '1px solid rgba(255,255,255,0.06)',
               background: 'rgba(255,255,255,0.03)',
               display: 'flex',
@@ -737,7 +706,7 @@ export const LoungeVault = memo(function LoungeVault({
               color: 'var(--text-secondary)',
             }}
           >
-            <QrCode size={18} strokeWidth={1.8} />
+            <QrCode size={16} strokeWidth={1.8} />
           </motion.button>
         </div>
 
@@ -745,7 +714,7 @@ export const LoungeVault = memo(function LoungeVault({
         <div
           style={{
             borderTop: '1px solid rgba(255,255,255,0.05)',
-            paddingTop: 14,
+            paddingTop: 10,
           }}
         >
           <PromoCodeSection variant="full" collapsible defaultExpanded={false} />

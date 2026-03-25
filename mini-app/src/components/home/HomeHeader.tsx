@@ -874,22 +874,31 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                         </span>
                       </div>
                     )}
-                    {/* Orders count chip — always present as context */}
-                    {(user.orders_count ?? 0) > 0 && (
-                      <div style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        padding: '3px 10px',
-                        borderRadius: 999,
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                      }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.02em' }}>
-                          {user.orders_count} {(user.orders_count ?? 0) === 1 ? 'заказ' : (user.orders_count ?? 0) < 5 ? 'заказа' : 'заказов'}
-                        </span>
-                      </div>
-                    )}
+                    {/* Orders count chip — VIP gold badge for 50+ orders */}
+                    {(user.orders_count ?? 0) > 0 && (() => {
+                      const count = user.orders_count ?? 0
+                      const isVIP = count >= 50
+                      return (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '4px 10px',
+                          borderRadius: 999,
+                          background: isVIP ? 'rgba(212,175,55,0.10)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${isVIP ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.06)'}`,
+                        }}>
+                          {isVIP && <Crown size={10} color="var(--gold-400)" strokeWidth={2.2} />}
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: isVIP ? 'var(--gold-300)' : 'var(--text-muted)',
+                          }}>
+                            {count} {count === 1 ? 'заказ' : count < 5 ? 'заказа' : 'заказов'}
+                          </span>
+                        </div>
+                      )
+                    })()}
                   </motion.div>
                 )}
               </div>
