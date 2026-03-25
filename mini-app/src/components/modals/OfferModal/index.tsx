@@ -1,7 +1,7 @@
 import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import {
-  Shield, ChevronDown, ChevronRight, ArrowRight, CheckCircle2,
+  Shield, ChevronDown, ArrowRight, CheckCircle2,
   BookOpen, FileText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -72,7 +72,7 @@ function GoldDivider({ delay }: { delay: number }) {
   )
 }
 
-// ═══════════ KEY POINT CARD (like GuaranteeCard) ═══════════
+// ═══════════ KEY POINT CARD (GuaranteeCard pattern with proof badge) ═══════════
 const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
   card: typeof SUMMARY_CARDS[0]; index: number; onJump: (idx: number) => void
 }) {
@@ -84,6 +84,7 @@ const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14 + index * 0.05, duration: 0.4, ease: EASE }}
+      onClick={() => { triggerHaptic('light'); onJump(card.sectionIndex) }}
       style={{
         padding: 14,
         borderRadius: 12,
@@ -94,6 +95,7 @@ const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
           ? '1px solid rgba(212,175,55,0.15)'
           : '1px solid var(--border-default)',
         position: 'relative', overflow: 'hidden',
+        cursor: 'pointer',
       }}
     >
       {isFeatured && (
@@ -124,9 +126,10 @@ const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Title + Proof Badge row */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 8, marginBottom: 4,
+            gap: 8, marginBottom: 2,
           }}>
             <div style={{
               fontSize: isFeatured ? 14 : 13.5, fontWeight: 700,
@@ -134,27 +137,48 @@ const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
             }}>
               {card.title}
             </div>
+
+            {/* Proof badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              flexShrink: 0, padding: '4px 9px', borderRadius: 8,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))',
+              border: '1px solid rgba(212,175,55,0.20)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div aria-hidden="true" style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              }} />
+              <span style={{
+                fontSize: 12, fontWeight: 800, color: 'var(--gold-300)',
+                letterSpacing: '-0.02em', position: 'relative', zIndex: 1,
+              }}>
+                {card.proof}
+              </span>
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: 'var(--gold-400)',
+                whiteSpace: 'nowrap', position: 'relative', zIndex: 1,
+              }}>
+                {card.proofLabel}
+              </span>
+            </div>
           </div>
 
+          {/* Hook */}
+          <div style={{
+            fontSize: 11, fontWeight: 600, color: 'var(--gold-400)',
+            marginBottom: 5, opacity: isFeatured ? 0.7 : 0.5,
+          }}>
+            {card.hook}
+          </div>
+
+          {/* Description */}
           <div style={{
             fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', fontWeight: 600,
           }}>
             {card.text}
           </div>
-
-          <button
-            type="button"
-            onClick={() => { triggerHaptic('light'); onJump(card.sectionIndex) }}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              marginTop: 8, padding: '6px 0',
-              background: 'none', border: 'none',
-              cursor: 'pointer', fontSize: 11, fontWeight: 700,
-              color: 'var(--gold-400)',
-            }}
-          >
-            Читать полностью <ChevronRight size={11} strokeWidth={2.5} />
-          </button>
         </div>
       </div>
     </m.div>
