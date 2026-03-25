@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckCircle2, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
+import { ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import { acceptTerms, fetchConfig } from '../api/userApi'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
@@ -30,6 +30,28 @@ function openExternalUrl(url: string) {
     if (tg?.openLink) { tg.openLink(url); return }
   } catch { /* fallback */ }
   window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+/* ─── Count-up hook ─── */
+
+function useCountUp(target: number, duration = 1.0, delay = 0.3, active = true) {
+  const [value, setValue] = useState(0)
+  const frameRef = useRef<number>(0)
+  useEffect(() => {
+    if (!active || target === 0) { setValue(target); return }
+    const startTime = performance.now() + delay * 1000
+    const tick = (now: number) => {
+      const elapsed = now - startTime
+      if (elapsed < 0) { frameRef.current = requestAnimationFrame(tick); return }
+      const progress = Math.min(elapsed / (duration * 1000), 1)
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+      setValue(Math.round(eased * target))
+      if (progress < 1) frameRef.current = requestAnimationFrame(tick)
+    }
+    frameRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frameRef.current)
+  }, [target, duration, delay, active])
+  return value
 }
 
 /* ─── Constants ─── */
@@ -87,6 +109,65 @@ const phaseTransitions = {
   valueExit: { x: -40, opacity: 0 },
   offerEnter: { x: 40, opacity: 0 },
   visible: { x: 0, y: 0, scale: 1, opacity: 1 },
+}
+
+/* ─── Animated Stat Block ─── */
+
+function AnimatedStatValue({ target, suffix, delay, active, reduced }: {
+  target: number | null; suffix: string | null; delay: number; active: boolean; reduced: boolean
+}) {
+  const count = useCountUp(target ?? 0, 1.0, delay, active && !reduced)
+  if (target === null) {
+    return (
+      <motion.span
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: reduced ? 0 : 0.5, delay, ease: EASE }}
+        style={{ ...LIQUID_GOLD_TEXT, fontSize: 28, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}
+      >
+        ∞
+      </motion.span>
+    )
+  }
+  return (
+    <span style={{ ...LIQUID_GOLD_TEXT, fontSize: 28, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}>
+      {reduced ? target : count}{suffix}
+    </span>
+  )
+}
+
+function StatBlocksRow({ active, reduced }: { active: boolean; reduced: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 24 }}>
+      {STAT_BLOCKS.map((stat, i) => {
+        const numMatch = stat.value.match(/^(\d+)/)
+        const target = numMatch ? parseInt(numMatch[1], 10) : null
+        const suffix = numMatch ? stat.value.replace(/^\d+/, '') : null
+        return (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : 0.2 + i * 0.12, ease: EASE }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          >
+            <AnimatedStatValue target={target} suffix={suffix} delay={0.3 + i * 0.15} active={active} reduced={reduced} />
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: reduced ? 0 : 0.3, delay: reduced ? 0 : 0.5 + i * 0.12, ease: EASE }}
+              style={{
+                fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.08em', color: 'rgba(255,255,255,0.40)', fontFamily: FONT_BODY, marginTop: 4,
+              }}
+            >
+              {stat.label}
+            </motion.span>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
 }
 
 /* ─── Component ─── */
@@ -260,21 +341,35 @@ export const OnboardingFlow = memo(function OnboardingFlow({
           fontFamily: FONT_BODY,
         }}
       >
-        {/* ─── Background gold glow ─── */}
-        {phase === 'reveal' && (
+        {/* ─── Persistent ambient background ─── */}
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           <motion.div
-            aria-hidden="true"
-            initial={{ opacity: 0, scale: 0.4 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reduced ? 0 : 1.5, ease: EASE }}
+            animate={{ opacity: phase === 'reveal' ? 1 : phase === 'exit' ? 0.3 : 0.5 }}
+            transition={{ duration: 1.2, ease: EASE }}
             style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(212,175,55,0.12) 0%, transparent 70%)',
-              pointerEvents: 'none',
+              position: 'absolute', inset: 0,
+              background: 'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(212,175,55,0.10) 0%, transparent 70%)',
             }}
           />
-        )}
+          {!reduced && [0, 1, 2, 3, 4].map((i) => (
+            <motion.div
+              key={`orb-${i}`}
+              animate={{
+                x: [`${20 + i * 15}%`, `${25 + i * 12}%`, `${20 + i * 15}%`],
+                y: [`${30 + (i % 3) * 20}%`, `${25 + (i % 3) * 25}%`, `${30 + (i % 3) * 20}%`],
+                opacity: [0, 0.35, 0],
+                scale: [0.8, 1.2, 0.8],
+              }}
+              transition={{ duration: 6 + i * 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.8 }}
+              style={{
+                position: 'absolute', width: 80 + i * 20, height: 80 + i * 20,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)',
+                filter: 'blur(20px)', willChange: 'transform, opacity',
+              }}
+            />
+          ))}
+        </div>
 
         {/* ─── Skip button (hidden in offer/exit phases) ─── */}
         {phase !== 'offer' && phase !== 'exit' && (
@@ -332,26 +427,55 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 maxWidth: 360,
               }}
             >
-              {/* Monogram box 88x88 */}
+              {/* Monogram with SVG seal ring + breathing aura */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: reduced ? 0 : 0.6, ease: EASE }}
-                style={{
-                  width: 88,
-                  height: 88,
-                  borderRadius: 24,
+                style={{ position: 'relative', width: 88, height: 88, marginBottom: 24 }}
+              >
+                {/* Breathing gold aura */}
+                {!reduced && (
+                  <motion.div
+                    aria-hidden="true"
+                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.9, 1.1, 0.9] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{
+                      position: 'absolute', inset: -20, borderRadius: 32,
+                      background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
+                      filter: 'blur(16px)', pointerEvents: 'none', willChange: 'transform, opacity',
+                    }}
+                  />
+                )}
+                {/* SVG animated seal ring */}
+                <svg viewBox="0 0 88 88" style={{ position: 'absolute', inset: 0, width: 88, height: 88 }}>
+                  <defs>
+                    <linearGradient id="seal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FCF6BA" />
+                      <stop offset="50%" stopColor="#D4AF37" />
+                      <stop offset="100%" stopColor="#BF953F" />
+                    </linearGradient>
+                  </defs>
+                  <motion.rect
+                    x="1" y="1" width="86" height="86" rx="23" ry="23"
+                    fill="none" stroke="url(#seal-grad)" strokeWidth="1.5"
+                    strokeDasharray="308"
+                    initial={{ strokeDashoffset: 308 }}
+                    animate={{ strokeDashoffset: 0 }}
+                    transition={{ duration: reduced ? 0 : 1.4, ease: [0.65, 0, 0.35, 1], delay: 0.2 }}
+                  />
+                </svg>
+                {/* Inner glass container */}
+                <div style={{
+                  position: 'absolute', inset: 3, borderRadius: 21,
                   ...glassGoldStyle,
                   border: '1px solid rgba(212,175,55,0.10)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 24,
-                }}
-              >
-                <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 32, lineHeight: 1, fontWeight: 400 }}>
-                  АС
-                </span>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 32, lineHeight: 1, fontWeight: 400 }}>
+                    АС
+                  </span>
+                </div>
               </motion.div>
 
               {/* Gold divider */}
@@ -541,15 +665,32 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                           {card.title}
                         </span>
                       </div>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: 'rgba(212,175,55,0.65)',
-                        fontFamily: FONT_BODY,
-                        whiteSpace: 'nowrap',
-                      }}>
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: [1, 1.08, 1] }}
+                        transition={{ delay: reduced ? 0 : 0.3 + i * 0.12 + 0.5, duration: reduced ? 0 : 0.4, ease: EASE }}
+                        style={{
+                          fontSize: 11, fontWeight: 600,
+                          color: 'rgba(212,175,55,0.65)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
+                          padding: '3px 8px', borderRadius: 6, background: 'rgba(212,175,55,0.06)',
+                        }}
+                      >
                         {card.badge}
-                      </span>
+                      </motion.span>
+                      {/* Gold shimmer sweep */}
+                      {!reduced && (
+                        <motion.div
+                          aria-hidden="true"
+                          initial={{ x: '-100%', opacity: 0 }}
+                          animate={{ x: '200%', opacity: [0, 0.6, 0] }}
+                          transition={{ delay: 0.3 + i * 0.12 + 0.5, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                          style={{
+                            position: 'absolute', top: 0, left: 0, width: '40%', height: '100%',
+                            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
+                            pointerEvents: 'none', borderRadius: 12,
+                          }}
+                        />
+                      )}
                     </motion.div>
                   )
                 })}
@@ -617,38 +758,8 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 Ваши права зафиксированы юридически
               </p>
 
-              {/* 3 stat blocks */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 28,
-                marginBottom: 24,
-              }}>
-                {STAT_BLOCKS.map((stat) => (
-                  <div key={stat.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span style={{
-                      ...LIQUID_GOLD_TEXT,
-                      fontSize: 28,
-                      fontWeight: 800,
-                      fontFamily: FONT_BODY,
-                      lineHeight: 1.1,
-                    }}>
-                      {stat.value}
-                    </span>
-                    <span style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      color: 'rgba(255,255,255,0.40)',
-                      fontFamily: FONT_BODY,
-                      marginTop: 4,
-                    }}>
-                      {stat.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* 3 animated stat blocks */}
+              <StatBlocksRow active={phase === 'offer'} reduced={reduced} />
 
               {/* Offer link */}
               <motion.button
@@ -742,7 +853,20 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   Нажимая, вы принимаете публичную оферту (ст. 438 ГК РФ)
                 </p>
 
-                {/* Accept button */}
+                {/* Accept button with breathing glow */}
+                <div style={{ position: 'relative' }}>
+                {!accepting && !reduced && (
+                  <motion.div
+                    aria-hidden="true"
+                    animate={{ opacity: [0.15, 0.35, 0.15], scale: [0.97, 1.02, 0.97] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{
+                      position: 'absolute', inset: -4, borderRadius: 16,
+                      background: 'linear-gradient(135deg, #BF953F, #D4AF37, #BF953F)',
+                      filter: 'blur(20px)', pointerEvents: 'none', willChange: 'transform, opacity',
+                    }}
+                  />
+                )}
                 <motion.button
                   type="button"
                   whileTap={{ scale: accepting ? 1 : TAP_SCALE }}
@@ -789,6 +913,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   )}
                   {accepting ? 'Открываем кабинет...' : 'Принять и войти'}
                 </motion.button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -811,25 +936,61 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 padding: 28,
               }}
             >
+              {/* Gold flash overlay */}
+              {!reduced && (
+                <motion.div
+                  aria-hidden="true"
+                  initial={{ opacity: 0.5 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  style={{
+                    position: 'absolute', inset: 0,
+                    background: 'radial-gradient(circle at 50% 50%, rgba(212,175,55,0.15) 0%, transparent 60%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+
               <div style={{ width: '100%', maxWidth: 280, textAlign: 'center' }}>
-                {/* Checkmark icon with spring bounce */}
+                {/* Animated SVG checkmark with ring draw */}
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                  style={{
-                    width: 72,
-                    height: 72,
-                    margin: '0 auto 20px',
-                    borderRadius: 20,
-                    ...glassGoldStyle,
-                    border: '1px solid rgba(212,175,55,0.10)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 20px' }}
                 >
-                  <CheckCircle2 size={30} strokeWidth={1.6} color="var(--gold-400, #d4af37)" />
+                  {/* SVG ring draw */}
+                  {!reduced && (
+                    <svg viewBox="0 0 72 72" style={{ position: 'absolute', inset: 0, width: 72, height: 72 }}>
+                      <motion.circle
+                        cx="36" cy="36" r="34" fill="none"
+                        stroke="rgba(212,175,55,0.3)" strokeWidth="1.5"
+                        strokeDasharray={Math.round(Math.PI * 68)}
+                        initial={{ strokeDashoffset: Math.round(Math.PI * 68) }}
+                        animate={{ strokeDashoffset: 0 }}
+                        transition={{ duration: 0.6, delay: 0.15, ease: [0.65, 0, 0.35, 1] }}
+                      />
+                    </svg>
+                  )}
+                  <div style={{
+                    position: 'absolute', inset: 2, borderRadius: 20,
+                    ...glassGoldStyle, border: '1px solid rgba(212,175,55,0.10)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                      <motion.circle
+                        cx="12" cy="12" r="9" stroke="var(--gold-400, #d4af37)" strokeWidth="1.6" fill="none"
+                        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+                        transition={{ duration: reduced ? 0 : 0.5, delay: 0.1, ease: EASE }}
+                      />
+                      <motion.path
+                        d="M9 12l2 2 4-4" stroke="var(--gold-400, #d4af37)" strokeWidth="1.6"
+                        strokeLinecap="round" strokeLinejoin="round" fill="none"
+                        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+                        transition={{ duration: reduced ? 0 : 0.4, delay: 0.3, ease: EASE }}
+                      />
+                    </svg>
+                  </div>
                 </motion.div>
 
                 {/* Title */}
