@@ -11,6 +11,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 logger = logging.getLogger(__name__)
+from .probes import (
+    APP_BOOT_TIME,
+    build_liveness_payload,
+    build_readiness_response,
+    collect_readiness_checks,
+)
 from .websocket import router as ws_router
 
 
@@ -45,20 +51,25 @@ IS_DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 ALLOWED_ORIGINS = PROD_ORIGINS + VERCEL_PREVIEW_ORIGINS + (DEV_ORIGINS if IS_DEBUG else [])
 
 TERMS_EXEMPT_PATHS = {
+    "/health",
+    "/ready",
     "/api/health",
+    "/api/ready",
     "/api/config",
     "/api/user",
     "/api/user/accept-terms",
 }
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
+    app.state.started_at_monotonic = APP_BOOT_TIME
+    app.state.accepting_traffic = True
     logger.info("Mini App API starting...")
     logger.info(f"Debug mode: {IS_DEBUG}")
     logger.info(f"CORS origins: {len(ALLOWED_ORIGINS)} configured")
     yield
+    app.state.accepting_traffic = False
     logger.info("Mini App API shutting down...")
 
 
@@ -151,33 +162,17 @@ def create_app() -> FastAPI:
 
         return await call_next(request)
 
-    # Health check with dependency verification
+    @app.get("/health")
     @app.get("/api/health")
-    async def health_check():
-        checks = {"api": "ok"}
+    async def health_check(request: Request):
+        return build_liveness_payload(request.app)
 
-        try:
-            from database.db import async_session_maker
-            from sqlalchemy import text
-            async with async_session_maker() as session:
-                await session.execute(text("SELECT 1"))
-            checks["database"] = "ok"
-        except Exception as e:
-            checks["database"] = f"error: {e}"
-
-        try:
-            from core.redis_pool import get_redis
-            redis = await get_redis()
-            await redis.ping()
-            checks["redis"] = "ok"
-        except Exception as e:
-            checks["redis"] = f"error: {e}"
-
-        is_healthy = all(v == "ok" for v in checks.values())
-        return JSONResponse(
-            status_code=200 if is_healthy else 503,
-            content={"status": "healthy" if is_healthy else "degraded", "checks": checks},
-        )
+    @app.get("/ready")
+    @app.get("/api/ready")
+    async def readiness_check(request: Request):
+        checks = await collect_readiness_checks()
+        status_code, payload = build_readiness_response(request.app, checks)
+        return JSONResponse(status_code=status_code, content=payload)
 
     # Global unhandled exception handler — logs traceback for 500 debugging
     @app.exception_handler(Exception)

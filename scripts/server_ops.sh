@@ -12,6 +12,8 @@ DOMAIN="${DOMAIN:-academic-saloon.duckdns.org}"
 NOTIFY_CHAT_ID="${NOTIFY_CHAT_ID:-}"
 GH_RUN_URL="${GH_RUN_URL:-}"
 GH_ACTOR="${GH_ACTOR:-}"
+BACKEND_LIVE_URL="${BACKEND_LIVE_URL:-http://localhost:8000/health}"
+BACKEND_READY_URL="${BACKEND_READY_URL:-http://localhost:8000/ready}"
 
 bot_token_from_env() {
   grep -E '^BOT_TOKEN=' "$REPO_DIR/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1
@@ -50,8 +52,49 @@ service_state() {
   fi
 }
 
-backend_http_ok() {
-  curl -fsS --max-time 5 http://localhost:8000/health >/dev/null 2>&1
+backend_http_live() {
+  curl -fsS --max-time 5 "$BACKEND_LIVE_URL" >/dev/null 2>&1
+}
+
+backend_http_ready() {
+  curl -fsS --max-time 5 "$BACKEND_READY_URL" >/dev/null 2>&1
+}
+
+systemd_show_property() {
+  local property="$1"
+  systemctl show "$SERVICE_NAME" --property "$property" --value 2>/dev/null | tr -d '\r'
+}
+
+service_main_pid() {
+  systemd_show_property MainPID
+}
+
+service_active_state() {
+  systemd_show_property ActiveState
+}
+
+service_sub_state() {
+  systemd_show_property SubState
+}
+
+wait_for_backend_ready() {
+  local old_pid="${1:-0}" current_pid active_state sub_state
+
+  for _ in $(seq 1 80); do
+    current_pid="$(service_main_pid)"
+    active_state="$(service_active_state)"
+    sub_state="$(service_sub_state)"
+
+    if [ "${active_state}" = "active" ] && [ "${sub_state}" = "running" ] && [ -n "${current_pid}" ] && [ "${current_pid}" != "0" ]; then
+      if { [ "$old_pid" = "0" ] || [ "$current_pid" != "$old_pid" ]; } && backend_http_live && backend_http_ready; then
+        return 0
+      fi
+    fi
+
+    sleep 0.5
+  done
+
+  return 1
 }
 
 frontend_http_ok() {
@@ -59,9 +102,15 @@ frontend_http_ok() {
 }
 
 restart_backend() {
+  local old_pid
+
+  old_pid="$(service_main_pid)"
+  if [ -z "$old_pid" ]; then
+    old_pid="0"
+  fi
+
   if systemctl restart "$SERVICE_NAME"; then
-    sleep 2
-    if systemctl is-active --quiet "$SERVICE_NAME" && backend_http_ok; then
+    if wait_for_backend_ready "$old_pid"; then
       return 0
     fi
   fi
@@ -70,8 +119,7 @@ restart_backend() {
   lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
   sleep 1
   systemctl restart "$SERVICE_NAME"
-  sleep 3
-  systemctl is-active --quiet "$SERVICE_NAME" && backend_http_ok
+  wait_for_backend_ready "0"
 }
 
 cleanup_disk() {
@@ -95,7 +143,7 @@ server_metrics() {
   BOT_RAM="$(ps aux | grep -E 'python.*main\.py|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0f", sum/1024)}' 2>/dev/null || echo "0")"
 
   API_MS="—"
-  api_time="$(curl -s -o /dev/null -w '%{time_total}' --max-time 3 http://localhost:8000/health 2>/dev/null || echo "0")"
+  api_time="$(curl -s -o /dev/null -w '%{time_total}' --max-time 3 "$BACKEND_LIVE_URL" 2>/dev/null || echo "0")"
   if [ "$api_time" != "0" ]; then
     API_MS="$(python3 - <<PY
 api_time = float("${api_time}")
@@ -115,6 +163,13 @@ PY
   fi
 
   BOT_STATE="$(service_state "$SERVICE_NAME")"
+  if backend_http_ready; then
+    API_STATE="●"
+  elif backend_http_live; then
+    API_STATE="◐"
+  else
+    API_STATE="✗"
+  fi
   NGINX_STATE="$(service_state nginx)"
   PG_STATE="$(service_state postgresql)"
   REDIS_STATE="$(service_state "$(redis_service_name)")"
@@ -132,7 +187,7 @@ health_check() {
 
   redis_service="$(redis_service_name)"
 
-  if ! systemctl is-active --quiet "$SERVICE_NAME" || ! backend_http_ok; then
+  if ! systemctl is-active --quiet "$SERVICE_NAME" || ! backend_http_ready; then
     if restart_backend; then
       actions="${actions}backend "
       alert_lines="${alert_lines}Бэкенд ▸ восстановлен ●\n"
@@ -244,6 +299,8 @@ status_report() {
   disk_bar="$(make_bar "$DISK_PCT")"
   ram_bar="$(make_bar "$MEM_PCT")"
   [ "$BOT_STATE" = "✗" ] && health=$((health - 30))
+  [ "$API_STATE" = "✗" ] && health=$((health - 25))
+  [ "$API_STATE" = "◐" ] && health=$((health - 10))
   [ "$NGINX_STATE" = "✗" ] && health=$((health - 25))
   [ "$PG_STATE" = "✗" ] && health=$((health - 25))
   [ "$DISK_PCT" -gt 85 ] && health=$((health - 10))
@@ -253,7 +310,7 @@ status_report() {
 ◈ СЕРВЕР
 
 Бот    ${BOT_STATE}  ${BOT_RAM}MB      Диск ${disk_bar} ${DISK_PCT}%
-API    ●  ${API_MS}ms      RAM  ${ram_bar} ${MEM_PCT}%
+API    ${API_STATE}  ${API_MS}ms      RAM  ${ram_bar} ${MEM_PCT}%
 Nginx  ${NGINX_STATE}              SSL  ${SSL_DAYS}д
 PG     ${PG_STATE}              Аптайм ${UPTIME}
 Redis  ${REDIS_STATE}              Нагрузка ${LOAD}

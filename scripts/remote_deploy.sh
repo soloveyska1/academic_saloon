@@ -10,6 +10,8 @@ FRONTEND_ARCHIVE_PATH="${FRONTEND_ARCHIVE_PATH:-/tmp/academic_saloon_deploy/fron
 SYSTEMD_TEMPLATE_PATH="${SYSTEMD_TEMPLATE_PATH:-$REPO_DIR/ops/systemd/${SERVICE_NAME}.service.template}"
 SYSTEMD_UNIT_PATH="${SYSTEMD_UNIT_PATH:-/etc/systemd/system/${SERVICE_NAME}.service}"
 SYSTEMD_HELPER_DIR="${SYSTEMD_HELPER_DIR:-/usr/local/lib/academic-saloon}"
+BACKEND_LIVE_URL="${BACKEND_LIVE_URL:-http://localhost:8000/health}"
+BACKEND_READY_URL="${BACKEND_READY_URL:-http://localhost:8000/ready}"
 BACKEND_CHANGED="${BACKEND_CHANGED:-false}"
 FRONTEND_CHANGED="${FRONTEND_CHANGED:-false}"
 FRONTEND_BUILD_MODE="${FRONTEND_BUILD_MODE:-auto}"
@@ -150,8 +152,12 @@ rollout_frontend() {
   esac
 }
 
-check_backend_health() {
-  curl -fsS --max-time 5 http://localhost:8000/health >/dev/null
+check_backend_liveness() {
+  curl -fsS --max-time 5 "$BACKEND_LIVE_URL" >/dev/null
+}
+
+check_backend_readiness() {
+  curl -fsS --max-time 5 "$BACKEND_READY_URL" >/dev/null
 }
 
 check_frontend_health() {
@@ -184,7 +190,7 @@ wait_for_backend_ready() {
     sub_state="$(service_sub_state)"
 
     if [ "${active_state}" = "active" ] && [ "${sub_state}" = "running" ] && [ -n "${current_pid}" ] && [ "${current_pid}" != "0" ]; then
-      if { [ "$old_pid" = "0" ] || [ "$current_pid" != "$old_pid" ]; } && check_backend_health; then
+      if { [ "$old_pid" = "0" ] || [ "$current_pid" != "$old_pid" ]; } && check_backend_liveness && check_backend_readiness; then
         return 0
       fi
     fi
@@ -326,7 +332,7 @@ if [ "$FRONTEND_CHANGED" = "true" ]; then
 fi
 
 if [ "$BACKEND_CHANGED" = "true" ]; then
-  check_backend_health
+  check_backend_readiness
 fi
 
 if [ "$FRONTEND_CHANGED" = "true" ]; then
