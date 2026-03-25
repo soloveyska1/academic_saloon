@@ -1,13 +1,16 @@
 import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
-import { Shield, RefreshCw, Award, Clock, Lock, ChevronDown, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
+import {
+  Shield, RefreshCw, Award, Clock, Lock, ChevronDown, CheckCircle2,
+  Sparkles, ArrowRight, FileCheck, Snowflake, Eye, ListChecks,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES MODAL — Proof Wall
-//  Evidence-backed guarantees. Each card has a proof metric.
-//  Structured: Hero → Stats Grid → Proof Cards → FAQ → CTA
+//  4 core guarantees + bonus perks. Evidence-backed.
+//  Structured: Hero → Stats Grid → Core Cards → Bonus Perks → FAQ → CTA
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface GuaranteesModalProps {
@@ -25,6 +28,12 @@ interface Guarantee {
   proofLabel: string
 }
 
+interface BonusPerk {
+  icon: LucideIcon
+  title: string
+  desc: string
+}
+
 const GUARANTEES: Guarantee[] = [
   {
     icon: RefreshCw,
@@ -33,14 +42,6 @@ const GUARANTEES: Guarantee[] = [
     desc: 'Преподаватель вернул с правками? Исправим бесплатно, столько раз, сколько нужно.',
     proof: '93%',
     proofLabel: 'без пересдач',
-  },
-  {
-    icon: Award,
-    title: '100% возврат до старта',
-    hook: 'Без вопросов и задержек',
-    desc: 'Передумали до начала — вернём всю сумму. Даже в процессе — платите только за сделанное.',
-    proof: '0',
-    proofLabel: 'споров за 2024',
   },
   {
     icon: Clock,
@@ -54,9 +55,40 @@ const GUARANTEES: Guarantee[] = [
     icon: Lock,
     title: 'Полная анонимность',
     hook: 'Только вы и мы — больше никто',
-    desc: 'Имя, вуз, переписка — строго между нами. Защита на уровне банка, никаких утечек.',
+    desc: 'Имя, вуз, переписка — строго между нами. Защита на уровне банка. После сдачи работа удаляется.',
     proof: 'E2E',
     proofLabel: 'защита',
+  },
+  {
+    icon: Award,
+    title: '100% возврат до старта',
+    hook: 'Без вопросов и задержек',
+    desc: 'Передумали до начала — вернём всю сумму. Даже в процессе — платите только за сделанное.',
+    proof: '0',
+    proofLabel: 'споров за 2024',
+  },
+]
+
+const BONUS_PERKS: BonusPerk[] = [
+  {
+    icon: FileCheck,
+    title: 'Уникальность от 80%',
+    desc: 'Каждая работа с нуля. Ниже порога — переделаем бесплатно.',
+  },
+  {
+    icon: Eye,
+    title: 'Предпросмотр плана',
+    desc: 'Увидите структуру работы до начала. Не нравится — не платите.',
+  },
+  {
+    icon: Snowflake,
+    title: 'Заморозка на 7 дней',
+    desc: 'Передумали? Поставьте заказ на паузу — деньги не сгорят.',
+  },
+  {
+    icon: ListChecks,
+    title: 'Чек-лист защиты',
+    desc: 'К каждой работе — инструкция: что проверить, как отвечать.',
   },
 ]
 
@@ -72,6 +104,10 @@ const FAQ = [
   {
     q: 'Смогу ли я вернуть деньги, если работа уже началась?',
     a: 'Да. Вы платите только за выполненную часть — мы считаем честно. Никаких штрафов и удержаний.',
+  },
+  {
+    q: 'Сколько раз можно просить доработки?',
+    a: 'Столько, сколько нужно — пока преподаватель не поставит оценку. Мы работаем до результата, не до «сдачи файла».',
   },
 ]
 
@@ -104,7 +140,6 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      {/* Top shine on open state */}
       {open && (
         <div aria-hidden="true" style={{
           position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
@@ -119,26 +154,16 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
         aria-expanded={open}
         aria-controls={contentId}
         style={{
-          width: '100%',
-          padding: '14px 14px',
-          minHeight: 50,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          textAlign: 'left',
-          position: 'relative',
-          zIndex: 1,
+          width: '100%', padding: '14px 14px', minHeight: 50,
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, textAlign: 'left', position: 'relative', zIndex: 1,
         }}
       >
         <span style={{
           fontSize: 13, fontWeight: 700,
           color: open ? 'var(--text-primary)' : 'var(--text-secondary)',
-          lineHeight: 1.4, flex: 1,
-          letterSpacing: '-0.01em',
+          lineHeight: 1.4, flex: 1, letterSpacing: '-0.01em',
           transition: 'color 0.3s',
         }}>
           {q}
@@ -147,8 +172,7 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            flexShrink: 0,
-            width: 22, height: 22, borderRadius: 6,
+            flexShrink: 0, width: 22, height: 22, borderRadius: 6,
             background: open ? 'rgba(212,175,55,0.10)' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'background 0.3s',
@@ -175,7 +199,6 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
               color: 'var(--text-muted)', fontWeight: 600,
               position: 'relative',
             }}>
-              {/* Left gold accent bar */}
               <div aria-hidden="true" style={{
                 position: 'absolute', left: 0, top: 0, bottom: 14,
                 width: 2, borderRadius: 1,
@@ -222,7 +245,6 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
         overflow: 'hidden',
       }}
     >
-      {/* Top shine on featured card */}
       {isFeatured && (
         <div aria-hidden="true" style={{
           position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
@@ -231,12 +253,9 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
       )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        {/* Icon */}
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: isFeatured
-            ? 'var(--gold-glass-medium)'
-            : 'var(--gold-glass-subtle)',
+          background: isFeatured ? 'var(--gold-glass-medium)' : 'var(--gold-glass-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
           border: isFeatured ? '1px solid rgba(212,175,55,0.12)' : 'none',
@@ -244,41 +263,31 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
           <Icon size={16} color="var(--gold-400)" strokeWidth={1.6} />
         </div>
 
-        {/* Text */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             gap: 8, marginBottom: 2,
           }}>
             <div style={{
-              fontSize: isFeatured ? 14 : 13.5,
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              lineHeight: 1.25,
-              letterSpacing: '-0.01em',
+              fontSize: isFeatured ? 14 : 13.5, fontWeight: 700,
+              color: 'var(--text-primary)', lineHeight: 1.25, letterSpacing: '-0.01em',
             }}>
               {item.title}
             </div>
 
-            {/* Proof badge */}
             <div style={{
               display: 'flex', alignItems: 'baseline', gap: 3,
               flexShrink: 0, padding: '3px 7px', borderRadius: 7,
-              background: isFeatured
-                ? 'rgba(212,175,55,0.08)'
-                : 'var(--bg-glass)',
+              background: isFeatured ? 'rgba(212,175,55,0.08)' : 'var(--bg-glass)',
               border: `1px solid ${isFeatured ? 'rgba(212,175,55,0.12)' : 'var(--border-subtle)'}`,
             }}>
               <span style={{
-                fontSize: 12, fontWeight: 700,
-                color: 'var(--gold-400)',
-                letterSpacing: '-0.02em',
+                fontSize: 12, fontWeight: 700, color: 'var(--gold-400)', letterSpacing: '-0.02em',
               }}>
                 {item.proof}
               </span>
               <span style={{
-                fontSize: 9, fontWeight: 600,
-                color: 'var(--text-muted)', whiteSpace: 'nowrap',
+                fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap',
               }}>
                 {item.proofLabel}
               </span>
@@ -286,20 +295,61 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
           </div>
 
           <div style={{
-            fontSize: 11, fontWeight: 600,
-            color: 'var(--gold-400)',
-            marginBottom: 6,
-            opacity: isFeatured ? 0.7 : 0.5,
+            fontSize: 11, fontWeight: 600, color: 'var(--gold-400)',
+            marginBottom: 6, opacity: isFeatured ? 0.7 : 0.5,
           }}>
             {item.hook}
           </div>
 
           <div style={{
-            fontSize: 12, lineHeight: 1.5,
-            color: 'var(--text-muted)', fontWeight: 600,
+            fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', fontWeight: 600,
           }}>
             {item.desc}
           </div>
+        </div>
+      </div>
+    </m.div>
+  )
+})
+
+// ═══════════ BONUS PERK CARD ═══════════
+const BonusPerkCard = memo(function BonusPerkCard({ perk, index }: { perk: BonusPerk; index: number }) {
+  const Icon = perk.icon
+
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35 + index * 0.05 }}
+      style={{
+        padding: '12px 12px',
+        borderRadius: 10,
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--border-default)',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: 8,
+        background: 'var(--gold-glass-subtle)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={13} color="var(--gold-400)" strokeWidth={1.8} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+          marginBottom: 2, lineHeight: 1.25,
+        }}>
+          {perk.title}
+        </div>
+        <div style={{
+          fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-muted)', fontWeight: 600,
+        }}>
+          {perk.desc}
         </div>
       </div>
     </m.div>
@@ -331,7 +381,6 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: 'center', padding: '4px 0 20px' }}
         >
-          {/* Shield icon with verified badge */}
           <m.div
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -343,11 +392,9 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 16px',
               boxShadow: '0 0 24px -8px rgba(212,175,55,0.15)',
-              position: 'relative',
-              overflow: 'hidden',
+              position: 'relative', overflow: 'hidden',
             }}
           >
-            {/* Top shine */}
             <div aria-hidden="true" style={{
               position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
               background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
@@ -387,7 +434,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           </div>
         </m.div>
 
-        {/* ═══════════ STATS GRID (gold, matching CashbackModal) ═══════════ */}
+        {/* ═══════════ STATS GRID ═══════════ */}
         <m.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -411,15 +458,12 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               transition={{ delay: 0.16 + i * 0.05 }}
               style={{
                 position: 'relative',
-                padding: '12px 8px 10px',
-                borderRadius: 12,
+                padding: '12px 8px 10px', borderRadius: 12,
                 background: 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)',
                 border: '1px solid rgba(212,175,55,0.10)',
-                textAlign: 'center',
-                overflow: 'hidden',
+                textAlign: 'center', overflow: 'hidden',
               }}
             >
-              {/* Subtle top shine */}
               <div aria-hidden="true" style={{
                 position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
                 background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
@@ -436,8 +480,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               <div style={{
                 fontSize: 10, fontWeight: 700,
                 color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
+                textTransform: 'uppercase', letterSpacing: '0.04em',
               }}>
                 {stat.label}
               </div>
@@ -445,18 +488,56 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           ))}
         </m.div>
 
-        {/* ═══════════ GUARANTEE CARDS ═══════════ */}
+        {/* ═══════════ CORE GUARANTEE CARDS ═══════════ */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {GUARANTEES.map((item, index) => (
             <GuaranteeCard key={item.title} item={item} index={index} />
           ))}
         </div>
 
+        {/* ═══════════ BONUS PERKS — 2x2 grid ═══════════ */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          style={{ marginTop: 20 }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 10, paddingLeft: 2,
+          }}>
+            <div style={{
+              width: 20, height: 20, borderRadius: 6,
+              background: 'rgba(212,175,55,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Sparkles size={10} color="var(--gold-400)" strokeWidth={2.2} />
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: 'var(--gold-300)',
+            }}>
+              Бонусы к каждому заказу
+            </span>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 8,
+          }}>
+            {BONUS_PERKS.map((perk, i) => (
+              <BonusPerkCard key={perk.title} perk={perk} index={i} />
+            ))}
+          </div>
+        </m.div>
+
         {/* ═══════════ FAQ ═══════════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.45 }}
           style={{ marginTop: 20 }}
         >
           <div style={{
@@ -491,7 +572,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           <m.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.55 }}
             style={{ marginTop: 20 }}
           >
             <m.button
@@ -500,22 +581,14 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               onClick={handleCTA}
               aria-label="Оформить заказ с гарантией"
               style={{
-                width: '100%',
-                padding: '14px 24px',
-                borderRadius: 12,
+                width: '100%', padding: '14px 24px', borderRadius: 12,
                 background: 'var(--gold-metallic)',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                position: 'relative',
-                overflow: 'hidden',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 8, position: 'relative', overflow: 'hidden',
                 boxShadow: 'var(--glow-gold)',
               }}
             >
-              {/* Shimmer */}
               <m.div
                 aria-hidden="true"
                 animate={{ x: ['-100%', '250%'] }}
@@ -528,8 +601,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               />
               <span style={{
                 fontSize: 14, fontWeight: 700,
-                color: 'var(--text-on-gold)',
-                position: 'relative',
+                color: 'var(--text-on-gold)', position: 'relative',
               }}>
                 Начать с гарантией
               </span>
@@ -542,13 +614,10 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.55 }}
+          transition={{ delay: 0.6 }}
           style={{
-            marginTop: 14,
-            textAlign: 'center',
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            fontWeight: 600,
+            marginTop: 14, textAlign: 'center',
+            fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
           }}
         >
           Гарантии начинают работать сразу после оформления
