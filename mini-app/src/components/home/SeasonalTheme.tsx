@@ -36,7 +36,7 @@ function getCurrentSeason(): SeasonTheme | null {
       name: 'Зимняя сессия',
       icon: BookOpen,
       bannerText: 'Зимняя сессия',
-      bannerSubtext: 'Успейте сдать всё вовремя',
+      bannerSubtext: 'Завершите работы до конца сессии',
       ctaText: 'Оформить заказ',
     }
   }
@@ -48,7 +48,7 @@ function getCurrentSeason(): SeasonTheme | null {
       name: 'Летняя сессия',
       icon: GraduationCap,
       bannerText: 'Летняя сессия',
-      bannerSubtext: 'Дипломы и курсовые — не откладывайте',
+      bannerSubtext: 'Дипломы и курсовые — оптимальное время для заказа',
       ctaText: 'Оформить заказ',
     }
   }
@@ -72,7 +72,7 @@ function getCurrentSeason(): SeasonTheme | null {
       name: 'Осенний семестр',
       icon: Leaf,
       bannerText: 'Осенний семестр',
-      bannerSubtext: 'Курсовые и рефераты — по лучшей цене',
+      bannerSubtext: 'Курсовые и рефераты — выгодные условия',
     }
   }
 

@@ -206,7 +206,7 @@ function DailyBonusCardInner({
     const claimHandler = capability.tier === 3
       ? () => setShowScratchCard(true)
       : handleClaim
-    const claimLabel = capability.tier === 3 ? 'Сотри приз' : 'Забрать'
+    const claimLabel = capability.tier === 3 ? 'Открыть приз' : 'Получить'
 
     return (
       <Reveal direction="up" animation="slide">
@@ -292,7 +292,7 @@ function DailyBonusCardInner({
                         +{claimedAmount} ₽
                       </span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
-                        зачислен
+                        зачислено
                       </span>
                     </motion.div>
                   ) : (
@@ -340,7 +340,7 @@ function DailyBonusCardInner({
                         >
                           <Gift size={15} />
                         </motion.span>
-                        Ждите
+                        Получаем
                       </>
                     ) : (
                       <>
@@ -689,7 +689,7 @@ function DailyBonusCardInner({
                 ) : (
                   <>
                     <Gift size={18} />
-                    Забрать бонус
+                    Получить бонус
                     {info?.next_bonus ? ` ${info.next_bonus} ₽` : ''}
                   </>
                 )}

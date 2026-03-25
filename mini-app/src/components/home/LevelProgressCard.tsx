@@ -106,7 +106,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {rank.cashback}%
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>кэшбэк</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>кешбэк</div>
               </div>
             </div>
           )}

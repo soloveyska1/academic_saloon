@@ -84,7 +84,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
               textTransform: 'uppercase',
               letterSpacing: '0.08em', marginBottom: 2,
             }}>
-              Кэшбэк
+              Кешбэк
             </div>
             <div style={{
               fontSize: 24, fontWeight: 700,

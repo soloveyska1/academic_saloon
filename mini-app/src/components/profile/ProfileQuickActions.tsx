@@ -51,7 +51,7 @@ export const ProfileQuickActions = memo(function ProfileQuickActions({
     {
       icon: Gift,
       label: 'Бонусы',
-      hint: 'Кэшбэк',
+      hint: 'Кешбэк',
       color: 'var(--accent-green)',
       background: 'var(--accent-green-glass)',
       border: 'var(--accent-green-border)',

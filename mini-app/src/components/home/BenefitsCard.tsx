@@ -217,7 +217,7 @@ export const BenefitsCard = memo(function BenefitsCard({
                 color: rank.is_max ? 'transparent' : 'var(--success-text)',
               }}
             >
-              Кэшбэк {rank.cashback}%
+              Кешбэк {rank.cashback}%
             </span>
           </div>
 

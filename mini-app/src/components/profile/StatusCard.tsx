@@ -94,7 +94,7 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
         </div>
 
         <div className={s.statCard}>
-          <div className={s.statLabel}>Кэшбэк</div>
+          <div className={s.statLabel}>Кешбэк</div>
           <div className={s.statValue} style={{ color: 'var(--gold-300)' }}>{cashbackPercent}%</div>
           <div className={s.statHelper}>После оплаченных заказов</div>
         </div>

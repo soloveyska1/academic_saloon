@@ -125,7 +125,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
       isOpen={isOpen}
       onClose={onClose}
       modalId="cashback-modal"
-      title="Кэшбэк"
+      title="Кешбэк"
       accentColor="var(--gold-400)"
     >
       <div style={{ padding: '0 20px 24px' }}>

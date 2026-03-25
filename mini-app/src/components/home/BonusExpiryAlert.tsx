@@ -36,8 +36,8 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       return {
         urgency: 'critical' as const,
         icon: Flame,
-        title: 'Бонусы сгорают сегодня!',
-        subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ исчезнут навсегда`,
+        title: 'Бонусы истекают сегодня',
+        subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ будут недоступны`,
         gradient: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(12,12,10,0.6) 100%)',
         border: 'rgba(239,68,68,0.20)',
         iconBg: 'rgba(239,68,68,0.08)',
@@ -51,7 +51,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       return {
         urgency: 'high' as const,
         icon: Clock,
-        title: `Бонусы сгорят через ${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'}`,
+        title: `Бонусы истекают через ${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'}`,
         subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ — используйте в заказе`,
         gradient: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(12,12,10,0.6) 100%)',
         border: 'rgba(201,162,39,0.12)',

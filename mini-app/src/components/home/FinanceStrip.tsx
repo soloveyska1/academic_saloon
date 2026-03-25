@@ -98,7 +98,7 @@ export const FinanceStrip = memo(function FinanceStrip({
               marginTop: 1,
             }}
           >
-            кэшбэк
+            кешбэк
           </div>
         </div>
 
