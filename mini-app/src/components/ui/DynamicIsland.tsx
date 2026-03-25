@@ -312,6 +312,11 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  const hide = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    setExpandedId(prev => (prev === id ? null : prev))
+  }, [])
+
   const show = useCallback((notification: Omit<Notification, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 9)
     const newNotification: Notification = {
@@ -344,14 +349,7 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
 
     return id
-  }, [])
-
-  const hide = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
-    if (expandedId === id) {
-      setExpandedId(null)
-    }
-  }, [expandedId])
+  }, [hide])
 
   const hideAll = useCallback(() => {
     setNotifications([])

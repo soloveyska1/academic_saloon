@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SOCIAL PROOF SYSTEM — Умная генерация убедительных метрик
@@ -158,6 +158,18 @@ export interface ServiceMetaForProof {
   popular?: boolean
 }
 
+function getServiceProofKey(service: ServiceMetaForProof): string {
+  return `${service.id}:${service.category}:${service.popular ? '1' : '0'}`
+}
+
+function buildDynamicProofMap(services: ServiceMetaForProof[]) {
+  const map = new Map<string, Pick<SocialProofData, 'viewersNow' | 'ordersToday' | 'lastOrderAgo'>>()
+  services.forEach((service) => {
+    map.set(service.id, generateDynamicProof(service))
+  })
+  return map
+}
+
 // Генерация статических метрик (seed-based, не меняются)
 export function generateStaticProof(service: ServiceMetaForProof): Pick<SocialProofData, 'rating' | 'totalOrders' | 'completionRate'> {
   const random = seededRandom(service.id + '_social_v2')
@@ -306,22 +318,35 @@ function formatTimeAgo(minutes: number): string {
 
 // Хук для одной услуги
 export function useSocialProof(service: ServiceMetaForProof): SocialProofData {
+  const normalizedService = useMemo(
+    () => ({
+      id: service.id,
+      category: service.category,
+      popular: Boolean(service.popular),
+    }),
+    [service.id, service.category, service.popular]
+  )
+  const serviceKey = getServiceProofKey(normalizedService)
+
   // Статические метрики - вычисляются один раз
-  const staticProof = useMemo(() => generateStaticProof(service), [service.id])
+  const staticProof = useMemo(() => generateStaticProof(normalizedService), [normalizedService])
 
   // Динамические метрики - обновляются каждые 75 сек (было 30)
-  const [dynamicProof, setDynamicProof] = useState(() => generateDynamicProof(service))
+  const [dynamicProof, setDynamicProof] = useState(() => generateDynamicProof(normalizedService))
 
   // Лента активности
   const [activityIndex, setActivityIndex] = useState(0)
   const activity = useMemo(
-    () => generateActivityEvent(service, activityIndex),
-    [service.id, activityIndex]
+    () => generateActivityEvent(normalizedService, activityIndex),
+    [normalizedService, activityIndex]
   )
 
   useEffect(() => {
+    setDynamicProof(generateDynamicProof(normalizedService))
+    setActivityIndex(0)
+
     const dynamicInterval = setInterval(() => {
-      setDynamicProof(generateDynamicProof(service))
+      setDynamicProof(generateDynamicProof(normalizedService))
     }, DYNAMIC_INTERVAL_MS)
 
     const activityInterval = setInterval(() => {
@@ -332,7 +357,7 @@ export function useSocialProof(service: ServiceMetaForProof): SocialProofData {
       clearInterval(dynamicInterval)
       clearInterval(activityInterval)
     }
-  }, [service.id])
+  }, [normalizedService, serviceKey])
 
   return { ...staticProof, ...dynamicProof, recentActivity: activity }
 }
@@ -341,34 +366,43 @@ export function useSocialProof(service: ServiceMetaForProof): SocialProofData {
 export function useSocialProofBatch(
   services: ServiceMetaForProof[]
 ): Map<string, SocialProofData> {
+  const normalizedServices = useMemo(
+    () =>
+      services.map((service) => ({
+        id: service.id,
+        category: service.category,
+        popular: Boolean(service.popular),
+      })),
+    [services]
+  )
+  const servicesKey = useMemo(
+    () => normalizedServices.map(getServiceProofKey).join('|'),
+    [normalizedServices]
+  )
+
   // Статические метрики
   const staticProofs = useMemo(() => {
     const map = new Map<string, Pick<SocialProofData, 'rating' | 'totalOrders' | 'completionRate'>>()
-    services.forEach(service => {
+    normalizedServices.forEach(service => {
       map.set(service.id, generateStaticProof(service))
     })
     return map
-  }, [services.map(s => s.id).join(',')])
+  }, [normalizedServices])
 
   // Динамические метрики
   const [dynamicProofs, setDynamicProofs] = useState<Map<string, Pick<SocialProofData, 'viewersNow' | 'ordersToday' | 'lastOrderAgo'>>>(() => {
-    const map = new Map()
-    services.forEach(service => {
-      map.set(service.id, generateDynamicProof(service))
-    })
-    return map
+    return buildDynamicProofMap(normalizedServices)
   })
 
   // Activity events
   const [activityIndex, setActivityIndex] = useState(0)
 
   useEffect(() => {
+    setDynamicProofs(buildDynamicProofMap(normalizedServices))
+    setActivityIndex(0)
+
     const dynamicInterval = setInterval(() => {
-      const newMap = new Map()
-      services.forEach(service => {
-        newMap.set(service.id, generateDynamicProof(service))
-      })
-      setDynamicProofs(newMap)
+      setDynamicProofs(buildDynamicProofMap(normalizedServices))
     }, DYNAMIC_INTERVAL_MS)
 
     const activityInterval = setInterval(() => {
@@ -379,19 +413,19 @@ export function useSocialProofBatch(
       clearInterval(dynamicInterval)
       clearInterval(activityInterval)
     }
-  }, [services.map(s => s.id).join(',')])
+  }, [servicesKey, normalizedServices])
 
   // Комбинируем
   return useMemo(() => {
     const combined = new Map<string, SocialProofData>()
-    services.forEach(service => {
+    normalizedServices.forEach(service => {
       const staticData = staticProofs.get(service.id)!
       const dynamicData = dynamicProofs.get(service.id)!
       const activity = generateActivityEvent(service, activityIndex)
       combined.set(service.id, { ...staticData, ...dynamicData, recentActivity: activity })
     })
     return combined
-  }, [staticProofs, dynamicProofs, activityIndex])
+  }, [normalizedServices, staticProofs, dynamicProofs, activityIndex])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -400,11 +434,17 @@ export function useSocialProofBatch(
 
 export function useAnimatedNumber(value: number, duration: number = 500): number {
   const [displayValue, setDisplayValue] = useState(value)
+  const displayValueRef = useRef(value)
+  const frameRef = useRef<number | null>(null)
 
   useEffect(() => {
-    const startValue = displayValue
+    const startValue = displayValueRef.current
     const diff = value - startValue
-    if (diff === 0) return
+    if (diff === 0) {
+      displayValueRef.current = value
+      setDisplayValue(value)
+      return
+    }
 
     const startTime = Date.now()
 
@@ -415,15 +455,24 @@ export function useAnimatedNumber(value: number, duration: number = 500): number
       // Easing function (ease-out)
       const eased = 1 - Math.pow(1 - progress, 3)
 
-      setDisplayValue(Math.round(startValue + diff * eased))
+      const nextValue = Math.round(startValue + diff * eased)
+      displayValueRef.current = nextValue
+      setDisplayValue(nextValue)
 
       if (progress < 1) {
-        requestAnimationFrame(animate)
+        frameRef.current = requestAnimationFrame(animate)
       }
     }
 
-    requestAnimationFrame(animate)
-  }, [value])
+    frameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
+    }
+  }, [value, duration])
 
   return displayValue
 }

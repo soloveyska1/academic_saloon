@@ -272,7 +272,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       setRequirements('')
       // Keep subject as it's often the same
     }
-  }, [serviceTypeId])
+  }, [serviceTypeId, isReorder, loadDraft, haptic])
 
   // Legacy draft loading (from old version)
   useEffect(() => {
@@ -299,7 +299,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     } catch {
       localStorage.removeItem(DRAFT_KEY)
     }
-  }, [])
+  }, [haptic, isReorder, isUrgentMode])
 
   // Combined effect: reset step on mode change + auto-advance for urgent mode
   useEffect(() => {
@@ -321,7 +321,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     } else {
       setStep(1)
     }
-  }, [isFastMode, isReorder, preselectedType, isUrgentMode])
+  }, [isFastMode, isReorder, preselectedType, isUrgentMode, serviceTypeId])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {

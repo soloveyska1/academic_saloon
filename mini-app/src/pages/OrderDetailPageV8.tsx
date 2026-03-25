@@ -3062,7 +3062,7 @@ export function OrderDetailPageV8() {
     }
 
     setPaymentScheme('full')
-  }, [order?.id, order?.payment_scheme, order?.paid_amount, order?.final_price, order?.price])
+  }, [order])
 
   // Handlers
   const handleBack = useCallback(() => {

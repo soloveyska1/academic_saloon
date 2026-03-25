@@ -145,7 +145,7 @@ function usePullToRefresh({
       container.removeEventListener('touchend', onTouchEnd)
       container.removeEventListener('touchcancel', onTouchEnd)
     }
-  }, [disabled, isRefreshing, threshold, haptic, handleRefresh, resetState])
+  }, [disabled, isRefreshing, isVisible, threshold, haptic, handleRefresh, resetState])
 
   // ── PullIndicator Component ──────────────────────────────────────────
   const PullIndicator: React.FC = useCallback(() => {
@@ -247,7 +247,6 @@ function usePullToRefresh({
           )
         )
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible, isRefreshing, pullProgress]) as React.FC
 
   return {

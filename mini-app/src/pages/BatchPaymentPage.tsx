@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -35,7 +35,11 @@ export function BatchPaymentPage() {
 
   // Get order IDs from URL params
   const orderIdsParam = searchParams.get('orders')
-  const orderIds = orderIdsParam ? orderIdsParam.split(',').map(Number).filter(n => !isNaN(n)) : []
+  const orderIds = useMemo(
+    () => (orderIdsParam ? orderIdsParam.split(',').map(Number).filter(n => !isNaN(n)) : []),
+    [orderIdsParam]
+  )
+  const orderIdsKey = orderIds.join(',')
 
   const [paymentInfo, setPaymentInfo] = useState<BatchPaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,6 +55,12 @@ export function BatchPaymentPage() {
   // Load payment info
   useEffect(() => {
     async function loadPaymentInfo() {
+      setLoading(true)
+      setError(null)
+      setPaymentInfo(null)
+      setSubmitError(null)
+      setSuccess(false)
+
       if (orderIds.length === 0) {
         setError('Не выбраны заказы для оплаты')
         setLoading(false)
@@ -68,7 +78,7 @@ export function BatchPaymentPage() {
     }
 
     loadPaymentInfo()
-  }, [])
+  }, [orderIds, orderIdsKey])
 
   const amountToPay = paymentInfo
     ? paymentScheme === 'full'
