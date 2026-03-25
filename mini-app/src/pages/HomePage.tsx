@@ -29,7 +29,6 @@ import {
   StickyBottomCTA,
   // WelcomeTour removed — content already on HomePage (HowItWorks, GuaranteesShowcase)
   SaloonFooter,
-  ModalLoadingFallback,
   ExamSeasonBanner,
   BonusExpiryAlert,
   ActiveOrderDashboard,
@@ -463,7 +462,7 @@ export function HomePage({ user, onRefresh }: Props) {
         haptic={haptic}
       />
 
-      <Suspense fallback={<ModalLoadingFallback />}>
+      <Suspense fallback={null}>
         <QRCodeModal
           isOpen={state.modals.qr}
           value={inviteLink}
