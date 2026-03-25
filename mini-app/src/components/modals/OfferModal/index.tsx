@@ -89,7 +89,7 @@ const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
         padding: 14,
         borderRadius: 12,
         background: isFeatured
-          ? 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)'
+          ? 'linear-gradient(160deg, rgba(18,18,20,0.85) 0%, rgba(12,12,14,0.92) 100%)'
           : 'var(--bg-glass)',
         border: isFeatured
           ? '1px solid rgba(212,175,55,0.15)'
@@ -199,7 +199,7 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
       style={{
         position: 'relative', borderRadius: 12, overflow: 'hidden',
         background: isOpen
-          ? 'linear-gradient(160deg, rgba(27,22,12,0.8) 0%, rgba(12,12,12,0.9) 100%)'
+          ? 'linear-gradient(160deg, rgba(18,18,20,0.88) 0%, rgba(12,12,14,0.95) 100%)'
           : 'var(--bg-glass)',
         border: isOpen ? '1px solid rgba(212,175,55,0.18)' : '1px solid var(--border-default)',
         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -356,7 +356,7 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
             position: 'relative',
             padding: '20px 18px 16px',
             borderRadius: 14,
-            background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
+            background: 'linear-gradient(160deg, rgba(18,18,20,0.97) 0%, rgba(10,10,12,0.99) 100%)',
             border: '1px solid rgba(212,175,55,0.12)',
             marginBottom: 14,
             overflow: 'hidden',
