@@ -135,7 +135,7 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
           {title}
         </div>
         <div style={{
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: 600,
           color: 'var(--text-muted)',
           lineHeight: 1.3,

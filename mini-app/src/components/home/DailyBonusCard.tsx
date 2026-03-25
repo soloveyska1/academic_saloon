@@ -497,7 +497,7 @@ function DailyBonusCardInner({
                         opacity: isClaimed ? 0.7 : 1,
                         lineHeight: 1,
                       }}>
-                        +{bonus}₽
+                        +{bonus} ₽
                       </span>
                     </div>
                   )
@@ -860,7 +860,7 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
         lineHeight: 1,
         whiteSpace: 'nowrap',
       }}>
-        {bonus}₽
+        {bonus} ₽
       </span>
     </div>
   )
