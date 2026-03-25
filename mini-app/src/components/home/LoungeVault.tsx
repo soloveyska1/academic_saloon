@@ -5,6 +5,16 @@ import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { formatMoney } from '../../lib/utils'
 import type { Order } from '../../types'
 
+/* ─── Rarity System ─── */
+type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
+
+const RARITY = {
+  common:    { primary: '#D4AF37', glow: 'rgba(212,175,55,0.15)', bg: 'rgba(212,175,55,0.06)', border: 'rgba(212,175,55,0.12)', label: 'Обычная', labelColor: 'rgba(212,175,55,0.5)' },
+  rare:      { primary: '#5B8DEF', glow: 'rgba(91,141,239,0.20)', bg: 'rgba(91,141,239,0.06)', border: 'rgba(91,141,239,0.15)', label: 'Редкая', labelColor: 'rgba(91,141,239,0.6)' },
+  epic:      { primary: '#A855F7', glow: 'rgba(168,85,247,0.20)', bg: 'rgba(168,85,247,0.06)', border: 'rgba(168,85,247,0.15)', label: 'Эпическая', labelColor: 'rgba(168,85,247,0.6)' },
+  legendary: { primary: '#F59E0B', glow: 'rgba(245,158,11,0.25)', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.18)', label: 'Легендарная', labelColor: 'rgba(245,158,11,0.7)' },
+} as const
+
 interface Rank {
   name: string
   emoji: string
@@ -38,10 +48,12 @@ interface Achievement {
   label: string
   description: string
   unlocked: boolean
-  progress?: number // 0-1
-  hint?: string // мотивационный текст для заблокированных
-  current?: number // текущее значение
-  target?: number // целевое значение
+  progress?: number
+  hint?: string
+  current?: number
+  target?: number
+  rarity: Rarity
+  percentOwners: number
 }
 
 function useAchievements(
@@ -68,6 +80,8 @@ function useAchievements(
         hint: 'Оформите первый заказ',
         current: Math.min(ordersCount, 1),
         target: 1,
+        rarity: 'common' as Rarity,
+        percentOwners: 78,
       },
       {
         id: 'five',
@@ -79,6 +93,8 @@ function useAchievements(
         hint: ordersCount > 0 ? `Ещё ${Math.max(0, 5 - ordersCount)} ${5 - ordersCount === 1 ? 'заказ' : 5 - ordersCount < 5 ? 'заказа' : 'заказов'}` : 'Закажите 5 работ',
         current: Math.min(ordersCount, 5),
         target: 5,
+        rarity: 'rare' as Rarity,
+        percentOwners: 32,
       },
       {
         id: 'referrer',
@@ -90,6 +106,8 @@ function useAchievements(
         hint: 'Пригласите друга по реферальной ссылке',
         current: Math.min(referralsCount, 1),
         target: 1,
+        rarity: 'rare' as Rarity,
+        percentOwners: 25,
       },
       {
         id: 'streak',
@@ -101,6 +119,8 @@ function useAchievements(
         hint: dailyStreak > 0 ? `Ещё ${7 - dailyStreak} ${7 - dailyStreak === 1 ? 'день' : 7 - dailyStreak < 5 ? 'дня' : 'дней'}` : 'Заходите 7 дней подряд',
         current: Math.min(dailyStreak, 7),
         target: 7,
+        rarity: 'epic' as Rarity,
+        percentOwners: 15,
       },
       {
         id: 'whale',
@@ -112,6 +132,8 @@ function useAchievements(
         hint: totalSpent > 0 ? `Ещё ${formatMoney(Math.max(0, 10000 - totalSpent))}` : 'Потратьте 10 000₽',
         current: Math.min(Math.round(totalSpent), 10000),
         target: 10000,
+        rarity: 'legendary' as Rarity,
+        percentOwners: 8,
       },
       {
         id: 'promo',
@@ -123,6 +145,8 @@ function useAchievements(
         hint: 'Используйте промокод при заказе',
         current: hasUsedPromo ? 1 : 0,
         target: 1,
+        rarity: 'common' as Rarity,
+        percentOwners: 45,
       },
       {
         id: 'perfect',
@@ -134,6 +158,8 @@ function useAchievements(
         hint: perfectOrders > 0 ? `Ещё ${3 - perfectOrders} без правок` : 'Получите 3 работы без правок',
         current: Math.min(perfectOrders, 3),
         target: 3,
+        rarity: 'epic' as Rarity,
+        percentOwners: 12,
       },
       {
         id: 'max',
@@ -145,6 +171,8 @@ function useAchievements(
         hint: 'Достигните высшего ранга',
         current: isMaxRank ? 1 : 0,
         target: 1,
+        rarity: 'legendary' as Rarity,
+        percentOwners: 3,
       },
     ]
   }, [ordersCount, totalSpent, referralsCount, dailyStreak, isMaxRank, orders])
@@ -153,8 +181,8 @@ function useAchievements(
 /* ═══════════════════════════════════════════════════════════════════════════
    OVERALL PROGRESS RING — Mini-кольцо для header секции (thin stroke)
    ═══════════════════════════════════════════════════════════════════════════ */
-const HEADER_RING_SIZE = 32
-const HEADER_RING_R = 12
+const HEADER_RING_SIZE = 44
+const HEADER_RING_R = 18
 const HEADER_RING_C = 2 * Math.PI * HEADER_RING_R
 
 function OverallProgressRing({ progress }: { progress: number }) {
@@ -171,7 +199,7 @@ function OverallProgressRing({ progress }: { progress: number }) {
         r={HEADER_RING_R}
         fill="none"
         stroke="rgba(212,175,55,0.08)"
-        strokeWidth={1.5}
+        strokeWidth={2.5}
       />
       <motion.circle
         cx={HEADER_RING_SIZE / 2}
@@ -179,7 +207,7 @@ function OverallProgressRing({ progress }: { progress: number }) {
         r={HEADER_RING_R}
         fill="none"
         stroke="#D4AF37"
-        strokeWidth={1.5}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeDasharray={HEADER_RING_C}
         initial={{ strokeDashoffset: HEADER_RING_C }}
@@ -203,6 +231,7 @@ const AchievementCard = memo(function AchievementCard({
   const Icon = achievement.icon
   const unlocked = achievement.unlocked
   const progress = achievement.progress ?? 0
+  const r = RARITY[achievement.rarity]
   const [expanded, setExpanded] = useState(false)
 
   const handleTap = useCallback(() => {
@@ -233,9 +262,9 @@ const AchievementCard = memo(function AchievementCard({
         cursor: 'pointer',
         overflow: 'hidden',
         background: unlocked ? '#0E0D0C' : '#0A0A0A',
-        border: `1px solid ${unlocked ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)'}`,
+        border: `1.5px solid ${unlocked ? r.border : 'rgba(255,255,255,0.04)'}`,
         boxShadow: unlocked
-          ? '0 2px 12px rgba(0,0,0,0.4)'
+          ? `0 4px 16px -4px ${r.glow}, 0 0 0 0.5px ${r.border}`
           : '0 1px 4px rgba(0,0,0,0.2)',
       }}
     >
@@ -248,13 +277,13 @@ const AchievementCard = memo(function AchievementCard({
             left: 0,
             right: 0,
             height: 1,
-            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.15) 50%, transparent 90%)',
+            background: `linear-gradient(90deg, transparent 10%, ${r.border} 50%, transparent 90%)`,
             pointerEvents: 'none',
           }}
         />
       )}
 
-      {/* ─── Icon with subtle circular glow ─── */}
+      {/* ─── Icon with rarity-colored glow ─── */}
       <div
         style={{
           width: 52,
@@ -277,8 +306,9 @@ const AchievementCard = memo(function AchievementCard({
             justifyContent: 'center',
             position: 'relative',
             background: unlocked
-              ? 'rgba(212,175,55,0.08)'
+              ? r.bg
               : 'rgba(255,255,255,0.04)',
+            boxShadow: unlocked ? `0 0 ${achievement.rarity === 'legendary' ? 16 : achievement.rarity === 'epic' ? 12 : 8}px ${r.glow}` : 'none',
           }}
         >
           {/* Icon */}
@@ -286,8 +316,8 @@ const AchievementCard = memo(function AchievementCard({
             size={24}
             strokeWidth={unlocked ? 1.8 : 1.5}
             style={{
-              color: unlocked ? '#D4AF37' : 'rgba(255,255,255,0.12)',
-              filter: unlocked ? 'drop-shadow(0 0 6px rgba(212,175,55,0.3))' : 'none',
+              color: unlocked ? r.primary : 'rgba(255,255,255,0.12)',
+              filter: unlocked ? `drop-shadow(0 0 6px ${r.glow})` : 'none',
               position: 'relative',
               zIndex: 1,
             }}
@@ -333,13 +363,13 @@ const AchievementCard = memo(function AchievementCard({
                 width: 16,
                 height: 16,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+                background: `linear-gradient(135deg, ${r.primary}, ${r.primary}88)`,
                 border: '1.5px solid #0E0D0C',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 2,
-                boxShadow: '0 2px 6px rgba(212,175,55,0.3)',
+                boxShadow: `0 2px 6px ${r.glow}`,
               }}
             >
               <Check size={9} strokeWidth={3} color="#0A0A0A" />
@@ -348,10 +378,20 @@ const AchievementCard = memo(function AchievementCard({
         </div>
       </div>
 
-      {/* ─── Label (Manrope, clean) ─── */}
+      {/* ─── Rarity label ─── */}
+      {unlocked && (
+        <span style={{
+          fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: r.labelColor, lineHeight: 1,
+        }}>
+          {r.label}
+        </span>
+      )}
+
+      {/* ─── Label ─── */}
       <span
         style={{
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: '0.01em',
           color: unlocked ? 'var(--text-primary, rgba(255,255,255,0.92))' : 'rgba(255,255,255,0.28)',
@@ -715,7 +755,7 @@ export const LoungeVault = memo(function LoungeVault({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 10,
+                fontSize: 14,
                 fontWeight: 800,
                 color: 'var(--gold-300, #D4AF37)',
                 fontFamily: 'var(--font-mono, monospace)',
@@ -773,20 +813,24 @@ export const LoungeVault = memo(function LoungeVault({
           )}
         </motion.div>
 
-        {/* ─── 2-column premium grid ─── */}
+        {/* ─── Horizontal scroll carousel ─── */}
         <div
+          className="hide-scrollbar"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 8,
+            display: 'flex',
+            gap: 10,
+            overflowX: 'auto',
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            margin: '0 -16px',
+            padding: '0 16px',
+            scrollbarWidth: 'none',
           }}
         >
           {sortedAchievements.map((a, i) => (
-            <AchievementCard
-              key={a.id}
-              achievement={a}
-              index={i}
-            />
+            <div key={a.id} style={{ flexShrink: 0, width: 104, scrollSnapAlign: 'start' }}>
+              <AchievementCard achievement={a} index={i} />
+            </div>
           ))}
         </div>
       </motion.div>
