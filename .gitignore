@@ -29,3 +29,4 @@ ENV/
 .cache/
 .vercel
 .env*.local
+mini-app/tsconfig.tsbuildinfo

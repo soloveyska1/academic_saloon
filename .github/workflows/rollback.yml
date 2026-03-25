@@ -11,6 +11,7 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Rollback via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -37,7 +38,13 @@ jobs:
 
             # Rebuild
             cd ~/academic_saloon/mini-app
-            npm ci --prefer-offline
+            LOCK_HASH=$(md5sum package-lock.json | cut -d' ' -f1)
+            if [ -f ".lock_hash" ] && [ "$(cat .lock_hash)" = "$LOCK_HASH" ]; then
+              echo "Dependencies unchanged, skipping npm ci"
+            else
+              npm ci --prefer-offline 2>/dev/null || npm install
+              echo "$LOCK_HASH" > .lock_hash
+            fi
             npm run build
 
             rm -rf /var/www/academic_saloon/dist/*
@@ -47,10 +54,10 @@ jobs:
             # Restart
             touch /tmp/saloon-deploy.lock
             systemctl stop saloon-bot 2>/dev/null || true
-            fuser -k 8000/tcp 2>/dev/null || true
-            sleep 3
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 1
             systemctl start saloon-bot
-            sleep 5
+            sleep 2
             rm -f /tmp/saloon-deploy.lock
             nginx -t && systemctl reload nginx
 
