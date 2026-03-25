@@ -518,6 +518,17 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const pauseUntilLabel = pauseUntil && !Number.isNaN(pauseUntil.getTime())
     ? pauseUntil.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null
+  const pauseRemainingLabel = pauseUntil && !Number.isNaN(pauseUntil.getTime())
+    ? (() => {
+        const hoursLeft = Math.max(Math.ceil((pauseUntil.getTime() - Date.now()) / (1000 * 60 * 60)), 0)
+        if (hoursLeft <= 0) return 'Завершается'
+        if (hoursLeft < 24) return `Осталось ${hoursLeft} ч`
+        const daysLeft = Math.ceil(hoursLeft / 24)
+        if (daysLeft === 1) return 'Остался 1 день'
+        if (daysLeft < 5) return `Осталось ${daysLeft} дня`
+        return `Осталось ${daysLeft} дней`
+      })()
+    : 'Активна'
   const paymentPlanLabel = order.payment_scheme === 'half'
     ? 'Схема 50/50'
     : isFullyPaid
@@ -881,10 +892,10 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               }}
             >
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>
-                Заморозка использована
+                До автовозобновления
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.82)' }}>
-                {Math.min(order.pause_days_used || 0, 7)}/7 дней
+                {pauseRemainingLabel}
               </span>
             </div>
           </motion.div>

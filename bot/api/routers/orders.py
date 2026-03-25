@@ -43,11 +43,15 @@ from bot.services.order_message_formatter import (
 )
 from bot.services.order_pause import (
     MAX_ORDER_PAUSE_DAYS,
-    auto_resume_if_needed,
     can_pause_order,
     get_pause_available_days,
     pause_order,
     resume_order,
+)
+from bot.services.order_pause_events import (
+    notify_pause_state_change,
+    sync_order_pause_state,
+    sync_orders_pause_state,
 )
 
 logger = logging.getLogger(__name__)
@@ -116,111 +120,6 @@ def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
     return final_price
 
 
-def format_pause_until(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    local_dt = value.astimezone(ZoneInfo("Europe/Moscow"))
-    return local_dt.strftime("%d.%m.%Y · %H:%M МСК")
-
-
-async def sync_order_pause_state(session: AsyncSession, order: Order | None) -> bool:
-    if order is None:
-        return False
-    resumed_status = auto_resume_if_needed(order)
-    if not resumed_status:
-        return False
-    await session.commit()
-    return True
-
-
-async def sync_orders_pause_state(session: AsyncSession, orders: list[Order]) -> bool:
-    changed = False
-    for order in orders:
-        if auto_resume_if_needed(order):
-            changed = True
-    if changed:
-        await session.commit()
-    return changed
-
-
-async def notify_pause_state_change(
-    session: AsyncSession,
-    order: Order,
-    user: User,
-    *,
-    event: str,
-    old_status: str | None,
-) -> None:
-    pause_until_label = format_pause_until(getattr(order, "pause_until", None))
-    event_text = {
-        "paused": (
-            "❄️ Заказ поставлен на паузу на 7 дней",
-            f"❄️ Клиент заморозил заказ до {pause_until_label or 'истечения срока'}",
-        ),
-        "resumed": (
-            "▶️ Заказ снова активен",
-            "▶️ Клиент досрочно возобновил заказ",
-        ),
-    }
-    client_title, card_text = event_text[event]
-
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=order.status,
-            old_status=old_status,
-            extra_data={
-                "pause_until": getattr(order, "pause_until", None).isoformat() if getattr(order, "pause_until", None) else None,
-                "paused_from_status": getattr(order, "paused_from_status", None),
-                "pause_available_days": get_pause_available_days(order),
-                "pause_event": event,
-            },
-        )
-    except Exception as e:
-        logger.warning(f"[Pause] Failed to send WS notification for order #{order.id}: {e}")
-
-    try:
-        bot = get_bot()
-        from bot.services.live_cards import send_or_update_card
-        from bot.handlers.order_chat import get_or_create_topic
-        await send_or_update_card(
-            bot=bot,
-            order=order,
-            session=session,
-            client_username=user.username,
-            client_name=user.fullname,
-            extra_text=card_text,
-        )
-        conv, topic_id = await get_or_create_topic(bot, session, order.user_id, order.id)
-        if topic_id:
-            admin_text = (
-                f"<b>{client_title}</b>\n\n"
-                f"Заказ <code>#{order.id}</code>\n"
-                + (f"До: <b>{pause_until_label}</b>\n" if event == "paused" and pause_until_label else "")
-                + (f"Причина: {order.pause_reason}\n" if event == "paused" and getattr(order, "pause_reason", None) else "")
-            )
-            await bot.send_message(
-                chat_id=settings.ADMIN_GROUP_ID,
-                message_thread_id=topic_id,
-                text=admin_text,
-            )
-        await bot.send_message(
-            chat_id=user.telegram_id,
-            text=(
-                f"✅ <b>{client_title}</b>\n\n"
-                f"Заказ <code>#{order.id}</code>\n"
-                + (f"До: <b>{pause_until_label}</b>\n\n" if event == "paused" and pause_until_label else "\n")
-                + ("Вернуться к работе можно раньше в карточке заказа." if event == "paused" else "Работа продолжается с того этапа, на котором была остановлена.")
-            ),
-        )
-    except Exception as e:
-        logger.warning(f"[Pause] Failed to send bot notification for order #{order.id}: {e}")
-
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  ORDER LIST & DETAIL
 # ═══════════════════════════════════════════════════════════════════════════
@@ -267,7 +166,7 @@ async def get_orders(
     query = query.order_by(desc(Order.created_at)).offset(offset).limit(limit)
     result = await session.execute(query)
     orders = result.scalars().all()
-    await sync_orders_pause_state(session, list(orders))
+    await sync_orders_pause_state(session, list(orders), notify_user=True)
 
     return OrdersListResponse(
         orders=[order_to_response(o) for o in orders],
@@ -471,7 +370,7 @@ async def get_order_detail(
             content={"success": False, "message": "Order not found"}
         )
 
-    await sync_order_pause_state(session, order)
+    await sync_order_pause_state(session, order, notify_user=True)
     return order_to_response(order)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1119,7 +1018,7 @@ async def get_payment_info(
             content={"success": False, "message": "Order not found"}
         )
 
-    await sync_order_pause_state(session, order)
+    await sync_order_pause_state(session, order, notify_user=True)
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
     card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
     
@@ -1169,7 +1068,7 @@ async def pause_client_order(
     if not order or order.user_id != tg_user.id:
         return JSONResponse(status_code=404, content={"success": False, "message": "Order not found"})
 
-    await sync_order_pause_state(session, order)
+    await sync_order_pause_state(session, order, notify_user=True)
 
     if order.status == OrderStatus.PAUSED.value:
         return PauseOrderResponse(
@@ -1234,9 +1133,18 @@ async def resume_client_order(
     if not order or order.user_id != tg_user.id:
         return JSONResponse(status_code=404, content={"success": False, "message": "Order not found"})
 
-    await sync_order_pause_state(session, order)
+    auto_resumed = await sync_order_pause_state(session, order, notify_user=True)
 
     if order.status != OrderStatus.PAUSED.value:
+        if auto_resumed:
+            return PauseOrderResponse(
+                success=True,
+                message="Пауза уже завершилась, заказ снова активен",
+                new_status=order.status,
+                pause_until=None,
+                paused_from_status=None,
+                pause_available_days=get_pause_available_days(order),
+            )
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": "Заказ сейчас не находится на паузе"},
