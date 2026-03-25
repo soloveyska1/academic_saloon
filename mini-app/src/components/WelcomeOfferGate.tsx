@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, ExternalLink, LockKeyhole, ScrollText, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, CheckCircle2, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import { acceptTerms, fetchConfig } from '../api/userApi'
 import { OfferModal } from './modals/OfferModal'
+import { glassGoldStyle } from './home/shared'
+import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
 import type { UserData } from '../types'
+
+/* ─── Types ─── */
 
 interface WelcomeOfferGateProps {
   user: UserData
   onAccepted: () => Promise<unknown> | unknown
   previewMode?: boolean
 }
+
+/* ─── Haptics ─── */
 
 function triggerNotificationHaptic(type: 'success' | 'error') {
   try {
@@ -33,29 +39,43 @@ function openExternalUrl(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-const featureCards = [
+/* ─── Value cards ─── */
+
+const valueCards = [
   {
-    icon: ShieldCheck,
-    title: 'Конфиденциальность',
-    text: 'Данные, переписка и материалы остаются внутри сервиса.',
+    icon: FileCheck,
+    title: 'Работа с нуля',
+    text: 'Уникальность от 80%',
   },
   {
-    icon: Sparkles,
-    title: 'Прозрачные условия',
-    text: 'Сроки, правки, оплата и гарантии фиксируются до старта работы.',
+    icon: RefreshCcw,
+    title: 'Правки без ограничений',
+    text: 'До полного соответствия',
   },
   {
-    icon: LockKeyhole,
-    title: 'Доступ после акцепта',
-    text: 'Заказы, чат, файлы и оплата откроются сразу после принятия оферты.',
+    icon: Shield,
+    title: 'Возврат до старта',
+    text: 'Полная конфиденциальность',
   },
 ]
 
-const stageLabels = [
-  { id: 1, title: 'Приветствие', subtitle: 'Короткий входной экран' },
-  { id: 2, title: 'Оферта', subtitle: 'Ознакомление и акцепт' },
-  { id: 3, title: 'Доступ', subtitle: 'Кабинет, чат и заказы' },
-]
+/* ─── Animation presets ─── */
+
+const stagger = {
+  container: {
+    animate: { transition: { staggerChildren: TIMING.stagger } },
+  },
+  item: {
+    initial: { opacity: 0, y: 10 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: TIMING.entrance, ease: EASE_PREMIUM as unknown as number[] },
+    },
+  },
+}
+
+/* ─── Component ─── */
 
 export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: WelcomeOfferGateProps) {
   const [showOffer, setShowOffer] = useState(false)
@@ -98,14 +118,9 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
       .slice(0, 2) || 'A'
   }, [user.fullname])
 
-  const currentStep = useMemo(() => {
-    if (unlocking || accepting) return 3
-    if (showOffer) return 2
-    return 1
-  }, [accepting, showOffer, unlocking])
-
   const openOffer = useCallback(() => {
     if (unlocking) return
+    haptic('light')
     setError(null)
     setShowOffer(true)
   }, [unlocking])
@@ -122,7 +137,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
       }
       setShowOffer(false)
       setUnlocking(true)
-      await new Promise((resolve) => setTimeout(resolve, 850))
+      await new Promise((resolve) => setTimeout(resolve, 400))
       await onAccepted()
       triggerNotificationHaptic('success')
     } catch (err) {
@@ -135,6 +150,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
   }, [accepting, onAccepted, previewMode])
 
   const handleOpenExternalOffer = useCallback(() => {
+    haptic('light')
     openExternalUrl(offerUrl)
   }, [offerUrl])
 
@@ -143,7 +159,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
       <div
         style={{
           minHeight: '100vh',
-          background: 'radial-gradient(circle at top, rgba(212,175,55,0.12) 0%, transparent 34%), linear-gradient(180deg, #09090b 0%, #0d0d10 48%, #080809 100%)',
+          background: 'var(--bg-void, #07070a)',
           padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px max(28px, calc(env(safe-area-inset-bottom, 20px) + 24px))',
           display: 'flex',
           alignItems: 'center',
@@ -152,550 +168,404 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
           position: 'relative',
         }}
       >
+        {/* Subtle radial gold glow at top */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 15% 20%, rgba(212,175,55,0.08) 0%, transparent 30%), radial-gradient(circle at 80% 72%, rgba(212,175,55,0.06) 0%, transparent 28%)',
+            background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(212,175,55,0.10) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
 
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: TIMING.entrance, ease: EASE_PREMIUM as unknown as number[] }}
           style={{
             width: '100%',
-            maxWidth: 440,
+            maxWidth: 400,
             position: 'relative',
             zIndex: 1,
           }}
         >
-          <div
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              borderRadius: 28,
-              border: '1px solid rgba(212,175,55,0.14)',
-              background: 'linear-gradient(180deg, rgba(22,19,14,0.94) 0%, rgba(12,12,14,0.96) 38%, rgba(10,10,12,0.98) 100%)',
-              boxShadow: '0 30px 80px rgba(0,0,0,0.42)',
-              padding: 28,
-            }}
+          <motion.div
+            variants={stagger.container}
+            initial="initial"
+            animate="animate"
+            style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                top: -90,
-                right: -40,
-                width: 240,
-                height: 240,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 35%, transparent 72%)',
-                pointerEvents: 'none',
-              }}
-            />
+            {/* ─── Top area: monogram + greeting ─── */}
             <motion.div
-              aria-hidden="true"
-              animate={{ opacity: [0.35, 0.62, 0.35], scale: [1, 1.06, 1] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              variants={stagger.item}
               style={{
-                position: 'absolute',
-                inset: -1,
-                borderRadius: 28,
-                border: '1px solid rgba(212,175,55,0.10)',
-                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                marginBottom: 28,
               }}
-            />
-
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05, duration: 0.45 }}
+            >
+              {/* Monogram */}
+              <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '78px 1fr',
-                  gap: 18,
+                  width: 72,
+                  height: 72,
+                  borderRadius: 20,
+                  ...glassGoldStyle,
+                  border: '1px solid rgba(212,175,55,0.16)',
+                  display: 'flex',
                   alignItems: 'center',
-                  marginBottom: 22,
+                  justifyContent: 'center',
+                  marginBottom: 16,
                 }}
               >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.08, duration: 0.45 }}
+                <span
                   style={{
-                    width: 78,
-                    height: 78,
-                    borderRadius: 24,
-                    background: 'linear-gradient(145deg, rgba(252,246,186,0.18), rgba(212,175,55,0.04))',
-                    border: '1px solid rgba(212,175,55,0.18)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-                    position: 'relative',
-                    overflow: 'hidden',
+                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                    fontSize: 26,
+                    lineHeight: 1,
+                    color: 'var(--gold-400, #d4af37)',
                   }}
                 >
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      inset: 10,
-                      borderRadius: 18,
-                      border: '1px solid rgba(212,175,55,0.12)',
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                      fontSize: 28,
-                      lineHeight: 1,
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    {monogram}
-                  </span>
-                </motion.div>
+                  {monogram}
+                </span>
+              </div>
 
-                <div>
-                  <div
+              {/* Badge */}
+              <div
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212,175,55,0.60)',
+                  fontWeight: 700,
+                  fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                  marginBottom: 8,
+                }}
+              >
+                Академический Салон
+              </div>
+
+              {/* Greeting */}
+              <div
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 28,
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--text-primary, #f5f5f0)',
+                }}
+              >
+                Добро пожаловать, {firstName}
+              </div>
+            </motion.div>
+
+            {/* ─── Value proposition ─── */}
+            <motion.div
+              variants={stagger.item}
+              style={{
+                textAlign: 'center',
+                marginBottom: 24,
+              }}
+            >
+              <h1
+                style={{
+                  margin: '0 0 10px',
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 22,
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.02em',
+                  color: 'var(--text-primary, #f5f5f0)',
+                  fontWeight: 400,
+                }}
+              >
+                Ваш академический ассистент
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  color: 'rgba(255,255,255,0.55)',
+                  fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                  maxWidth: 320,
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                }}
+              >
+                Курсовые, дипломные и учебные работы — от замысла до защиты.
+                Каждый проект ведётся индивидуально.
+              </p>
+            </motion.div>
+
+            {/* ─── 3 compact value cards ─── */}
+            <motion.div
+              variants={stagger.item}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                marginBottom: 28,
+              }}
+            >
+              {valueCards.map((card, index) => {
+                const Icon = card.icon
+                return (
+                  <motion.div
+                    key={card.title}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      delay: 0.2 + index * TIMING.stagger,
+                      duration: TIMING.entrance,
+                      ease: EASE_PREMIUM as unknown as number[],
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      marginBottom: 10,
-                      flexWrap: 'wrap',
+                      gap: 14,
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      ...glassGoldStyle,
                     }}
                   >
                     <div
                       style={{
-                        fontSize: 12,
-                        letterSpacing: '0.18em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(212,175,55,0.86)',
-                        fontWeight: 700,
-                      }}
-                    >
-                      Первый вход
-                    </div>
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '10px 14px',
-                        borderRadius: 999,
-                        background: 'rgba(255,255,255,0.03)',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: 'linear-gradient(145deg, rgba(212,175,55,0.14), rgba(212,175,55,0.04))',
                         border: '1px solid rgba(212,175,55,0.12)',
-                        color: 'rgba(212,175,55,0.88)',
-                        fontSize: 12,
-                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
                       }}
                     >
-                      <LockKeyhole size={14} strokeWidth={1.8} />
-                      Обязательный акцепт
+                      <Icon size={18} strokeWidth={1.6} color="var(--gold-400, #d4af37)" />
                     </div>
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'rgba(255,255,255,0.42)',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Academic Saloon
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12, duration: 0.45 }}
-                style={{ marginBottom: 24 }}
-              >
-                <div
-                  style={{
-                    fontSize: 17,
-                    color: 'rgba(212,175,55,0.88)',
-                    marginBottom: 10,
-                    fontWeight: 600,
-                  }}
-                >
-                  Добро пожаловать, {firstName}
-                </div>
-                <h1
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: 48,
-                    lineHeight: 0.95,
-                    letterSpacing: '-0.05em',
-                    color: 'var(--text-primary)',
-                    marginBottom: 16,
-                  }}
-                >
-                  Вход в салон
-                </h1>
-                <div
-                  style={{
-                    width: 108,
-                    height: 2,
-                    borderRadius: 999,
-                    background: 'linear-gradient(90deg, rgba(212,175,55,0.95), rgba(212,175,55,0.08))',
-                    marginBottom: 18,
-                  }}
-                />
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 16,
-                    lineHeight: 1.65,
-                    color: 'rgba(255,255,255,0.70)',
-                    maxWidth: 360,
-                  }}
-                >
-                  Перед первым входом покажем приветствие и публичную оферту.
-                  После акцепта откроются кабинет, чат, статусы, оплата и файлы заказа.
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.16, duration: 0.42 }}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 10,
-                  marginBottom: 22,
-                }}
-              >
-                {stageLabels.map((stage) => {
-                  const isActive = currentStep === stage.id
-                  const isCompleted = currentStep > stage.id
-                  return (
-                    <div
-                      key={stage.id}
-                      style={{
-                        padding: '12px 10px',
-                        borderRadius: 18,
-                        background: isActive
-                          ? 'linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.06))'
-                          : 'rgba(255,255,255,0.03)',
-                        border: isActive
-                          ? '1px solid rgba(212,175,55,0.22)'
-                          : '1px solid rgba(255,255,255,0.05)',
-                        boxShadow: isActive ? '0 12px 26px rgba(212,175,55,0.08)' : 'none',
-                      }}
-                    >
+                    <div style={{ minWidth: 0 }}>
                       <div
                         style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 999,
-                          marginBottom: 10,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: isCompleted
-                            ? 'linear-gradient(180deg, rgba(252,246,186,0.96), rgba(212,175,55,1))'
-                            : isActive
-                              ? 'rgba(212,175,55,0.16)'
-                              : 'rgba(255,255,255,0.06)',
-                          color: isCompleted ? '#16120c' : isActive ? 'rgba(252,246,186,0.95)' : 'rgba(255,255,255,0.55)',
-                          fontSize: 11,
-                          fontWeight: 800,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: 'var(--text-primary, #f5f5f0)',
+                          fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                          marginBottom: 2,
                         }}
                       >
-                        {isCompleted ? <CheckCircle2 size={14} strokeWidth={2.2} /> : stage.id}
+                        {card.title}
                       </div>
                       <div
                         style={{
                           fontSize: 12.5,
-                          fontWeight: 700,
-                          color: isActive ? 'var(--text-primary)' : 'rgba(255,255,255,0.76)',
-                          marginBottom: 4,
+                          color: 'rgba(255,255,255,0.45)',
+                          fontFamily: "var(--font-body, 'Manrope', sans-serif)",
                         }}
                       >
-                        {stage.title}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 10.5,
-                          lineHeight: 1.4,
-                          color: 'rgba(255,255,255,0.44)',
-                        }}
-                      >
-                        {stage.subtitle}
+                        {card.text}
                       </div>
                     </div>
-                  )
-                })}
-              </motion.div>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 12,
-                  marginBottom: 24,
-                }}
-              >
-                {featureCards.map((item, index) => {
-                  const Icon = item.icon
-                  return (
-                    <motion.div
-                      key={item.title}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.18 + index * 0.06, duration: 0.4 }}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '46px 1fr',
-                        gap: 12,
-                        padding: 14,
-                        borderRadius: 18,
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
-                        border: '1px solid rgba(255,255,255,0.05)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 46,
-                          height: 46,
-                          borderRadius: 14,
-                          background: 'linear-gradient(180deg, rgba(212,175,55,0.16), rgba(212,175,55,0.06))',
-                          border: '1px solid rgba(212,175,55,0.16)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Icon size={18} strokeWidth={1.8} color="rgba(212,175,55,0.92)" />
-                      </div>
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 15,
-                            fontWeight: 700,
-                            color: 'var(--text-primary)',
-                            marginBottom: 4,
-                          }}
-                        >
-                          {item.title}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            lineHeight: 1.55,
-                            color: 'rgba(255,255,255,0.58)',
-                          }}
-                        >
-                          {item.text}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </div>
-
+            {/* ─── Error ─── */}
+            <AnimatePresence>
               {error && (
-                <div
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.25, ease: EASE_PREMIUM as unknown as number[] }}
                   style={{
-                    marginBottom: 18,
-                    padding: '14px 16px',
-                    borderRadius: 16,
-                    background: 'rgba(127,29,29,0.22)',
-                    border: '1px solid rgba(248,113,113,0.22)',
+                    padding: '12px 16px',
+                    borderRadius: 14,
+                    background: 'rgba(127,29,29,0.18)',
+                    border: '1px solid rgba(248,113,113,0.18)',
                     color: '#fecaca',
                     fontSize: 13,
                     lineHeight: 1.5,
+                    fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                    overflow: 'hidden',
                   }}
                 >
                   {error}
-                </div>
+                </motion.div>
               )}
+            </AnimatePresence>
 
+            {/* ─── CTA ─── */}
+            <motion.div variants={stagger.item}>
               <motion.button
                 type="button"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.32, duration: 0.45 }}
-                whileTap={{ scale: 0.985 }}
+                whileTap={{ scale: TAP_SCALE }}
                 onClick={openOffer}
                 disabled={unlocking}
                 style={{
                   width: '100%',
-                  padding: '18px 20px',
-                  borderRadius: 18,
+                  padding: '16px 20px',
+                  borderRadius: 16,
                   border: 'none',
-                  background: 'linear-gradient(180deg, rgba(252,246,186,0.96) 0%, rgba(212,175,55,1) 100%)',
+                  background: 'linear-gradient(180deg, var(--liquid-gold, #f0d060) 0%, var(--gold-metallic, #c9a227) 100%)',
                   color: '#17130b',
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: 800,
-                  letterSpacing: '-0.02em',
+                  fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                  letterSpacing: '-0.01em',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 10,
-                  boxShadow: '0 18px 50px rgba(212,175,55,0.18)',
+                  gap: 8,
+                  boxShadow: '0 12px 36px rgba(212,175,55,0.16)',
                   cursor: unlocking ? 'default' : 'pointer',
-                  opacity: unlocking ? 0.7 : 1,
-                  marginBottom: 12,
+                  opacity: unlocking ? 0.6 : 1,
+                  transition: 'opacity 0.2s ease',
                 }}
               >
-                <ScrollText size={18} strokeWidth={2} />
-                Ознакомиться с офертой
-                <ArrowRight size={18} strokeWidth={2.2} />
+                Продолжить
+                <ArrowRight size={16} strokeWidth={2.2} />
               </motion.button>
 
+              {/* Subtle note */}
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
+                  textAlign: 'center',
+                  marginTop: 14,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  color: 'rgba(255,255,255,0.35)',
+                  fontFamily: "var(--font-body, 'Manrope', sans-serif)",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'rgba(255,255,255,0.44)',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Это обязательный шаг перед первым входом в приложение.
-                </div>
+                Для начала работы потребуется принять условия сервиса
+              </div>
 
-                <button
+              {/* External offer link */}
+              <div style={{ textAlign: 'center', marginTop: 10 }}>
+                <motion.button
                   type="button"
+                  whileTap={{ scale: TAP_SCALE }}
                   onClick={handleOpenExternalOffer}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 14px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: 'var(--text-secondary)',
+                    gap: 6,
+                    padding: 0,
+                    border: 'none',
+                    background: 'none',
+                    color: 'rgba(212,175,55,0.50)',
                     fontSize: 12,
-                    fontWeight: 700,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-body, 'Manrope', sans-serif)",
                     cursor: 'pointer',
                   }}
                 >
-                  Полный текст
-                  <ExternalLink size={14} strokeWidth={1.9} />
-                </button>
+                  Полный текст оферты
+                  <ExternalLink size={12} strokeWidth={1.8} />
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
+          </motion.div>
 
-            <AnimatePresence>
-              {unlocking && (
+          {/* ─── Unlock animation overlay ─── */}
+          <AnimatePresence>
+            {unlocking && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 50,
+                  background: 'var(--bg-void, #07070a)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 28,
+                }}
+              >
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.3, ease: EASE_PREMIUM as unknown as number[] }}
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 4,
-                    background: 'linear-gradient(180deg, rgba(12,12,14,0.72) 0%, rgba(9,9,11,0.92) 100%)',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 28,
+                    width: '100%',
+                    maxWidth: 280,
+                    textAlign: 'center',
                   }}
                 >
                   <motion.div
-                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                    transition={{ duration: 0.35 }}
+                    animate={{ scale: [1, 1.04, 1], opacity: [0.8, 1, 0.8] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
-                      width: '100%',
-                      maxWidth: 320,
-                      textAlign: 'center',
+                      width: 72,
+                      height: 72,
+                      margin: '0 auto 20px',
+                      borderRadius: 20,
+                      ...glassGoldStyle,
+                      border: '1px solid rgba(212,175,55,0.16)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <CheckCircle2 size={30} strokeWidth={1.6} color="var(--gold-400, #d4af37)" />
+                  </motion.div>
+
+                  <div
+                    style={{
+                      fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                      fontSize: 26,
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.03em',
+                      color: 'var(--text-primary, #f5f5f0)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Салон открывается
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      color: 'rgba(255,255,255,0.45)',
+                      fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                      marginBottom: 20,
+                    }}
+                  >
+                    Подготавливаем ваш кабинет...
+                  </div>
+
+                  {/* Progress bar: 0 -> 100% in 400ms */}
+                  <div
+                    style={{
+                      height: 2,
+                      borderRadius: 999,
+                      background: 'rgba(255,255,255,0.06)',
+                      overflow: 'hidden',
                     }}
                   >
                     <motion.div
-                      initial={{ scale: 0.88, opacity: 0.7 }}
-                      animate={{ scale: [0.96, 1.03, 0.98], opacity: 1 }}
-                      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 0.4, ease: 'easeInOut' }}
                       style={{
-                        width: 84,
-                        height: 84,
-                        margin: '0 auto 18px',
-                        borderRadius: 24,
-                        background: 'linear-gradient(180deg, rgba(252,246,186,0.18), rgba(212,175,55,0.08))',
-                        border: '1px solid rgba(212,175,55,0.22)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 22px 50px rgba(212,175,55,0.10)',
-                      }}
-                    >
-                      <CheckCircle2 size={34} strokeWidth={1.9} color="rgba(252,246,186,0.95)" />
-                    </motion.div>
-
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                        fontSize: 34,
-                        lineHeight: 0.96,
-                        letterSpacing: '-0.05em',
-                        color: 'var(--text-primary)',
-                        marginBottom: 12,
-                      }}
-                    >
-                      Салон открывается
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        color: 'rgba(255,255,255,0.62)',
-                        marginBottom: 16,
-                      }}
-                    >
-                      Акцепт зафиксирован. Подготавливаем кабинет, чат и рабочие инструменты.
-                    </div>
-                    <div
-                      style={{
-                        height: 3,
+                        height: '100%',
                         borderRadius: 999,
-                        background: 'rgba(255,255,255,0.08)',
-                        overflow: 'hidden',
+                        background: 'linear-gradient(90deg, rgba(212,175,55,0.40), var(--gold-400, #d4af37))',
                       }}
-                    >
-                      <motion.div
-                        initial={{ width: '0%' }}
-                        animate={{ width: '100%' }}
-                        transition={{ duration: 0.85, ease: 'easeInOut' }}
-                        style={{
-                          height: '100%',
-                          borderRadius: 999,
-                          background: 'linear-gradient(90deg, rgba(212,175,55,0.52), rgba(252,246,186,0.96))',
-                        }}
-                      />
-                    </div>
-                  </motion.div>
+                    />
+                  </div>
                 </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
 

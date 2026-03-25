@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Gift, Check, Flame } from 'lucide-react'
 import {
@@ -75,6 +75,16 @@ function DailyBonusCardInner({
   const [error, setError] = useState<string | null>(null)
   const [showScratchCard, setShowScratchCard] = useState(false)
   const [showGoldConfetti, setShowGoldConfetti] = useState(false)
+  const claimedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (claimedTimerRef.current) {
+        clearTimeout(claimedTimerRef.current)
+        claimedTimerRef.current = null
+      }
+    }
+  }, [])
 
   const canClaim = info ? info.can_claim : dailyAvailable
   const currentStreak = info ? info.streak : streak
@@ -164,7 +174,8 @@ function DailyBonusCardInner({
         } : prev)
 
         onBonusClaimed(result.bonus)
-        setTimeout(() => setClaimedAmount(null), 3000)
+        if (claimedTimerRef.current) clearTimeout(claimedTimerRef.current)
+        claimedTimerRef.current = setTimeout(() => setClaimedAmount(null), 3000)
       } else {
         haptic('error')
         setError(result.message || 'Не удалось получить бонус')

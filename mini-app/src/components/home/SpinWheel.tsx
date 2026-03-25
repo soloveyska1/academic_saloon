@@ -44,6 +44,7 @@ export const SpinWheel = memo(function SpinWheel({
   const [showConfetti, setShowConfetti] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const hasSpun = useRef(false)
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Reset state when modal opens
   useEffect(() => {
@@ -53,6 +54,12 @@ export const SpinWheel = memo(function SpinWheel({
       setSpinning(false)
       hasSpun.current = false
       setRotation(0)
+    }
+    return () => {
+      if (spinTimerRef.current) {
+        clearTimeout(spinTimerRef.current)
+        spinTimerRef.current = null
+      }
     }
   }, [isOpen])
 
@@ -75,7 +82,7 @@ export const SpinWheel = memo(function SpinWheel({
 
       setRotation(totalRotation)
 
-      setTimeout(() => {
+      spinTimerRef.current = setTimeout(() => {
         haptic('success')
         setResult(res.bonus)
         setShowConfetti(true)

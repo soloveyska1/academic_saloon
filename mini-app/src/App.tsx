@@ -350,7 +350,7 @@ function AppContent() {
 
   // Check if this is the first time the user opens the app in this session
   useEffect(() => {
-    const hasSeenSplash = sessionStorage.getItem('as_splash_seen')
+    const hasSeenSplash = localStorage.getItem('as_splash_seen')
     if (hasSeenSplash) {
       setShowSplash(false)
       setSplashComplete(true)
@@ -359,7 +359,7 @@ function AppContent() {
 
   // Handle splash screen completion
   const handleSplashComplete = useCallback(() => {
-    sessionStorage.setItem('as_splash_seen', 'true')
+    localStorage.setItem('as_splash_seen', 'true')
     setSplashComplete(true)
     setShowSplash(false)
   }, [])

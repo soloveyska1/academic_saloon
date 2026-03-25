@@ -1,6 +1,6 @@
 import { useCallback, useRef, useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -27,8 +27,7 @@ import {
   TestimonialsSection,
   LiveActivityFeed,
   StickyBottomCTA,
-  WelcomeTour,
-  hasSeenWelcomeTour,
+  // WelcomeTour removed — content already on HomePage (HowItWorks, GuaranteesShowcase)
   SaloonFooter,
   ModalLoadingFallback,
   ExamSeasonBanner,
@@ -80,7 +79,7 @@ export function HomePage({ user, onRefresh }: Props) {
   })
 
   const { state, actions } = useHomePageState()
-  const [showTour, setShowTour] = useState(() => !hasSeenWelcomeTour())
+  // WelcomeTour removed — no longer needed
   const [referralCopied, setReferralCopied] = useState(false)
   const heroCTARef = useRef<HTMLElement>(null)
 
@@ -515,17 +514,6 @@ export function HomePage({ user, onRefresh }: Props) {
       />
     </main>
 
-      <AnimatePresence>
-        {isNewUser && showTour && (
-          <WelcomeTour
-            onComplete={() => {
-              setShowTour(false)
-              navigate('/create-order', { state: { firstOrder: true } })
-            }}
-            haptic={haptic}
-          />
-        )}
-      </AnimatePresence>
     </>
   )
 }
