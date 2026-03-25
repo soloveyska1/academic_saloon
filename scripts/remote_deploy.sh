@@ -61,25 +61,6 @@ install_backend_dependencies() {
   printf '%s' "$req_hash" > .req_hash
 }
 
-restart_backend() {
-  if ! systemd_maybe_sudo systemctl reload-or-restart "$SERVICE_NAME"; then
-    echo "Initial restart failed, clearing port 8000 and retrying"
-  fi
-
-  sleep 1
-
-  if systemd_maybe_sudo systemctl is-active --quiet "$SERVICE_NAME"; then
-    return
-  fi
-
-  fuser -k -9 8000/tcp 2>/dev/null || true
-  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
-  sleep 1
-  systemd_maybe_sudo systemctl restart "$SERVICE_NAME"
-  sleep 2
-  systemd_maybe_sudo systemctl is-active --quiet "$SERVICE_NAME"
-}
-
 install_frontend_dependencies() {
   local lock_hash
 
@@ -175,6 +156,67 @@ check_backend_health() {
 
 check_frontend_health() {
   curl -fsSIL --max-time 5 http://localhost/ >/dev/null
+}
+
+systemd_show_property() {
+  local property="$1"
+  systemd_maybe_sudo systemctl show "$SERVICE_NAME" --property "$property" --value 2>/dev/null | tr -d '\r'
+}
+
+service_main_pid() {
+  systemd_show_property MainPID
+}
+
+service_active_state() {
+  systemd_show_property ActiveState
+}
+
+service_sub_state() {
+  systemd_show_property SubState
+}
+
+wait_for_backend_ready() {
+  local old_pid="${1:-0}" current_pid active_state sub_state
+
+  for _ in $(seq 1 80); do
+    current_pid="$(service_main_pid)"
+    active_state="$(service_active_state)"
+    sub_state="$(service_sub_state)"
+
+    if [ "${active_state}" = "active" ] && [ "${sub_state}" = "running" ] && [ -n "${current_pid}" ] && [ "${current_pid}" != "0" ]; then
+      if { [ "$old_pid" = "0" ] || [ "$current_pid" != "$old_pid" ]; } && check_backend_health; then
+        return 0
+      fi
+    fi
+
+    sleep 0.5
+  done
+
+  return 1
+}
+
+restart_backend() {
+  local old_pid current_pid active_state sub_state
+
+  old_pid="$(service_main_pid)"
+  if [ -z "$old_pid" ]; then
+    old_pid="0"
+  fi
+
+  if systemd_maybe_sudo systemctl reload-or-restart "$SERVICE_NAME" && wait_for_backend_ready "$old_pid"; then
+    return 0
+  fi
+
+  current_pid="$(service_main_pid)"
+  active_state="$(service_active_state)"
+  sub_state="$(service_sub_state)"
+  echo "Backend not ready after systemd cycle (state=${active_state}/${sub_state}, pid=${current_pid:-0}), clearing port 8000 and retrying"
+
+  fuser -k -9 8000/tcp 2>/dev/null || true
+  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+  sleep 1
+  systemd_maybe_sudo systemctl restart "$SERVICE_NAME"
+  wait_for_backend_ready "0"
 }
 
 send_notification() {

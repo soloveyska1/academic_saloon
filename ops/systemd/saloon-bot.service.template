@@ -15,11 +15,12 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 EnvironmentFile={{ENV_FILE}}
 ExecStartPre={{SYSTEMD_HELPER_DIR}}/systemd_prestart.sh {{REPO_DIR}}
 ExecStart={{REPO_DIR}}/venv/bin/python {{REPO_DIR}}/main.py
-ExecReload={{SYSTEMD_HELPER_DIR}}/systemd_reload.sh
+ExecReload={{SYSTEMD_HELPER_DIR}}/systemd_reload.sh HUP 45
 Restart=always
 RestartSec=2
 TimeoutStartSec=60
 TimeoutStopSec=30
+TimeoutReloadSec=50
 KillMode=mixed
 KillSignal=SIGTERM
 SuccessExitStatus=143 SIGTERM
