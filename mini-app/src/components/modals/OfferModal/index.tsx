@@ -2,7 +2,7 @@ import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import {
   Shield, ChevronDown, ArrowRight, CheckCircle2,
-  BookOpen, FileText,
+  FileText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
@@ -10,9 +10,10 @@ import { SUMMARY_CARDS, OFFER_SECTIONS, OFFER_META } from './offerData'
 import type { OfferSection } from './offerData'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  OFFER MODAL v5 — Premium legal document viewer
-//  Architecture: Hero → Stats → Key Points → Full Legal Text → CTA
-//  Design reference: GuaranteesModal (proof wall pattern)
+//  OFFER MODAL v6 — Radical redesign
+//  Architecture: Compact Hero → 2-col Grid (top 4) → Compact List (rest) →
+//                Expandable Legal → CTA
+//  No more boring vertical card list. Mixed layouts for visual variety.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface OfferModalProps {
@@ -23,8 +24,129 @@ export interface OfferModalProps {
 
 const EASE = [0.16, 1, 0.3, 1] as const
 
-// ═══════════ SECTION HEADER (from GuaranteesModal) ═══════════
-const SectionHeader = memo(function SectionHeader({ icon: Icon, label, delay }: {
+// Split cards: first 4 as grid, rest as compact rows
+const GRID_CARDS = SUMMARY_CARDS.slice(0, 4)
+const LIST_CARDS = SUMMARY_CARDS.slice(4)
+
+// ═══════════ GRID CARD (2-col, compact, like BonusPerkCard) ═══════════
+const GridCard = memo(function GridCard({ card, index, onJump }: {
+  card: typeof SUMMARY_CARDS[0]; index: number; onJump: (idx: number) => void
+}) {
+  const Icon = card.icon
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 + index * 0.05 }}
+      onClick={() => { triggerHaptic('light'); onJump(card.sectionIndex) }}
+      style={{
+        position: 'relative',
+        padding: '14px 12px',
+        borderRadius: 12,
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--border-default)',
+        display: 'flex', flexDirection: 'column', gap: 10,
+        overflow: 'hidden', cursor: 'pointer',
+      }}
+    >
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 9,
+          background: 'rgba(212,175,55,0.06)',
+          border: '1px solid rgba(212,175,55,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Icon size={14} color="var(--gold-400)" strokeWidth={1.8} />
+        </div>
+
+        {/* Proof badge */}
+        <div style={{
+          padding: '3px 7px', borderRadius: 6,
+          background: 'rgba(212,175,55,0.06)',
+          border: '1px solid rgba(212,175,55,0.12)',
+        }}>
+          <span style={{
+            fontSize: 11, fontWeight: 800, color: 'var(--gold-300)',
+            letterSpacing: '-0.02em',
+          }}>
+            {card.proof}
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <div style={{
+          fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+          marginBottom: 3, lineHeight: 1.25,
+        }}>
+          {card.title}
+        </div>
+        <div style={{
+          fontSize: 11, lineHeight: 1.45, color: 'var(--text-muted)', fontWeight: 600,
+        }}>
+          {card.hook}
+        </div>
+      </div>
+    </m.div>
+  )
+})
+
+// ═══════════ COMPACT ROW (for remaining cards) ═══════════
+const CompactRow = memo(function CompactRow({ card, index, onJump }: {
+  card: typeof SUMMARY_CARDS[0]; index: number; onJump: (idx: number) => void
+}) {
+  const Icon = card.icon
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.38 + index * 0.04 }}
+      onClick={() => { triggerHaptic('light'); onJump(card.sectionIndex) }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 10,
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--border-default)',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: 8,
+        background: 'rgba(212,175,55,0.06)',
+        border: '1px solid rgba(212,175,55,0.10)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={13} color="var(--gold-400)" strokeWidth={1.8} />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+          {card.title}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
+          {card.hook}
+        </div>
+      </div>
+
+      <span style={{
+        fontSize: 12, fontWeight: 800, color: 'var(--gold-400)',
+        flexShrink: 0,
+      }}>
+        {card.proof}
+      </span>
+    </m.div>
+  )
+})
+
+// ═══════════ SECTION HEADER ═══════════
+const SectionLabel = memo(function SectionLabel({ icon: Icon, label, delay }: {
   icon: LucideIcon; label: string; delay: number
 }) {
   return (
@@ -34,153 +156,24 @@ const SectionHeader = memo(function SectionHeader({ icon: Icon, label, delay }: 
       transition={{ delay }}
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        marginBottom: 12,
+        marginBottom: 10,
       }}
     >
       <div style={{
-        width: 24, height: 24, borderRadius: 7,
-        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))',
-        border: '1px solid rgba(212,175,55,0.10)',
+        width: 22, height: 22, borderRadius: 6,
+        background: 'rgba(212,175,55,0.08)',
+        border: '1px solid rgba(212,175,55,0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon size={11} color="var(--gold-400)" strokeWidth={2} />
+        <Icon size={10} color="var(--gold-400)" strokeWidth={2} />
       </div>
       <span style={{
-        fontSize: 12, fontWeight: 800,
-        letterSpacing: '0.05em', textTransform: 'uppercase',
+        fontSize: 11, fontWeight: 800,
+        letterSpacing: '0.06em', textTransform: 'uppercase',
         color: 'var(--gold-200)',
       }}>
         {label}
       </span>
-    </m.div>
-  )
-})
-
-// ═══════════ GOLD DIVIDER ═══════════
-function GoldDivider({ delay }: { delay: number }) {
-  return (
-    <m.div
-      aria-hidden="true"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay }}
-      style={{
-        height: 1, margin: '16px 0',
-        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
-      }}
-    />
-  )
-}
-
-// ═══════════ KEY POINT CARD (GuaranteeCard pattern with proof badge) ═══════════
-const KeyPointCard = memo(function KeyPointCard({ card, index, onJump }: {
-  card: typeof SUMMARY_CARDS[0]; index: number; onJump: (idx: number) => void
-}) {
-  const Icon = card.icon
-  const isFeatured = index === 0
-
-  return (
-    <m.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.14 + index * 0.05, duration: 0.4, ease: EASE }}
-      onClick={() => { triggerHaptic('light'); onJump(card.sectionIndex) }}
-      style={{
-        padding: 14,
-        borderRadius: 12,
-        background: isFeatured
-          ? 'linear-gradient(160deg, rgba(18,18,20,0.85) 0%, rgba(12,12,14,0.92) 100%)'
-          : 'var(--bg-glass)',
-        border: isFeatured
-          ? '1px solid rgba(212,175,55,0.15)'
-          : '1px solid var(--border-default)',
-        position: 'relative', overflow: 'hidden',
-        cursor: 'pointer',
-      }}
-    >
-      {isFeatured && (
-        <div aria-hidden="true" style={{
-          position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
-        }} />
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        {/* Icon */}
-        <div style={{
-          width: 38, height: 38, borderRadius: 10,
-          background: isFeatured
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))'
-            : 'rgba(212,175,55,0.06)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-          border: '1px solid rgba(212,175,55,0.12)',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div aria-hidden="true" style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-            background: 'rgba(255,255,255,0.10)',
-          }} />
-          <Icon size={17} color="var(--gold-400)" strokeWidth={1.6} style={{ position: 'relative', zIndex: 1 }} />
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Title + Proof Badge row */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 8, marginBottom: 2,
-          }}>
-            <div style={{
-              fontSize: isFeatured ? 14 : 13.5, fontWeight: 700,
-              color: 'var(--text-primary)', lineHeight: 1.25, letterSpacing: '-0.01em',
-            }}>
-              {card.title}
-            </div>
-
-            {/* Proof badge */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              flexShrink: 0, padding: '4px 9px', borderRadius: 8,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))',
-              border: '1px solid rgba(212,175,55,0.20)',
-              position: 'relative', overflow: 'hidden',
-            }}>
-              <div aria-hidden="true" style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-              }} />
-              <span style={{
-                fontSize: 12, fontWeight: 800, color: 'var(--gold-300)',
-                letterSpacing: '-0.02em', position: 'relative', zIndex: 1,
-              }}>
-                {card.proof}
-              </span>
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'var(--gold-400)',
-                whiteSpace: 'nowrap', position: 'relative', zIndex: 1,
-              }}>
-                {card.proofLabel}
-              </span>
-            </div>
-          </div>
-
-          {/* Hook */}
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: 'var(--gold-400)',
-            marginBottom: 5, opacity: isFeatured ? 0.7 : 0.5,
-          }}>
-            {card.hook}
-          </div>
-
-          {/* Description */}
-          <div style={{
-            fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', fontWeight: 600,
-          }}>
-            {card.text}
-          </div>
-        </div>
-      </div>
     </m.div>
   )
 })
@@ -193,56 +186,44 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
 
   return (
     <m.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.06 + index * 0.03 }}
+      transition={{ delay: 0.04 + index * 0.02 }}
       style={{
-        position: 'relative', borderRadius: 12, overflow: 'hidden',
-        background: isOpen
-          ? 'linear-gradient(160deg, rgba(18,18,20,0.88) 0%, rgba(12,12,14,0.95) 100%)'
-          : 'var(--bg-glass)',
-        border: isOpen ? '1px solid rgba(212,175,55,0.18)' : '1px solid var(--border-default)',
+        position: 'relative', borderRadius: 10, overflow: 'hidden',
+        background: isOpen ? 'var(--bg-glass)' : 'transparent',
+        border: isOpen
+          ? '1px solid rgba(212,175,55,0.12)'
+          : '1px solid var(--border-subtle)',
         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
       id={`offer-section-${section.id}`}
     >
-      {isOpen && (
-        <div aria-hidden="true" style={{
-          position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
-          pointerEvents: 'none',
-        }} />
-      )}
-
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={`offer-content-${section.id}`}
         style={{
-          width: '100%', padding: 14, minHeight: 50,
+          width: '100%', padding: '12px', minHeight: 44,
           background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 10,
-          textAlign: 'left', position: 'relative', zIndex: 1,
+          display: 'flex', alignItems: 'center', gap: 8,
+          textAlign: 'left',
         }}
       >
         <div style={{
-          width: 28, height: 28, borderRadius: 8,
-          background: isOpen
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))'
-            : 'rgba(212,175,55,0.06)',
-          border: '1px solid rgba(212,175,55,0.10)',
+          width: 24, height: 24, borderRadius: 6,
+          background: isOpen ? 'rgba(212,175,55,0.08)' : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
+          flexShrink: 0, transition: 'background 0.3s',
         }}>
-          <Icon size={13} color="var(--gold-400)" strokeWidth={1.8} />
+          <Icon size={12} color="var(--gold-400)" strokeWidth={1.8} />
         </div>
 
         <span style={{
-          flex: 1, fontSize: 13, fontWeight: 700,
+          flex: 1, fontSize: 12.5, fontWeight: 700,
           color: isOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
-          lineHeight: 1.4, letterSpacing: '-0.01em',
-          transition: 'color 0.3s',
+          lineHeight: 1.3, transition: 'color 0.3s',
         }}>
           {section.title}
         </span>
@@ -250,15 +231,10 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
         <m.div
           aria-hidden="true"
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: EASE }}
-          style={{
-            flexShrink: 0, width: 22, height: 22, borderRadius: 6,
-            background: isOpen ? 'rgba(212,175,55,0.10)' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.3s',
-          }}
+          transition={{ duration: 0.25, ease: EASE }}
+          style={{ flexShrink: 0 }}
         >
-          <ChevronDown size={14} strokeWidth={2} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} />
+          <ChevronDown size={13} strokeWidth={2} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} />
         </m.div>
       </button>
 
@@ -273,25 +249,20 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
             transition={{ duration: 0.3, ease: EASE }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{
-              padding: '0 14px 14px', fontSize: 12.5, lineHeight: 1.65,
-              color: 'var(--text-muted)', fontWeight: 600, position: 'relative',
-            }}>
+            <div style={{ padding: '0 12px 12px' }}>
               <div aria-hidden="true" style={{
-                height: 1, marginBottom: 12,
-                background: 'linear-gradient(90deg, rgba(212,175,55,0.08), transparent)',
+                height: 1, marginBottom: 10,
+                background: 'linear-gradient(90deg, rgba(212,175,55,0.06), transparent)',
               }} />
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {section.clauses.map((clause, ci) => (
-                  <div key={ci} style={{ position: 'relative', paddingLeft: 10 }}>
-                    <div aria-hidden="true" style={{
-                      position: 'absolute', left: 0, top: 4, bottom: 4,
-                      width: 2, borderRadius: 1,
-                      background: ci === 0
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.5), rgba(212,175,55,0.0))'
-                        : 'rgba(255,255,255,0.04)',
-                    }} />
+                  <div key={ci} style={{
+                    fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)',
+                    fontWeight: 500, paddingLeft: 8,
+                    borderLeft: ci === 0
+                      ? '2px solid rgba(212,175,55,0.3)'
+                      : '2px solid rgba(255,255,255,0.03)',
+                  }}>
                     {clause}
                   </div>
                 ))}
@@ -347,198 +318,153 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
     >
       <div style={{ padding: '0 20px 24px' }}>
 
-        {/* ═══════════ HERO CARD (compact, like GuaranteesModal) ═══════════ */}
+        {/* ═══════════ HERO (compact — no giant shield) ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: EASE }}
+          transition={{ duration: 0.35, ease: EASE }}
           style={{
             position: 'relative',
-            padding: '20px 18px 16px',
+            padding: '16px',
             borderRadius: 14,
-            background: 'linear-gradient(160deg, rgba(18,18,20,0.97) 0%, rgba(10,10,12,0.99) 100%)',
-            border: '1px solid rgba(212,175,55,0.12)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-default)',
             marginBottom: 14,
             overflow: 'hidden',
           }}
         >
           <div aria-hidden="true" style={{
-            position: 'absolute', top: -40, right: -20,
-            width: 140, height: 140, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 60%)',
-            pointerEvents: 'none',
-          }} />
-          <div aria-hidden="true" style={{
             position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Shield + title */}
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            {/* Title row with shield */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              marginBottom: 12,
+            }}>
               <m.div
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', damping: 14, delay: 0.1 }}
                 style={{
-                  width: 56, height: 56, borderRadius: 14,
+                  width: 40, height: 40, borderRadius: 11,
                   background: 'rgba(212,175,55,0.08)',
                   border: '1px solid rgba(212,175,55,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 12px',
-                  position: 'relative',
+                  position: 'relative', flexShrink: 0,
                 }}
               >
-                <Shield size={24} color="var(--gold-400)" strokeWidth={1.3} />
+                <Shield size={18} color="var(--gold-400)" strokeWidth={1.3} />
                 <m.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.4, type: 'spring', damping: 10 }}
+                  transition={{ delay: 0.35, type: 'spring', damping: 10 }}
                   style={{
-                    position: 'absolute', bottom: -3, right: -3,
-                    width: 20, height: 20, borderRadius: '50%',
+                    position: 'absolute', bottom: -2, right: -2,
+                    width: 16, height: 16, borderRadius: '50%',
                     background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     border: '2px solid var(--bg-void)',
                   }}
                 >
-                  <CheckCircle2 size={10} color="var(--text-on-gold)" strokeWidth={2.5} />
+                  <CheckCircle2 size={8} color="var(--text-on-gold)" strokeWidth={2.5} />
                 </m.div>
               </m.div>
 
-              <h2 style={{
-                fontSize: 20, fontWeight: 700, lineHeight: 1.2,
-                letterSpacing: '-0.02em', marginBottom: 6, margin: '0 0 6px',
-                color: 'var(--gold-200)',
-              }}>
-                {OFFER_META.title}
-              </h2>
-
-              <div style={{
-                fontSize: 13, lineHeight: 1.5,
-                color: 'var(--text-muted)', fontWeight: 600,
-              }}>
-                {OFFER_META.intro}
+              <div style={{ flex: 1 }}>
+                <h2 style={{
+                  fontSize: 16, fontWeight: 700, lineHeight: 1.2,
+                  letterSpacing: '-0.02em', margin: 0,
+                  color: 'var(--gold-200)',
+                }}>
+                  {OFFER_META.title}
+                </h2>
+                <div style={{
+                  fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginTop: 2,
+                }}>
+                  {OFFER_META.intro}
+                </div>
               </div>
             </div>
 
-            {/* Stats grid inside hero (like GuaranteesModal) */}
+            {/* Stats row (inline, not grid) */}
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6,
+              display: 'flex', alignItems: 'center', gap: 8,
             }}>
               {[
-                { value: `v${OFFER_META.version}`, label: 'версия' },
-                { value: `${OFFER_META.totalSections}`, label: 'разделов' },
-                { value: '152-ФЗ', label: 'ПДн' },
+                { label: `v${OFFER_META.version}` },
+                { label: `${OFFER_META.totalSections} разделов` },
+                { label: 'ГК РФ · ЗоЗПП · 152-ФЗ' },
               ].map((stat, i) => (
-                <m.div
-                  key={i}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.18 + i * 0.05 }}
-                  style={{
-                    padding: '10px 6px 8px', borderRadius: 10,
-                    background: 'rgba(212,175,55,0.06)',
-                    border: '1px solid rgba(212,175,55,0.10)',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{
-                    fontSize: 14, fontWeight: 800, lineHeight: 1.2,
-                    background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: 2,
-                  }}>
-                    {stat.value}
-                  </div>
-                  <div style={{
-                    fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
-                    textTransform: 'uppercase', letterSpacing: '0.04em',
-                  }}>
-                    {stat.label}
-                  </div>
-                </m.div>
+                <span key={i} style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: i === 2 ? 'var(--text-muted)' : 'var(--gold-400)',
+                  padding: '3px 8px', borderRadius: 6,
+                  background: 'rgba(212,175,55,0.06)',
+                  border: '1px solid rgba(212,175,55,0.08)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {stat.label}
+                </span>
               ))}
             </div>
           </div>
         </m.div>
 
-        {/* ═══════════ SHIELD COUNTER (like GuaranteesModal) ═══════════ */}
-        <m.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, type: 'spring', damping: 20 }}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 8, padding: '10px 16px', borderRadius: 10,
-            background: 'rgba(212,175,55,0.04)',
-            border: '1px solid rgba(212,175,55,0.08)',
-            marginBottom: 14,
-          }}
-        >
-          <Shield size={14} color="var(--gold-400)" strokeWidth={2} />
-          <span style={{
-            fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)',
-          }}>
-            Твой заказ защищён{' '}
-            <span style={{ color: 'var(--gold-400)', fontWeight: 800 }}>
-              {SUMMARY_CARDS.length} гарантиями
-            </span>
-          </span>
-        </m.div>
+        {/* ═══════════ TOP 4 AS 2-COL GRID ═══════════ */}
+        <SectionLabel icon={Shield} label="Ключевые гарантии" delay={0.15} />
 
-        {/* ═══════════ KEY POINTS (summary cards) ═══════════ */}
-        <SectionHeader icon={BookOpen} label="Ключевые условия" delay={0.22} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {SUMMARY_CARDS.map((card, i) => (
-            <KeyPointCard
-              key={card.title}
-              card={card}
-              index={i}
-              onJump={jumpToSection}
-            />
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
+          marginBottom: 8,
+        }}>
+          {GRID_CARDS.map((card, i) => (
+            <GridCard key={card.title} card={card} index={i} onJump={jumpToSection} />
           ))}
         </div>
 
-        <GoldDivider delay={0.55} />
+        {/* ═══════════ REST AS COMPACT ROWS ═══════════ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {LIST_CARDS.map((card, i) => (
+            <CompactRow key={card.title} card={card} index={i} onJump={jumpToSection} />
+          ))}
+        </div>
 
-        {/* ═══════════ FULL LEGAL TEXT (expandable section) ═══════════ */}
-        <SectionHeader icon={FileText} label="Полный текст оферты" delay={0.56} />
+        {/* ═══════════ DIVIDER ═══════════ */}
+        <m.div aria-hidden="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+          style={{ height: 1, margin: '16px 0', background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.10), transparent)' }}
+        />
+
+        {/* ═══════════ FULL LEGAL TEXT ═══════════ */}
+        <SectionLabel icon={FileText} label="Полный текст" delay={0.52} />
 
         {!showFullText ? (
           <m.button
             type="button"
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.58 }}
+            transition={{ delay: 0.54 }}
             onClick={() => { triggerHaptic('medium'); setShowFullText(true) }}
             style={{
-              width: '100%', padding: '14px',
-              borderRadius: 12,
-              background: 'var(--bg-glass)',
+              width: '100%', padding: '12px',
+              borderRadius: 10,
+              background: 'transparent',
               border: '1px solid var(--border-default)',
               cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
           >
-            <FileText size={14} color="var(--gold-400)" strokeWidth={1.8} />
-            <span style={{
-              fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)',
-            }}>
+            <FileText size={13} color="var(--gold-400)" strokeWidth={1.8} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
               Развернуть {OFFER_META.totalSections} разделов
             </span>
-            <ChevronDown size={14} color="var(--text-muted)" strokeWidth={2} />
+            <ChevronDown size={13} color="var(--text-muted)" strokeWidth={2} />
           </m.button>
         ) : (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {OFFER_SECTIONS.map((section, i) => (
                 <AccordionSection
                   key={section.id}
@@ -552,26 +478,12 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
           </m.div>
         )}
 
-        {/* ═══════════ LEGAL FOOTER (compact) ═══════════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          style={{
-            marginTop: 16, textAlign: 'center',
-            fontSize: 10, lineHeight: 1.5, color: 'var(--text-muted)',
-            fontWeight: 600,
-          }}
-        >
-          ГК РФ ст. 435-443, 779-783 · ЗоЗПП · 152-ФЗ
-        </m.div>
-
         {/* ═══════════ CTA ═══════════ */}
         <m.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.62 }}
-          style={{ marginTop: 14 }}
+          transition={{ delay: 0.58 }}
+          style={{ marginTop: 20 }}
         >
           <m.button
             type="button"
@@ -611,10 +523,10 @@ export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.65 }}
+          transition={{ delay: 0.62 }}
           style={{
-            marginTop: 12, textAlign: 'center',
-            fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
+            marginTop: 10, textAlign: 'center',
+            fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
           }}
         >
           Нажимая кнопку, ты принимаешь условия оферты (п. 3 ст. 438 ГК РФ)
