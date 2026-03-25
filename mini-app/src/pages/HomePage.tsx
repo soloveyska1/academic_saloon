@@ -437,6 +437,7 @@ export function HomePage({ user, onRefresh }: Props) {
               ordersCount={user.orders_count}
               totalSpent={user.total_spent}
               dailyStreak={user.daily_bonus_streak || 0}
+              orders={user.orders}
               copied={referralCopied}
               onCopy={handleCopyReferral}
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}
