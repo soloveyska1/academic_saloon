@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
-import { PremiumSplashScreen } from './components/PremiumSplashScreen'
-import { WelcomeOfferGate } from './components/WelcomeOfferGate'
+import { OnboardingFlow } from './components/OnboardingFlow'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RouteNavigationController } from './components/RouteNavigationController'
 import { ToastProvider } from './components/ui/Toast'
@@ -214,8 +213,6 @@ function AppContent() {
   const admin = useAdmin()
   const { userData, loading: userDataLoading, error, refetch, refreshUserData } = useUserData()
   const [isReady, setIsReady] = useState(false)
-  const [splashComplete, setSplashComplete] = useState(false)
-  const [showSplash, setShowSplash] = useState(true)
   const [simulateOfferAccepted, setSimulateOfferAccepted] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -348,22 +345,6 @@ function AppContent() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Check if this is the first time the user opens the app in this session
-  useEffect(() => {
-    const hasSeenSplash = localStorage.getItem('as_splash_seen')
-    if (hasSeenSplash) {
-      setShowSplash(false)
-      setSplashComplete(true)
-    }
-  }, [])
-
-  // Handle splash screen completion
-  const handleSplashComplete = useCallback(() => {
-    localStorage.setItem('as_splash_seen', 'true')
-    setSplashComplete(true)
-    setShowSplash(false)
-  }, [])
-
   const handleTermsAccepted = useCallback(async () => {
     await refreshUserData()
   }, [refreshUserData])
@@ -381,12 +362,7 @@ function AppContent() {
   // Get telegram ID for WebSocket - need it before loading check
   const telegramId = userData?.telegram_id || null
 
-  // Show premium splash screen on first load
-  if (showSplash && !splashComplete) {
-    return <PremiumSplashScreen onComplete={handleSplashComplete} />
-  }
-
-  // Show simple loading screen if still fetching user data after splash
+  // Show simple loading screen if still fetching user data
   if (!isReady || userDataLoading) {
     return <LoadingScreen />
   }
@@ -580,15 +556,11 @@ function AppContent() {
   if ((requiresTermsAcceptance || requiresSimulatedTermsGate) && currentUser) {
     return (
       <ErrorBoundary>
-        <NavigationProvider>
-          <GestureGuardProvider>
-            <WelcomeOfferGate
-              user={currentUser}
-              onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
-              previewMode={requiresSimulatedTermsGate}
-            />
-          </GestureGuardProvider>
-        </NavigationProvider>
+        <OnboardingFlow
+          user={currentUser}
+          onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
+          previewMode={requiresSimulatedTermsGate}
+        />
       </ErrorBoundary>
     )
   }
