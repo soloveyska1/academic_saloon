@@ -312,6 +312,49 @@ const AchievementCard = memo(function AchievementCard({
             boxShadow: unlocked ? `0 0 ${achievement.rarity === 'legendary' ? 16 : achievement.rarity === 'epic' ? 12 : 8}px ${r.glow}` : 'none',
           }}
         >
+          {/* Legendary shimmer sweep */}
+          {unlocked && achievement.rarity === 'legendary' && (
+            <motion.div
+              aria-hidden="true"
+              animate={{ x: ['-100%', '250%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
+              style={{
+                position: 'absolute', top: 0, left: 0, width: '40%', height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,248,214,0.12), transparent)',
+                borderRadius: '50%', pointerEvents: 'none', zIndex: 0,
+              }}
+            />
+          )}
+
+          {/* Epic breathing glow */}
+          {unlocked && (achievement.rarity === 'epic' || achievement.rarity === 'legendary') && (
+            <motion.div
+              aria-hidden="true"
+              animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute', inset: -4, borderRadius: '50%',
+                background: `radial-gradient(circle, ${r.glow}, transparent 70%)`,
+                pointerEvents: 'none', zIndex: 0,
+              }}
+            />
+          )}
+
+          {/* SVG progress ring for locked with progress */}
+          {!unlocked && progress > 0 && (
+            <svg viewBox="0 0 56 56" style={{ position: 'absolute', inset: -2, width: 56, height: 56, transform: 'rotate(-90deg)', pointerEvents: 'none' }}>
+              <circle cx="28" cy="28" r="26" fill="none" stroke="rgba(212,175,55,0.06)" strokeWidth={2} />
+              <motion.circle
+                cx="28" cy="28" r="26" fill="none" stroke="#D4AF37" strokeWidth={2}
+                strokeLinecap="round" strokeDasharray={2 * Math.PI * 26}
+                initial={{ strokeDashoffset: 2 * Math.PI * 26 }}
+                animate={{ strokeDashoffset: 2 * Math.PI * 26 * (1 - progress) }}
+                transition={{ delay: 0.4 + index * 0.06, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                style={{ opacity: 0.5 }}
+              />
+            </svg>
+          )}
+
           {/* Icon */}
           <Icon
             size={24}
@@ -407,18 +450,20 @@ const AchievementCard = memo(function AchievementCard({
 
       {/* ─── Description / Progress ─── */}
       {unlocked ? (
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-muted, rgba(255,255,255,0.45))',
-            textAlign: 'center',
-            lineHeight: 1.3,
-            maxWidth: 110,
-          }}
-        >
-          {achievement.description}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 600, color: 'var(--text-muted, rgba(255,255,255,0.45))',
+            textAlign: 'center', lineHeight: 1.3, maxWidth: 110,
+          }}>
+            {achievement.description}
+          </span>
+          <span style={{
+            fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.30)',
+            textAlign: 'center', lineHeight: 1.2,
+          }}>
+            {achievement.percentOwners}% имеют
+          </span>
+        </div>
       ) : progress > 0 && achievement.current !== undefined && achievement.target !== undefined ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: '100%', padding: '0 4px' }}>
           {/* Thin progress bar at bottom */}
