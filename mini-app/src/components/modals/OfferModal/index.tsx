@@ -1,8 +1,8 @@
 import { useCallback, useState, useRef, memo, useEffect } from 'react'
 import { m, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import {
-  Shield, ChevronDown, ChevronRight, FileText, BookOpen,
-  CheckCircle2, ArrowRight, ExternalLink,
+  Shield, ChevronDown, ChevronRight, BookOpen,
+  CheckCircle2, ArrowRight, FileText,
 } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
 import { SUMMARY_CARDS, OFFER_SECTIONS, OFFER_META } from './offerData'
@@ -12,15 +12,18 @@ import type { OfferSection } from './offerData'
 //  OFFER MODAL — Premium dual-layer legal document viewer
 //  Layer 1: Summary cards (human-readable key points)
 //  Layer 2: Full accordion with all 12 sections
-//  Features: progress bar, view toggle, section jump, smart acceptance
+//  v4.0: Premium design system, proper acceptance CTA, accessibility
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface OfferModalProps {
   isOpen: boolean
   onClose: () => void
+  onAccept?: () => void
 }
 
 type ViewMode = 'summary' | 'full'
+
+const EASE_PREMIUM = [0.16, 1, 0.3, 1] as const
 
 // ═══════════ VIEW TOGGLE ═══════════
 const ViewToggle = memo(function ViewToggle({
@@ -34,13 +37,13 @@ const ViewToggle = memo(function ViewToggle({
       style={{
         display: 'flex', gap: 4, padding: 3,
         borderRadius: 10,
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 14,
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--border-subtle)',
+        marginBottom: 16,
       }}
     >
       {([
-        { key: 'summary' as const, icon: BookOpen, label: 'Главное' },
+        { key: 'summary' as const, icon: BookOpen, label: 'Краткое' },
         { key: 'full' as const, icon: FileText, label: 'Полный текст' },
       ]).map(({ key, icon: Icon, label }) => {
         const active = mode === key
@@ -51,11 +54,11 @@ const ViewToggle = memo(function ViewToggle({
             onClick={() => { triggerHaptic('light'); onToggle(key) }}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 6, padding: '9px 12px', borderRadius: 8,
+              gap: 6, padding: '10px 12px', borderRadius: 8,
               background: active
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.08))'
+                ? 'var(--gold-glass-medium)'
                 : 'transparent',
-              border: active ? '1px solid rgba(212,175,55,0.20)' : '1px solid transparent',
+              border: active ? '1px solid var(--border-gold)' : '1px solid transparent',
               cursor: 'pointer',
               transition: 'all 0.25s ease',
             }}
@@ -88,39 +91,40 @@ const SummaryCard = memo(function SummaryCard({ card, index, onJump }: {
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08 + index * 0.04 }}
+      transition={{ delay: 0.08 + index * 0.05, duration: 0.4, ease: EASE_PREMIUM }}
       style={{
-        position: 'relative', padding: '14px', borderRadius: 12,
-        background: 'linear-gradient(160deg, rgba(27,22,12,0.6) 0%, rgba(12,12,12,0.7) 100%)',
-        border: '1px solid rgba(212,175,55,0.08)',
+        position: 'relative', padding: 16, borderRadius: 'var(--radius-lg)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--gold-glass-subtle)',
         overflow: 'hidden',
       }}
     >
+      {/* Top shine */}
       <div aria-hidden="true" style={{
         position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+        background: 'linear-gradient(90deg, transparent, var(--gold-glass-subtle), transparent)',
       }} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, position: 'relative', zIndex: 1 }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 9,
-          background: 'rgba(212,175,55,0.08)',
-          border: '1px solid rgba(212,175,55,0.12)',
+          width: 36, height: 36, borderRadius: 10,
+          background: 'var(--gold-glass-subtle)',
+          border: '1px solid var(--gold-glass-medium)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Icon size={15} color="var(--gold-400)" strokeWidth={1.6} />
+          <Icon size={16} color="var(--gold-400)" strokeWidth={1.6} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
-            marginBottom: 3, lineHeight: 1.25,
+            marginBottom: 4, lineHeight: 1.25,
           }}>
             {card.title}
           </div>
           <div style={{
-            fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', fontWeight: 600,
+            fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-secondary)', fontWeight: 500,
           }}>
             {card.text}
           </div>
@@ -128,13 +132,15 @@ const SummaryCard = memo(function SummaryCard({ card, index, onJump }: {
             type="button"
             onClick={() => onJump(card.sectionIndex)}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              marginTop: 6, padding: 0, background: 'none', border: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              marginTop: 8, padding: '6px 10px', borderRadius: 6,
+              background: 'transparent', border: '1px solid transparent',
               cursor: 'pointer', fontSize: 11, fontWeight: 700,
-              color: 'var(--gold-400)', opacity: 0.7,
+              color: 'var(--gold-400)',
+              transition: 'all 0.2s',
             }}
           >
-            Читать полностью <ChevronRight size={11} strokeWidth={2.5} />
+            Подробнее <ChevronRight size={11} strokeWidth={2.5} />
           </button>
         </div>
       </div>
@@ -152,13 +158,13 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
     <m.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.06 + index * 0.03 }}
+      transition={{ delay: 0.06 + index * 0.03, duration: 0.4, ease: EASE_PREMIUM }}
       style={{
-        borderRadius: 12, overflow: 'hidden',
-        background: isOpen
-          ? 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)'
-          : 'var(--bg-glass)',
-        border: isOpen ? '1px solid rgba(212,175,55,0.15)' : '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+        background: isOpen ? 'var(--bg-card)' : 'var(--bg-glass)',
+        border: isOpen
+          ? '1px solid var(--gold-glass-medium)'
+          : '1px solid var(--border-default)',
         transition: 'all 0.3s ease',
       }}
       id={`offer-section-${section.id}`}
@@ -170,7 +176,7 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
         aria-expanded={isOpen}
         aria-controls={`offer-content-${section.id}`}
         style={{
-          width: '100%', padding: '14px', minHeight: 48,
+          width: '100%', padding: 14, minHeight: 48,
           background: 'none', border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 10,
           textAlign: 'left', position: 'relative',
@@ -179,20 +185,18 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
         {isOpen && (
           <div aria-hidden="true" style={{
             position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
+            background: 'linear-gradient(90deg, transparent, var(--gold-glass-medium), transparent)',
           }} />
         )}
 
         <div style={{
-          width: 28, height: 28, borderRadius: 8,
-          background: isOpen
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))'
-            : 'rgba(212,175,55,0.06)',
-          border: '1px solid rgba(212,175,55,0.10)',
+          width: 30, height: 30, borderRadius: 'var(--radius-md)',
+          background: isOpen ? 'var(--gold-glass-medium)' : 'var(--gold-glass-subtle)',
+          border: '1px solid var(--gold-glass-medium)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
+          flexShrink: 0, transition: 'background 0.3s',
         }}>
-          <Icon size={13} color="var(--gold-400)" strokeWidth={1.8} />
+          <Icon size={14} color="var(--gold-400)" strokeWidth={1.8} />
         </div>
 
         <span style={{
@@ -205,11 +209,12 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
         </span>
 
         <m.div
+          aria-hidden="true"
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.3, ease: EASE_PREMIUM }}
           style={{
-            flexShrink: 0, width: 22, height: 22, borderRadius: 6,
-            background: isOpen ? 'rgba(212,175,55,0.10)' : 'transparent',
+            flexShrink: 0, width: 24, height: 24, borderRadius: 6,
+            background: isOpen ? 'var(--gold-glass-subtle)' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'background 0.3s',
           }}
@@ -230,27 +235,27 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, ease: EASE_PREMIUM }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{ padding: '0 14px 14px' }}>
               <div aria-hidden="true" style={{
                 height: 1, marginBottom: 12,
-                background: 'linear-gradient(90deg, rgba(212,175,55,0.08), transparent)',
+                background: 'linear-gradient(90deg, var(--gold-glass-subtle), transparent)',
               }} />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {section.clauses.map((clause, ci) => (
                   <div key={ci} style={{
-                    fontSize: 12.5, lineHeight: 1.65, color: 'var(--text-muted)',
-                    fontWeight: 600, position: 'relative', paddingLeft: 10,
+                    fontSize: 12.5, lineHeight: 1.65, color: 'var(--text-secondary)',
+                    fontWeight: 500, position: 'relative', paddingLeft: 10,
                   }}>
                     <div aria-hidden="true" style={{
                       position: 'absolute', left: 0, top: 4, bottom: 4,
                       width: 2, borderRadius: 1,
                       background: ci === 0
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.4), rgba(212,175,55,0.0))'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'linear-gradient(180deg, var(--gold-400), transparent)'
+                        : 'var(--border-subtle)',
                     }} />
                     {clause}
                   </div>
@@ -265,7 +270,7 @@ const AccordionSection = memo(function AccordionSection({ section, index, isOpen
 })
 
 // ═══════════ MAIN MODAL ═══════════
-export function OfferModal({ isOpen, onClose }: OfferModalProps) {
+export function OfferModal({ isOpen, onClose, onAccept }: OfferModalProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('summary')
   const [openSections, setOpenSections] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -309,12 +314,17 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
     const section = OFFER_SECTIONS[sectionIndex]
     if (!section) return
     setOpenSections(prev => new Set(prev).add(section.id))
-    // Scroll to section after mode switch
     setTimeout(() => {
       const el = document.getElementById(`offer-section-${section.id}`)
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
   }, [])
+
+  const handleAccept = useCallback(() => {
+    triggerHaptic('medium')
+    onAccept?.()
+    onClose()
+  }, [onAccept, onClose])
 
   const allExpanded = openSections.size === OFFER_SECTIONS.length
 
@@ -328,13 +338,14 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
     >
       {/* Progress bar */}
       <m.div
+        aria-hidden="true"
         style={{
           position: 'sticky', top: 0, left: 0, right: 0,
           height: 2, zIndex: 10,
-          background: 'linear-gradient(90deg, var(--gold-400), var(--gold-600))',
+          background: 'var(--liquid-gold)',
           transformOrigin: 'left',
           scaleX,
-          opacity: viewMode === 'full' ? 1 : 0.3,
+          opacity: 0.6,
         }}
       />
 
@@ -344,24 +355,24 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
         <m.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.4, ease: EASE_PREMIUM }}
           style={{
-            position: 'relative', padding: '18px 16px',
+            position: 'relative', padding: '20px 16px',
             borderRadius: 14,
-            background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
-            border: '1px solid rgba(212,175,55,0.12)',
-            marginBottom: 14, overflow: 'hidden',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--gold-glass-medium)',
+            marginBottom: 16, overflow: 'hidden',
           }}
         >
           <div aria-hidden="true" style={{
             position: 'absolute', top: -30, right: -10,
             width: 120, height: 120, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 60%)',
+            background: 'radial-gradient(circle, var(--gold-glass-subtle) 0%, transparent 60%)',
             pointerEvents: 'none',
           }} />
           <div aria-hidden="true" style={{
             position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+            background: 'linear-gradient(90deg, transparent, var(--gold-glass-medium), transparent)',
           }} />
 
           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
@@ -371,8 +382,8 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
               transition={{ type: 'spring', damping: 14, delay: 0.1 }}
               style={{
                 width: 56, height: 56, borderRadius: 14,
-                background: 'rgba(212,175,55,0.08)',
-                border: '1px solid rgba(212,175,55,0.15)',
+                background: 'var(--gold-glass-subtle)',
+                border: '1px solid var(--gold-glass-medium)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 12px', position: 'relative',
               }}
@@ -385,7 +396,7 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
                 style={{
                   position: 'absolute', bottom: -3, right: -3,
                   width: 18, height: 18, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
+                  background: 'var(--gold-metallic)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: '2px solid var(--bg-void)',
                 }}
@@ -394,13 +405,13 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
               </m.div>
             </m.div>
 
-            <div style={{
+            <h2 style={{
               fontSize: 18, fontWeight: 700, lineHeight: 1.2,
               letterSpacing: '-0.02em', color: 'var(--gold-200)',
-              marginBottom: 4,
+              marginBottom: 4, margin: '0 0 4px',
             }}>
               {OFFER_META.title}
-            </div>
+            </h2>
             <div style={{
               fontSize: 11.5, lineHeight: 1.4,
               color: 'var(--text-muted)', fontWeight: 600,
@@ -415,8 +426,8 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
               <span style={{
                 fontSize: 10, fontWeight: 700, color: 'var(--gold-400)',
                 padding: '3px 8px', borderRadius: 6,
-                background: 'rgba(212,175,55,0.08)',
-                border: '1px solid rgba(212,175,55,0.12)',
+                background: 'var(--gold-glass-subtle)',
+                border: '1px solid var(--gold-glass-medium)',
               }}>
                 v{OFFER_META.version}
               </span>
@@ -430,6 +441,14 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
               }}>
                 {OFFER_META.totalSections} разделов
               </span>
+            </div>
+
+            {/* Intro text */}
+            <div style={{
+              marginTop: 12, fontSize: 12, lineHeight: 1.5,
+              color: 'var(--text-secondary)', fontWeight: 500,
+            }}>
+              {OFFER_META.intro}
             </div>
           </div>
         </m.div>
@@ -468,13 +487,13 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
                 onClick={() => { triggerHaptic('medium'); setViewMode('full') }}
                 style={{
                   width: '100%', marginTop: 14, padding: '12px',
-                  borderRadius: 10, background: 'rgba(212,175,55,0.06)',
-                  border: '1px solid rgba(212,175,55,0.10)',
+                  borderRadius: 10, background: 'var(--gold-glass-subtle)',
+                  border: '1px solid var(--gold-glass-medium)',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >
-                <ExternalLink size={13} color="var(--gold-400)" strokeWidth={2} />
+                <FileText size={13} color="var(--gold-400)" strokeWidth={2} />
                 <span style={{
                   fontSize: 12, fontWeight: 700, color: 'var(--gold-400)',
                 }}>
@@ -499,11 +518,13 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
                   type="button"
                   onClick={allExpanded ? collapseAll : expandAll}
                   style={{
-                    padding: '5px 10px', borderRadius: 7,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    cursor: 'pointer', fontSize: 11, fontWeight: 700,
-                    color: 'var(--text-muted)',
+                    padding: '8px 14px', borderRadius: 'var(--radius-md)',
+                    minHeight: 36,
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    transition: 'all 0.2s',
                   }}
                 >
                   {allExpanded ? 'Свернуть все' : 'Развернуть все'}
@@ -532,19 +553,18 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           style={{
-            marginTop: 16, padding: '12px',
+            marginTop: 16, padding: 12,
             borderRadius: 10,
-            background: 'rgba(212,175,55,0.04)',
-            border: '1px solid rgba(212,175,55,0.06)',
+            background: 'var(--gold-glass-subtle)',
+            border: '1px solid var(--border-subtle)',
           }}
         >
           <div style={{
-            fontSize: 10, lineHeight: 1.6, color: 'var(--text-muted)',
+            fontSize: 10.5, lineHeight: 1.6, color: 'var(--text-muted)',
             fontWeight: 600, textAlign: 'center',
           }}>
-            Оферта составлена в соответствии с ГК РФ (ст. 435-443, 779-783),
+            Оферта составлена по ГК РФ (ст. 435-443, 779-783),
             ФЗ «О защите прав потребителей», ФЗ № 152-ФЗ «О персональных данных».
-            Принятие условий равносильно заключению договора (п. 3 ст. 438 ГК РФ).
           </div>
         </m.div>
 
@@ -558,9 +578,9 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
           <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
-            onClick={() => { triggerHaptic('medium'); onClose() }}
+            onClick={handleAccept}
             style={{
-              width: '100%', padding: '14px 24px', borderRadius: 12,
+              width: '100%', padding: '14px 24px', borderRadius: 'var(--radius-lg)',
               background: 'var(--gold-metallic)',
               border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -582,7 +602,7 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
               fontSize: 14, fontWeight: 700,
               color: 'var(--text-on-gold)', position: 'relative',
             }}>
-              Понятно
+              Принять условия
             </span>
             <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" style={{ position: 'relative' }} />
           </m.button>
@@ -598,7 +618,7 @@ export function OfferModal({ isOpen, onClose }: OfferModalProps) {
             fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 600,
           }}
         >
-          Используя сервис, вы принимаете условия настоящей оферты
+          Нажимая кнопку, ты принимаешь условия оферты (п. 3 ст. 438 ГК РФ)
         </m.div>
       </div>
     </ModalWrapper>
