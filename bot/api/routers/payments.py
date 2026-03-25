@@ -25,6 +25,10 @@ from database.models.users import User
 from database.models.payment_logs import PaymentLog
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.rate_limit import rate_limit
+from bot.services.payment_accounting import (
+    apply_payment_update_to_user,
+    build_payment_update,
+)
 from bot.services.yookassa import get_yookassa_service
 from bot.services.bonus import BonusService, BonusReason
 from bot.utils.formatting import format_price
@@ -330,21 +334,26 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         await session.commit()
         return
 
-    # Update order status (atomic with bonus deduction)
-    current_payment_amount = float(remaining_before_payment) if payment_phase == "final" else amount_value
-
+    # Update order payment state (atomic with bonus deduction)
+    previous_paid_amount = Decimal(str(order.paid_amount or 0))
     if payment_phase == "final":
-        order.status = OrderStatus.PAID_FULL.value
-        order.paid_amount = order.final_price
+        target_paid_amount = Decimal(str(order.final_price or 0))
     elif order.payment_scheme == "half":
-        order.status = OrderStatus.PAID.value
-        order.paid_amount = order.final_price / 2
+        target_paid_amount = Decimal(str(order.final_price or 0)) / Decimal("2")
     else:
-        order.status = OrderStatus.PAID_FULL.value
-        order.paid_amount = order.final_price
+        target_paid_amount = Decimal(str(order.final_price or 0))
+
+    payment_update = build_payment_update(
+        previous_paid_amount=previous_paid_amount,
+        new_paid_amount=target_paid_amount,
+        final_price=order.final_price,
+    )
+    current_payment_amount = float(payment_update.payment_delta)
+    order.status = payment_update.new_status
+    order.paid_amount = payment_update.new_paid_amount
 
     # Deduct bonuses if used (in same transaction as status update)
-    if order.bonus_used > 0:
+    if payment_update.is_first_successful_payment and order.bonus_used > 0:
         await BonusService.deduct_bonus(
             session=session,
             user_id=order.user_id,
@@ -355,9 +364,8 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             auto_commit=False,
         )
 
-    # Update user stats
-    user.orders_count += 1
-    user.total_spent += order.paid_amount
+    # Update user stats without double counting follow-up payments
+    apply_payment_update_to_user(user, payment_update)
 
     await session.commit()
 
@@ -404,7 +412,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
 
     # Order bonus (50₽)
     order_bonus = 0
-    if payment_phase == "initial":
+    if payment_update.is_first_successful_payment:
         try:
             order_bonus = await BonusService.process_order_bonus(
                 session=session, bot=bot, user_id=order.user_id,
@@ -413,7 +421,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             logger.warning(f"[YooKassa] Failed to process order bonus for order #{order.id}: {e}")
 
     # Referral bonus
-    if payment_phase == "initial" and user.referrer_id:
+    if payment_update.is_first_successful_payment and user.referrer_id:
         try:
             await BonusService.process_referral_bonus(
                 session=session, bot=bot,
@@ -428,7 +436,12 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
     if bot:
         try:
             bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
-            payment_label = "Доплата" if payment_phase == "final" else "Оплата"
+            if payment_update.is_followup_payment and payment_update.is_fully_paid:
+                payment_label = "Доплата"
+            elif payment_update.is_fully_paid:
+                payment_label = "Оплата"
+            else:
+                payment_label = "Аванс"
 
             from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
             keyboard = InlineKeyboardMarkup(inline_keyboard=[

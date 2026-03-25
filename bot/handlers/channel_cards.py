@@ -955,11 +955,6 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.utcnow()
 
-    # Увеличиваем счётчик заказов пользователя
-    if user:
-        user.orders_count = (user.orders_count or 0) + 1
-        user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or order.price or 0)
-
     await session.commit()
 
     # Начисляем кешбэк за заказ

@@ -1289,14 +1289,7 @@ async def confirm_work_completion(
 
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.now(timezone.utc)
-    
-    # Update Stats
-    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
-    user = user_result.scalar_one_or_none()
-    if user:
-        user.orders_count = (user.orders_count or 0) + 1
-        user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or 0)
-    
+
     await session.commit()
 
     # Cashback

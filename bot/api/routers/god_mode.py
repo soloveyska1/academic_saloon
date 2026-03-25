@@ -49,6 +49,10 @@ from bot.api.schemas import (
 from bot.api.dependencies import order_to_response
 from bot.bot_instance import get_bot
 from bot.services.bonus import BonusService, BonusReason
+from bot.services.payment_accounting import (
+    apply_payment_update_to_user,
+    build_payment_update,
+)
 from bot.services.order_message_formatter import (
     build_client_payment_rejected_text,
     build_client_price_ready_text,
@@ -969,25 +973,37 @@ async def confirm_order_payment(
 
     old_status = order.status
     old_paid = order.paid_amount or 0.0
-
-    order.paid_amount = (order.paid_amount or 0.0) + amount
-
-    if is_full or order.paid_amount >= order.final_price:
-        order.status = OrderStatus.PAID_FULL.value
-    else:
-        order.status = OrderStatus.PAID.value
+    target_paid_amount = order.final_price if is_full else (order.paid_amount or 0.0) + amount
+    payment_update = build_payment_update(
+        previous_paid_amount=old_paid,
+        new_paid_amount=target_paid_amount,
+        final_price=order.final_price,
+    )
+    order.paid_amount = payment_update.new_paid_amount
+    order.status = payment_update.new_status
 
     # Update user stats
     user = await session.scalar(
         select(User).where(User.telegram_id == order.user_id)
     )
     if user:
-        user.total_spent = (user.total_spent or 0.0) + amount
+        apply_payment_update_to_user(user, payment_update)
+        if payment_update.is_first_successful_payment and order.bonus_used > 0:
+            await BonusService.deduct_bonus(
+                session=session,
+                user_id=order.user_id,
+                amount=order.bonus_used,
+                reason=BonusReason.ORDER_DISCOUNT,
+                description=f"Списание на заказ #{order.id}",
+                bot=bot,
+                user=user,
+                auto_commit=False,
+            )
 
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_PAYMENT_CONFIRM,
         target_type="order", target_id=order_id,
-        details=f"Confirmed payment: {amount}₽",
+        details=f"Confirmed payment: {payment_update.payment_delta:.0f}₽",
         old_value={"status": old_status, "paid_amount": old_paid},
         new_value={"status": order.status, "paid_amount": order.paid_amount},
         request=request,
@@ -995,15 +1011,45 @@ async def confirm_order_payment(
 
     await session.commit()
 
+    order_bonus = 0
+    if user and payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+        except Exception:
+            pass
+
+        if user.referrer_id:
+            try:
+                await BonusService.process_referral_bonus(
+                    session=session,
+                    bot=bot,
+                    referrer_id=user.referrer_id,
+                    order_amount=order.price,
+                    referred_user_id=order.user_id,
+                )
+            except Exception:
+                pass
+
     # Notify user via Telegram
     try:
+        if payment_update.is_followup_payment and payment_update.is_fully_paid:
+            payment_label = "Доплата"
+        elif payment_update.is_fully_paid:
+            payment_label = "Оплата"
+        else:
+            payment_label = "Аванс"
+        bonus_line = f"\n\n🎁 +{order_bonus:.0f}₽ бонусов на баланс!" if order_bonus > 0 else ""
         await bot.send_message(
             order.user_id,
             (
                 f"<b>Оплата подтверждена</b>\n\n"
                 f"Заказ <code>#{order_id}</code>\n"
-                f"Сумма: <b>{amount:.0f} ₽</b>\n\n"
-                f"Приступаем к работе. Все следующие этапы будут видны в заказе."
+                f"{payment_label}: <b>{payment_update.payment_delta:.0f} ₽</b>\n\n"
+                f"Приступаем к работе. Все следующие этапы будут видны в заказе.{bonus_line}"
             ),
             reply_markup=build_order_keyboard(order_id, primary_text="Открыть заказ"),
         )
@@ -1023,7 +1069,7 @@ async def confirm_order_payment(
         await send_custom_notification(
             telegram_id=order.user_id,
             title="✅ Оплата подтверждена!",
-            message=f"Сумма {amount:.0f}₽ получена. Приступаем к работе!",
+            message=f"Сумма {payment_update.payment_delta:.0f}₽ получена. Приступаем к работе!",
             notification_type="success",
             icon="check-circle",
             color="#22c55e",

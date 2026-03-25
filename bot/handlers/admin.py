@@ -43,6 +43,11 @@ from bot.utils.message_helpers import safe_edit_or_send
 from bot.utils.formatting import format_price, parse_callback_data, parse_callback_int
 from bot.handlers.start import process_start
 from bot.services.live_cards import update_card_status
+from bot.services.payment_accounting import (
+    PaymentUpdate,
+    apply_payment_update_to_user,
+    build_payment_update,
+)
 from bot.services.order_progress import (
     build_progress_bar,
     get_progress_keyboard,
@@ -814,16 +819,6 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
     cashback_amount = 0.0
     if new_status == OrderStatus.COMPLETED.value:
         order.completed_at = datetime.now(MSK_TZ)
-
-        # Получаем пользователя для обновления счетчиков и кешбэка
-        user_query = select(User).where(User.telegram_id == order.user_id)
-        user_result = await session.execute(user_query)
-        user = user_result.scalar_one_or_none()
-
-        if user:
-            # Увеличиваем счётчик заказов
-            user.orders_count = (user.orders_count or 0) + 1
-            user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or order.price or 0)
 
     await session.commit()
 
@@ -2622,6 +2617,26 @@ def get_payment_amount(order: Order) -> Decimal:
     return final_price
 
 
+def get_manual_payment_update(order: Order) -> PaymentUpdate:
+    """Resolve the next confirmed payment for legacy/admin manual flows."""
+    existing_paid = _to_decimal(getattr(order, "paid_amount", 0))
+    final_price = get_order_final_price(order)
+    payment_amount = get_payment_amount(order)
+    return build_payment_update(
+        previous_paid_amount=existing_paid,
+        new_paid_amount=existing_paid + payment_amount,
+        final_price=final_price,
+    )
+
+
+def get_payment_label(payment_update: PaymentUpdate) -> str:
+    if payment_update.is_followup_payment and payment_update.is_fully_paid:
+        return "Доплата"
+    if payment_update.is_fully_paid:
+        return "Оплата"
+    return "Аванс"
+
+
 def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
     """Клавиатура для сообщения с реквизитами"""
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -3457,11 +3472,19 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
         return
 
     # Проверка статуса
-    if order.status == OrderStatus.PAID.value:
-        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+    payment_update = get_manual_payment_update(order)
+    if payment_update.payment_delta <= 0:
+        await callback.answer("✅ Этот заказ уже полностью оплачен!", show_alert=True)
         return
 
-    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+    allowed_statuses = {
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value,
+        OrderStatus.IN_PROGRESS.value,
+    }
+    if order.status not in allowed_statuses:
         await callback.answer(
             f"Заказ нельзя отметить как оплаченный\nСтатус: {order.status_label}",
             show_alert=True
@@ -3488,9 +3511,9 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
         await callback.answer("Пользователь не найден", show_alert=True)
         return
 
-    # Списываем бонусы с баланса клиента
+    # Списываем бонусы с баланса клиента только при первой успешной оплате
     bonus_deducted = 0
-    if order.bonus_used > 0:
+    if payment_update.is_first_successful_payment and order.bonus_used > 0:
         success, _ = await BonusService.deduct_bonus(
             session=session,
             user_id=order.user_id,
@@ -3503,17 +3526,11 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
         if success:
             bonus_deducted = order.bonus_used
 
-    # Обновляем статус заказа
-    order.status = OrderStatus.PAID.value
-    # Учитываем схему оплаты (50% предоплата или 100%)
-    if order.payment_scheme == "half":
-        order.paid_amount = order.final_price / 2
-    else:
-        order.paid_amount = order.final_price
-
-    # Увеличиваем счётчик заказов и общую сумму
-    user.orders_count += 1
-    user.total_spent += order.paid_amount
+    # Обновляем статус заказа и статистику оплаты
+    old_status = order.status
+    order.status = payment_update.new_status
+    order.paid_amount = payment_update.new_paid_amount
+    apply_payment_update_to_user(user, payment_update)
 
     await session.commit()
 
@@ -3534,23 +3551,24 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.PAID.value,
-        old_status=OrderStatus.VERIFICATION_PENDING.value,
+        new_status=payment_update.new_status,
+        old_status=old_status,
     )
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
     order_bonus = 0
-    try:
-        order_bonus = await BonusService.process_order_bonus(
-            session=session,
-            bot=bot,
-            user_id=order.user_id,
-        )
-    except Exception:
-        pass
+    if payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+        except Exception:
+            pass
 
     # Начисляем реферальные бонусы (если есть реферер)
-    if user.referrer_id:
+    if payment_update.is_first_successful_payment and user.referrer_id:
         try:
             await BonusService.process_referral_bonus(
                 session=session,
@@ -3564,11 +3582,12 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
 
     # Уведомляем клиента — Premium Payment Success!
     bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
+    payment_label = get_payment_label(payment_update)
 
     client_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
-💰 Аванс получен: <b>{format_price(int(order.paid_amount))}</b>
+💰 {payment_label} получен: <b>{format_price(int(payment_update.payment_delta))}</b>
 
 Работа уже запущена. О следующем этапе сообщим сюда и покажем детали в приложении.{bonus_line}"""
 
@@ -3863,12 +3882,20 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     logger.info(f"[/paid] Заказ #{order_id} найден, статус: {order.status}, цена: {order.price}")
 
-    # Проверка статуса - заказ должен быть подтверждён (ждёт оплаты)
-    if order.status == OrderStatus.PAID.value:
-        await message.answer(f"⚠️ Заказ #{order_id} уже оплачен")
+    # Проверка статуса - заказ должен иметь непогашенный остаток
+    payment_update = get_manual_payment_update(order)
+    if payment_update.payment_delta <= 0:
+        await message.answer(f"⚠️ Заказ #{order_id} уже полностью оплачен")
         return
 
-    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+    allowed_statuses = {
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value,
+        OrderStatus.IN_PROGRESS.value,
+    }
+    if order.status not in allowed_statuses:
         await message.answer(
             f"⚠️ Заказ #{order_id} нельзя отметить как оплаченный\n"
             f"Текущий статус: {order.status_label}\n\n"
@@ -3895,9 +3922,9 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     logger.info(f"[/paid] Пользователь найден: {user.telegram_id}, баланс: {user.balance}")
 
-    # Списываем бонусы с баланса клиента (передаём user чтобы избежать проблем с сессией)
+    # Списываем бонусы с баланса клиента только при первой успешной оплате
     bonus_deducted = 0
-    if order.bonus_used > 0:
+    if payment_update.is_first_successful_payment and order.bonus_used > 0:
         logger.info(f"[/paid] Списываем бонусы: {order.bonus_used}")
         success, _ = await BonusService.deduct_bonus(
             session=session,
@@ -3914,44 +3941,40 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         else:
             logger.warning(f"[/paid] Не удалось списать бонусы")
 
-    # Обновляем статус заказа
-    order.status = OrderStatus.PAID.value
-    # Учитываем схему оплаты (50% предоплата или 100%)
-    if order.payment_scheme == "half":
-        order.paid_amount = order.final_price / 2
-    else:
-        order.paid_amount = order.final_price
-
-    # Увеличиваем счётчик заказов и общую сумму
-    user.orders_count += 1
-    user.total_spent += order.paid_amount
+    # Обновляем статус заказа и статистику оплаты
+    old_status = order.status
+    order.status = payment_update.new_status
+    order.paid_amount = payment_update.new_paid_amount
+    apply_payment_update_to_user(user, payment_update)
 
     logger.info(f"[/paid] Коммитим изменения в БД")
     await session.commit()
-    logger.info(f"[/paid] Заказ #{order_id} переведён в статус PAID")
+    logger.info(f"[/paid] Заказ #{order_id} переведён в статус {order.status}")
 
     # ═══ WEBSOCKET NOTIFICATION ═══
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.PAID.value,
+        new_status=payment_update.new_status,
+        old_status=old_status,
     )
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
     order_bonus = 0
-    try:
-        order_bonus = await BonusService.process_order_bonus(
-            session=session,
-            bot=bot,
-            user_id=order.user_id,
-        )
-        logger.info(f"[/paid] Начислены бонусы за заказ: {order_bonus}")
-    except Exception as e:
-        logger.error(f"[/paid] Ошибка начисления бонусов за заказ: {e}")
+    if payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+            logger.info(f"[/paid] Начислены бонусы за заказ: {order_bonus}")
+        except Exception as e:
+            logger.error(f"[/paid] Ошибка начисления бонусов за заказ: {e}")
 
     # Начисляем реферальные бонусы (если есть реферер)
     referral_bonus = 0
-    if user.referrer_id:
+    if payment_update.is_first_successful_payment and user.referrer_id:
         try:
             referral_bonus = await BonusService.process_referral_bonus(
                 session=session,
@@ -3968,10 +3991,13 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
     bonus_line = f"\n\n🎁 +{order_bonus:.0f}₽ бонусов на баланс!" if order_bonus > 0 else ""
+    payment_label = get_payment_label(payment_update)
 
     client_text = f"""✅ <b>Оплата получена!</b>
 
 Заказ #{order.id} — {work_label}
+
+💰 {payment_label}: {payment_update.payment_delta:.0f}₽
 
 Спасибо за доверие! 🤠
 Приступаю к работе.{bonus_line}"""
@@ -5324,11 +5350,37 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
+    payment_update = get_manual_payment_update(order)
+    if payment_update.payment_delta <= 0:
+        await callback.answer("✅ Заказ уже полностью оплачен", show_alert=True)
+        return
+
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+
+    bonus_deducted = 0
+    if payment_update.is_first_successful_payment and order.bonus_used > 0:
+        success, _ = await BonusService.deduct_bonus(
+            session=session,
+            user_id=order.user_id,
+            amount=order.bonus_used,
+            reason=BonusReason.ORDER_DISCOUNT,
+            description=f"Списание на заказ #{order.id}",
+            bot=bot,
+            user=user,
+        )
+        if success:
+            bonus_deducted = order.bonus_used
+
     # Обновляем статус и paid_amount
     old_status = order.status
-    order.status = OrderStatus.PAID.value
-    order.paid_amount = order.price or 0
-    order.paid_at = datetime.now(MSK_TZ)
+    order.status = payment_update.new_status
+    order.paid_amount = payment_update.new_paid_amount
+    apply_payment_update_to_user(user, payment_update)
 
     await session.commit()
     await callback.answer("✅ Заказ отмечен как оплаченный!")
@@ -5337,18 +5389,55 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.PAID.value,
+        new_status=payment_update.new_status,
         old_status=old_status,
     )
 
+    order_bonus = 0
+    if payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+        except Exception:
+            pass
+
+    if payment_update.is_first_successful_payment and user.referrer_id:
+        try:
+            await BonusService.process_referral_bonus(
+                session=session,
+                bot=bot,
+                referrer_id=user.referrer_id,
+                order_amount=order.price,
+                referred_user_id=order.user_id,
+            )
+        except Exception:
+            pass
+
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text=f"✅ {get_payment_label(payment_update)} подтвержден",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # Уведомляем клиента
+    payment_label = get_payment_label(payment_update)
+    bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
     user_notification = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
 
 📋 Заказ: <code>#{order.id}</code>
-💰 Сумма: <code>{order.paid_amount:.0f} ₽</code>
+💰 {payment_label}: <code>{payment_update.payment_delta:.0f} ₽</code>
 
 Отлично! Я уже взял твою задачу в работу.
-Скоро вернусь с результатом. 🤠"""
+Скоро вернусь с результатом. 🤠{bonus_line}"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -5369,10 +5458,12 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
     text = f"""✅ <b>Заказ #{order.id} оплачен!</b>
 
 📂 <b>Тип:</b> {work_label}
-💰 <b>Сумма:</b> {order.paid_amount:.0f}₽
+💰 <b>{payment_label}:</b> {payment_update.payment_delta:.0f}₽
 {emoji} <b>Статус:</b> {status_label}
 
 <i>Клиент уведомлён</i>"""
+    if bonus_deducted > 0:
+        text += f"\n🔻 <b>Списано бонусов:</b> {bonus_deducted:.0f}₽"
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
@@ -5452,19 +5543,34 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     await callback.answer("✅ Подтверждаем оплату...")
 
     # ═══ ОБНОВЛЯЕМ ЗАКАЗ ═══
-    scheme = order.payment_scheme or "half"
     if not order.payment_scheme:
-        order.payment_scheme = scheme
+        order.payment_scheme = "half"
 
-    existing_paid = _to_decimal(order.paid_amount)
-    final_price = get_order_final_price(order)
-    payment_amount = get_payment_amount(order)
-    new_total_paid = min(final_price, existing_paid + payment_amount)
-    is_final_settlement = new_total_paid >= final_price and final_price > 0
-    new_status = OrderStatus.PAID_FULL.value if is_final_settlement or scheme == "full" else OrderStatus.PAID.value
+    payment_update = get_manual_payment_update(order)
+    old_status = order.status
+    order.status = payment_update.new_status
+    order.paid_amount = payment_update.new_paid_amount
 
-    order.status = new_status
-    order.paid_amount = new_total_paid
+    user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+    user = user_result.scalar_one_or_none()
+
+    bonus_deducted = 0
+    order_bonus = 0
+    referral_bonus = 0
+    if user:
+        apply_payment_update_to_user(user, payment_update)
+        if payment_update.is_first_successful_payment and order.bonus_used > 0:
+            success, _ = await BonusService.deduct_bonus(
+                session=session,
+                user_id=order.user_id,
+                amount=order.bonus_used,
+                reason=BonusReason.ORDER_DISCOUNT,
+                description=f"Списание на заказ #{order.id}",
+                bot=bot,
+                user=user,
+            )
+            if success:
+                bonus_deducted = order.bonus_used
     await session.commit()
 
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
@@ -5487,25 +5593,44 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=new_status,
-        old_status=OrderStatus.VERIFICATION_PENDING.value,
+        new_status=payment_update.new_status,
+        old_status=old_status,
     )
 
+    if user and payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+        except Exception:
+            pass
+
+        if user.referrer_id:
+            try:
+                referral_bonus = await BonusService.process_referral_bonus(
+                    session=session,
+                    bot=bot,
+                    referrer_id=user.referrer_id,
+                    order_amount=order.price,
+                    referred_user_id=order.user_id,
+                )
+            except Exception:
+                pass
+
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
-    if existing_paid > 0 and new_status == OrderStatus.PAID_FULL.value:
-        payment_line = "💰 Доплата получена"
-    elif scheme == "full":
-        payment_line = "💰 Оплата получена"
-    else:
-        payment_line = "💰 Аванс получен"
+    payment_label = get_payment_label(payment_update)
+    payment_line = f"💰 {payment_label} получен"
+    bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
 
     user_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
-{payment_line}: <b>{format_price(int(order.paid_amount))}</b>
+{payment_line}: <b>{format_price(int(payment_update.payment_delta))}</b>
 
 Работа уже запущена. Когда появится следующий этап, мы сразу сообщим сюда.
-Следить за деталями можно в приложении."""
+Следить за деталями можно в приложении.{bonus_line}"""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -5535,20 +5660,21 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     # ═══ ОБНОВЛЯЕМ СООБЩЕНИЕ АДМИНА ═══
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
 
-    if existing_paid > 0 and new_status == OrderStatus.PAID_FULL.value:
-        admin_amount_label = "Доплата"
-    elif scheme == "full":
-        admin_amount_label = "Оплата"
-    else:
-        admin_amount_label = "Аванс"
+    admin_amount_label = payment_label
 
     admin_text = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
 
 📋 Заказ: <code>#{order.id}</code>
 📂 Тип: {work_label}
-💰 {admin_amount_label}: <b>{format_price(int(order.paid_amount))}</b>
+💰 {admin_amount_label}: <b>{format_price(int(payment_update.payment_delta))}</b>
 
 <i>Клиент уведомлён. Заказ в работе.</i>"""
+    if bonus_deducted > 0:
+        admin_text += f"\n🔻 Списано бонусов: <b>{format_price(int(bonus_deducted))}</b>"
+    if order_bonus > 0:
+        admin_text += f"\n🎁 Начислено клиенту: <b>+{format_price(int(order_bonus))}</b>"
+    if referral_bonus > 0:
+        admin_text += f"\n👥 Реферальный бонус: <b>+{format_price(int(referral_bonus))}</b>"
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
