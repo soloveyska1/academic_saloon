@@ -158,10 +158,14 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   /* Closing confirmation in offer phase */
   useEffect(() => {
     try {
+      const tg = window.Telegram?.WebApp as {
+        enableClosingConfirmation?: () => void
+        disableClosingConfirmation?: () => void
+      } | undefined
       if (phase === 'offer') {
-        window.Telegram?.WebApp?.enableClosingConfirmation?.()
+        tg?.enableClosingConfirmation?.()
       } else {
-        window.Telegram?.WebApp?.disableClosingConfirmation?.()
+        tg?.disableClosingConfirmation?.()
       }
     } catch { /* ignore */ }
   }, [phase])

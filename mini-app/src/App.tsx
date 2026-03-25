@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
-import { OnboardingFlow } from './components/OnboardingFlow'
+import { WelcomeOfferGate } from './components/WelcomeOfferGate'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RouteNavigationController } from './components/RouteNavigationController'
 import { ToastProvider } from './components/ui/Toast'
@@ -556,11 +556,15 @@ function AppContent() {
   if ((requiresTermsAcceptance || requiresSimulatedTermsGate) && currentUser) {
     return (
       <ErrorBoundary>
-        <OnboardingFlow
-          user={currentUser}
-          onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
-          previewMode={requiresSimulatedTermsGate}
-        />
+        <NavigationProvider>
+          <GestureGuardProvider>
+            <WelcomeOfferGate
+              user={currentUser}
+              onAccepted={requiresTermsAcceptance ? handleTermsAccepted : handleSimulatedTermsAccepted}
+              previewMode={requiresSimulatedTermsGate}
+            />
+          </GestureGuardProvider>
+        </NavigationProvider>
       </ErrorBoundary>
     )
   }
