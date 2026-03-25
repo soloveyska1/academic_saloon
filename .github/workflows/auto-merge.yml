@@ -83,6 +83,7 @@ jobs:
 
       - name: Send merge notification via SSH
         if: success()
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.0.3
         env:
           NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
