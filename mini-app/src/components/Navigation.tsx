@@ -43,15 +43,8 @@ export const Navigation = () => {
     }
   }, [getScrollContainer])
 
-  const navigateWithTransition = useCallback((path: string) => {
-    const nextRoute = () => navigate(path)
-
-    if ('startViewTransition' in document) {
-      ;(document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(nextRoute)
-      return
-    }
-
-    nextRoute()
+  const navigateWithoutFlash = useCallback((path: string) => {
+    requestAnimationFrame(() => navigate(path))
   }, [navigate])
 
   useEffect(() => {
@@ -124,15 +117,15 @@ export const Navigation = () => {
     <motion.nav
       initial={false}
       animate={{
-        y: shouldHideNav || !isVisible ? 96 : isModalOpen ? 10 : 0,
-        opacity: shouldHideNav || !isVisible ? 0 : isModalOpen ? 0.22 : 1,
-        scale: shouldHideNav || !isVisible ? 0.96 : isModalOpen ? 0.985 : 1,
+        y: shouldHideNav || !isVisible ? 96 : 0,
+        opacity: shouldHideNav || !isVisible ? 0 : 1,
+        scale: shouldHideNav || !isVisible ? 0.98 : 1,
       }}
       transition={{
         type: 'spring',
-        damping: 24,
-        stiffness: 320,
-        mass: 0.72,
+        damping: 28,
+        stiffness: 360,
+        mass: 0.78,
       }}
       style={{
         position: 'fixed',
@@ -158,6 +151,7 @@ export const Navigation = () => {
         justifyContent: 'space-around',
         alignItems: 'center',
         pointerEvents: shouldHideNav || !isVisible || isModalOpen ? 'none' : 'auto',
+        opacity: isModalOpen ? 1 : 1,
       }}>
         {navItems.map((item) => {
           const isActive = isNavigationItemActive(location.pathname, item.path)
@@ -175,7 +169,7 @@ export const Navigation = () => {
                   scrollToTop()
                   return
                 }
-                navigateWithTransition(item.path)
+                navigateWithoutFlash(item.path)
               }}
               whileTap={{ scale: 0.92 }}
               style={{

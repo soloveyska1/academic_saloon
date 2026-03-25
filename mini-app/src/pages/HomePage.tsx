@@ -162,33 +162,26 @@ export function HomePage({ user, onRefresh }: Props) {
     import('../pages/CreateOrderPage').catch(() => {})
   }, [])
 
-  // View Transition wrapper — progressive enhancement
-  const navWithTransition = useCallback((path: string, opts?: { state?: unknown }) => {
-    if ('startViewTransition' in document) {
-      ;(document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(
-        () => navigate(path, opts)
-      )
-    } else {
-      navigate(path, opts)
-    }
+  const navigateWithoutFlash = useCallback((path: string, opts?: { state?: unknown }) => {
+    requestAnimationFrame(() => navigate(path, opts))
   }, [navigate])
 
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
-    navWithTransition('/create-order')
-  }, [haptic, navWithTransition])
+    navigateWithoutFlash('/create-order')
+  }, [haptic, navigateWithoutFlash])
 
   const handleNewOrderWithType = useCallback((workType: string) => {
     haptic('heavy')
-    navWithTransition('/create-order', {
+    navigateWithoutFlash('/create-order', {
       state: { prefill: { work_type: workType } },
     })
-  }, [haptic, navWithTransition])
+  }, [haptic, navigateWithoutFlash])
 
   const handleOpenLounge = useCallback(() => {
     haptic('light')
-    navWithTransition('/club')
-  }, [haptic, navWithTransition])
+    navigateWithoutFlash('/club')
+  }, [haptic, navigateWithoutFlash])
 
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
@@ -244,7 +237,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
   // Smart reorder with optional subject override
   const handleSmartReorder = useCallback((workType: string, subject?: string) => {
-    navWithTransition('/create-order', {
+    navigateWithoutFlash('/create-order', {
       state: {
         prefill: {
           work_type: workType,
@@ -253,7 +246,7 @@ export function HomePage({ user, onRefresh }: Props) {
         },
       },
     })
-  }, [navWithTransition])
+  }, [navigateWithoutFlash])
 
   // Spin wheel handler
   const handleSpinWheel = useCallback(async () => {
