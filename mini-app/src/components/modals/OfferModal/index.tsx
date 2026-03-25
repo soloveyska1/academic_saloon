@@ -246,13 +246,13 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
               letterSpacing: '-0.02em', margin: '0 0 4px',
               color: 'var(--text-primary)',
             }}>
-              Твой заказ под защитой
+              Условия и гарантии
             </h2>
             <div style={{
               fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
               marginBottom: 14,
             }}>
-              Ключевые условия и полный текст оферты доступны здесь же
+              Ваши права зафиксированы юридически
             </div>
 
             {/* 3 KEY STATS — what matters to client */}
@@ -313,7 +313,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
             ))}
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
-            2 400+ студентов доверяют нам
+            Более 2 400 выполненных проектов
           </span>
         </m.div>
 
@@ -438,7 +438,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
                 fontSize: 14, fontWeight: 700,
                 color: 'var(--text-on-gold)', position: 'relative',
               }}>
-                {accepting ? 'Фиксируем акцепт...' : 'Продолжить и открыть кабинет'}
+                {accepting ? 'Подготавливаем кабинет...' : 'Принять и продолжить'}
               </span>
             <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" style={{ position: 'relative' }} />
           </m.button>
@@ -453,7 +453,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
             fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, opacity: 0.7,
           }}
         >
-          Акцепт фиксируется по кнопке выше в соответствии со ст. 438 ГК РФ
+          Нажимая, вы принимаете публичную оферту (ст. 438 ГК РФ)
         </m.div>
       </div>
     </ModalWrapper>

@@ -2,14 +2,17 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 
 /**
- * PREMIUM SPLASH v5 — "Золотая Печать"
- * Simple grid layout. No overlaps. Mobile-first.
+ * PREMIUM SPLASH v6 — "Золотая Печать" (lightweight)
+ * localStorage-based: shows only once ever (first launch).
+ * Total duration: 2.0s max, skip from 0.5s.
  */
 
 interface PremiumSplashScreenProps {
   onComplete: () => void
   minimumDuration?: number
 }
+
+const SPLASH_KEY = 'as_splash_seen'
 
 const G = {
   deep: 'var(--gold-700)',
@@ -20,15 +23,21 @@ const G = {
 
 export function PremiumSplashScreen({
   onComplete,
-  minimumDuration = 3800,
+  minimumDuration = 2000,
 }: PremiumSplashScreenProps) {
   const [phase, setPhase] = useState(-1)
   const [canSkip, setCanSkip] = useState(false)
   const exitedRef = useRef(false)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const handleExit = useCallback(() => {
     if (exitedRef.current) return
     exitedRef.current = true
+    try {
+      localStorage.setItem(SPLASH_KEY, '1')
+    } catch {
+      // Storage may be unavailable — non-critical.
+    }
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
     } catch {
@@ -38,22 +47,43 @@ export function PremiumSplashScreen({
   }, [onComplete])
 
   useEffect(() => {
-    const t = [
-      setTimeout(() => setPhase(0), 50),
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 1000),
-      setTimeout(() => setPhase(3), 1600),
-      setTimeout(() => setPhase(4), 2200),
-      setTimeout(() => setCanSkip(true), 1200),
-      setTimeout(() => handleExit(), minimumDuration),
-    ]
-    return () => t.forEach(clearTimeout)
+    // If already seen, skip immediately
+    try {
+      if (localStorage.getItem(SPLASH_KEY)) {
+        onComplete()
+        return
+      }
+    } catch {
+      // Storage unavailable — show splash anyway.
+    }
+
+    const t = timersRef.current
+    t.push(
+      setTimeout(() => setPhase(0), 30),        // seal + rings start
+      setTimeout(() => setPhase(1), 600),        // monogram
+      setTimeout(() => setPhase(2), 1200),       // title + tagline
+      setTimeout(() => setCanSkip(true), 500),   // skip available early
+      setTimeout(() => handleExit(), minimumDuration), // auto-dismiss
+    )
+    return () => {
+      t.forEach(clearTimeout)
+      timersRef.current = []
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div
+      role="button"
+      aria-label="Нажмите, чтобы пропустить заставку и войти в приложение"
+      tabIndex={0}
       onClick={() => canSkip && handleExit()}
+      onKeyDown={(e) => {
+        if (canSkip && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          handleExit()
+        }
+      }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -70,7 +100,7 @@ export function PremiumSplashScreen({
       {/* Ambient glow */}
       <motion.div
         animate={{ opacity: [0.05, 0.15, 0.05], scale: [0.95, 1.05, 0.95] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute',
           top: '40%', left: '50%',
@@ -81,15 +111,12 @@ export function PremiumSplashScreen({
         }}
       />
 
-      {/* Floating particles */}
-      <Particles />
-
       {/* Golden spark */}
-      {phase >= 0 && phase < 2 && (
+      {phase >= 0 && phase < 1 && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: [0, 1, 25], opacity: [0, 1, 0] }}
-          transition={{ duration: 1.2 }}
+          animate={{ scale: [0, 1, 20], opacity: [0, 1, 0] }}
+          transition={{ duration: 0.6 }}
           style={{
             position: 'absolute', top: '42%', left: '50%',
             transform: 'translate(-50%, -50%)',
@@ -101,7 +128,7 @@ export function PremiumSplashScreen({
         />
       )}
 
-      {/* ═══ MAIN CONTENT BLOCK — just a plain div, centered by parent flex ═══ */}
+      {/* ═══ MAIN CONTENT BLOCK ═══ */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5, marginTop: '-4vh' }}>
         {/* Seal */}
         <Seal phase={phase} />
@@ -109,8 +136,8 @@ export function PremiumSplashScreen({
         {/* Title */}
         <motion.h1
           initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-          animate={phase >= 3 ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+          animate={phase >= 2 ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{
             fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 'clamp(16px, 4.8vw, 24px)',
@@ -130,8 +157,8 @@ export function PremiumSplashScreen({
         {/* Divider */}
         <motion.div
           initial={{ width: 0, opacity: 0 }}
-          animate={phase >= 3 ? { width: 90, opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.15 }}
+          animate={phase >= 2 ? { width: 90, opacity: 1 } : {}}
+          transition={{ duration: 0.4, delay: 0.1 }}
           style={{
             height: 1, marginTop: 12,
             background: `linear-gradient(90deg, transparent, ${G.primary}80, transparent)`,
@@ -141,8 +168,8 @@ export function PremiumSplashScreen({
         {/* Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
-          animate={phase >= 4 ? { opacity: 0.5 } : {}}
-          transition={{ duration: 0.5 }}
+          animate={phase >= 2 ? { opacity: 0.5 } : {}}
+          transition={{ duration: 0.4, delay: 0.15 }}
           style={{
             fontFamily: "'Manrope', sans-serif",
             fontSize: 'clamp(8px, 2.2vw, 11px)',
@@ -160,18 +187,18 @@ export function PremiumSplashScreen({
       {/* Skip indicator at bottom */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: canSkip ? 0.5 : 0 }}
-        transition={{ duration: 0.5 }}
+        animate={{ opacity: canSkip ? 0.7 : 0 }}
+        transition={{ duration: 0.4 }}
         style={{
           position: 'absolute',
           bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
           fontFamily: "'Manrope', sans-serif",
-          fontSize: 10, fontWeight: 600,
+          fontSize: 12, fontWeight: 600,
           letterSpacing: '0.2em', color: G.primary,
           textTransform: 'uppercase',
         }}
       >
-        <motion.span animate={canSkip ? { opacity: [0.4, 0.8, 0.4] } : {}} transition={{ duration: 2.5, repeat: Infinity }}>
+        <motion.span animate={canSkip ? { opacity: [0.5, 1, 0.5] } : {}} transition={{ duration: 2, repeat: Infinity }}>
           Нажмите для входа
         </motion.span>
       </motion.div>
@@ -180,14 +207,13 @@ export function PremiumSplashScreen({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SEAL — All-in-one SVG seal with rings, dots, text ring, monogram
+   SEAL — SVG seal with rings, dots, monogram (no rotating text ring)
    ═══════════════════════════════════════════════════════════════ */
 
 function Seal({ phase }: { phase: number }) {
-  // Everything in one SVG — no overflow issues
-  const S = 300 // viewBox size
+  const S = 300
   const cx = S / 2, cy = S / 2
-  const outerR = 80, innerR = 66, dotR = 73, textR = 108
+  const outerR = 80, innerR = 66, dotR = 73
   const outerC = 2 * Math.PI * outerR
   const innerC = 2 * Math.PI * innerR
 
@@ -202,7 +228,7 @@ function Seal({ phase }: { phase: number }) {
       {/* Glow */}
       <motion.div
         animate={{ opacity: [0.08, 0.25, 0.08], scale: [0.95, 1.06, 0.95] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', inset: '-15%', borderRadius: '50%',
           background: `radial-gradient(circle, ${G.primary}18 0%, transparent 60%)`,
@@ -210,7 +236,7 @@ function Seal({ phase }: { phase: number }) {
         }}
       />
 
-      {/* Static seal SVG (rings, dots, lines) */}
+      {/* Static seal SVG (rings, dots, lines, monogram) */}
       <svg viewBox={`0 0 ${S} ${S}`} style={{ width: '100%', height: '100%', display: 'block' }}>
         <defs>
           <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -230,16 +256,16 @@ function Seal({ phase }: { phase: number }) {
         <motion.circle
           cx={cx} cy={cy} r={outerR} fill="none" stroke="url(#sg1)" strokeWidth="1.2"
           initial={{ strokeDasharray: outerC, strokeDashoffset: outerC, opacity: 0 }}
-          animate={phase >= 1 ? { strokeDashoffset: 0, opacity: 1 } : {}}
-          transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1] }}
+          animate={phase >= 0 ? { strokeDashoffset: 0, opacity: 1 } : {}}
+          transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1] }}
         />
 
         {/* Inner ring */}
         <motion.circle
           cx={cx} cy={cy} r={innerR} fill="none" stroke="url(#sg2)" strokeWidth="0.6"
           initial={{ strokeDasharray: innerC, strokeDashoffset: -innerC, opacity: 0 }}
-          animate={phase >= 1 ? { strokeDashoffset: 0, opacity: 0.5 } : {}}
-          transition={{ duration: 1, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
+          animate={phase >= 0 ? { strokeDashoffset: 0, opacity: 0.5 } : {}}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.76, 0, 0.24, 1] }}
         />
 
         {/* Dots */}
@@ -247,8 +273,8 @@ function Seal({ phase }: { phase: number }) {
           <motion.circle key={i} cx={d.x} cy={d.y} r={d.big ? 2.2 : 1.2}
             fill={d.big ? G.shine : G.primary} filter={d.big ? 'url(#ggl)' : undefined}
             initial={{ opacity: 0 }}
-            animate={phase >= 2 ? { opacity: d.big ? 0.9 : 0.4 } : {}}
-            transition={{ duration: 0.3, delay: i * 0.03 }}
+            animate={phase >= 0 ? { opacity: d.big ? 0.9 : 0.4 } : {}}
+            transition={{ duration: 0.25, delay: 0.3 + i * 0.02 }}
           />
         ))}
 
@@ -261,18 +287,18 @@ function Seal({ phase }: { phase: number }) {
               x2={cx + (outerR - 2) * Math.cos(a)} y2={cy + (outerR - 2) * Math.sin(a)}
               stroke={G.primary} strokeWidth="0.4"
               initial={{ opacity: 0 }}
-              animate={phase >= 2 ? { opacity: 0.35 } : {}}
-              transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
+              animate={phase >= 0 ? { opacity: 0.35 } : {}}
+              transition={{ duration: 0.25, delay: 0.35 + i * 0.03 }}
             />
           )
         })}
 
-        {/* Monogram — plain SVG text for guaranteed centering */}
+        {/* Monogram */}
         <motion.text
           x={cx} y={cy} textAnchor="middle" dominantBaseline="central"
           initial={{ opacity: 0 }}
-          animate={phase >= 2 ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6 }}
+          animate={phase >= 1 ? { opacity: 1 } : {}}
+          transition={{ duration: 0.5 }}
           style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 52, fontWeight: 700, letterSpacing: '0.12em' }}
           fill="url(#sg1)"
         >
@@ -280,41 +306,13 @@ function Seal({ phase }: { phase: number }) {
         </motion.text>
       </svg>
 
-      {/* Rotating text ring — separate layer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={phase >= 2 ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6 }}
-        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 30, ease: 'linear', repeat: Infinity }}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <svg viewBox={`0 0 ${S} ${S}`} style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
-            <defs>
-              <path id="trp"
-                d={`M ${cx},${cy} m -${textR},0 a ${textR},${textR} 0 1,1 ${textR * 2},0 a ${textR},${textR} 0 1,1 -${textR * 2},0`}
-                fill="none"
-              />
-            </defs>
-            <text style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.22em' }}>
-              <textPath href="#trp" startOffset="0%" fill={G.primary} opacity="0.5">
-                АКАДЕМИЧЕСКИЙ • САЛОН • АКАДЕМИЧЕСКИЙ • САЛОН •
-              </textPath>
-            </text>
-          </svg>
-        </motion.div>
-      </motion.div>
-
       {/* Shimmer */}
-      {phase >= 4 && (
+      {phase >= 2 && (
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', pointerEvents: 'none' }}>
           <motion.div
             initial={{ x: '-150%' }}
             animate={{ x: '250%' }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 0.8 }}
             style={{
               position: 'absolute', inset: 0,
               background: `linear-gradient(90deg, transparent 0%, ${G.white}15 45%, ${G.shine}30 50%, ${G.white}15 55%, transparent 100%)`,
@@ -323,35 +321,6 @@ function Seal({ phase }: { phase: number }) {
           />
         </div>
       )}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   PARTICLES
-   ═══════════════════════════════════════════════════════════════ */
-
-function Particles() {
-  const ps = useMemo(() =>
-    [...Array(20)].map((_, i) => ({
-      id: i, x: Math.random() * 100, y: Math.random() * 100,
-      size: 1 + Math.random() * 2, dur: 6 + Math.random() * 7,
-      delay: Math.random() * 4, drift: (Math.random() - 0.5) * 25,
-    })), [])
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-      {ps.map(p => (
-        <motion.div key={p.id}
-          animate={{ y: [0, -40, 0], x: [0, p.drift, 0], opacity: [0.03, 0.2, 0.03] }}
-          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
-            width: p.size, height: p.size, borderRadius: '50%',
-            background: G.primary, boxShadow: `0 0 ${p.size * 3}px ${G.primary}40`,
-          }}
-        />
-      ))}
     </div>
   )
 }

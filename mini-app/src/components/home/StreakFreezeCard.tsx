@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect } from 'react'
+import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, ShieldPlus } from 'lucide-react'
 import { buyStreakFreeze } from '../../api/userApi'
@@ -26,6 +26,16 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
   const [localFreezeCount, setLocalFreezeCount] = useState(freezeCount)
   const [localBonusBalance, setLocalBonusBalance] = useState(bonusBalance)
   const [error, setError] = useState<string | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current)
+        errorTimerRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     setLocalFreezeCount(freezeCount)
@@ -70,12 +80,14 @@ export const StreakFreezeCard = memo(function StreakFreezeCard({
       } else {
         haptic('error')
         setError(result.message)
-        setTimeout(() => setError(null), 3000)
+        if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+        errorTimerRef.current = setTimeout(() => setError(null), 3000)
       }
     } catch (err) {
       haptic('error')
       setError(err instanceof Error ? err.message : 'Не удалось активировать защиту серии')
-      setTimeout(() => setError(null), 3000)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setError(null), 3000)
     } finally {
       setPurchasing(false)
     }
