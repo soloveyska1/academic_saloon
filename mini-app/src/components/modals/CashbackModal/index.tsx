@@ -1,8 +1,9 @@
 import { useCallback, useMemo, memo } from 'react'
 import { m } from 'framer-motion'
 import { ArrowRight, TrendingUp, Check, Lock } from 'lucide-react'
-import { ModalWrapper } from '../shared'
+import { ModalWrapper, triggerHaptic } from '../shared'
 import { RANKS, getRankIndexByCashback } from '../../../lib/ranks'
+import { formatMoney } from '../../../lib/utils'
 import { useAdmin } from '../../../contexts/AdminContext'
 import type { UserData } from '../../../types'
 
@@ -13,14 +14,11 @@ export interface CashbackModalProps {
   onCreateOrder?: () => void
 }
 
-function fmt(v: number): string {
-  return `${Math.max(0, Math.round(v)).toLocaleString('ru-RU')} ₽`
-}
 
 function memberSince(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null
   try {
-    return new Date(dateStr).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })
+    return new Date(dateStr).toLocaleDateString('ru-RU', { year: 'numeric', month: 'short' }).replace(' г.', '')
   } catch { return null }
 }
 
@@ -72,7 +70,7 @@ const TierRow = memo(function TierRow({
         {rank.displayName}
         {isLocked && rank.minSpent > 0 && (
           <span style={{ color: 'var(--text-muted)', marginLeft: 4, fontWeight: 600, fontSize: 11 }}>
-            · от {fmt(rank.minSpent)}
+            · от {formatMoney(rank.minSpent)}
           </span>
         )}
       </span>
@@ -117,7 +115,8 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
     return Math.max(0, user.rank.spent_to_next)
   }, [admin.simulatedRank, currentRank.minSpent, nextRank, user.rank.spent_to_next])
 
-  const handleCTA = useCallback(() => { onClose(); onCreateOrder?.() }, [onClose, onCreateOrder])
+  const handleCTA = useCallback(() => { triggerHaptic('medium'); onClose(); onCreateOrder?.() }, [onClose, onCreateOrder])
+  const HeroIcon = currentRank.icon
 
   const since = memberSince(user.created_at)
 
@@ -163,16 +162,14 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
               marginBottom: 12,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {(() => { const Icon = currentRank.icon; return (
-                  <div style={{
+                <div style={{
                     width: 30, height: 30, borderRadius: 9,
                     background: 'var(--gold-glass-medium)',
                     border: '1px solid rgba(212,175,55,0.18)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Icon size={14} strokeWidth={1.8} color="var(--gold-400)" />
+                    <HeroIcon size={14} strokeWidth={1.8} color="var(--gold-400)" />
                   </div>
-                ) })()}
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {currentRank.displayName}
                 </div>
@@ -206,7 +203,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 }}>
                   <TrendingUp size={11} strokeWidth={2.2} color="var(--gold-400)" style={{ opacity: 0.7 }} />
                   <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--gold-300)', letterSpacing: '-0.02em' }}>
-                    {fmt(totalSaved)}
+                    {formatMoney(totalSaved)}
                   </span>
                 </div>
               )}
@@ -235,7 +232,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
                 До «{nextRank.displayName}»
               </span>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                осталось {fmt(spentToNext)}
+                осталось {formatMoney(spentToNext)}
               </span>
             </div>
             <div style={{
@@ -295,7 +292,7 @@ export function CashbackModal({ isOpen, onClose, user, onCreateOrder }: Cashback
           >
             {[
               { value: String(user.orders_count), label: 'Заказов' },
-              { value: fmt(user.total_spent), label: 'Потрачено' },
+              { value: formatMoney(user.total_spent), label: 'Потрачено' },
               ...(since ? [{ value: since, label: 'С нами' }] : []),
             ].map((stat, i) => (
               <m.div

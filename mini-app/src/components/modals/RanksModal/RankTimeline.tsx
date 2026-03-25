@@ -138,7 +138,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
           ],
           scale: [1, 1.1, 1],
         } : undefined}
-        transition={{ duration: 2, repeat: Infinity }}
+        transition={{ duration: 2, repeat: 2 }}
         style={nodeStyle}
       >
         {(isPassed || isActive) && (
@@ -161,7 +161,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
           {/* Icon */}
           <m.div
             animate={isActive ? { rotate: [0, 5, -5, 0] } : undefined}
-            transition={{ duration: 3, repeat: Infinity }}
+            transition={{ duration: 3, repeat: 1 }}
             style={iconContainerStyle}
           >
             {/* Shine effect */}
