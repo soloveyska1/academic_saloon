@@ -31,18 +31,126 @@ import {
 import { AlertTriangle, RefreshCw, Wifi, WifiOff, ArrowLeft, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 
+const loadHomePage = () => import('./pages/HomePage').then(module => ({ default: module.HomePage }))
+const loadOrdersPage = () => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage }))
+const loadOrderDetailPageV8 = () => import('./pages/OrderDetailPageV8').then(module => ({ default: module.OrderDetailPageV8 }))
+const loadClubPage = () => import('./pages/ClubPage')
+const loadProfilePage = () => import('./pages/ProfilePageNew')
+const loadCreateOrderPage = () => import('./pages/CreateOrderPage').then(module => ({ default: module.CreateOrderPage }))
+const loadSupportPage = () => import('./pages/SupportPage').then(module => ({ default: module.SupportPage }))
+const loadOrderChatPage = () => import('./pages/OrderChatPage').then(module => ({ default: module.OrderChatPage }))
+const loadBatchPaymentPage = () => import('./pages/BatchPaymentPage').then(module => ({ default: module.BatchPaymentPage }))
+const loadGodModePage = () => import('./pages/GodModePage').then(module => ({ default: module.GodModePage }))
+const loadSquadPage = () => import('./pages/SquadPage').then(m => ({ default: m.SquadPage }))
+
 // Lazy Load Pages
-const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
-const OrdersPage = lazy(() => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage })))
-const OrderDetailPageV8 = lazy(() => import('./pages/OrderDetailPageV8').then(module => ({ default: module.OrderDetailPageV8 })))
-const ClubPage = lazy(() => import('./pages/ClubPage'))
-const ProfilePage = lazy(() => import('./pages/ProfilePageNew'))
-const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module => ({ default: module.CreateOrderPage })))
-const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
-const OrderChatPage = lazy(() => import('./pages/OrderChatPage').then(module => ({ default: module.OrderChatPage })))
-const BatchPaymentPage = lazy(() => import('./pages/BatchPaymentPage').then(module => ({ default: module.BatchPaymentPage })))
-const GodModePage = lazy(() => import('./pages/GodModePage').then(module => ({ default: module.GodModePage })))
-const SquadPage = lazy(() => import('./pages/SquadPage').then(m => ({ default: m.SquadPage })))
+const HomePage = lazy(loadHomePage)
+const OrdersPage = lazy(loadOrdersPage)
+const OrderDetailPageV8 = lazy(loadOrderDetailPageV8)
+const ClubPage = lazy(loadClubPage)
+const ProfilePage = lazy(loadProfilePage)
+const CreateOrderPage = lazy(loadCreateOrderPage)
+const SupportPage = lazy(loadSupportPage)
+const OrderChatPage = lazy(loadOrderChatPage)
+const BatchPaymentPage = lazy(loadBatchPaymentPage)
+const GodModePage = lazy(loadGodModePage)
+const SquadPage = lazy(loadSquadPage)
+
+function preloadOnIdle(loaders: Array<() => Promise<unknown>>) {
+  if (typeof window === 'undefined') {
+    return () => undefined
+  }
+
+  const idleWindow = window as Window & typeof globalThis & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+    cancelIdleCallback?: (handle: number) => void
+  }
+  let cancelled = false
+  const run = () => {
+    if (cancelled) return
+    void Promise.allSettled(loaders.map(loader => loader()))
+  }
+
+  if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+    const idleId = idleWindow.requestIdleCallback(run, { timeout: 1200 })
+    return () => {
+      cancelled = true
+      idleWindow.cancelIdleCallback?.(idleId)
+    }
+  }
+
+  const timeoutId = globalThis.setTimeout(run, 180)
+  return () => {
+    cancelled = true
+    globalThis.clearTimeout(timeoutId)
+  }
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 20px calc(104px + env(safe-area-inset-bottom, 0px))',
+        background:
+          'radial-gradient(circle at 50% 24%, rgba(212,175,55,0.08), transparent 38%), var(--bg-void)',
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+        style={{
+          display: 'grid',
+          placeItems: 'center',
+          gap: 12,
+          width: 96,
+          height: 96,
+          borderRadius: 28,
+          background: 'linear-gradient(145deg, rgba(26,26,28,0.94), rgba(16,16,18,0.98))',
+          border: '1px solid rgba(212,175,55,0.14)',
+          boxShadow: '0 22px 48px -28px rgba(0,0,0,0.76)',
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: '50%',
+            border: '1.5px solid rgba(212,175,55,0.2)',
+            borderTopColor: 'rgba(240,221,158,0.95)',
+          }}
+        />
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'rgba(212,175,55,0.7)',
+          }}
+        >
+          Открываем
+        </span>
+      </motion.div>
+    </div>
+  )
+}
+
+const APP_ROUTE_PRELOADERS: Array<() => Promise<unknown>> = [
+  loadOrdersPage,
+  loadClubPage,
+  loadProfilePage,
+  loadCreateOrderPage,
+  loadSupportPage,
+  loadBatchPaymentPage,
+]
 
 // WebSocket connection status indicator (only shown in debug mode)
 function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
@@ -352,6 +460,11 @@ function AppContent() {
     return () => clearTimeout(t)
   }, [])
 
+  useEffect(() => {
+    if (!isReady || userDataLoading || !userData) return
+    return preloadOnIdle(APP_ROUTE_PRELOADERS)
+  }, [isReady, userData, userDataLoading])
+
   const handleTermsAccepted = useCallback(async () => {
     await refreshUserData()
   }, [refreshUserData])
@@ -600,9 +713,7 @@ function AppContent() {
                         onDismiss={() => setNotification(null)}
                       />
 
-                      <Suspense fallback={
-                        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-void, #0A0A0A)' }} />
-                      }>
+                      <Suspense fallback={<RouteLoadingFallback />}>
                         <Routes>
                           <Route path="/" element={<HomePage user={userData} onRefresh={handlePullRefresh} />} />
                           <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} loading={userDataLoading} onRefresh={handlePullRefresh} />} />

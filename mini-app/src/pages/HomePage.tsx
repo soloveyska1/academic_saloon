@@ -42,12 +42,26 @@ import {
   SmartReorderCard,
 } from '../components/home'
 
+const loadQRCodeModal = () => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal }))
+const loadCashbackModal = () => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal }))
+const loadRanksModal = () => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal }))
+const loadGuaranteesModal = () => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal }))
+const loadTransactionsModal = () => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal }))
+
 // Lazy load modal components
-const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
-const CashbackModal = lazy(() => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal })))
-const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
-const GuaranteesModal = lazy(() => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal })))
-const TransactionsModal = lazy(() => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal })))
+const QRCodeModal = lazy(loadQRCodeModal)
+const CashbackModal = lazy(loadCashbackModal)
+const RanksModal = lazy(loadRanksModal)
+const GuaranteesModal = lazy(loadGuaranteesModal)
+const TransactionsModal = lazy(loadTransactionsModal)
+
+const HOME_MODAL_PRELOADERS: Array<() => Promise<unknown>> = [
+  loadQRCodeModal,
+  loadCashbackModal,
+  loadRanksModal,
+  loadGuaranteesModal,
+  loadTransactionsModal,
+]
 
 interface Props {
   user: UserData | null
@@ -81,6 +95,34 @@ export function HomePage({ user, onRefresh }: Props) {
   // WelcomeTour removed — no longer needed
   const [referralCopied, setReferralCopied] = useState(false)
   const heroCTARef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const idleWindow = window as Window & typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+      cancelIdleCallback?: (handle: number) => void
+    }
+    let cancelled = false
+    const run = () => {
+      if (cancelled) return
+      void Promise.allSettled(HOME_MODAL_PRELOADERS.map(loader => loader()))
+    }
+
+    if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+      const idleId = idleWindow.requestIdleCallback(run, { timeout: 900 })
+      return () => {
+        cancelled = true
+        idleWindow.cancelIdleCallback?.(idleId)
+      }
+    }
+
+    const timeoutId = globalThis.setTimeout(run, 160)
+    return () => {
+      cancelled = true
+      globalThis.clearTimeout(timeoutId)
+    }
+  }, [])
 
   // Secret admin activation (5 quick taps)
   const tapCountRef = useRef(0)
@@ -123,7 +165,9 @@ export function HomePage({ user, onRefresh }: Props) {
   // View Transition wrapper — progressive enhancement
   const navWithTransition = useCallback((path: string, opts?: { state?: unknown }) => {
     if ('startViewTransition' in document) {
-      (document as any).startViewTransition(() => navigate(path, opts))
+      ;(document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(
+        () => navigate(path, opts)
+      )
     } else {
       navigate(path, opts)
     }
