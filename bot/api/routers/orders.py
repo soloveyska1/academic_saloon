@@ -1297,7 +1297,8 @@ async def confirm_work_completion(
     try:
         from bot.services.bonus import BonusService
         bot = get_bot()
-        cashback = await BonusService.add_order_cashback(session, bot, order.user_id, order.id, float(order.price or 0))
+        cashback_base = float(order.paid_amount or order.final_price or order.price or 0)
+        cashback = await BonusService.add_order_cashback(session, bot, order.user_id, order.id, cashback_base)
     except Exception as e:
         logger.warning(f"[Completion] Failed to process cashback for order #{order.id}: {e}")
 
