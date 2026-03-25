@@ -1,3 +1,4 @@
+/* global fetch, FormData, File, URLSearchParams, console */
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
@@ -9,6 +10,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..', '..')
 const offerDataPath = path.join(repoRoot, 'mini-app', 'src', 'components', 'modals', 'OfferModal', 'offerData.ts')
 const offerImagePath = path.join(repoRoot, 'bot', 'media', 'saloon_welcome.jpg')
+const REMOTE_OFFER_IMAGE_URL = 'https://raw.githubusercontent.com/soloveyska1/academic_saloon/main/bot/media/saloon_welcome.jpg'
 
 function toParagraph(text) {
   return { tag: 'p', children: [text] }
@@ -36,7 +38,7 @@ function buildHeroNodes(meta) {
     {
       tag: 'blockquote',
       children: [
-        'Это публичная оферта Academic Saloon. Клиент принимает её перед первым входом в сервис, а текст ниже синхронизирован с той же редакцией, что и внутри Mini App.',
+        'Это официальная редакция публичной оферты сервиса «Академический Салон». Клиент принимает её перед первым входом в приложение, а текст ниже синхронизирован с действующей редакцией внутри сервиса.',
       ],
     },
     {
@@ -45,6 +47,8 @@ function buildHeroNodes(meta) {
         `Редакция ${meta.version} · действует с ${meta.effectiveDate}`,
       ],
     },
+    toHeading('h3', 'Назначение публикации'),
+    toParagraph('Документ фиксирует порядок акцепта, оказания услуг, оплаты, правок, возвратов, конфиденциальности и обработки персональных данных до открытия полного функционала приложения.'),
   ]
 }
 
@@ -70,7 +74,7 @@ function buildValueManifest(summaryCards) {
     },
     {
       tag: 'aside',
-      children: ['Клиентская выжимка'],
+      children: ['Краткая выжимка по ключевым условиям'],
     },
     ...summaryCards.flatMap((card, index) => [
       toHeading('h4', card.title),
@@ -109,6 +113,10 @@ function buildAcceptanceNodes() {
         },
       ],
     },
+    {
+      tag: 'aside',
+      children: ['Акцепт фиксируется электронной кнопкой в интерфейсе в соответствии со ст. 438 ГК РФ.'],
+    },
   ]
 }
 
@@ -139,7 +147,7 @@ function buildTelegraphContent({ summaryCards, sections, meta, imageUrl }) {
       tag: 'figure',
       children: [
         { tag: 'img', attrs: { src: imageUrl } },
-        { tag: 'figcaption', children: ['Академический Салон · публичная оферта и условия сервиса'] },
+        { tag: 'figcaption', children: ['Академический Салон · официальная публикация оферты и условий сервиса'] },
       ],
     })
   }
@@ -154,7 +162,7 @@ function buildTelegraphContent({ summaryCards, sections, meta, imageUrl }) {
     {
       tag: 'aside',
       children: [
-        `Текст синхронизирован с Mini App Academic Saloon. Если оферта обновляется в приложении, эта Telegraph-версия публикуется из того же источника.`,
+        'Текст синхронизирован с приложением «Академический Салон» и публикуется из того же источника, что используется внутри сервиса.',
       ],
     },
   )
@@ -228,7 +236,7 @@ async function ensureAccessToken() {
 
   const result = await telegraphApi('createAccount', {
     short_name: 'academic_saloon',
-    author_name: 'Academic Saloon',
+    author_name: 'Академический Салон',
     author_url: 'https://academic-saloon.duckdns.org',
   })
 
@@ -264,6 +272,7 @@ async function publish() {
     imageUrl = await uploadOfferImage()
   } catch (error) {
     console.warn(error instanceof Error ? error.message : String(error))
+    imageUrl = REMOTE_OFFER_IMAGE_URL
   }
   const content = buildTelegraphContent({ summaryCards, sections, meta, imageUrl })
 
@@ -271,7 +280,7 @@ async function publish() {
   const commonParams = {
     access_token: accessToken,
     title: meta.title,
-    author_name: 'Academic Saloon',
+    author_name: 'Академический Салон',
     author_url: 'https://academic-saloon.duckdns.org',
     content: JSON.stringify(content),
     return_content: 'true',
