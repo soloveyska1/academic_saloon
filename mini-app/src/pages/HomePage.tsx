@@ -42,12 +42,26 @@ import {
   SmartReorderCard,
 } from '../components/home'
 
+const loadQRCodeModal = () => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal }))
+const loadCashbackModal = () => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal }))
+const loadRanksModal = () => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal }))
+const loadGuaranteesModal = () => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal }))
+const loadTransactionsModal = () => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal }))
+
 // Lazy load modal components
-const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
-const CashbackModal = lazy(() => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal })))
-const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
-const GuaranteesModal = lazy(() => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal })))
-const TransactionsModal = lazy(() => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal })))
+const QRCodeModal = lazy(loadQRCodeModal)
+const CashbackModal = lazy(loadCashbackModal)
+const RanksModal = lazy(loadRanksModal)
+const GuaranteesModal = lazy(loadGuaranteesModal)
+const TransactionsModal = lazy(loadTransactionsModal)
+
+const HOME_MODAL_PRELOADERS: Array<() => Promise<unknown>> = [
+  loadQRCodeModal,
+  loadCashbackModal,
+  loadRanksModal,
+  loadGuaranteesModal,
+  loadTransactionsModal,
+]
 
 interface Props {
   user: UserData | null
@@ -81,6 +95,34 @@ export function HomePage({ user, onRefresh }: Props) {
   // WelcomeTour removed — no longer needed
   const [referralCopied, setReferralCopied] = useState(false)
   const heroCTARef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const idleWindow = window as Window & typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+      cancelIdleCallback?: (handle: number) => void
+    }
+    let cancelled = false
+    const run = () => {
+      if (cancelled) return
+      void Promise.allSettled(HOME_MODAL_PRELOADERS.map(loader => loader()))
+    }
+
+    if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+      const idleId = idleWindow.requestIdleCallback(run, { timeout: 900 })
+      return () => {
+        cancelled = true
+        idleWindow.cancelIdleCallback?.(idleId)
+      }
+    }
+
+    const timeoutId = globalThis.setTimeout(run, 160)
+    return () => {
+      cancelled = true
+      globalThis.clearTimeout(timeoutId)
+    }
+  }, [])
 
   // Secret admin activation (5 quick taps)
   const tapCountRef = useRef(0)
@@ -120,31 +162,26 @@ export function HomePage({ user, onRefresh }: Props) {
     import('../pages/CreateOrderPage').catch(() => {})
   }, [])
 
-  // View Transition wrapper — progressive enhancement
-  const navWithTransition = useCallback((path: string, opts?: { state?: unknown }) => {
-    if ('startViewTransition' in document) {
-      (document as any).startViewTransition(() => navigate(path, opts))
-    } else {
-      navigate(path, opts)
-    }
+  const navigateWithoutFlash = useCallback((path: string, opts?: { state?: unknown }) => {
+    requestAnimationFrame(() => navigate(path, opts))
   }, [navigate])
 
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
-    navWithTransition('/create-order')
-  }, [haptic, navWithTransition])
+    navigateWithoutFlash('/create-order')
+  }, [haptic, navigateWithoutFlash])
 
   const handleNewOrderWithType = useCallback((workType: string) => {
     haptic('heavy')
-    navWithTransition('/create-order', {
+    navigateWithoutFlash('/create-order', {
       state: { prefill: { work_type: workType } },
     })
-  }, [haptic, navWithTransition])
+  }, [haptic, navigateWithoutFlash])
 
   const handleOpenLounge = useCallback(() => {
     haptic('light')
-    navWithTransition('/club')
-  }, [haptic, navWithTransition])
+    navigateWithoutFlash('/club')
+  }, [haptic, navigateWithoutFlash])
 
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
@@ -200,7 +237,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
   // Smart reorder with optional subject override
   const handleSmartReorder = useCallback((workType: string, subject?: string) => {
-    navWithTransition('/create-order', {
+    navigateWithoutFlash('/create-order', {
       state: {
         prefill: {
           work_type: workType,
@@ -209,7 +246,7 @@ export function HomePage({ user, onRefresh }: Props) {
         },
       },
     })
-  }, [navWithTransition])
+  }, [navigateWithoutFlash])
 
   // Spin wheel handler
   const handleSpinWheel = useCallback(async () => {

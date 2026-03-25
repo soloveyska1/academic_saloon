@@ -1,0 +1,52 @@
+[Unit]
+Description=Academic Saloon Bot and API
+After=network-online.target postgresql.service redis.service
+Wants=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=8
+
+[Service]
+Type=simple
+User={{SERVICE_USER}}
+Group={{SERVICE_GROUP}}
+WorkingDirectory={{REPO_DIR}}
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile={{ENV_FILE}}
+ExecStartPre={{SYSTEMD_HELPER_DIR}}/systemd_prestart.sh {{REPO_DIR}}
+ExecStart={{REPO_DIR}}/venv/bin/python {{REPO_DIR}}/main.py
+ExecReload={{SYSTEMD_HELPER_DIR}}/systemd_reload.sh HUP 45
+Restart=always
+RestartSec=2
+TimeoutStartSec=60
+TimeoutStopSec=30
+TimeoutReloadSec=50
+KillMode=mixed
+KillSignal=SIGTERM
+SuccessExitStatus=143 SIGTERM
+SyslogIdentifier=saloon-bot
+UMask=027
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelLogs=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+MemoryAccounting=true
+CPUAccounting=true
+TasksAccounting=true
+LimitNOFILE=65536
+RuntimeDirectory=saloon-bot
+RuntimeDirectoryMode=0750
+ReadWritePaths={{REPO_DIR}} /tmp /var/tmp /run/saloon-bot
+
+[Install]
+WantedBy=multi-user.target

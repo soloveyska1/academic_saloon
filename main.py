@@ -1,5 +1,10 @@
 import asyncio
+import inspect
 import logging
+import signal
+from contextlib import suppress
+from dataclasses import dataclass, field
+from typing import Any
 from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
@@ -52,7 +57,63 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def run_api_server():
+@dataclass
+class ServiceRuntime:
+    shutdown_requested: asyncio.Event = field(default_factory=asyncio.Event)
+    reload_requested: asyncio.Event = field(default_factory=asyncio.Event)
+    api_server: Any | None = None
+    bot_dispatcher: Dispatcher | None = None
+
+
+async def _stop_bot_polling(dp: Dispatcher | None) -> None:
+    if dp is None:
+        return
+
+    stop_polling = getattr(dp, "stop_polling", None)
+    if stop_polling is None:
+        return
+
+    result = stop_polling()
+    if inspect.isawaitable(result):
+        await result
+
+
+async def request_shutdown(runtime: ServiceRuntime, reason: str, *, is_reload: bool = False) -> None:
+    if runtime.shutdown_requested.is_set():
+        return
+
+    logger.info("Shutdown requested: %s", reason)
+    if is_reload:
+        runtime.reload_requested.set()
+
+    runtime.shutdown_requested.set()
+
+    if runtime.api_server is not None:
+        runtime.api_server.should_exit = True
+        runtime.api_server.force_exit = False
+
+    with suppress(Exception):
+        await _stop_bot_polling(runtime.bot_dispatcher)
+
+
+def install_signal_handlers(runtime: ServiceRuntime) -> None:
+    loop = asyncio.get_running_loop()
+
+    for current_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+        with suppress(NotImplementedError):
+            loop.add_signal_handler(
+                current_signal,
+                lambda current_signal=current_signal: asyncio.create_task(
+                    request_shutdown(
+                        runtime,
+                        f"signal {current_signal.name}",
+                        is_reload=current_signal == signal.SIGHUP,
+                    )
+                ),
+            )
+
+
+async def run_api_server(runtime: ServiceRuntime):
     """Run FastAPI server for Mini App"""
     try:
         import uvicorn
@@ -77,13 +138,17 @@ async def run_api_server():
             access_log=True
         )
         server = uvicorn.Server(config)
+        runtime.api_server = server
         logger.info("🌐 Mini App API starting on http://0.0.0.0:8000")
         await server.serve()
     except Exception as e:
         logger.error(f"API server error: {e}")
+        raise
+    finally:
+        runtime.api_server = None
 
 
-async def run_bot():
+async def run_bot(runtime: ServiceRuntime):
     """Run Telegram bot"""
     logger.info("🤖 Starting Academic Saloon Bot...")
 
@@ -94,6 +159,7 @@ async def run_bot():
     # FSM storage в Redis
     storage = RedisStorage.from_url(settings.REDIS_URL)
     dp = Dispatcher(storage=storage)
+    runtime.bot_dispatcher = dp
 
     # --- РЕГИСТРАЦИЯ MIDDLEWARE ---
     dp.update.outer_middleware(ErrorHandlerMiddleware())
@@ -165,18 +231,32 @@ async def run_bot():
         logger.info("📱 Menu button configured")
 
         logger.info("🤖 Bot polling started...")
-        await dp.start_polling(bot)
+        try:
+            await dp.start_polling(bot, handle_signals=False)
+        except TypeError as exc:
+            if "handle_signals" not in str(exc):
+                raise
+            await dp.start_polling(bot)
     except Exception as e:
         logger.error(f"Bot error: {e}")
+        raise
     finally:
         # Останавливаем фоновые задачи
-        abandoned_tracker.stop()
-        daily_stats.stop()
-        silence_reminder.stop()
-        notification_scheduler.stop()
-        # Закрываем Redis пул
-        await close_redis()
-        await close_bot()
+        with suppress(Exception):
+            abandoned_tracker.stop()
+        with suppress(Exception):
+            daily_stats.stop()
+        with suppress(Exception):
+            silence_reminder.stop()
+        with suppress(Exception):
+            notification_scheduler.stop()
+        with suppress(Exception):
+            engagement_push.stop()
+        with suppress(Exception):
+            await close_redis()
+        with suppress(Exception):
+            await close_bot()
+        runtime.bot_dispatcher = None
         logger.info("Bot shutdown complete")
 
 
@@ -187,20 +267,41 @@ async def main():
     logger.info("=" * 50)
 
     # Run both services concurrently (compatible with Python 3.9+)
+    runtime = ServiceRuntime()
+    install_signal_handlers(runtime)
+
+    bot_task = asyncio.create_task(run_bot(runtime), name="telegram-bot")
+    api_task = asyncio.create_task(run_api_server(runtime), name="mini-app-api")
+
     try:
-        results = await asyncio.gather(
-            run_bot(),
-            run_api_server(),
-            return_exceptions=True
+        done, pending = await asyncio.wait(
+            {bot_task, api_task},
+            return_when=asyncio.FIRST_EXCEPTION,
         )
-        # Check for exceptions
-        for result in results:
-            if isinstance(result, Exception):
-                logger.error("Service crashed", exc_info=result)
-                raise result
+
+        crashed_task = None
+        for task in done:
+            if task.cancelled():
+                continue
+            exc = task.exception()
+            if exc is not None:
+                crashed_task = task
+                logger.error("Service task crashed: %s", task.get_name(), exc_info=exc)
+                break
+
+        if crashed_task is not None:
+            await request_shutdown(runtime, f"{crashed_task.get_name()} crashed")
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            raise crashed_task.exception()
+
+        await asyncio.gather(*pending)
     except Exception as e:
         logger.error(f"Service crashed: {e}")
         raise
+    finally:
+        await request_shutdown(runtime, "main exit")
 
 
 if __name__ == "__main__":

@@ -35,24 +35,41 @@ export const ModalLoadingFallback = memo(function ModalLoadingFallback() {
     <div
       aria-hidden="true"
       style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.4)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    }}>
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(5, 5, 6, 0.16)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
       <div
-                aria-hidden="true"
-                style={{
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        border: '2px solid transparent',
-        borderTopColor: 'var(--gold-400)',
-        animation: 'spin 1s linear infinite',
-      }} />
+        aria-hidden="true"
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 22,
+          display: 'grid',
+          placeItems: 'center',
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.96), rgba(17,17,19,0.98))',
+          border: '1px solid rgba(212,175,55,0.14)',
+          boxShadow: '0 22px 48px -30px rgba(0,0,0,0.75)',
+        }}
+      >
+        <div
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            border: '1.5px solid rgba(212,175,55,0.18)',
+            borderTopColor: 'rgba(240,221,158,0.95)',
+            animation: 'spin 0.85s linear infinite',
+          }}
+        />
+      </div>
     </div>
   )
 })

@@ -28,6 +28,7 @@ const SPRING_OPEN = { type: 'spring' as const, stiffness: 300, damping: 30 }
 const SPRING_CLOSE = { type: 'spring' as const, stiffness: 400, damping: 35 }
 const DISMISS_THRESHOLD = 80 // px
 const VELOCITY_THRESHOLD = 400 // px/s
+const BACKDROP_BLUR = 'blur(10px) saturate(112%)'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODAL WRAPPER — Clean bottom sheet
@@ -193,11 +194,11 @@ export function ModalWrapper({
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(6, 6, 8, 0.78)',
-                backdropFilter: 'blur(16px) saturate(120%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
+                background: 'rgba(6, 6, 8, 0.72)',
+                backdropFilter: BACKDROP_BLUR,
+                WebkitBackdropFilter: BACKDROP_BLUR,
                 zIndex: 2000,
-                willChange: 'backdrop-filter, opacity',
+                willChange: 'opacity',
               }}
               aria-hidden="true"
             />
@@ -206,9 +207,9 @@ export function ModalWrapper({
             <m.div
               key={`${modalId}-sh`}
               ref={sheetRef}
-              initial={{ y: '100%' }}
+              initial={{ y: '100%', opacity: 0.92 }}
               animate={{ y: dragY }}
-              exit={{ y: '100%' }}
+              exit={{ y: '100%', opacity: 0.92 }}
               transition={isDragging
                 ? { type: 'tween', duration: 0 }
                 : isOpen ? SPRING_OPEN : SPRING_CLOSE
