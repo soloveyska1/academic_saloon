@@ -18,12 +18,13 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend || 'true' }}
+      frontend: ${{ steps.filter.outputs.frontend || 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
+        continue-on-error: true
         with:
           filters: |
             backend:
@@ -72,7 +73,7 @@ jobs:
           cache: 'pip'
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt --quiet --prefer-offline
+        run: pip install -r requirements.txt --quiet
 
       - name: Ruff lint
         run: pip install ruff && ruff check . --select E,W,F --ignore E501 || true
@@ -115,10 +116,13 @@ jobs:
           cache-dependency-path: 'mini-app/package-lock.json'
 
       - name: Install frontend dependencies
-        run: cd mini-app && npm ci
+        run: cd mini-app && npm ci --prefer-offline || npm install
 
       - name: TypeScript type check
         run: cd mini-app && npx tsc --noEmit
+
+      - name: Vite build check
+        run: cd mini-app && npm run build
 
       - name: Frontend tests
         run: cd mini-app && npm test || true
@@ -168,7 +172,7 @@ jobs:
             if [ ! -d "venv" ]; then python3 -m venv venv; fi
             source venv/bin/activate
             pip install --upgrade pip -q
-            pip install -r requirements.txt --quiet --prefer-offline
+            pip install -r requirements.txt --quiet
 
             # Migrations
             alembic upgrade head 2>/dev/null || true
@@ -211,14 +215,38 @@ jobs:
 
             # Frontend
             cd ~/academic_saloon/mini-app
-            npm ci --prefer-offline
+            echo "Installing frontend dependencies..."
+            npm ci --prefer-offline 2>/dev/null || npm install
+            echo "Building frontend..."
             npm run build
+            if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+              echo "ERROR: Vite build produced no output in dist/"
+              exit 1
+            fi
 
             rm -rf /var/www/academic_saloon/dist/*
             cp -r dist/* /var/www/academic_saloon/dist/
             chown -R www-data:www-data /var/www/academic_saloon/dist/
 
             nginx -t && systemctl reload nginx
+
+            # Health check: verify the app is responding
+            echo "Running health check..."
+            HEALTH_OK=false
+            for i in {1..5}; do
+              HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/ 2>/dev/null || echo "000")
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
+                HEALTH_OK=true
+                break
+              fi
+              echo "Health check attempt $i: HTTP $HTTP_CODE"
+              sleep 2
+            done
+            if [ "$HEALTH_OK" != "true" ]; then
+              echo "WARNING: Health check did not return 200 (got $HTTP_CODE). Deploy may have issues."
+            else
+              echo "Health check passed"
+            fi
 
             # ═══════════════════════════════════════════
             # SEND PREMIUM NOTIFICATION
