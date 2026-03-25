@@ -9,6 +9,9 @@ LOCK_FILE="${LOCK_FILE:-/tmp/saloon-deploy.lock}"
 FRONTEND_ARCHIVE_PATH="${FRONTEND_ARCHIVE_PATH:-/tmp/academic_saloon_deploy/frontend-dist.tgz}"
 BACKEND_CHANGED="${BACKEND_CHANGED:-false}"
 FRONTEND_CHANGED="${FRONTEND_CHANGED:-false}"
+FRONTEND_BUILD_MODE="${FRONTEND_BUILD_MODE:-auto}"
+SKIP_DB_MIGRATIONS="${SKIP_DB_MIGRATIONS:-false}"
+SEND_DEPLOY_NOTIFICATION="${SEND_DEPLOY_NOTIFICATION:-true}"
 DEPLOY_START="${DEPLOY_START:-$(date +%s)}"
 OLD_COMMIT="${OLD_COMMIT:-unknown}"
 NEW_COMMIT="${NEW_COMMIT:-unknown}"
@@ -64,27 +67,37 @@ restart_backend() {
   systemctl is-active --quiet "$SERVICE_NAME"
 }
 
-deploy_frontend_bundle() {
-  local current_dir next_dir previous_dir
+install_frontend_dependencies() {
+  local lock_hash
 
-  if [ ! -f "$FRONTEND_ARCHIVE_PATH" ]; then
-    echo "Missing frontend bundle at $FRONTEND_ARCHIVE_PATH"
-    exit 1
+  cd "$REPO_DIR/mini-app"
+  lock_hash="$(md5sum package-lock.json | cut -d' ' -f1)"
+
+  if [ -f ".lock_hash" ] && [ "$(cat .lock_hash)" = "$lock_hash" ] && [ -d "node_modules" ]; then
+    echo "Frontend dependencies unchanged"
+    return
   fi
+
+  npm ci --prefer-offline --no-audit
+  printf '%s' "$lock_hash" > .lock_hash
+}
+
+activate_frontend_dist() {
+  local source_dir="$1"
+  local current_dir next_dir previous_dir
 
   current_dir="$WEB_ROOT/dist"
   next_dir="$WEB_ROOT/dist.next"
   previous_dir="$WEB_ROOT/dist.prev"
 
-  rm -rf "$next_dir"
-  mkdir -p "$next_dir"
-  tar -xzf "$FRONTEND_ARCHIVE_PATH" -C "$next_dir"
-
-  if [ ! -f "$next_dir/index.html" ]; then
-    echo "Frontend bundle is invalid: index.html not found"
+  if [ ! -f "$source_dir/index.html" ]; then
+    echo "Frontend output is invalid: index.html not found in $source_dir"
     exit 1
   fi
 
+  rm -rf "$next_dir"
+  mkdir -p "$next_dir"
+  cp -R "$source_dir"/. "$next_dir"/
   chown -R www-data:www-data "$next_dir"
 
   rm -rf "$previous_dir"
@@ -93,10 +106,54 @@ deploy_frontend_bundle() {
   fi
   mv "$next_dir" "$current_dir"
   rm -rf "$previous_dir"
-  rm -f "$FRONTEND_ARCHIVE_PATH"
 
   nginx -t
   systemctl reload nginx
+}
+
+deploy_frontend_bundle() {
+  if [ ! -f "$FRONTEND_ARCHIVE_PATH" ]; then
+    echo "Missing frontend bundle at $FRONTEND_ARCHIVE_PATH"
+    exit 1
+  fi
+
+  local extract_dir
+  extract_dir="$WEB_ROOT/dist.unpack"
+  rm -rf "$extract_dir"
+  mkdir -p "$extract_dir"
+  tar -xzf "$FRONTEND_ARCHIVE_PATH" -C "$extract_dir"
+  activate_frontend_dist "$extract_dir"
+  rm -rf "$extract_dir"
+  rm -f "$FRONTEND_ARCHIVE_PATH"
+}
+
+build_frontend_locally() {
+  cd "$REPO_DIR/mini-app"
+  install_frontend_dependencies
+  npm run build
+  activate_frontend_dist "$REPO_DIR/mini-app/dist"
+}
+
+rollout_frontend() {
+  case "$FRONTEND_BUILD_MODE" in
+    artifact)
+      deploy_frontend_bundle
+      ;;
+    local)
+      build_frontend_locally
+      ;;
+    auto)
+      if [ -f "$FRONTEND_ARCHIVE_PATH" ]; then
+        deploy_frontend_bundle
+      else
+        build_frontend_locally
+      fi
+      ;;
+    *)
+      echo "Unknown FRONTEND_BUILD_MODE: $FRONTEND_BUILD_MODE"
+      exit 1
+      ;;
+  esac
 }
 
 check_backend_health() {
@@ -108,7 +165,7 @@ check_frontend_health() {
 }
 
 send_notification() {
-  if [ -z "${NOTIFY_CHAT_ID:-}" ] || [ ! -d "$REPO_DIR/venv" ]; then
+  if [ "$SEND_DEPLOY_NOTIFICATION" != "true" ] || [ -z "${NOTIFY_CHAT_ID:-}" ] || [ ! -d "$REPO_DIR/venv" ]; then
     return
   fi
 
@@ -138,12 +195,14 @@ fi
 
 if [ "$BACKEND_CHANGED" = "true" ]; then
   install_backend_dependencies
-  alembic upgrade head
+  if [ "$SKIP_DB_MIGRATIONS" != "true" ]; then
+    alembic upgrade head
+  fi
   restart_backend
 fi
 
 if [ "$FRONTEND_CHANGED" = "true" ]; then
-  deploy_frontend_bundle
+  rollout_frontend
 fi
 
 if [ "$BACKEND_CHANGED" = "true" ]; then

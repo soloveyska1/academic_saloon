@@ -8,11 +8,30 @@ on:
         required: false
         default: '1'
 
+permissions:
+  contents: read
+
 jobs:
   rollback:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/remote_deploy.sh
+
+      - name: Upload rollback helper
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: scripts/remote_deploy.sh
+          target: /tmp/academic_saloon_rollback
+          overwrite: true
+
       - name: Rollback via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -20,65 +39,77 @@ jobs:
           GH_ACTOR: ${{ github.actor }}
           GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           COMMITS_BACK: ${{ github.event.inputs.commits_back }}
+          REMOTE_HELPER_PATH: /tmp/academic_saloon_rollback/scripts/remote_deploy.sh
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: NOTIFY_CHAT_ID,GH_ACTOR,GH_RUN_URL,COMMITS_BACK
+          command_timeout: 180s
+          envs: NOTIFY_CHAT_ID,GH_ACTOR,GH_RUN_URL,COMMITS_BACK,REMOTE_HELPER_PATH
           script: |
-            set -e
+            set -euo pipefail
 
-            cd ~/academic_saloon
+            REPO_DIR="$HOME/academic_saloon"
+            cd "$REPO_DIR"
 
-            FROM=$(git rev-parse --short HEAD)
-            FROM_MSG=$(git log -1 --format='%s' | head -c 60)
-            git reset --hard HEAD~${COMMITS_BACK}
-            TO=$(git rev-parse --short HEAD)
-            TO_MSG=$(git log -1 --format='%s' | head -c 60)
+            FROM_COMMIT=$(git rev-parse --short HEAD)
+            FROM_MSG=$(git log -1 --format='%s' | head -c 80)
+            git reset --hard "HEAD~${COMMITS_BACK}"
+            TO_COMMIT=$(git rev-parse --short HEAD)
+            TO_MSG=$(git log -1 --format='%s' | head -c 80)
 
-            # Rebuild
-            cd ~/academic_saloon/mini-app
-            LOCK_HASH=$(md5sum package-lock.json | cut -d' ' -f1)
-            if [ -f ".lock_hash" ] && [ "$(cat .lock_hash)" = "$LOCK_HASH" ]; then
-              echo "Dependencies unchanged, skipping npm ci"
-            else
-              npm ci --prefer-offline 2>/dev/null || npm install
-              echo "$LOCK_HASH" > .lock_hash
+            BACKEND_CHANGED=false
+            FRONTEND_CHANGED=false
+
+            if [ -n "$(git diff --name-only "${TO_COMMIT}..${FROM_COMMIT}" -- bot core database main.py requirements.txt)" ]; then
+              BACKEND_CHANGED=true
             fi
-            npm run build
 
-            rm -rf /var/www/academic_saloon/dist/*
-            cp -r dist/* /var/www/academic_saloon/dist/
-            chown -R www-data:www-data /var/www/academic_saloon/dist/
+            if [ -n "$(git diff --name-only "${TO_COMMIT}..${FROM_COMMIT}" -- mini-app)" ]; then
+              FRONTEND_CHANGED=true
+            fi
 
-            # Restart
-            touch /tmp/saloon-deploy.lock
-            systemctl stop saloon-bot 2>/dev/null || true
-            fuser -k -9 8000/tcp 2>/dev/null || true
-            sleep 1
-            systemctl start saloon-bot
-            sleep 2
-            rm -f /tmp/saloon-deploy.lock
-            nginx -t && systemctl reload nginx
+            export REPO_DIR
+            export OLD_COMMIT="$FROM_COMMIT"
+            export NEW_COMMIT="$TO_COMMIT"
+            export BACKEND_CHANGED
+            export FRONTEND_CHANGED
+            export FRONTEND_BUILD_MODE=local
+            export SKIP_DB_MIGRATIONS=true
+            export SEND_DEPLOY_NOTIFICATION=false
+            export DEPLOY_START="$(date +%s)"
+
+            bash "$REMOTE_HELPER_PATH"
 
             BOT_OK="✗"
-            if systemctl is-active --quiet saloon-bot; then BOT_OK="●"; fi
+            if systemctl is-active --quiet saloon-bot; then
+              BOT_OK="●"
+            fi
 
-            # Notification
-            BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
+            FRONTEND_LABEL="без изменений"
+            if [ "$FRONTEND_CHANGED" = "true" ]; then
+              FRONTEND_LABEL="пересобран локально"
+            fi
 
-            if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+            BACKEND_LABEL="без изменений"
+            if [ "$BACKEND_CHANGED" = "true" ]; then
+              BACKEND_LABEL="перезапущен"
+            fi
+
+            BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' "$REPO_DIR/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
+
+            if [ -n "$BOT_TOKEN_VAL" ] && [ -n "${NOTIFY_CHAT_ID:-}" ]; then
               read -r -d '' MSG << ENDMSG || true
-            <b>↶ ОТКАТ</b>  <code>-${COMMITS_BACK}</code>
+            <b>↶ ОТКАТ</b> <code>-${COMMITS_BACK}</code>
 
             <pre>
-            Было  ${FROM}  ${FROM_MSG}
-            Стало ${TO}  ${TO_MSG}
+            Было  ${FROM_COMMIT}  ${FROM_MSG}
+            Стало ${TO_COMMIT}  ${TO_MSG}
             </pre>
-            <code>Бот: ${BOT_OK} · Инициатор: ${GH_ACTOR}</code>
+            <code>Бот: ${BOT_OK} · Backend: ${BACKEND_LABEL} · Frontend: ${FRONTEND_LABEL}</code>
+            <code>Инициатор: ${GH_ACTOR}</code>
 
-            Фронтенд пересобран, сервисы перезапущены.
-            <a href="${GH_RUN_URL}">логи</a>
+            <a href="${GH_RUN_URL}">Логи</a>
             ENDMSG
 
               curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
