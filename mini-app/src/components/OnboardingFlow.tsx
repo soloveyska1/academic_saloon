@@ -113,12 +113,12 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const alreadySeen = useRef(false)
   useEffect(() => {
     try {
-      if (localStorage.getItem('as_onboarding_seen') && user?.has_accepted_terms) {
+      if (!previewMode && localStorage.getItem('as_onboarding_seen') && user?.has_accepted_terms) {
         alreadySeen.current = true
         onAccepted()
       }
     } catch { /* ignore */ }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onAccepted, previewMode, user?.has_accepted_terms])
 
   const [phase, setPhase] = useState<Phase>('reveal')
   const [accepting, setAccepting] = useState(false)
