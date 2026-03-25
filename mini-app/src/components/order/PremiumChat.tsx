@@ -9,7 +9,11 @@ import {
 import { ChatMessage } from '../../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
-import { useWebSocketContext } from '../../hooks/useWebSocket'
+import {
+  isChatSocketMessage,
+  isTypingIndicatorSocketMessage,
+  useWebSocketContext,
+} from '../../hooks/useWebSocket'
 
 // Notification sound (base64 encoded short beep)
 const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+dnJaUmKOfpaamkXdrbXqFioyMjYeHhIOFiI2MiIuKiYeHiIiIiYuNjY6Ojo6NjIuKiIaDgH57eHZ0cnBua2lnZGJgXltYVVJPTEpIRkRAOzY0Mi8tKyknJSMhIB8eHRwbGhoZGBcWFhUUExIREBAP'
@@ -439,6 +443,35 @@ function normalizeMessageDates(messages: ChatMessage[]): ChatMessage[] {
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 }
 
+export function extractRealtimeChatMessage(payload: unknown): ChatMessage | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null
+  }
+
+  const candidate = payload as Partial<ChatMessage>
+  if (
+    typeof candidate.id !== 'number' ||
+    (candidate.sender_type !== 'admin' && candidate.sender_type !== 'client') ||
+    typeof candidate.sender_name !== 'string' ||
+    typeof candidate.created_at !== 'string' ||
+    typeof candidate.is_read !== 'boolean'
+  ) {
+    return null
+  }
+
+  return {
+    id: candidate.id,
+    sender_type: candidate.sender_type,
+    sender_name: candidate.sender_name,
+    message_text: typeof candidate.message_text === 'string' ? candidate.message_text : null,
+    file_type: typeof candidate.file_type === 'string' ? candidate.file_type : null,
+    file_name: typeof candidate.file_name === 'string' ? candidate.file_name : null,
+    file_url: typeof candidate.file_url === 'string' ? candidate.file_url : null,
+    created_at: candidate.created_at,
+    is_read: candidate.is_read,
+  }
+}
+
 function groupMessagesByDate(messages: ChatMessage[]): { date: string; messages: ChatMessage[] }[] {
   const groups: { date: string; messages: ChatMessage[] }[] = []
   let currentDate = ''
@@ -550,23 +583,20 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
   // WebSocket handler for real-time updates
   useEffect(() => {
     const unsubscribe = addMessageHandler((message) => {
-      const msgData = message as any
-
-      // Handle new chat messages
-      const targetOrderId = Number(msgData.order_id)
-
-      if (message.type === 'chat_message' && targetOrderId === orderId) {
+      if (isChatSocketMessage(message) && message.order_id === orderId) {
         setIsTyping(false)
 
-        // If message data is included, add it directly
-        if (msgData.message) {
+        const realtimeMessage = extractRealtimeChatMessage((message as Record<string, unknown>).message)
+
+        // Only append directly when the server actually sent a full chat object.
+        if (realtimeMessage) {
           setMessages(prev => {
             // Avoid duplicates
-            if (prev.some(m => m.id === msgData.message.id)) return prev
-            return normalizeMessageDates([...prev, msgData.message])
+            if (prev.some(m => m.id === realtimeMessage.id)) return prev
+            return normalizeMessageDates([...prev, realtimeMessage])
           })
         } else {
-          // Otherwise reload messages
+          // Current backend sends only a short preview string for chat_message events.
           loadMessages(true)
         }
 
@@ -576,15 +606,16 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       }
 
       // Handle typing indicator
-      if (message.type === 'typing_indicator' && targetOrderId === orderId) {
-        setIsTyping(msgData.is_typing)
-        if (msgData.is_typing) {
+      if (isTypingIndicatorSocketMessage(message) && message.order_id === orderId) {
+        setIsTyping(message.is_typing)
+        if (message.is_typing) {
           setTimeout(() => setIsTyping(false), 5000)
         }
       }
 
       // Handle admin message specifically (legacy format)
-      if ((message.type as string) === 'new_message' && targetOrderId === orderId) {
+      const legacyOrderId = Number((message as Record<string, unknown>).order_id)
+      if ((message.type as string) === 'new_message' && legacyOrderId === orderId) {
         loadMessages(true)
         playNotificationSound()
         hapticSuccess()
@@ -632,7 +663,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         hapticError()
         setError('Не удалось отправить')
       }
-    } catch (err) {
+    } catch {
       hapticError()
       setError('Ошибка отправки')
     } finally {
@@ -657,7 +688,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         hapticSuccess()
         loadMessages()
       }
-    } catch (err) {
+    } catch {
       hapticError()
       setError('Ошибка загрузки файла')
     } finally {
