@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Copy, Crown, Percent, QrCode, Send, Sparkles, Gift, Award, Flame, Users, Star, Zap } from 'lucide-react'
+import { Check, Copy, Crown, QrCode, Send, Sparkles, Gift, Award, Flame, Users, Star, Zap } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { Reveal } from '../ui/StaggerReveal'
 import { formatMoney } from '../../lib/utils'
@@ -18,7 +18,7 @@ interface Rank {
 
 interface LoungeVaultProps {
   rank: Rank
-  bonusBalance: number
+  bonusBalance?: number
   referralCode: string
   referralsCount: number
   referralEarnings: number
@@ -255,7 +255,7 @@ const SquadPromoCard = memo(function SquadPromoCard() {
 
 export const LoungeVault = memo(function LoungeVault({
   rank,
-  bonusBalance,
+  // bonusBalance no longer displayed (shown in HomeHeader)
   referralCode,
   referralsCount,
   referralEarnings,
