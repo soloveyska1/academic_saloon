@@ -53,6 +53,10 @@ from bot.services.order_pause_events import (
     sync_order_pause_state,
     sync_orders_pause_state,
 )
+from bot.services.order_lifecycle import (
+    can_complete_order,
+    get_order_cashback_base,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1281,12 +1285,13 @@ async def confirm_work_completion(
             content={"success": False, "message": "Order not found"}
         )
 
-    if order.status != OrderStatus.REVIEW.value:
+    if not can_complete_order(order):
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": "Order must be in review"}
         )
 
+    old_status = order.status
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.now(timezone.utc)
 
@@ -1297,18 +1302,41 @@ async def confirm_work_completion(
     try:
         from bot.services.bonus import BonusService
         bot = get_bot()
-        cashback_base = float(order.paid_amount or order.final_price or order.price or 0)
+        cashback_base = get_order_cashback_base(order)
         cashback = await BonusService.add_order_cashback(session, bot, order.user_id, order.id, cashback_base)
     except Exception as e:
         logger.warning(f"[Completion] Failed to process cashback for order #{order.id}: {e}")
 
-    # Notify Admin and Close Topic
+    # Notify Admin, update card, and close topic
     try:
         from bot.services.unified_hub import close_order_topic
+        from bot.services.live_cards import send_or_update_card
         bot = get_bot()
+        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+        user = user_result.scalar_one_or_none()
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text="✅ Клиент подтвердил получение",
+        )
         await close_order_topic(bot, session, order)
     except Exception as e:
-        logger.warning(f"[Completion] Failed to close order topic for order #{order.id}: {e}")
+        logger.warning(f"[Completion] Failed to sync admin surfaces for order #{order.id}: {e}")
+
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=tg_user.id,
+            order_id=order.id,
+            new_status=OrderStatus.COMPLETED.value,
+            old_status=old_status,
+            extra_data={"cashback": cashback} if cashback > 0 else None,
+        )
+    except Exception as e:
+        logger.warning(f"[Completion] Failed to send WS notification for order #{order.id}: {e}")
 
     return ConfirmWorkResponse(success=True, message=f"Спасибо! Заказ завершён.")
 

@@ -41,6 +41,12 @@ from bot.services.order_message_formatter import (
     build_client_price_ready_text,
     build_payment_keyboard as build_order_payment_keyboard,
 )
+from bot.services.order_lifecycle import (
+    can_complete_order,
+    can_deliver_order,
+    get_order_cashback_base,
+    is_order_already_delivered,
+)
 from bot.utils import parse_order_id
 from bot.utils.formatting import format_price
 from core.media_cache import send_cached_photo
@@ -951,7 +957,16 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
+    if order.status == OrderStatus.COMPLETED.value:
+        await callback.answer("Заказ уже завершён", show_alert=True)
+        return
+
+    if not can_complete_order(order):
+        await callback.answer(f"Нельзя завершить заказ из статуса: {order.status}", show_alert=True)
+        return
+
     # Завершаем заказ
+    old_status = order.status
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.utcnow()
 
@@ -961,7 +976,7 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     cashback_amount = 0.0
     if user:
         from bot.services.bonus import BonusService
-        order_amount = float(order.paid_amount or order.final_price or order.price or 0)
+        order_amount = get_order_cashback_base(order)
         cashback_amount = await BonusService.add_order_cashback(
             session=session,
             bot=bot,
@@ -999,6 +1014,7 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
             telegram_id=order.user_id,
             order_id=order.id,
             new_status=OrderStatus.COMPLETED.value,
+            old_status=old_status,
             extra_data={"cashback": cashback_amount} if cashback_amount > 0 else None,
         )
     except Exception as ws_err:
@@ -1074,10 +1090,19 @@ async def card_deliver_confirm(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
+    if is_order_already_delivered(order):
+        await callback.answer("Работа уже отправлена клиенту", show_alert=True)
+        return
+
+    if not can_deliver_order(order):
+        await callback.answer(f"Нельзя отправить работу из статуса: {order.status}", show_alert=True)
+        return
+
     # Меняем статус на "На проверке"
     old_status = order.status
+    delivered_at = datetime.utcnow()
     order.status = OrderStatus.REVIEW.value
-    order.delivered_at = datetime.utcnow()  # Фиксируем время сдачи для 30-дневного таймера
+    order.delivered_at = delivered_at  # Фиксируем время сдачи для 30-дневного таймера
     await session.commit()
 
     # UNIFIED HUB: Обновляем название топика
@@ -1120,7 +1145,7 @@ async def card_deliver_confirm(callback: CallbackQuery, session: AsyncSession, b
             order_id=order.id,
             new_status=OrderStatus.REVIEW.value,
             old_status=old_status,
-            extra_data={"delivered_at": datetime.utcnow().isoformat()},
+            extra_data={"delivered_at": delivered_at.isoformat()},
         )
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")

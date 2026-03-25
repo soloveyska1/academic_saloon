@@ -49,6 +49,7 @@ from bot.api.schemas import (
 from bot.api.dependencies import order_to_response
 from bot.bot_instance import get_bot
 from bot.services.bonus import BonusService, BonusReason
+from bot.services.order_lifecycle import get_order_cashback_base
 from bot.services.payment_accounting import (
     apply_payment_update_to_user,
     build_payment_update,
@@ -685,7 +686,7 @@ async def update_order_status(
         # Process cashback
         try:
             await BonusService.add_order_cashback(
-                session, bot, order.user_id, order_id, order.final_price
+                session, bot, order.user_id, order_id, get_order_cashback_base(order)
             )
         except Exception as e:
             logger.error(f"Cashback error: {e}")
