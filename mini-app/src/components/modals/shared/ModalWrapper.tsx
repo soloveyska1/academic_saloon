@@ -174,6 +174,7 @@ export function ModalWrapper({
     zIndex: 2001,
     outline: 'none',
     overflow: 'hidden',
+    willChange: 'transform',
   }), [])
 
   return createPortal(
@@ -196,6 +197,7 @@ export function ModalWrapper({
                 backdropFilter: 'blur(16px) saturate(120%)',
                 WebkitBackdropFilter: 'blur(16px) saturate(120%)',
                 zIndex: 2000,
+                willChange: 'backdrop-filter, opacity',
               }}
               aria-hidden="true"
             />

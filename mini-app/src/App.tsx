@@ -212,7 +212,7 @@ function NotFoundPage() {
 function AppContent() {
   const admin = useAdmin()
   const { userData, loading: userDataLoading, error, refetch, refreshUserData } = useUserData()
-  const [isReady, setIsReady] = useState(false)
+  const isReady = true
   const [simulateOfferAccepted, setSimulateOfferAccepted] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -339,10 +339,17 @@ function AppContent() {
   }, [refetch])
 
 
+  // Prefetch main tab chunks to eliminate Suspense flash on navigation
   useEffect(() => {
-    // Mark ready after minimum time
-    const timer = setTimeout(() => setIsReady(true), 500)
-    return () => clearTimeout(timer)
+    const prefetch = () => {
+      import('./pages/HomePage')
+      import('./pages/OrdersPage')
+      import('./pages/ClubPage')
+      import('./pages/ProfilePageNew')
+    }
+    // Prefetch after initial render settles
+    const t = setTimeout(prefetch, 1000)
+    return () => clearTimeout(t)
   }, [])
 
   const handleTermsAccepted = useCallback(async () => {
@@ -593,7 +600,9 @@ function AppContent() {
                         onDismiss={() => setNotification(null)}
                       />
 
-                      <Suspense fallback={<LoadingScreen />}>
+                      <Suspense fallback={
+                        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-void, #0A0A0A)' }} />
+                      }>
                         <Routes>
                           <Route path="/" element={<HomePage user={userData} onRefresh={handlePullRefresh} />} />
                           <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} loading={userDataLoading} onRefresh={handlePullRefresh} />} />

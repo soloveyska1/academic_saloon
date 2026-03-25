@@ -22,6 +22,7 @@ const STYLES = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    willChange: 'backdrop-filter, opacity' as const,
   },
   dialog: {
     position: 'relative' as const,
@@ -36,6 +37,7 @@ const STYLES = {
     borderRadius: 12,
     boxShadow: '0 34px 90px rgba(0,0,0,0.5)',
     zIndex: 2001,
+    willChange: 'transform, opacity' as const,
   },
   closeButton: {
     position: 'absolute' as const,

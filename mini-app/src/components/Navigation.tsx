@@ -17,7 +17,7 @@ export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { impactOccurred: haptic } = useHapticFeedback()
-  const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
+  const { isHidden, isForcedHidden } = useNavigation()
   const [isVisible, setIsVisible] = useState(true)
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
   const lastScrollY = useRef(0)
@@ -28,7 +28,7 @@ export const Navigation = () => {
   )
 
   const isHiddenPage = shouldHideBottomNavigation(location.pathname)
-  const shouldHideNav = isHiddenPage || isHidden || isForcedHidden || isModalOpen || isKeyboardOpen
+  const shouldHideNav = isHiddenPage || isHidden || isForcedHidden || isKeyboardOpen
 
   const getScrollContainer = useCallback((): HTMLElement | null => {
     return document.querySelector('main[role="main"]') as HTMLElement | null
@@ -113,7 +113,7 @@ export const Navigation = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.nav
-          initial={{ y: 100, opacity: 0 }}
+          initial={false}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{
