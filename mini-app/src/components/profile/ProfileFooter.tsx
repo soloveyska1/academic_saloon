@@ -1,14 +1,15 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { LifeBuoy } from 'lucide-react'
+import { LifeBuoy, ScrollText } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
 import { prefersReducedMotion } from './profileHelpers'
 
 interface Props {
   onOpenSupport: () => void
+  onOpenOffer?: () => void
 }
 
-export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Props) {
+export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport, onOpenOffer }: Props) {
   return (
     <motion.footer
       initial={prefersReducedMotion ? {} : { opacity: 0 }}
@@ -16,21 +17,44 @@ export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Prop
       transition={{ duration: 0.5, delay: 0.32 }}
       className={s.footer}
     >
-      {/* Support link */}
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.97 }}
-        onClick={onOpenSupport}
-        className={s.goldButton}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <LifeBuoy size={14} />
-        Поддержка и сервис
-      </motion.button>
+      {/* Support + Offer links */}
+      <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={onOpenSupport}
+          className={s.goldButton}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <LifeBuoy size={14} />
+          Поддержка
+        </motion.button>
+
+        {onOpenOffer && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.97 }}
+            onClick={onOpenOffer}
+            className={s.goldButton}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <ScrollText size={14} />
+            Оферта
+          </motion.button>
+        )}
+      </div>
 
       {/* Brand footer */}
       <div className={s.footerBrand}>

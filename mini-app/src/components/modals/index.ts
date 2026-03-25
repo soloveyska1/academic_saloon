@@ -21,3 +21,6 @@ export type { GuaranteesModalProps } from './GuaranteesModal'
 
 export { TransactionsModal } from './TransactionsModal'
 export type { TransactionsModalProps } from './TransactionsModal'
+
+export { OfferModal } from './OfferModal'
+export type { OfferModalProps } from './OfferModal'

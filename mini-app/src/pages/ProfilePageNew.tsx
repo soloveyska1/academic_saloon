@@ -9,6 +9,7 @@ import { SkeletonProfileHeader, SkeletonStatsGrid, SkeletonCard } from '../compo
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { TransactionsModal } from '../components/modals/TransactionsModal'
+import { OfferModal } from '../components/modals/OfferModal'
 import { useToast } from '../components/ui/Toast'
 import { copyTextSafely } from '../utils/clipboard'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
@@ -33,6 +34,7 @@ export function ProfilePageNew({ user }: Props) {
   const { showToast } = useToast()
   const [showQR, setShowQR] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
+  const [showOffer, setShowOffer] = useState(false)
 
   /* ═══════ Computed ═══════ */
 
@@ -70,6 +72,11 @@ export function ProfilePageNew({ user }: Props) {
     haptic('medium')
     navigate('/club')
   }, [haptic, navigate])
+
+  const handleOpenOffer = useCallback(() => {
+    haptic('light')
+    setShowOffer(true)
+  }, [haptic])
 
   const handleOpenActionableOrder = useCallback(() => {
     if (!actionableOrder) {
@@ -198,7 +205,7 @@ export function ProfilePageNew({ user }: Props) {
         />
 
         {/* 7. Footer */}
-        <ProfileFooter onOpenSupport={handleOpenSupport} />
+        <ProfileFooter onOpenSupport={handleOpenSupport} onOpenOffer={handleOpenOffer} />
       </div>
 
       {/* Modals */}
@@ -212,6 +219,11 @@ export function ProfilePageNew({ user }: Props) {
             setShowTransactions(false)
             navigate('/club')
           }}
+        />
+
+        <OfferModal
+          isOpen={showOffer}
+          onClose={() => setShowOffer(false)}
         />
 
         {showQR && inviteLink && (
