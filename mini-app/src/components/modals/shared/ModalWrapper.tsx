@@ -274,26 +274,29 @@ export function ModalWrapper({
                   background: 'linear-gradient(90deg, rgba(255,255,255,0.1), rgba(212,175,55,0.35), rgba(255,255,255,0.1))',
                 }} />
 
-                {/* Close button — anchored to the right of handle row */}
+                {/* Close — ghost button, just the icon */}
                 <m.button
                   onClick={(e) => { e.stopPropagation(); handleClose() }}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.85, opacity: 0.6 }}
                   style={{
                     position: 'absolute',
-                    right: 16,
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    right: 20,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'transparent',
+                    border: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
+                    padding: 0,
                   }}
                   aria-label="Закрыть"
                 >
-                  <X size={14} strokeWidth={2.5} color="rgba(255,255,255,0.5)" />
+                  <X size={18} strokeWidth={2} color="rgba(255,255,255,0.3)" />
                 </m.button>
               </div>
 
