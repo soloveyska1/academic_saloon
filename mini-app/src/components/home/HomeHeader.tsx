@@ -80,7 +80,11 @@ function recordBalance(balance: number) {
   }
   // Keep last MAX_HISTORY entries
   const trimmed = history.slice(-MAX_HISTORY)
-  try { localStorage.setItem(BALANCE_HISTORY_KEY, JSON.stringify(trimmed)) } catch {}
+  try {
+    localStorage.setItem(BALANCE_HISTORY_KEY, JSON.stringify(trimmed))
+  } catch {
+    // localStorage may be unavailable in some webviews.
+  }
 }
 
 function getWeeklyDelta(currentBalance: number): number | null {
@@ -128,10 +132,8 @@ function formatNum(v: number): string {
 
 /* ─── Per-character reveal with haptic drumroll ─── */
 function BalanceReveal({ value, reduced }: { value: string; reduced: boolean }) {
-  if (reduced) return <span>{value}</span>
-
-  // Haptic drumroll: light taps synced with char reveal
   useEffect(() => {
+    if (reduced) return
     const chars = value.split('')
     const timers: ReturnType<typeof setTimeout>[] = []
     // Fire haptic on every 3rd character for subtle rhythm
@@ -143,7 +145,9 @@ function BalanceReveal({ value, reduced }: { value: string; reduced: boolean }) 
     // Final medium tap at the end
     timers.push(setTimeout(() => haptic('medium'), chars.length * 30))
     return () => timers.forEach(clearTimeout)
-  }, [value])
+  }, [reduced, value])
+
+  if (reduced) return <span>{value}</span>
 
   return (
     <span style={{ display: 'inline-flex' }}>
@@ -190,7 +194,7 @@ function AnimatedNumber({ value, reduced }: { value: number; reduced: boolean })
 }
 
 /* ─── Time-based greeting ─── */
-function useGreeting(isNewUser: boolean, _hasPendingPayment?: boolean) {
+function useGreeting(isNewUser: boolean) {
   return useMemo(() => {
     if (isNewUser) return 'Добро пожаловать'
     // Payment status is shown on the order card — keep greeting contextual
@@ -199,7 +203,7 @@ function useGreeting(isNewUser: boolean, _hasPendingPayment?: boolean) {
     if (hour >= 12 && hour < 18) return 'С возвращением'
     if (hour >= 18 && hour < 23) return 'Добрый вечер'
     return 'Салун не спит'
-  }, [isNewUser, _hasPendingPayment])
+  }, [isNewUser])
 }
 
 /* ─── Slow-breathing card border ─── */
@@ -308,7 +312,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const firstName = user.fullname?.split(' ')[0] || 'Гость'
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
-  const greeting = useGreeting(!!isNewUser, summary?.hasPendingPayment)
+  const greeting = useGreeting(!!isNewUser)
 
   const balance = summary?.balance ?? 0
   const bonusBalance = summary?.bonusBalance ?? 0

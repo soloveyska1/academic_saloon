@@ -89,7 +89,9 @@ export function MagneticButton({
     if (haptic) {
       try {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
-      } catch {}
+      } catch {
+        // Haptic is optional.
+      }
     }
   }, [disabled, scale, haptic])
 
@@ -106,7 +108,9 @@ export function MagneticButton({
     if (haptic) {
       try {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
-      } catch {}
+      } catch {
+        // Haptic is optional.
+      }
     }
   }, [disabled, onClick, haptic])
 
@@ -130,7 +134,9 @@ export function MagneticButton({
     if (haptic) {
       try {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
-      } catch {}
+      } catch {
+        // Haptic is optional.
+      }
     }
   }, [disabled, magneticStrength, x, y, scale, glowIntensity, haptic])
 

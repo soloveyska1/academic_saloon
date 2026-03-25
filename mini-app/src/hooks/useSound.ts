@@ -11,7 +11,7 @@ export const useSound = () => {
       try {
         audioContextRef.current?.close();
       } catch {
-        /* silent */
+        // Audio context may already be gone.
       }
     };
   }, []);
@@ -24,12 +24,12 @@ export const useSound = () => {
           audioContextRef.current = new AudioContextClass();
         }
       } catch {
-        /* silent */
+        // Audio initialization is optional.
       }
     }
 
     if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume().catch(() => { /* silent */ });
+      audioContextRef.current.resume().catch(() => undefined);
     }
   }, []);
 
@@ -43,7 +43,7 @@ export const useSound = () => {
     if (!ctx) return;
 
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => { });
+      ctx.resume().catch(() => undefined);
     }
 
     const osc = ctx.createOscillator();
@@ -104,6 +104,7 @@ export const useSound = () => {
         break;
 
       case 'success':
+      {
         // Heavenly chord
         const freqs = [523.25, 659.25, 783.99, 1046.50]; // C major
         freqs.forEach(f => {
@@ -119,6 +120,7 @@ export const useSound = () => {
           o.stop(now + 1.5);
         });
         break;
+      }
 
       case 'error':
         // Low buzz "Wrong" sound
@@ -131,7 +133,7 @@ export const useSound = () => {
         osc.stop(now + 0.3);
         break;
     }
-  }, []);
+  }, [initAudio]);
 
   return { playSound, initAudio };
 };

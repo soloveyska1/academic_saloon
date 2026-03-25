@@ -75,6 +75,15 @@ export function SuccessScreen({
 
   const hasReceipt = !!serviceLabel && (!!finalEstimate || result.isManual)
 
+  useEffect(() => {
+    if (!result.ok) return
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+    } catch {
+      // Haptic is optional outside Telegram WebApp.
+    }
+  }, [result.ok])
+
   // ─── Error state ───
   if (!result.ok) {
     return (
@@ -162,15 +171,6 @@ export function SuccessScreen({
 
   // ─── Success: Auto-approved vs Manual ───
   const isManual = result.isManual
-
-  // ─── Haptic feedback on success ───
-  useEffect(() => {
-    try {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
-    } catch {
-      // Haptic not available — silent fail
-    }
-  }, [])
 
   return (
     <div style={PAGE_STYLE}>

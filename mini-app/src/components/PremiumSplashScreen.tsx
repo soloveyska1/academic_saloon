@@ -29,7 +29,11 @@ export function PremiumSplashScreen({
   const handleExit = useCallback(() => {
     if (exitedRef.current) return
     exitedRef.current = true
-    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light') } catch {}
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch {
+      // Haptic is optional.
+    }
     onComplete()
   }, [onComplete])
 
@@ -191,7 +195,7 @@ function Seal({ phase }: { phase: number }) {
     [...Array(12)].map((_, i) => {
       const a = (i * 30 * Math.PI) / 180 - Math.PI / 2
       return { x: cx + dotR * Math.cos(a), y: cy + dotR * Math.sin(a), big: i % 3 === 0 }
-    }), [])
+    }), [cx, cy, dotR])
 
   return (
     <div style={{ width: 'clamp(180px, 52vw, 240px)', aspectRatio: '1', position: 'relative' }}>

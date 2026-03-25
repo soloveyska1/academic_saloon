@@ -109,12 +109,26 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const loadMessages = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetchOrderMessages(orderId)
+      setMessages(response.messages)
+      setUnreadCount(response.unread_count)
+    } catch {
+      setError('Не удалось загрузить сообщения')
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId])
+
   // Load messages when expanded
   useEffect(() => {
     if (isExpanded && messages.length === 0) {
       loadMessages()
     }
-  }, [isExpanded])
+  }, [isExpanded, loadMessages, messages.length])
 
   // Scroll to bottom when new messages appear
   useEffect(() => {
@@ -142,7 +156,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
       }
     })
     return unsubscribe
-  }, [orderId, addMessageHandler, hapticSuccess])
+  }, [orderId, addMessageHandler, hapticSuccess, loadMessages])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -155,20 +169,6 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
       }
     }
   }, [])
-
-  const loadMessages = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetchOrderMessages(orderId)
-      setMessages(response.messages)
-      setUnreadCount(response.unread_count)
-    } catch {
-      setError('Не удалось загрузить сообщения')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleSend = async () => {
     const text = newMessage.trim()

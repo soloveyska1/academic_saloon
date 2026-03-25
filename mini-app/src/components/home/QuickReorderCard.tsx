@@ -69,12 +69,12 @@ export const QuickReorderCard = memo(function QuickReorderCard({
   haptic,
   embedded = false,
 }: QuickReorderCardProps) {
-  // Only show if last order was completed
-  if (lastOrder.status !== 'completed') return null
-
   const workTypeLabel = lastOrder.work_type_label || WORK_TYPE_LABELS[lastOrder.work_type] || lastOrder.work_type
   const subject = lastOrder.subject || 'Предмет не указан'
   const temporalHint = useTemporalHint(lastOrder.work_type)
+
+  // Only show if last order was completed
+  if (lastOrder.status !== 'completed') return null
 
   if (embedded) {
     return (

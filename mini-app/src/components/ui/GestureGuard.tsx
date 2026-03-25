@@ -50,7 +50,7 @@ const triggerHaptic = (style: 'light' | 'medium' | 'rigid' = 'light') => {
     } else if (navigator.vibrate) {
       navigator.vibrate(style === 'light' ? 10 : style === 'medium' ? 25 : 50)
     }
-  } catch (e) {
+  } catch {
     // Ignore haptic errors
   }
 }
@@ -472,7 +472,9 @@ export function useSwipeToClose({
         } else if (navigator.vibrate) {
           navigator.vibrate(10)
         }
-      } catch (e) {}
+      } catch {
+        // Haptic is optional.
+      }
 
       onClose()
       onDragEnd?.(true)

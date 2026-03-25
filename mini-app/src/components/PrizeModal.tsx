@@ -12,7 +12,9 @@ const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
     } else if (navigator.vibrate) {
       navigator.vibrate(style === 'light' ? 10 : 20)
     }
-  } catch (e) {}
+  } catch {
+    // Haptic is optional.
+  }
 }
 
 interface Prize {

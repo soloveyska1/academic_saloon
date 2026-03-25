@@ -505,8 +505,10 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     try {
       const audio = new Audio(NOTIFICATION_SOUND)
       audio.volume = 0.5
-      audio.play().catch(() => {})
-    } catch {}
+      audio.play().catch(() => undefined)
+    } catch {
+      // Audio playback is optional.
+    }
   }, [])
 
   // Load messages

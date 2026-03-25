@@ -188,7 +188,7 @@ export function HomePage({ user, onRefresh }: Props) {
     return user.transactions
       .filter(t => t.type === 'credit' && (t.reason.includes('cashback') || t.reason.includes('кешбэк') || t.reason.includes('реферал') || t.reason.includes('promo')))
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-  }, [user?.transactions])
+  }, [user])
 
   const handleOpenModal = useCallback((modal: ModalName) => {
     if (modal === 'cashback') actions.openModal('cashback')

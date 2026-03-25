@@ -290,11 +290,6 @@ export const FloatingGoldParticles = memo(function FloatingGoldParticles({
   const capability = useCapability()
   const adjustedCount = capability.getParticleCount(count)
 
-  // Tier 1: No particles
-  if (adjustedCount === 0) {
-    return null
-  }
-
   const particles = useMemo(() => {
     return Array.from({ length: adjustedCount }, (_, i) => ({
       id: i,
@@ -305,6 +300,11 @@ export const FloatingGoldParticles = memo(function FloatingGoldParticles({
       duration: 8 + (i % 3),
     }))
   }, [adjustedCount])
+
+  // Tier 1: No particles
+  if (adjustedCount === 0) {
+    return null
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>

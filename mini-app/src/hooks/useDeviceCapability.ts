@@ -48,14 +48,25 @@ export interface DeviceCapability {
   shouldAnimate: (type: 'essential' | 'decorative' | 'heavy') => boolean
 }
 
+interface NavigatorWithExtraSignals extends Navigator {
+  deviceMemory?: number
+  connection?: {
+    effectiveType?: string
+    saveData?: boolean
+  }
+}
+
+interface WebGLDebugRendererInfoLike {
+  UNMASKED_RENDERER_WEBGL: number
+}
+
 // Feature detection utilities
 function getCPUCores(): number {
   return navigator.hardwareConcurrency || 4
 }
 
 function getDeviceMemory(): number | null {
-  // @ts-ignore - deviceMemory is not in standard types
-  return navigator.deviceMemory || null
+  return (navigator as NavigatorWithExtraSignals).deviceMemory ?? null
 }
 
 function checkReducedMotion(): boolean {
@@ -72,8 +83,7 @@ function checkLowEndDevice(): boolean {
   if (memory !== null && memory <= 2) return true
 
   // Check for slow connection
-  // @ts-ignore - connection is not in standard types
-  const connection = navigator.connection
+  const connection = (navigator as NavigatorWithExtraSignals).connection
   if (connection) {
     const effectiveType = connection.effectiveType
     if (effectiveType === 'slow-2g' || effectiveType === '2g') return true
@@ -101,15 +111,16 @@ function estimateGPUCapability(): 'low' | 'medium' | 'high' {
 
   try {
     const canvas = document.createElement('canvas')
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+    const gl = (
+      canvas.getContext('webgl') ||
+      canvas.getContext('experimental-webgl')
+    ) as WebGLRenderingContext | null
 
     if (!gl) return 'low'
 
-    // @ts-ignore
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as WebGLDebugRendererInfoLike | null
     if (debugInfo) {
-      // @ts-ignore
-      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      const renderer = String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
 
       // Check for integrated/low-end GPU indicators
       if (/Intel|Mali-4|Adreno [1-3]/i.test(renderer)) return 'medium'

@@ -43,8 +43,6 @@ export const SmartReorderCard = memo(function SmartReorderCard({
   haptic,
   cashbackPercent = 0,
 }: SmartReorderCardProps) {
-  if (lastOrder.status !== 'completed') return null
-
   const suggestion = useMemo(() => {
     const subject = lastOrder.subject || ''
     for (const [key, related] of Object.entries(SUBJECT_FAMILIES)) {
@@ -58,6 +56,8 @@ export const SmartReorderCard = memo(function SmartReorderCard({
   }, [lastOrder.subject])
 
   const workTypeLabel = lastOrder.work_type_label || WORK_TYPE_LABELS[lastOrder.work_type] || lastOrder.work_type
+
+  if (lastOrder.status !== 'completed') return null
 
   return (
     <Reveal animation="spring">
