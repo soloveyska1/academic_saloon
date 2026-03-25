@@ -2,15 +2,15 @@ import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import {
   Shield, RefreshCw, Award, Clock, Lock, ChevronDown, CheckCircle2,
-  Sparkles, ArrowRight, FileCheck, Snowflake, Eye, ListChecks,
+  Sparkles, ArrowRight, FileCheck, Snowflake, Eye, ListChecks, Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GUARANTEES MODAL — Proof Wall
-//  4 core guarantees + bonus perks. Evidence-backed.
-//  Structured: Hero → Stats Grid → Core Cards → Bonus Perks → FAQ → CTA
+//  GUARANTEES MODAL — Proof Wall v3
+//  5 core guarantees + 4 bonus perks. Evidence-backed.
+//  Hero Card → Shield Counter → Core Cards → Bonus Perks → FAQ → CTA
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface GuaranteesModalProps {
@@ -44,12 +44,20 @@ const GUARANTEES: Guarantee[] = [
     proofLabel: 'без пересдач',
   },
   {
+    icon: Zap,
+    title: 'Незачёт? Исправим за 24 часа',
+    hook: 'Экстренная страховка — уже включена',
+    desc: 'Работу отклонили — напишите нам. Приоритетная доработка без доплаты в течение суток.',
+    proof: '24ч',
+    proofLabel: 'экспресс',
+  },
+  {
     icon: Clock,
     title: 'Точно в срок',
     hook: 'Вы выбираете дату — мы гарантируем',
     desc: 'Фиксируем дедлайн в договоре. Если автор задерживает — менеджер берёт на себя без доплаты.',
     proof: '98%',
-    proofLabel: 'в назначенный срок',
+    proofLabel: 'в срок',
   },
   {
     icon: Lock,
@@ -65,7 +73,7 @@ const GUARANTEES: Guarantee[] = [
     hook: 'Без вопросов и задержек',
     desc: 'Передумали до начала — вернём всю сумму. Даже в процессе — платите только за сделанное.',
     proof: '0',
-    proofLabel: 'споров за 2024',
+    proofLabel: 'споров',
   },
 ]
 
@@ -73,17 +81,17 @@ const BONUS_PERKS: BonusPerk[] = [
   {
     icon: FileCheck,
     title: 'Уникальность от 80%',
-    desc: 'Каждая работа с нуля. Ниже порога — переделаем бесплатно.',
+    desc: 'Каждая работа с нуля. Ниже — переделаем бесплатно.',
   },
   {
     icon: Eye,
     title: 'Предпросмотр плана',
-    desc: 'Увидите структуру работы до начала. Не нравится — не платите.',
+    desc: 'Увидите структуру до начала. Не нравится — не платите.',
   },
   {
     icon: Snowflake,
     title: 'Заморозка на 7 дней',
-    desc: 'Передумали? Поставьте заказ на паузу — деньги не сгорят.',
+    desc: 'Поставьте заказ на паузу — деньги не сгорят.',
   },
   {
     icon: ListChecks,
@@ -91,6 +99,8 @@ const BONUS_PERKS: BonusPerk[] = [
     desc: 'К каждой работе — инструкция: что проверить, как отвечать.',
   },
 ]
+
+const TOTAL_GUARANTEES = GUARANTEES.length + BONUS_PERKS.length
 
 const FAQ = [
   {
@@ -111,12 +121,57 @@ const FAQ = [
   },
 ]
 
-// ═══════════ FAQ ITEM ═══════════
-interface FAQItemProps {
-  q: string
-  a: string
-  index: number
+// ═══════════ SECTION HEADER ═══════════
+const SectionHeader = memo(function SectionHeader({ icon: Icon, label, delay }: {
+  icon: LucideIcon; label: string; delay: number
+}) {
+  return (
+    <m.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        marginBottom: 12,
+      }}
+    >
+      <div style={{
+        width: 24, height: 24, borderRadius: 7,
+        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))',
+        border: '1px solid rgba(212,175,55,0.10)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={11} color="var(--gold-400)" strokeWidth={2} />
+      </div>
+      <span style={{
+        fontSize: 12, fontWeight: 800,
+        letterSpacing: '0.05em', textTransform: 'uppercase',
+        color: 'var(--gold-200)',
+      }}>
+        {label}
+      </span>
+    </m.div>
+  )
+})
+
+// ═══════════ GOLD DIVIDER ═══════════
+function GoldDivider({ delay }: { delay: number }) {
+  return (
+    <m.div
+      aria-hidden="true"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay }}
+      style={{
+        height: 1, margin: '16px 0',
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
+      }}
+    />
+  )
 }
+
+// ═══════════ FAQ ITEM ═══════════
+interface FAQItemProps { q: string; a: string; index: number }
 
 const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
   const [open, setOpen] = useState(false)
@@ -126,16 +181,13 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 + index * 0.06 }}
+      transition={{ delay: 0.45 + index * 0.06 }}
       style={{
-        position: 'relative',
-        borderRadius: 12,
+        position: 'relative', borderRadius: 12,
         background: open
           ? 'linear-gradient(160deg, rgba(27,22,12,0.8) 0%, rgba(12,12,12,0.9) 100%)'
           : 'var(--bg-glass)',
-        border: open
-          ? '1px solid rgba(212,175,55,0.18)'
-          : '1px solid var(--border-default)',
+        border: open ? '1px solid rgba(212,175,55,0.18)' : '1px solid var(--border-default)',
         overflow: 'hidden',
         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
@@ -154,7 +206,7 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
         aria-expanded={open}
         aria-controls={contentId}
         style={{
-          width: '100%', padding: '14px 14px', minHeight: 50,
+          width: '100%', padding: '14px', minHeight: 50,
           background: 'none', border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 12, textAlign: 'left', position: 'relative', zIndex: 1,
@@ -185,8 +237,7 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
       <AnimatePresence>
         {open && (
           <m.div
-            id={contentId}
-            role="region"
+            id={contentId} role="region"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -194,19 +245,15 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '0 14px 14px',
-              fontSize: 12.5, lineHeight: 1.6,
-              color: 'var(--text-muted)', fontWeight: 600,
-              position: 'relative',
+              padding: '0 14px 14px', fontSize: 12.5, lineHeight: 1.6,
+              color: 'var(--text-muted)', fontWeight: 600, position: 'relative',
             }}>
               <div aria-hidden="true" style={{
                 position: 'absolute', left: 0, top: 0, bottom: 14,
                 width: 2, borderRadius: 1,
                 background: 'linear-gradient(180deg, rgba(212,175,55,0.5), rgba(212,175,55,0.0))',
               }} />
-              <div style={{ paddingLeft: 10 }}>
-                {a}
-              </div>
+              <div style={{ paddingLeft: 10 }}>{a}</div>
             </div>
           </m.div>
         )}
@@ -216,12 +263,7 @@ const FAQItem = memo(function FAQItem({ q, a, index }: FAQItemProps) {
 })
 
 // ═══════════ GUARANTEE CARD ═══════════
-interface GuaranteeCardProps {
-  item: Guarantee
-  index: number
-}
-
-const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCardProps) {
+const GuaranteeCard = memo(function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
   const Icon = item.icon
   const isFeatured = index === 0
 
@@ -231,9 +273,9 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
       aria-label={`${item.title}: ${item.proof} ${item.proofLabel}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.12 + index * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: 0.14 + index * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        padding: '14px 14px',
+        padding: '14px',
         borderRadius: 12,
         background: isFeatured
           ? 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)'
@@ -241,8 +283,7 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
         border: isFeatured
           ? '1px solid rgba(212,175,55,0.15)'
           : '1px solid var(--border-default)',
-        position: 'relative',
-        overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
       }}
     >
       {isFeatured && (
@@ -253,16 +294,25 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
       )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        {/* Icon */}
         <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: isFeatured ? 'var(--gold-glass-medium)' : 'var(--gold-glass-subtle)',
+          width: 38, height: 38, borderRadius: 10,
+          background: isFeatured
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))'
+            : 'rgba(212,175,55,0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
-          border: isFeatured ? '1px solid rgba(212,175,55,0.12)' : 'none',
+          border: '1px solid rgba(212,175,55,0.12)',
+          position: 'relative', overflow: 'hidden',
         }}>
-          <Icon size={16} color="var(--gold-400)" strokeWidth={1.6} />
+          <div aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+            background: 'rgba(255,255,255,0.10)',
+          }} />
+          <Icon size={17} color="var(--gold-400)" strokeWidth={1.6} style={{ position: 'relative', zIndex: 1 }} />
         </div>
 
+        {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -275,19 +325,27 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
               {item.title}
             </div>
 
+            {/* Proof badge — premium */}
             <div style={{
-              display: 'flex', alignItems: 'baseline', gap: 3,
-              flexShrink: 0, padding: '3px 7px', borderRadius: 7,
-              background: isFeatured ? 'rgba(212,175,55,0.08)' : 'var(--bg-glass)',
-              border: `1px solid ${isFeatured ? 'rgba(212,175,55,0.12)' : 'var(--border-subtle)'}`,
+              display: 'flex', alignItems: 'center', gap: 4,
+              flexShrink: 0, padding: '4px 9px', borderRadius: 8,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06))',
+              border: '1px solid rgba(212,175,55,0.20)',
+              position: 'relative', overflow: 'hidden',
             }}>
+              <div aria-hidden="true" style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              }} />
               <span style={{
-                fontSize: 12, fontWeight: 700, color: 'var(--gold-400)', letterSpacing: '-0.02em',
+                fontSize: 12, fontWeight: 800, color: 'var(--gold-300)',
+                letterSpacing: '-0.02em', position: 'relative', zIndex: 1,
               }}>
                 {item.proof}
               </span>
               <span style={{
-                fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap',
+                fontSize: 9, fontWeight: 700, color: 'var(--gold-400)',
+                whiteSpace: 'nowrap', position: 'relative', zIndex: 1,
               }}>
                 {item.proofLabel}
               </span>
@@ -296,7 +354,7 @@ const GuaranteeCard = memo(function GuaranteeCard({ item, index }: GuaranteeCard
 
           <div style={{
             fontSize: 11, fontWeight: 600, color: 'var(--gold-400)',
-            marginBottom: 6, opacity: isFeatured ? 0.7 : 0.5,
+            marginBottom: 5, opacity: isFeatured ? 0.7 : 0.5,
           }}>
             {item.hook}
           </div>
@@ -320,20 +378,25 @@ const BonusPerkCard = memo(function BonusPerkCard({ perk, index }: { perk: Bonus
     <m.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.35 + index * 0.05 }}
+      transition={{ delay: 0.38 + index * 0.05 }}
       style={{
-        padding: '12px 12px',
-        borderRadius: 10,
-        background: 'var(--bg-glass)',
-        border: '1px solid var(--border-default)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 10,
+        position: 'relative',
+        padding: '14px 12px',
+        borderRadius: 12,
+        background: 'linear-gradient(160deg, rgba(27,22,12,0.5) 0%, rgba(12,12,12,0.6) 100%)',
+        border: '1px solid rgba(212,175,55,0.08)',
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        overflow: 'hidden',
       }}
     >
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+      }} />
       <div style={{
         width: 28, height: 28, borderRadius: 8,
-        background: 'var(--gold-glass-subtle)',
+        background: 'rgba(212,175,55,0.08)',
+        border: '1px solid rgba(212,175,55,0.10)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
@@ -341,13 +404,13 @@ const BonusPerkCard = memo(function BonusPerkCard({ perk, index }: { perk: Bonus
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+          fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)',
           marginBottom: 2, lineHeight: 1.25,
         }}>
           {perk.title}
         </div>
         <div style={{
-          fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-muted)', fontWeight: 600,
+          fontSize: 11, lineHeight: 1.45, color: 'var(--text-muted)', fontWeight: 600,
         }}>
           {perk.desc}
         </div>
@@ -374,198 +437,176 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
     >
       <div style={{ padding: '0 20px 24px' }}>
 
-        {/* ═══════════ HERO ═══════════ */}
+        {/* ═══════════ HERO CARD (unified with stats) ═══════════ */}
         <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: 'center', padding: '4px 0 20px' }}
+          style={{
+            position: 'relative',
+            padding: '20px 18px 16px',
+            borderRadius: 14,
+            background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
+            border: '1px solid rgba(212,175,55,0.12)',
+            marginBottom: 14,
+            overflow: 'hidden',
+          }}
         >
-          <m.div
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 14, delay: 0.1 }}
-            style={{
-              width: 72, height: 72, borderRadius: 14,
-              background: 'linear-gradient(160deg, rgba(27,22,12,0.9) 0%, rgba(12,12,12,0.95) 100%)',
-              border: '1px solid rgba(212,175,55,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 16px',
-              boxShadow: '0 0 24px -8px rgba(212,175,55,0.15)',
-              position: 'relative', overflow: 'hidden',
-            }}
-          >
-            <div aria-hidden="true" style={{
-              position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
-            }} />
-            <Shield size={30} color="var(--gold-400)" strokeWidth={1.3} />
-            <m.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.4, type: 'spring', damping: 10 }}
-              style={{
-                position: 'absolute', bottom: -3, right: -3,
-                width: 22, height: 22, borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid var(--bg-void)',
-                boxShadow: '0 2px 8px rgba(212,175,55,0.25)',
-              }}
-            >
-              <CheckCircle2 size={11} color="var(--text-on-gold)" strokeWidth={2.5} />
-            </m.div>
-          </m.div>
+          {/* Ambient glow */}
+          <div aria-hidden="true" style={{
+            position: 'absolute', top: -40, right: -20,
+            width: 140, height: 140, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }} />
+          <div aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
+          }} />
 
-          <div style={{
-            fontSize: 21, fontWeight: 700, lineHeight: 1.2,
-            letterSpacing: '-0.02em', marginBottom: 6,
-            color: 'var(--gold-200)',
-          }}>
-            Гарантии, которые работают
-          </div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* Shield + title row */}
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <m.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 14, delay: 0.1 }}
+                style={{
+                  width: 64, height: 64, borderRadius: 14,
+                  background: 'rgba(212,175,55,0.08)',
+                  border: '1px solid rgba(212,175,55,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 14px',
+                  position: 'relative',
+                }}
+              >
+                <Shield size={28} color="var(--gold-400)" strokeWidth={1.3} />
+                <m.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.4, type: 'spring', damping: 10 }}
+                  style={{
+                    position: 'absolute', bottom: -3, right: -3,
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--bg-void)',
+                  }}
+                >
+                  <CheckCircle2 size={10} color="var(--text-on-gold)" strokeWidth={2.5} />
+                </m.div>
+              </m.div>
 
-          <div style={{
-            fontSize: 13, lineHeight: 1.5,
-            color: 'var(--text-muted)', fontWeight: 600,
-            maxWidth: 260, margin: '0 auto',
-          }}>
-            2 400+ студентов уже получили результат
+              <div style={{
+                fontSize: 20, fontWeight: 700, lineHeight: 1.2,
+                letterSpacing: '-0.02em', marginBottom: 6,
+                color: 'var(--gold-200)',
+              }}>
+                Гарантии, которые работают
+              </div>
+
+              <div style={{
+                fontSize: 13, lineHeight: 1.5,
+                color: 'var(--text-muted)', fontWeight: 600,
+              }}>
+                2 400+ студентов уже получили результат
+              </div>
+            </div>
+
+            {/* Stats grid inside hero */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6,
+            }}>
+              {[
+                { value: '2 400+', label: 'работ' },
+                { value: '98%', label: 'в срок' },
+                { value: '93%', label: 'без пересдач' },
+              ].map((stat, i) => (
+                <m.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 + i * 0.05 }}
+                  style={{
+                    padding: '10px 6px 8px', borderRadius: 10,
+                    background: 'rgba(212,175,55,0.06)',
+                    border: '1px solid rgba(212,175,55,0.10)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{
+                    fontSize: 14, fontWeight: 800, lineHeight: 1.2,
+                    background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    marginBottom: 2,
+                  }}>
+                    {stat.value}
+                  </div>
+                  <div style={{
+                    fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}>
+                    {stat.label}
+                  </div>
+                </m.div>
+              ))}
+            </div>
           </div>
         </m.div>
 
-        {/* ═══════════ STATS GRID ═══════════ */}
+        {/* ═══════════ SHIELD COUNTER ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', damping: 20 }}
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 8,
-            marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 8, padding: '10px 16px', borderRadius: 10,
+            background: 'rgba(212,175,55,0.04)',
+            border: '1px solid rgba(212,175,55,0.08)',
+            marginBottom: 14,
           }}
         >
-          {[
-            { value: '2 400+', label: 'работ' },
-            { value: '98%', label: 'в срок' },
-            { value: '93%', label: 'без пересдач' },
-          ].map((stat, i) => (
-            <m.div
-              key={i}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.16 + i * 0.05 }}
-              style={{
-                position: 'relative',
-                padding: '12px 8px 10px', borderRadius: 12,
-                background: 'linear-gradient(160deg, rgba(27,22,12,0.7) 0%, rgba(12,12,12,0.8) 100%)',
-                border: '1px solid rgba(212,175,55,0.10)',
-                textAlign: 'center', overflow: 'hidden',
-              }}
-            >
-              <div aria-hidden="true" style={{
-                position: 'absolute', top: 0, left: '20%', right: '20%', height: 1,
-                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
-              }} />
-              <div style={{
-                fontSize: 14, fontWeight: 800, lineHeight: 1.2,
-                background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: 3,
-              }}>
-                {stat.value}
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: 700,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.04em',
-              }}>
-                {stat.label}
-              </div>
-            </m.div>
-          ))}
+          <Shield size={14} color="var(--gold-400)" strokeWidth={2} />
+          <span style={{
+            fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)',
+          }}>
+            Ваш заказ защищён{' '}
+            <span style={{ color: 'var(--gold-400)', fontWeight: 800 }}>
+              {TOTAL_GUARANTEES} гарантиями
+            </span>
+          </span>
         </m.div>
 
         {/* ═══════════ CORE GUARANTEE CARDS ═══════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {GUARANTEES.map((item, index) => (
             <GuaranteeCard key={item.title} item={item} index={index} />
           ))}
         </div>
 
-        {/* ═══════════ BONUS PERKS — 2x2 grid ═══════════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          style={{ marginTop: 20 }}
-        >
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            marginBottom: 10, paddingLeft: 2,
-          }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: 6,
-              background: 'rgba(212,175,55,0.10)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Sparkles size={10} color="var(--gold-400)" strokeWidth={2.2} />
-            </div>
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: 'var(--gold-300)',
-            }}>
-              Бонусы к каждому заказу
-            </span>
-          </div>
+        <GoldDivider delay={0.35} />
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 8,
-          }}>
-            {BONUS_PERKS.map((perk, i) => (
-              <BonusPerkCard key={perk.title} perk={perk} index={i} />
-            ))}
-          </div>
-        </m.div>
+        {/* ═══════════ BONUS PERKS ═══════════ */}
+        <SectionHeader icon={Sparkles} label="Бонусы к заказу" delay={0.36} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          {BONUS_PERKS.map((perk, i) => (
+            <BonusPerkCard key={perk.title} perk={perk} index={i} />
+          ))}
+        </div>
+
+        <GoldDivider delay={0.45} />
 
         {/* ═══════════ FAQ ═══════════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          style={{ marginTop: 20 }}
-        >
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            marginBottom: 10, paddingLeft: 2,
-          }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: 6,
-              background: 'rgba(212,175,55,0.10)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Sparkles size={10} color="var(--gold-400)" strokeWidth={2.2} />
-            </div>
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: 'var(--gold-300)',
-            }}>
-              Частые вопросы
-            </span>
-          </div>
+        <SectionHeader icon={Sparkles} label="Частые вопросы" delay={0.46} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {FAQ.map((item, i) => (
-              <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
-            ))}
-          </div>
-        </m.div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {FAQ.map((item, i) => (
+            <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
+          ))}
+        </div>
 
         {/* ═══════════ CTA ═══════════ */}
         {onCreateOrder && (
@@ -603,7 +644,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
                 fontSize: 14, fontWeight: 700,
                 color: 'var(--text-on-gold)', position: 'relative',
               }}>
-                Начать с гарантией
+                Начать под защитой {TOTAL_GUARANTEES} гарантий
               </span>
               <ArrowRight size={15} strokeWidth={2.5} color="var(--text-on-gold)" style={{ position: 'relative' }} />
             </m.button>
@@ -620,7 +661,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
           }}
         >
-          Гарантии начинают работать сразу после оформления
+          Все гарантии активны сразу после оформления
         </m.div>
       </div>
     </ModalWrapper>
