@@ -5,6 +5,7 @@ import s from '../../pages/ProfilePage.module.css'
 import {
   ACTIONABLE_ORDER_META,
   formatDeadline,
+  formatPauseUntil,
   formatMoney,
   getOrderDisplayTitle,
   getRemainingAmount,
@@ -26,7 +27,9 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
   const orderTitle = getOrderDisplayTitle(order)
 
   const footnote =
-    order.status === 'confirmed' || order.status === 'waiting_payment'
+    order.status === 'paused'
+      ? `Заморозка активна ${formatPauseUntil(order.pause_until)}`
+      : order.status === 'confirmed' || order.status === 'waiting_payment'
       ? `К оплате ${formatMoney(getRemainingAmount(order))}${order.deadline ? ` · срок ${formatDeadline(order.deadline)}` : ''}`
       : order.deadline
         ? `Срок: ${formatDeadline(order.deadline)}`

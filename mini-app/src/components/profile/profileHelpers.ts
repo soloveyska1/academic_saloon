@@ -160,6 +160,17 @@ export function formatDeadline(deadline: string | null | undefined) {
   return formatCompactDate(deadline)
 }
 
+export function formatPauseUntil(pauseUntil: string | null | undefined) {
+  const date = parseDateSafe(pauseUntil)
+  if (!date) return 'до окончания паузы'
+  return `до ${date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    RANK & ORDER HELPERS
    ═══════════════════════════════════════════════════════════════════════════ */

@@ -30,6 +30,7 @@ export const KNOWN_ORDER_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatu
   'paid',
   'paid_full',
   'in_progress',
+  'paused',
   'review',
   'revision',
   'completed',
@@ -131,6 +132,8 @@ export function normalizeWorkType(value: unknown): string {
 export function normalizeOrder(order: OrderLike, index = 0): Order {
   const safeOrder = order && typeof order === 'object' ? order : {}
   const normalizedWorkType = normalizeWorkType((safeOrder as Partial<Order>).work_type)
+  const pausedFromStatusRaw = toSafeString((safeOrder as Partial<Order>).paused_from_status)
+  const pausedFromStatus = pausedFromStatusRaw ? normalizeOrderStatus(pausedFromStatusRaw) : null
 
   return {
     id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).id, index + 1))),
@@ -161,6 +164,14 @@ export function normalizeOrder(order: OrderLike, index = 0): Order {
         ? (safeOrder as Partial<Order>).payment_scheme
         : null,
     revision_count: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).revision_count, 0))),
+    paused_from_status: pausedFromStatus,
+    pause_started_at: toSafeIsoString((safeOrder as Partial<Order>).pause_started_at),
+    pause_until: toSafeIsoString((safeOrder as Partial<Order>).pause_until),
+    pause_reason: toSafeString((safeOrder as Partial<Order>).pause_reason),
+    pause_days_used: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).pause_days_used, 0))),
+    pause_available_days: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).pause_available_days, 0))),
+    can_pause: toSafeBoolean((safeOrder as Partial<Order>).can_pause),
+    can_resume: toSafeBoolean((safeOrder as Partial<Order>).can_resume),
     completed_at: toSafeIsoString((safeOrder as Partial<Order>).completed_at),
     delivered_at: toSafeIsoString((safeOrder as Partial<Order>).delivered_at),
     fullname: toSafeString((safeOrder as Partial<Order>).fullname) || undefined,

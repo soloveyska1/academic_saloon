@@ -66,6 +66,32 @@ describe('orderView', () => {
     expect(getOrderSublineSafe(order)).toBe('Магистерская')
   })
 
+  it('preserves paused status and freeze fields from API payload', () => {
+    const order = normalizeOrder({
+      id: 88,
+      status: 'paused',
+      work_type: 'coursework',
+      pause_until: '2026-04-01T09:30:00Z',
+      pause_started_at: '2026-03-25T09:30:00Z',
+      pause_reason: 'Жду материалы',
+      paused_from_status: 'in_progress',
+      pause_days_used: '7' as unknown as number,
+      pause_available_days: '0' as unknown as number,
+      can_pause: false,
+      can_resume: true,
+    })
+
+    expect(order.status).toBe('paused')
+    expect(order.paused_from_status).toBe('in_progress')
+    expect(order.pause_until).toBe('2026-04-01T09:30:00.000Z')
+    expect(order.pause_started_at).toBe('2026-03-25T09:30:00.000Z')
+    expect(order.pause_reason).toBe('Жду материалы')
+    expect(order.pause_days_used).toBe(7)
+    expect(order.pause_available_days).toBe(0)
+    expect(order.can_pause).toBe(false)
+    expect(order.can_resume).toBe(true)
+  })
+
   it('formats common deadline aliases in russian', () => {
     expect(formatOrderDeadlineRu('today')).toBe('Сегодня')
     expect(formatOrderDeadlineRu('week')).toBe('Неделя')

@@ -585,7 +585,7 @@ class GodOrderStatusRequest(BaseModel):
         valid_statuses = [
             'draft', 'pending', 'waiting_estimation', 'waiting_payment',
             'verification_pending', 'confirmed', 'paid', 'paid_full',
-            'in_progress', 'review', 'revision', 'completed', 'cancelled', 'rejected'
+            'in_progress', 'paused', 'review', 'revision', 'completed', 'cancelled', 'rejected'
         ]
         if v not in valid_statuses:
             raise ValueError(f'Некорректный статус: {v}')

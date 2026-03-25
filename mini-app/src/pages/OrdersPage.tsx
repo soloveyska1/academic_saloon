@@ -276,6 +276,30 @@ function formatDeadline(deadline: string | null | undefined): string {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
+function getPauseHoursLeft(pauseUntil: string | null | undefined): number | null {
+  const date = parseOrderDateSafe(pauseUntil)
+  if (!date) return null
+  return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60))
+}
+
+function formatRelevantTiming(order: Order): string {
+  if (order.status === 'paused') {
+    const pauseDate = parseOrderDateSafe(order.pause_until)
+    if (!pauseDate) return 'Пауза активна'
+    return `Пауза до ${pauseDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`
+  }
+
+  return formatDeadline(order.deadline)
+}
+
+function getRelevantHoursLeft(order: Order): number | null {
+  if (order.status === 'paused') {
+    return getPauseHoursLeft(order.pause_until)
+  }
+
+  return getHoursUntilDeadline(order.deadline)
+}
+
 function formatMoney(amount: number | null | undefined): string {
   return `${Math.max(0, Math.round(amount || 0)).toLocaleString('ru-RU')} ₽`
 }
@@ -304,8 +328,8 @@ function compareOrders(a: Order, b: Order): number {
   const metaA = getStatusMeta(a.status)
   const metaB = getStatusMeta(b.status)
   if (metaA.priority !== metaB.priority) return metaA.priority - metaB.priority
-  const dA = getHoursUntilDeadline(a.deadline)
-  const dB = getHoursUntilDeadline(b.deadline)
+  const dA = getRelevantHoursLeft(a)
+  const dB = getRelevantHoursLeft(b)
   if (dA !== null && dB !== null && dA !== dB) return dA - dB
   const cA = parseOrderDateSafe(a.created_at)?.getTime() ?? 0
   const cB = parseOrderDateSafe(b.created_at)?.getTime() ?? 0
@@ -535,10 +559,11 @@ const OrderCard = memo(function OrderCard({
   const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
   const amount = order.final_price || order.price || 0
   const subtitle = getOrderDisplaySubtitle(order)
-  const deadlineText = formatDeadline(order.deadline)
-  const hoursLeft = getHoursUntilDeadline(order.deadline)
-  const isOverdue = hoursLeft !== null && hoursLeft <= 0 && isActiveStatus(order.status)
-  const isUrgent = hoursLeft !== null && hoursLeft > 0 && hoursLeft <= 48 && isActiveStatus(order.status)
+  const deadlineText = formatRelevantTiming(order)
+  const hoursLeft = getRelevantHoursLeft(order)
+  const isPaused = order.status === 'paused'
+  const isOverdue = !isPaused && hoursLeft !== null && hoursLeft <= 0 && isActiveStatus(order.status)
+  const isUrgent = !isPaused && hoursLeft !== null && hoursLeft > 0 && hoursLeft <= 48 && isActiveStatus(order.status)
 
   return (
     <motion.button

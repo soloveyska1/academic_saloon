@@ -9,8 +9,10 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 from enum import Enum
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 
 class NotificationType(str, Enum):
@@ -21,6 +23,7 @@ class NotificationType(str, Enum):
     PAYMENT_PENDING = "payment_pending"
     PAYMENT_CONFIRMED = "payment_confirmed"
     IN_PROGRESS = "in_progress"
+    PAUSED = "paused"
     PROGRESS_UPDATE = "progress_update"
     REVIEW = "review"
     REVISION = "revision"
@@ -77,6 +80,16 @@ ORDER_STATUS_NOTIFICATIONS = {
         "celebration": True,
     },
 
+    "paid_full": {
+        "type": NotificationType.PAYMENT_CONFIRMED,
+        "title": "Оплата подтверждена",
+        "message": "Заказ полностью оплачен. Дальше обновления придут автоматически",
+        "icon": "check-circle",
+        "color": "#22c55e",
+        "priority": "high",
+        "celebration": True,
+    },
+
     # Подтверждён расчёт, ждём оплату
     "confirmed": {
         "type": NotificationType.PRICE_SET,
@@ -96,6 +109,16 @@ ORDER_STATUS_NOTIFICATIONS = {
         "icon": "edit",
         "color": "#3b82f6",
         "priority": "normal",
+    },
+
+    "paused": {
+        "type": NotificationType.PAUSED,
+        "title": "Заморозка активирована",
+        "message": "Заказ поставлен на паузу. Возобновить его можно раньше срока.",
+        "icon": "clock",
+        "color": "#d4af37",
+        "priority": "high",
+        "action": "view_order",
     },
 
     # На проверке
@@ -284,6 +307,14 @@ async def send_order_status_notification(
                 msg_text = f"К оплате: {format_price(final_price)}"
                 if bonus_used > 0:
                     msg_text += f" (бонусы: −{format_price(bonus_used)})"
+        elif extra_data and new_status == "paused":
+            pause_until = extra_data.get("pause_until")
+            if isinstance(pause_until, str) and pause_until.strip():
+                try:
+                    pause_until_dt = datetime.fromisoformat(pause_until.replace("Z", "+00:00")).astimezone(MSK_TZ)
+                    msg_text = f"Заморозка активна до {pause_until_dt.strftime('%d.%m.%Y %H:%M МСК')}"
+                except ValueError:
+                    msg_text = "Заморозка активирована на 7 дней"
 
         # Формируем сообщение
         message = {

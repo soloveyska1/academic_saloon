@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Order } from '../../types'
-import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
+import { formatOrderDeadlineRu, getOrderHeadlineSafe, parseOrderDateSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
 import { Reveal } from '../ui/StaggerReveal'
@@ -151,6 +151,12 @@ function useDeadlineCountdown(deadline: string | null): { text: string; urgency:
   if (diffDays <= 3) return { text: `${diffDays} дня`, urgency: 'warning' }
   if (diffDays <= 7) return { text: `${diffDays} дней`, urgency: 'safe' }
   return { text: formatOrderDeadlineRu(deadline), urgency: 'safe' }
+}
+
+function formatPauseUntilBadge(pauseUntil: string | null | undefined): string {
+  const date = parseOrderDateSafe(pauseUntil)
+  if (!date) return 'Пауза активна'
+  return `До ${date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`
 }
 
 /* ─── Live elapsed time for in-progress orders ─── */
@@ -330,6 +336,11 @@ const URGENCY_COLORS = {
   urgent: { text: 'rgba(248,113,113,0.9)', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.15)' },
   unknown: { text: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)' },
 }
+const PAUSE_COLORS = {
+  text: 'rgba(212,175,55,0.92)',
+  bg: 'rgba(212,175,55,0.08)',
+  border: 'rgba(212,175,55,0.16)',
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Single order card
@@ -353,13 +364,14 @@ function OrderCard({
   const workType = stripEmoji(order.work_type_label ?? order.work_type ?? 'Заказ')
   const headline = getOrderHeadlineSafe(order)
   const subline = order.subject && order.subject !== headline ? order.subject : null
-  const { text: deadlineText, urgency } = useDeadlineCountdown(order.deadline)
+  const deadlineState = useDeadlineCountdown(order.deadline)
   const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
   const narrative = getStatusNarrative(visibleStatus, remaining, paid, order.progress)
   const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
   const isWorking = ['in_progress', 'revision'].includes(visibleStatus)
   const elapsed = useElapsedTime(order.updated_at, isWorking)
-  const urgencyColors = URGENCY_COLORS[urgency]
+  const deadlineText = visibleStatus === 'paused' ? formatPauseUntilBadge(order.pause_until) : deadlineState.text
+  const urgencyColors = visibleStatus === 'paused' ? PAUSE_COLORS : URGENCY_COLORS[deadlineState.urgency]
   const financeAmount = total <= 0 ? null : remaining > 0 ? formatMoney(remaining) : formatMoney(total)
 
   return (
@@ -702,14 +714,15 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     const priority: Record<string, number> = {
       waiting_payment: 1,
       review: 2,
-      revision: 3,
-      waiting_estimation: 4,
-      in_progress: 5,
-      paid: 6,
-      paid_full: 6,
-      confirmed: 7,
-      verification_pending: 8,
-      pending: 9,
+      paused: 3,
+      revision: 4,
+      waiting_estimation: 5,
+      in_progress: 6,
+      paid: 7,
+      paid_full: 7,
+      confirmed: 8,
+      verification_pending: 9,
+      pending: 10,
     }
 
     return orders
