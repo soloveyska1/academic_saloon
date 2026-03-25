@@ -229,15 +229,29 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
 
   // Handle incoming message - uses refs to always have latest handlers
   const handleMessage = useCallback((event: MessageEvent) => {
+    let message: WSMessage
+
     try {
-      const message: WSMessage = JSON.parse(event.data)
-      setLastMessage(message)
+      message = JSON.parse(event.data) as WSMessage
+    } catch {
+      // Invalid message format - ignore
+      return
+    }
 
-      // Call all registered handlers
-      messageHandlersRef.current.forEach(handler => handler(message))
+    setLastMessage(message)
 
-      // Call specific handlers based on message type (using refs for latest versions)
-      const handlers = handlersRef.current
+    // Isolate custom listeners so one broken consumer does not block the stream.
+    messageHandlersRef.current.forEach(handler => {
+      try {
+        handler(message)
+      } catch (error) {
+        console.warn('[WS] Message handler failed', error)
+      }
+    })
+
+    const handlers = handlersRef.current
+
+    try {
       switch (message.type) {
         case 'order_update':
           handlers.onOrderUpdate?.(message as OrderUpdateMessage)
@@ -265,8 +279,8 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           // Connection confirmed by server
           break
       }
-    } catch {
-      // Invalid message format - ignore
+    } catch (error) {
+      console.warn('[WS] Failed to process message', message.type, error)
     }
   }, [sendMessage]) // Only depends on sendMessage now, handlers are from refs
 

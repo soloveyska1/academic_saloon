@@ -9,6 +9,7 @@ vi.mock('../api/userApi', () => ({
 }))
 
 import { useWebSocket } from './useWebSocket'
+import type { OrderUpdateMessage } from './useWebSocket'
 
 class MockWebSocket {
   static CONNECTING = 0
@@ -44,14 +45,26 @@ class MockWebSocket {
     this.readyState = MockWebSocket.CLOSED
     this.onclose?.({ code, reason } as CloseEvent)
   }
+
+  emitMessage(payload: unknown) {
+    const data = typeof payload === 'string' ? payload : JSON.stringify(payload)
+    this.onmessage?.({ data } as MessageEvent)
+  }
 }
 
 let latestHook: ReturnType<typeof useWebSocket> | null = null
 
-function HookHarness({ telegramId }: { telegramId: number | null }) {
+function HookHarness({
+  telegramId,
+  onOrderUpdate,
+}: {
+  telegramId: number | null
+  onOrderUpdate?: (msg: OrderUpdateMessage) => void
+}) {
   latestHook = useWebSocket(telegramId, {
     autoReconnect: true,
     reconnectInterval: 1000,
+    onOrderUpdate,
   })
 
   return null
@@ -129,5 +142,44 @@ describe('useWebSocket reconnect flow', () => {
     })
 
     expect(MockWebSocket.instances).toHaveLength(2)
+  })
+
+  it('keeps processing websocket messages when one custom handler throws', () => {
+    const onOrderUpdate = vi.fn()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    act(() => {
+      root.render(<HookHarness telegramId={123} onOrderUpdate={onOrderUpdate} />)
+    })
+
+    const observed: string[] = []
+    const unsubscribeThrowing = latestHook?.addMessageHandler(() => {
+      throw new Error('boom')
+    })
+    const unsubscribeHealthy = latestHook?.addMessageHandler(() => {
+      observed.push('healthy')
+    })
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'order_update',
+        timestamp: new Date().toISOString(),
+        order_id: 77,
+        status: 'pending',
+      })
+    })
+
+    expect(observed).toEqual(['healthy'])
+    expect(onOrderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 77,
+        status: 'pending',
+      }),
+    )
+    expect(warnSpy).toHaveBeenCalledWith('[WS] Message handler failed', expect.any(Error))
+
+    unsubscribeThrowing?.()
+    unsubscribeHealthy?.()
+    warnSpy.mockRestore()
   })
 })
