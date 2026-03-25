@@ -1,18 +1,19 @@
 import { useCallback, useState, memo } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import {
-  Shield, ChevronDown, ArrowRight, CheckCircle2, Check,
-  FileText,
+  Shield, ChevronDown, ArrowRight, Check,
+  FileText, Star,
 } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../shared'
 import { SUMMARY_CARDS, OFFER_SECTIONS, OFFER_META } from './offerData'
 import type { OfferSection } from './offerData'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  OFFER MODAL v7 — "The Pact" design
-//  Concept: Big hero with metallic number → interactive checklist →
-//           expandable legal → CTA that activates on scroll/progress
-//  Inspired by CashbackModal's dramatic hero treatment
+//  OFFER MODAL v8 — Client-centric elite design
+//  Focus: what matters to the CLIENT, not document metadata
+//  Hero: social proof + 3 key stats (100% возврат, ∞ правок, 24ч помощь)
+//  Body: interactive checklist with gold progress
+//  Footer: expandable legal text + elite CTA
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface OfferModalProps {
@@ -32,30 +33,31 @@ const ChecklistItem = memo(function ChecklistItem({ card, index, checked, onTogg
   const Icon = card.icon
 
   return (
-    <m.button
-      type="button"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25 + index * 0.04 }}
+    <m.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.2 + index * 0.04, ease: EASE }}
       onClick={onToggle}
       style={{
-        width: '100%', padding: '12px',
         display: 'flex', alignItems: 'flex-start', gap: 10,
-        background: 'none', border: 'none', cursor: 'pointer',
-        textAlign: 'left',
-        borderBottom: '1px solid var(--border-subtle)',
+        padding: '13px 14px',
+        cursor: 'pointer',
+        borderBottom: index < SUMMARY_CARDS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+        transition: 'background 0.15s',
       }}
     >
       {/* Checkbox */}
       <m.div
         animate={{
-          background: checked ? 'var(--gold-400)' : 'transparent',
-          borderColor: checked ? 'var(--gold-400)' : 'rgba(255,255,255,0.15)',
+          background: checked
+            ? 'linear-gradient(135deg, var(--gold-400), var(--gold-600))'
+            : 'transparent',
+          borderColor: checked ? 'transparent' : 'rgba(255,255,255,0.12)',
         }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.15 }}
         style={{
-          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-          border: '2px solid rgba(255,255,255,0.15)',
+          width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+          border: '1.5px solid rgba(255,255,255,0.12)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginTop: 1,
         }}
@@ -66,85 +68,77 @@ const ChecklistItem = memo(function ChecklistItem({ card, index, checked, onTogg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              transition={{ type: 'spring', damping: 12, stiffness: 400 }}
+              transition={{ type: 'spring', damping: 15, stiffness: 500 }}
             >
-              <Check size={12} strokeWidth={3} color="var(--text-on-gold)" />
+              <Check size={11} strokeWidth={3} color="var(--text-on-gold)" />
             </m.div>
           )}
         </AnimatePresence>
       </m.div>
 
-      {/* Content */}
+      {/* Icon + text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2,
         }}>
-          <Icon size={13} color="var(--gold-400)" strokeWidth={1.8} style={{ flexShrink: 0 }} />
+          <Icon size={12} color="var(--gold-400)" strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
           <span style={{
             fontSize: 13, fontWeight: 700,
             color: checked ? 'var(--text-primary)' : 'var(--text-secondary)',
-            transition: 'color 0.2s',
+            transition: 'color 0.2s', lineHeight: 1.3,
           }}>
             {card.title}
           </span>
-          {/* Proof badge inline */}
-          <span style={{
-            fontSize: 10, fontWeight: 800, color: 'var(--gold-400)',
-            marginLeft: 'auto', flexShrink: 0,
-          }}>
-            {card.proof}
-          </span>
         </div>
         <div style={{
-          fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-muted)', fontWeight: 500,
-          paddingLeft: 19,
+          fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)',
+          fontWeight: 500, paddingLeft: 18,
         }}>
           {card.text}
         </div>
       </div>
-    </m.button>
+
+      {/* Proof — right-aligned */}
+      <span style={{
+        fontSize: 11, fontWeight: 800,
+        color: checked ? 'var(--gold-400)' : 'var(--text-muted)',
+        flexShrink: 0, marginTop: 2,
+        transition: 'color 0.2s',
+      }}>
+        {card.proof}
+      </span>
+    </m.div>
   )
 })
 
-// ═══════════ ACCORDION SECTION (compact) ═══════════
+// ═══════════ LEGAL ACCORDION ═══════════
 const LegalSection = memo(function LegalSection({ section, isOpen, onToggle }: {
   section: OfferSection; isOpen: boolean; onToggle: () => void
 }) {
   const Icon = section.icon
 
   return (
-    <div
-      style={{
-        borderBottom: '1px solid var(--border-subtle)',
-        transition: 'all 0.2s',
-      }}
-      id={`offer-section-${section.id}`}
-    >
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }} id={`offer-section-${section.id}`}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
         style={{
-          width: '100%', padding: '10px 0', minHeight: 40,
+          width: '100%', padding: '10px 0', minHeight: 38,
           background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-          textAlign: 'left',
+          display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
         }}
       >
-        <Icon size={12} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        <Icon size={11} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} strokeWidth={1.8} style={{ flexShrink: 0 }} />
         <span style={{
-          flex: 1, fontSize: 12.5, fontWeight: 600,
+          flex: 1, fontSize: 12, fontWeight: 600,
           color: isOpen ? 'var(--text-primary)' : 'var(--text-muted)',
           transition: 'color 0.2s',
         }}>
           {section.title}
         </span>
-        <m.div
-          aria-hidden="true"
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={13} strokeWidth={2} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} />
+        <m.div aria-hidden="true" animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown size={12} strokeWidth={2} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} />
         </m.div>
       </button>
 
@@ -157,13 +151,13 @@ const LegalSection = memo(function LegalSection({ section, isOpen, onToggle }: {
             transition={{ duration: 0.25, ease: EASE }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ paddingBottom: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {section.clauses.map((clause, ci) => (
                 <div key={ci} style={{
-                  fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)',
-                  fontWeight: 500, paddingLeft: 10,
+                  fontSize: 11.5, lineHeight: 1.6, color: 'var(--text-muted)',
+                  fontWeight: 500, paddingLeft: 8,
                   borderLeft: ci === 0
-                    ? '2px solid rgba(212,175,55,0.3)'
+                    ? '2px solid rgba(212,175,55,0.25)'
                     : '2px solid rgba(255,255,255,0.03)',
                 }}>
                   {clause}
@@ -217,32 +211,32 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
       isOpen={isOpen}
       onClose={onClose}
       modalId="offer-modal"
-      title="Публичная оферта"
+      title="Условия сервиса"
       accentColor="var(--gold-400)"
       dismissible={dismissible}
     >
       <div style={{ padding: '0 20px 24px' }}>
 
-        {/* ═══════════ HERO — dramatic, like CashbackModal ═══════════ */}
+        {/* ═══════════ HERO — client-centric, not doc-centric ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: EASE }}
+          transition={{ duration: 0.35, ease: EASE }}
           style={{
-            position: 'relative',
+            position: 'relative', textAlign: 'center',
             padding: '20px 16px 16px',
             borderRadius: 14,
             background: 'var(--bg-glass)',
             border: '1px solid var(--border-default)',
-            marginBottom: 14,
+            marginBottom: 12,
             overflow: 'hidden',
           }}
         >
-          {/* Ambient glow */}
+          {/* Subtle glow */}
           <div aria-hidden="true" style={{
-            position: 'absolute', top: -40, right: -20,
-            width: 140, height: 140, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 60%)',
+            position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)',
+            width: 200, height: 100, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
           <div aria-hidden="true" style={{
@@ -251,102 +245,70 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Shield + big number row */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 12,
+            {/* Shield icon */}
+            <m.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 12, delay: 0.05 }}
+              style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(212,175,55,0.08)',
+                border: '1px solid rgba(212,175,55,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 12px',
+              }}
+            >
+              <Shield size={20} color="var(--gold-400)" strokeWidth={1.4} />
+            </m.div>
+
+            {/* Main headline — what the client cares about */}
+            <h2 style={{
+              fontSize: 18, fontWeight: 700, lineHeight: 1.25,
+              letterSpacing: '-0.02em', margin: '0 0 4px',
+              color: 'var(--text-primary)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <m.div
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', damping: 14, delay: 0.1 }}
-                  style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: 'rgba(212,175,55,0.08)',
-                    border: '1px solid rgba(212,175,55,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative',
-                  }}
-                >
-                  <Shield size={17} color="var(--gold-400)" strokeWidth={1.4} />
-                  <m.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.35, type: 'spring', damping: 10 }}
-                    style={{
-                      position: 'absolute', bottom: -2, right: -2,
-                      width: 14, height: 14, borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: '1.5px solid var(--bg-void)',
-                    }}
-                  >
-                    <CheckCircle2 size={7} color="var(--text-on-gold)" strokeWidth={3} />
-                  </m.div>
-                </m.div>
-
-                <div>
-                  <h2 style={{
-                    fontSize: 15, fontWeight: 700, lineHeight: 1.2,
-                    letterSpacing: '-0.02em', margin: 0,
-                    color: 'var(--text-primary)',
-                  }}>
-                    Кодекс Салуна
-                  </h2>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {OFFER_META.intro}
-                  </div>
-                </div>
-              </div>
-
-              {/* Big hero number — like CashbackModal's "34%" */}
-              <div style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 32, fontWeight: 700, lineHeight: 1,
-                letterSpacing: '-0.04em',
-                background: 'var(--gold-metallic)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 0 12px rgba(212,175,55,0.20))',
-              }}>
-                {SUMMARY_CARDS.length}
-              </div>
+              Твой заказ под защитой
+            </h2>
+            <div style={{
+              fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
+              marginBottom: 14,
+            }}>
+              Ознакомься с условиями — это займёт минуту
             </div>
 
-            {/* Stats row */}
+            {/* 3 KEY STATS — what matters to client */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6,
             }}>
               {[
-                { value: `v${OFFER_META.version}`, label: 'версия' },
-                { value: '∞', label: 'правок' },
-                { value: '80%+', label: 'уникальность' },
+                { value: '100%', label: 'возврат до старта' },
+                { value: '∞', label: 'бесплатных правок' },
+                { value: '24ч', label: 'экстренная помощь' },
               ].map((stat, i) => (
                 <m.div
                   key={i}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.18 + i * 0.04 }}
+                  transition={{ delay: 0.12 + i * 0.05 }}
                   style={{
-                    padding: '8px 6px 6px', borderRadius: 8,
+                    padding: '10px 4px 8px', borderRadius: 10,
                     background: 'rgba(212,175,55,0.04)',
-                    border: '1px solid rgba(212,175,55,0.06)',
-                    textAlign: 'center',
+                    border: '1px solid rgba(212,175,55,0.08)',
                   }}
                 >
                   <div style={{
-                    fontSize: 13, fontWeight: 800, lineHeight: 1.2,
-                    background: 'linear-gradient(180deg, var(--gold-150, #FCF6BA), var(--gold-400))',
+                    fontSize: 16, fontWeight: 800, lineHeight: 1,
+                    background: 'var(--gold-metallic)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    marginBottom: 1,
+                    marginBottom: 3,
                   }}>
                     {stat.value}
                   </div>
                   <div style={{
                     fontSize: 9, fontWeight: 700, color: 'var(--text-muted)',
-                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                    textTransform: 'uppercase', letterSpacing: '0.03em',
+                    lineHeight: 1.2,
                   }}>
                     {stat.label}
                   </div>
@@ -356,42 +318,66 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           </div>
         </m.div>
 
-        {/* ═══════════ PROGRESS BAR ═══════════ */}
+        {/* ═══════════ SOCIAL PROOF ═══════════ */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.18 }}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 6, marginBottom: 14,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 2 }}>
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={10} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
+            ))}
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+            2 400+ студентов доверяют нам
+          </span>
+        </m.div>
+
+        {/* ═══════════ PROGRESS ═══════════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          style={{ marginBottom: 14 }}
+          style={{ marginBottom: 8 }}
         >
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 6,
+            marginBottom: 5,
           }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>
-              Ознакомься с условиями
+              Ключевые условия
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold-400)' }}>
-              {checkedItems.size}/{SUMMARY_CARDS.length}
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              color: progress === 1 ? 'var(--gold-400)' : 'var(--text-muted)',
+            }}>
+              {checkedItems.size} из {SUMMARY_CARDS.length}
             </span>
           </div>
           <div style={{
             height: 3, borderRadius: 2,
-            background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
+            background: 'rgba(255,255,255,0.05)', overflow: 'hidden',
           }}>
             <m.div
-              animate={{ width: `${Math.max(progress * 100, 2)}%` }}
+              animate={{ width: `${Math.max(progress * 100, 1)}%` }}
               transition={{ duration: 0.4, ease: EASE }}
               style={{
                 height: '100%', borderRadius: 2,
-                background: 'linear-gradient(90deg, rgba(212,175,55,0.4), var(--gold-400))',
-                boxShadow: progress > 0 ? '0 0 8px rgba(212,175,55,0.25)' : 'none',
+                background: progress === 1
+                  ? 'var(--gold-400)'
+                  : 'linear-gradient(90deg, rgba(212,175,55,0.3), var(--gold-400))',
                 position: 'relative', overflow: 'hidden',
               }}
             >
-              {progress > 0 && (
+              {progress > 0 && progress < 1 && (
                 <m.div
                   animate={{ x: ['-100%', '250%'] }}
-                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4 }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                   style={{
                     position: 'absolute', top: 0, left: 0,
                     width: '30%', height: '100%',
@@ -409,7 +395,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           background: 'var(--bg-glass)',
           border: '1px solid var(--border-default)',
           overflow: 'hidden',
-          marginBottom: 14,
+          marginBottom: 12,
         }}>
           {SUMMARY_CARDS.map((card, i) => (
             <ChecklistItem
@@ -422,12 +408,8 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           ))}
         </div>
 
-        {/* ═══════════ FULL LEGAL TEXT (expandable) ═══════════ */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
+        {/* ═══════════ FULL LEGAL TEXT ═══════════ */}
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
           <button
             type="button"
             onClick={() => { triggerHaptic('light'); setShowFullText(prev => !prev) }}
@@ -437,15 +419,12 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
           >
-            <FileText size={12} color="var(--gold-400)" strokeWidth={2} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
-              {showFullText ? 'Скрыть полный текст' : `Полный текст · ${OFFER_META.totalSections} разделов`}
+            <FileText size={11} color="var(--text-muted)" strokeWidth={2} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+              {showFullText ? 'Скрыть юридический текст' : `Юридический текст · ${OFFER_META.totalSections} разделов`}
             </span>
-            <m.div
-              animate={{ rotate: showFullText ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown size={13} color="var(--text-muted)" strokeWidth={2} />
+            <m.div animate={{ rotate: showFullText ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown size={11} color="var(--text-muted)" strokeWidth={2} />
             </m.div>
           </button>
 
@@ -458,7 +437,10 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
                 transition={{ duration: 0.3, ease: EASE }}
                 style={{ overflow: 'hidden' }}
               >
-                <div style={{ padding: '0 4px' }}>
+                <div style={{
+                  padding: '8px 0',
+                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                }}>
                   {OFFER_SECTIONS.map((section) => (
                     <LegalSection
                       key={section.id}
@@ -467,14 +449,12 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
                       onToggle={() => toggleSection(section.id)}
                     />
                   ))}
-                </div>
-
-                {/* Legal footer */}
-                <div style={{
-                  marginTop: 12, textAlign: 'center',
-                  fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
-                }}>
-                  ГК РФ ст. 435-443, 779-783 · ЗоЗПП · 152-ФЗ
+                  <div style={{
+                    marginTop: 8, textAlign: 'center',
+                    fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, opacity: 0.6,
+                  }}>
+                    ГК РФ ст. 435-443, 779-783 · ЗоЗПП · 152-ФЗ
+                  </div>
                 </div>
               </m.div>
             )}
@@ -483,27 +463,27 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
 
         {/* ═══════════ CTA ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55 }}
+          transition={{ delay: 0.5 }}
           style={{ marginTop: 16 }}
         >
           <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
-              onClick={handleAccept}
-              aria-label="Принять условия оферты"
-              disabled={accepting}
-              style={{
-                width: '100%', padding: '14px 24px', borderRadius: 12,
-                background: 'var(--gold-metallic)',
-                border: 'none', cursor: accepting ? 'wait' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 8, position: 'relative', overflow: 'hidden',
-                boxShadow: 'var(--glow-gold)',
-                opacity: accepting ? 0.72 : 1,
-              }}
-            >
+            onClick={handleAccept}
+            aria-label="Принять условия оферты"
+            disabled={accepting}
+            style={{
+              width: '100%', padding: '14px 24px', borderRadius: 12,
+              background: 'var(--gold-metallic)',
+              border: 'none', cursor: accepting ? 'wait' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 8, position: 'relative', overflow: 'hidden',
+              boxShadow: 'var(--glow-gold)',
+              opacity: accepting ? 0.72 : 1,
+            }}
+          >
             <m.div
               aria-hidden="true"
               animate={{ x: ['-100%', '250%'] }}
@@ -527,13 +507,13 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.55 }}
           style={{
-            marginTop: 10, textAlign: 'center',
-            fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
+            marginTop: 8, textAlign: 'center',
+            fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, opacity: 0.7,
           }}
         >
-          Нажимая кнопку, ты принимаешь условия оферты (п. 3 ст. 438 ГК РФ)
+          Нажимая, ты соглашаешься с условиями (ст. 438 ГК РФ)
         </m.div>
       </div>
     </ModalWrapper>
