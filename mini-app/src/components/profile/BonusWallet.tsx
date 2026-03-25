@@ -123,7 +123,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             lineHeight: 1.55,
             color: 'var(--text-secondary)',
           }}>
-            История появится после первого бонуса, кэшбэка или списания.
+            История появится после первого бонуса, кешбэка или списания.
           </div>
         )}
 

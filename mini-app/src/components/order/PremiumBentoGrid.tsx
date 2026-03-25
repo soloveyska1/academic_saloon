@@ -312,7 +312,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
                 color: 'var(--text-main)',
                 marginBottom: 2,
               }}>
-                Кэшбэк с заказа
+                Кешбэк с заказа
               </div>
               <div style={{
                 fontSize: 11,

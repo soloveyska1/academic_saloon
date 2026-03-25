@@ -197,7 +197,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
               {rank.displayName}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Кэшбэк {rank.cashback}% • от {rank.minSpent.toLocaleString('ru-RU')} ₽
+              Кешбэк {rank.cashback}% • от {rank.minSpent.toLocaleString('ru-RU')} ₽
             </div>
           </div>
 

@@ -112,7 +112,7 @@ export const SmartReorderCard = memo(function SmartReorderCard({
               color: 'rgba(212,175,55,0.55)',
               marginBottom: 3,
             }}>
-              {workTypeLabel} · повтор
+              {workTypeLabel} · повторный заказ
             </div>
             <div style={{
               fontSize: 14,

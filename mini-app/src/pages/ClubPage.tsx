@@ -124,7 +124,7 @@ function HeroCard({ user }: { user: UserData }) {
             marginBottom: 24,
           }}
         >
-          кэшбэк с каждого заказа
+          кешбэк с каждого заказа
         </div>
 
         {/* Stats row */}
@@ -574,8 +574,8 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
       {/* 3 steps */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
         {[
-          { num: '1', title: 'Заказывай', desc: 'Каждый оплаченный заказ приносит кэшбэк на бонусный баланс' },
-          { num: '2', title: 'Получай кэшбэк', desc: 'Чем больше потрачено — тем выше ранг и процент кэшбэка' },
+          { num: '1', title: 'Заказывай', desc: 'Каждый оплаченный заказ приносит кешбэк на бонусный баланс' },
+          { num: '2', title: 'Получай кешбэк', desc: 'Чем больше потрачено — тем выше ранг и процент кешбэка' },
           { num: '3', title: 'Приглашай друзей', desc: 'Реферальная ссылка — бонус вам обоим при первом заказе друга' },
         ].map((step) => (
           <div

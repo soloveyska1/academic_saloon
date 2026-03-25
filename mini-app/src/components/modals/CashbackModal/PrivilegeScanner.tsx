@@ -16,7 +16,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
   const benefits = useMemo(() => [
     {
       icon: Gift,
-      label: 'Кэшбэк на все заказы',
+      label: 'Кешбэк на все заказы',
       value: `${rank.cashback}%`,
       highlight: true,
     },

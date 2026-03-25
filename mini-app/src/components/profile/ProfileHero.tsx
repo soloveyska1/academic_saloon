@@ -116,7 +116,7 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
             )}
             {cashbackPercent > 0 && (
               <span className={s.metaPill}>
-                Кэшбэк {cashbackPercent}%
+                Кешбэк {cashbackPercent}%
               </span>
             )}
           </div>

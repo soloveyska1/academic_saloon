@@ -77,7 +77,7 @@ function useAchievements(
       id: 'streak',
       icon: Flame,
       label: 'Огонь',
-      description: 'Стрик 7 дней',
+      description: 'Серия 7 дней',
       unlocked: dailyStreak >= 7,
       progress: Math.min(1, dailyStreak / 7),
     },
@@ -391,7 +391,7 @@ export const LoungeVault = memo(function LoungeVault({
                 maxWidth: 320,
               }}
             >
-              Бонусы списываются при оплате новых заказов вместе с кэшбэком клуба.
+              Бонусы списываются при оплате новых заказов вместе с кешбэком клуба.
             </div>
 
             {/* Stats grid — 2 columns */}
@@ -421,7 +421,7 @@ export const LoungeVault = memo(function LoungeVault({
                     marginBottom: 6,
                   }}
                 >
-                  Кэшбэк
+                  Кешбэк
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Percent size={14} color="var(--gold-300)" strokeWidth={2} />

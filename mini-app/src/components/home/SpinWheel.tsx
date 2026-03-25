@@ -307,7 +307,7 @@ export const SpinWheel = memo(function SpinWheel({
                     letterSpacing: '0.02em',
                   }}
                 >
-                  {spinning ? 'Крутится...' : 'Крутить!'}
+                  {spinning ? 'Вращается...' : 'Запустить'}
                 </motion.button>
                 {error && (
                   <div style={{

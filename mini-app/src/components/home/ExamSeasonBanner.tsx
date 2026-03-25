@@ -53,7 +53,7 @@ function getExamSeason(): SeasonConfig | null {
       return {
         type: 'winter',
         icon: Snowflake,
-        title: 'Горячая пора!',
+        title: 'Сессия на финише',
         subtitle: 'До конца сессии остаются считанные дни',
         gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
         borderColor: 'rgba(239, 68, 68, 0.4)',
@@ -66,7 +66,7 @@ function getExamSeason(): SeasonConfig | null {
       type: 'winter',
       icon: Snowflake,
       title: 'Зимняя сессия',
-      subtitle: 'Самое время закрыть долги до февраля',
+      subtitle: 'Завершите учебные задачи до февраля',
       // Gold theme to match app style (not blue!)
       gradient: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 100%)',
       borderColor: 'var(--gold-glass-strong)',
@@ -109,7 +109,7 @@ function getExamSeason(): SeasonConfig | null {
       type: 'summer',
       icon: Sun,
       title: 'Летняя сессия',
-      subtitle: 'Закрываем задачи до каникул',
+      subtitle: 'Завершите работы до каникул',
       gradient: 'linear-gradient(135deg, rgba(201, 162, 39, 0.08) 0%, rgba(12, 12, 10, 0.6) 100%)',
       borderColor: 'rgba(201, 162, 39, 0.12)',
       iconColor: 'var(--gold-400)',

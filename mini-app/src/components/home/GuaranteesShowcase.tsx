@@ -5,23 +5,23 @@ import { StaggerGrid } from '../ui/StaggerReveal'
 const GUARANTEES = [
   {
     icon: RefreshCcw,
-    title: 'Не примут? Исправим.',
-    description: '3 раунда правок включены.',
+    title: 'Доработка включена',
+    description: 'Бесплатные правки до полного соответствия.',
   },
   {
     icon: ShieldCheck,
-    title: 'Не копипаст.',
-    description: 'С нуля. От 82% уникальности.',
+    title: 'Оригинальный текст',
+    description: 'Каждая работа — с нуля. От 80% уникальности.',
   },
   {
     icon: Banknote,
-    title: 'Деньги не пропадут.',
-    description: 'Оплата после согласования.',
+    title: 'Безопасная оплата',
+    description: 'Оплата только после согласования условий.',
   },
   {
     icon: EyeOff,
-    title: 'Никто не узнает.',
-    description: 'Полная конфиденциальность.',
+    title: 'Конфиденциальность',
+    description: 'Полная защита ваших данных.',
   },
 ] as const
 
