@@ -98,6 +98,17 @@ export const OnboardingFlow = memo(function OnboardingFlow({
 }: OnboardingFlowProps) {
   const reduced = useReducedMotion()
 
+  /* Telegram WebApp integration */
+  useEffect(() => {
+    try {
+      const tg = window.Telegram?.WebApp
+      tg?.expand?.()
+      tg?.ready?.()
+      tg?.setHeaderColor?.('#0A0A0A')
+      tg?.setBackgroundColor?.('#0A0A0A')
+    } catch { /* ignore */ }
+  }, [])
+
   /* Skip entirely if already onboarded */
   const alreadySeen = useRef(false)
   useEffect(() => {
@@ -115,6 +126,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const valueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const addTimer = useCallback((fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms)
@@ -143,28 +155,46 @@ export const OnboardingFlow = memo(function OnboardingFlow({
 
   /* ─── Phase auto-transitions ─── */
 
+  /* Closing confirmation in offer phase */
   useEffect(() => {
-    if (reduced) {
-      // Skip auto transitions for reduced motion — go straight to offer
-      setPhase('offer')
-      return
-    }
+    try {
+      if (phase === 'offer') {
+        window.Telegram?.WebApp?.enableClosingConfirmation?.()
+      } else {
+        window.Telegram?.WebApp?.disableClosingConfirmation?.()
+      }
+    } catch { /* ignore */ }
+  }, [phase])
+
+  useEffect(() => {
     if (phase === 'reveal') {
-      addTimer(() => haptic('light'), 500)
-      addTimer(() => haptic('medium'), 1500)
-      addTimer(() => setPhase('value'), 2000)
+      if (!reduced) {
+        addTimer(() => haptic('light'), 600)
+        addTimer(() => haptic('medium'), 1200)
+      }
+      addTimer(() => setPhase('value'), reduced ? 1200 : 2000)
     }
     if (phase === 'value') {
-      addTimer(() => haptic('light'), 400)
-      addTimer(() => setPhase('offer'), 3000)
+      if (!reduced) addTimer(() => haptic('light'), 400)
+      valueTimerRef.current = addTimer(() => setPhase('offer'), reduced ? 2000 : 5000)
     }
   }, [phase, reduced, addTimer])
 
   /* ─── Handlers ─── */
 
   const advanceFromValue = useCallback(() => {
-    if (phase === 'value') setPhase('offer')
+    if (phase === 'value') {
+      if (valueTimerRef.current) clearTimeout(valueTimerRef.current)
+      setPhase('offer')
+    }
   }, [phase])
+
+  const resetValueTimer = useCallback(() => {
+    if (valueTimerRef.current && phase === 'value') {
+      clearTimeout(valueTimerRef.current)
+      valueTimerRef.current = addTimer(() => setPhase('offer'), 5000)
+    }
+  }, [phase, addTimer])
 
   const handleSkip = useCallback(() => {
     haptic('light')
@@ -213,6 +243,9 @@ export const OnboardingFlow = memo(function OnboardingFlow({
       <style dangerouslySetInnerHTML={{ __html: keyframeStyle }} />
 
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Знакомство с Академическим Салоном"
         style={{
           position: 'fixed',
           inset: 0,
@@ -243,38 +276,41 @@ export const OnboardingFlow = memo(function OnboardingFlow({
           />
         )}
 
-        {/* ─── Skip button ─── */}
-        <motion.button
-          type="button"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: reduced ? 0 : 0.8, duration: 0.3 }}
-          whileTap={{ scale: TAP_SCALE }}
-          onClick={handleSkip}
-          style={{
-            position: 'absolute',
-            top: `calc(${SAFE_PAD} + 4px)`,
-            right: `calc(${SAFE_PAD_X} + 4px)`,
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '8px 14px',
-            borderRadius: 999,
-            border: 'none',
-            background: 'rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            color: 'rgba(255,255,255,0.50)',
-            fontSize: 12,
-            fontWeight: 600,
-            fontFamily: FONT_BODY,
-            cursor: 'pointer',
-          }}
-        >
-          Пропустить
-          <ChevronRight size={14} strokeWidth={2} />
-        </motion.button>
+        {/* ─── Skip button (hidden in offer/exit phases) ─── */}
+        {phase !== 'offer' && phase !== 'exit' && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: reduced ? 0 : 0.8, duration: 0.3 }}
+            whileTap={{ scale: TAP_SCALE }}
+            onClick={handleSkip}
+            aria-label={phase === 'reveal' ? 'Пропустить приветствие' : 'Перейти к условиям'}
+            style={{
+              position: 'absolute',
+              top: `calc(${SAFE_PAD} + 4px)`,
+              right: `calc(${SAFE_PAD_X} + 4px)`,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '8px 14px',
+              borderRadius: 999,
+              border: 'none',
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              color: 'rgba(255,255,255,0.50)',
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: FONT_BODY,
+              cursor: 'pointer',
+            }}
+          >
+            {phase === 'reveal' ? 'Пропустить' : 'К условиям'}
+            <ChevronRight size={14} strokeWidth={2} />
+          </motion.button>
+        )}
 
         {/* ─── Phase content ─── */}
         <AnimatePresence mode="wait">
@@ -377,6 +413,17 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               exit={phaseTransitions.valueExit}
               transition={{ duration: dur, ease: EASE }}
               onClick={advanceFromValue}
+              onTouchStart={resetValueTimer}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.15}
+              onDragEnd={(_e, info) => {
+                if (info.offset.x < -50 || info.velocity.x < -300) advanceFromValue()
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Нажмите или свайпните, чтобы продолжить"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') advanceFromValue() }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -508,21 +555,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 })}
               </div>
 
-              {/* Progress dots */}
-              <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: i === 1 ? 20 : 6,
-                      height: 6,
-                      borderRadius: 999,
-                      background: i === 1 ? 'var(--gold-400, #d4af37)' : 'rgba(255,255,255,0.12)',
-                      transition: 'all 0.3s ease',
-                    }}
-                  />
-                ))}
-              </div>
+              {/* Progress dots moved to global level */}
             </motion.div>
           )}
 
@@ -649,6 +682,8 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                     animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     transition={{ duration: 0.25, ease: EASE }}
+                    role="alert"
+                    aria-live="assertive"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -660,9 +695,32 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                       lineHeight: 1.5,
                       fontFamily: FONT_BODY,
                       overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
                     }}
                   >
-                    {error}
+                    <span>{error}</span>
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: TAP_SCALE }}
+                      onClick={handleAccept}
+                      style={{
+                        flexShrink: 0,
+                        padding: '6px 14px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(248,113,113,0.25)',
+                        background: 'rgba(248,113,113,0.10)',
+                        color: '#fecaca',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        fontFamily: FONT_BODY,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Повторить
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -813,6 +871,41 @@ export const OnboardingFlow = memo(function OnboardingFlow({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ─── Global progress dots ─── */}
+        {phase !== 'exit' && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              bottom: `calc(${SAFE_PAD_BOTTOM} + 8px)`,
+              display: 'flex',
+              gap: 6,
+              justifyContent: 'center',
+            }}
+          >
+            {[0, 1, 2].map((i) => {
+              const phaseIdx = phase === 'reveal' ? 0 : phase === 'value' ? 1 : 2
+              return (
+                <motion.div
+                  key={i}
+                  layout
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  style={{
+                    width: i === phaseIdx ? 20 : 6,
+                    height: 6,
+                    borderRadius: 999,
+                    background: i === phaseIdx
+                      ? 'var(--gold-400, #d4af37)'
+                      : i < phaseIdx
+                        ? 'rgba(212,175,55,0.25)'
+                        : 'rgba(255,255,255,0.12)',
+                  }}
+                />
+              )
+            })}
+          </div>
+        )}
       </div>
     </>
   )
