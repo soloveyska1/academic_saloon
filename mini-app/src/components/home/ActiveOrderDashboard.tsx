@@ -588,7 +588,9 @@ function OrderCard({
             letterSpacing: '0.01em',
           }}>
             {needsAction && financeAmount
-              ? `${primaryAction} ${financeAmount}`
+              ? order.payment_scheme === 'half' && !hasPartialPayment && remaining === total
+                ? `Внести аванс · ${formatMoney(Math.ceil(total / 2))}`
+                : `${primaryAction} · ${financeAmount}`
               : primaryAction}
           </span>
           <ArrowRight
