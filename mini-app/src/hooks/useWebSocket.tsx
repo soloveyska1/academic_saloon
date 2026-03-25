@@ -161,6 +161,31 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   const reconnectAttemptsRef = useRef<number>(0)
   const maxReconnectAttempts = 10 // Максимум попыток переподключения
 
+  const clearReconnectTimeout = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+  }, [])
+
+  const clearPingInterval = useCallback(() => {
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current)
+      pingIntervalRef.current = null
+    }
+  }, [])
+
+  const detachSocketHandlers = useCallback((socket: WebSocket | null) => {
+    if (!socket) {
+      return
+    }
+
+    socket.onopen = null
+    socket.onmessage = null
+    socket.onclose = null
+    socket.onerror = null
+  }, [])
+
   // Store handlers in refs to avoid stale closures
   const handlersRef = useRef({
     onOrderUpdate,
@@ -251,26 +276,35 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       return
     }
 
+    clearReconnectTimeout()
+
     // Clear any existing connection
     if (wsRef.current) {
-      wsRef.current.close()
+      const staleSocket = wsRef.current
+      wsRef.current = null
+      detachSocketHandlers(staleSocket)
+      staleSocket.close(1000, 'Reconnect')
     }
 
     const url = getWebSocketUrl(telegramId)
 
     try {
       const ws = new WebSocket(url)
+      wsRef.current = ws
 
       ws.onopen = () => {
+        if (wsRef.current !== ws) {
+          return
+        }
+
         setIsConnected(true)
         setConnectionError(null)
         reconnectAttemptsRef.current = 0 // Сброс счётчика при успешном подключении
+        clearReconnectTimeout()
         handlersRef.current.onConnect?.()
 
         // Start ping interval to keep connection alive
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current)
-        }
+        clearPingInterval()
         pingIntervalRef.current = window.setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
             sendMessage({ type: 'ping' })
@@ -281,13 +315,18 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       ws.onmessage = handleMessage
 
       ws.onclose = (event) => {
+        if (wsRef.current === ws) {
+          wsRef.current = null
+        }
+
         setIsConnected(false)
+        if (event.code !== 1000) {
+          setConnectionError('Соединение потеряно')
+        }
         handlersRef.current.onDisconnect?.()
 
         // Clear ping interval
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current)
-        }
+        clearPingInterval()
 
         // Auto-reconnect с экспоненциальным backoff для экономии батареи
         if (autoReconnect && event.code !== 1000) {
@@ -308,29 +347,29 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       }
 
       ws.onerror = () => {
+        if (wsRef.current !== ws) {
+          return
+        }
+
         setConnectionError('Ошибка соединения')
       }
-
-      wsRef.current = ws
     } catch {
       setConnectionError('Не удалось подключиться')
     }
-  }, [telegramId, handleMessage, autoReconnect, reconnectInterval, sendMessage])
+  }, [telegramId, handleMessage, autoReconnect, reconnectInterval, sendMessage, clearReconnectTimeout, clearPingInterval, detachSocketHandlers])
 
   // Disconnect
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-    }
-    if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current)
-    }
+    clearReconnectTimeout()
+    clearPingInterval()
     if (wsRef.current) {
-      wsRef.current.close(1000, 'User disconnect')
+      const activeSocket = wsRef.current
       wsRef.current = null
+      detachSocketHandlers(activeSocket)
+      activeSocket.close(1000, 'User disconnect')
     }
     setIsConnected(false)
-  }, [])
+  }, [clearReconnectTimeout, clearPingInterval, detachSocketHandlers])
 
   // Manual reconnect
   const reconnectTimeoutIdRef = useRef<number | null>(null)
