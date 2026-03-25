@@ -25,7 +25,7 @@ import {
 import { ChatMessage } from '../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
-import { useWebSocketContext } from '../hooks/useWebSocket'
+import { isChatSocketMessage, isTypingIndicatorSocketMessage, useWebSocketContext } from '../hooks/useWebSocket'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
 
@@ -125,14 +125,14 @@ export function OrderChatPage() {
   // WebSocket for real-time updates
   useEffect(() => {
     const unsubscribe = addMessageHandler((message) => {
-      if (message.type === 'chat_message' && (message as any).order_id === orderId) {
+      if (isChatSocketMessage(message) && message.order_id === orderId) {
         setIsAdminTyping(false)
         loadMessages()
         haptic?.('success')
       }
-      if (message.type === 'typing_indicator' && (message as any).order_id === orderId) {
-        setIsAdminTyping((message as any).is_typing)
-        if ((message as any).is_typing) {
+      if (isTypingIndicatorSocketMessage(message) && message.order_id === orderId) {
+        setIsAdminTyping(message.is_typing)
+        if (message.is_typing) {
           setTimeout(() => setIsAdminTyping(false), 5000)
         }
       }

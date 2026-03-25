@@ -3,6 +3,8 @@
 Работают только в канале логов для админов.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
 from aiogram import Router, F, Bot

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, Numeric, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -19,8 +22,7 @@ class BalanceTransaction(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # credit / debit
     reason: Mapped[str] = mapped_column(String(50), nullable=False)
-    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-

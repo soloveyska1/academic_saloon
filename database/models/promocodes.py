@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from sqlalchemy import BigInteger, String, Float, DateTime, Integer, Boolean, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
@@ -15,8 +19,8 @@ class PromoCode(Base):
     current_uses: Mapped[int] = mapped_column(Integer, default=0)
     
     # Срок действия
-    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_from: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -47,7 +51,7 @@ class PromoCodeUsage(Base):
 
     # Soft delete support for promo return on order cancellation
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
-    returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    returned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

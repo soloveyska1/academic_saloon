@@ -2,6 +2,8 @@
 AI Assistant API — FAQ search + complexity estimation.
 """
 
+from __future__ import annotations
+
 import logging
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

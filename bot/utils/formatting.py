@@ -7,6 +7,8 @@ Single source of truth for:
 - Russian pluralization
 - Text sanitization
 """
+from __future__ import annotations
+
 from typing import Optional
 from html import escape as html_escape
 

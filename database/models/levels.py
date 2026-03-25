@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from sqlalchemy import Integer, String, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,7 +18,7 @@ class RankLevel(Base):
     emoji: Mapped[str] = mapped_column(String(10), nullable=False)
     min_spent: Mapped[float] = mapped_column(Float, nullable=False)
     cashback_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-    bonus: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bonus: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
 
 class LoyaltyLevel(Base):

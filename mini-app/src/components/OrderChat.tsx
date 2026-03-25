@@ -8,7 +8,7 @@ import {
 import { ChatMessage } from '../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
-import { useWebSocketContext } from '../hooks/useWebSocket'
+import { isChatSocketMessage, isTypingIndicatorSocketMessage, useWebSocketContext } from '../hooks/useWebSocket'
 
 export interface OrderChatHandle {
   open: () => void
@@ -140,17 +140,17 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
   // Subscribe to WebSocket updates
   useEffect(() => {
     const unsubscribe = addMessageHandler((message) => {
-      if (message.type === 'chat_message' && (message as any).order_id === orderId) {
+      if (isChatSocketMessage(message) && message.order_id === orderId) {
         // New message received via WebSocket
         setIsAdminTyping(false) // Stop typing indicator
         loadMessages()
         hapticSuccess()
       }
       // Handle typing indicator
-      if (message.type === 'typing_indicator' && (message as any).order_id === orderId) {
-        setIsAdminTyping((message as any).is_typing)
+      if (isTypingIndicatorSocketMessage(message) && message.order_id === orderId) {
+        setIsAdminTyping(message.is_typing)
         // Auto-clear typing after 5 seconds
-        if ((message as any).is_typing) {
+        if (message.is_typing) {
           setTimeout(() => setIsAdminTyping(false), 5000)
         }
       }

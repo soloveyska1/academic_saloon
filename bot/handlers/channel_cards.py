@@ -4,6 +4,8 @@ Handlers для callback-действий в канале заказов.
 Обрабатывает кнопки на Live-карточках прямо в канале,
 без перехода в личку бота.
 """
+from __future__ import annotations
+
 import logging
 from decimal import Decimal, InvalidOperation
 from datetime import datetime

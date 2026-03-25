@@ -3,6 +3,8 @@ Premium Real-Time Notification System
 Умные контекстные уведомления для каждого этапа заказа
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any

@@ -6,6 +6,8 @@ Telegram присылает их как отдельные сообщения с
 Этот модуль позволяет собрать их в одно и ответить одним сообщением.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Callable, Any

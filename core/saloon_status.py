@@ -3,6 +3,8 @@
 Хранит данные в Redis для pinned message tracking.
 Bot is ALWAYS shown as available 24/7.
 """
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass, asdict
 

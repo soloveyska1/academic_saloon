@@ -2,6 +2,8 @@
 Клавиатуры для Личного кабинета.
 """
 
+from __future__ import annotations
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.models.orders import Order, get_status_meta

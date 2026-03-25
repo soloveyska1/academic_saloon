@@ -38,7 +38,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const actionableOrder = useMemo(
     () => (user ? getActionableOrder(user.orders) : null),
-    [user?.orders],
+    [user],
   )
 
   const inviteLink = user ? buildReferralLink(botUsername, user.telegram_id) : ''

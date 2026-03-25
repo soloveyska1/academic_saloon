@@ -1,8 +1,11 @@
 """
 Admin action logs - tracks all admin actions for audit trail
 """
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, Integer, String, Text, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -60,25 +63,25 @@ class AdminActionLog(Base):
 
     # Who performed the action
     admin_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    admin_username: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    admin_username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # What action was performed
     action_type: Mapped[str] = mapped_column(String(50), index=True)
 
     # Target of the action (user_id, order_id, promo_id, etc.)
-    target_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # user, order, promo, system
-    target_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    target_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # user, order, promo, system
+    target_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, index=True)
 
     # Details of the action
-    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Old and new values for change tracking
-    old_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    new_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    old_value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    new_value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Additional metadata
-    ip_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(
@@ -121,16 +124,16 @@ class UserActivity(Base):
 
     # User identification
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-    username: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    fullname: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    fullname: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Current activity
-    current_page: Mapped[str | None] = mapped_column(String(100), nullable=True)  # /orders, /profile, etc.
-    current_action: Mapped[str | None] = mapped_column(String(100), nullable=True)  # viewing_order, creating_order, etc.
-    current_order_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    current_page: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # /orders, /profile, etc.
+    current_action: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # viewing_order, creating_order, etc.
+    current_order_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Session info
-    session_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    session_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     last_activity_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -141,7 +144,7 @@ class UserActivity(Base):
     is_online: Mapped[bool] = mapped_column(default=False)
 
     # Device info
-    platform: Mapped[str | None] = mapped_column(String(50), nullable=True)  # iOS, Android, Web
+    platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # iOS, Android, Web
 
     @property
     def activity_duration_minutes(self) -> int:

@@ -12,6 +12,7 @@ build/
 # Environment
 .env
 .venv/
+.audit-venv/
 venv/
 ENV/
 

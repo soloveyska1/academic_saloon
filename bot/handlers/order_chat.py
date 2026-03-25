@@ -12,6 +12,8 @@ Safety Commands (для админов в топике):
 - /card - переотправить/обновить закреплённую карточку
 - /price XXXX - установить цену заказа
 """
+from __future__ import annotations
+
 import logging
 import re
 from datetime import datetime

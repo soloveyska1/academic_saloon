@@ -2,6 +2,8 @@
 Greetings and welcome messages.
 Premium minimalism tone — concise, confident, no excessive emoji.
 """
+from __future__ import annotations
+
 import random
 from datetime import datetime
 from zoneinfo import ZoneInfo

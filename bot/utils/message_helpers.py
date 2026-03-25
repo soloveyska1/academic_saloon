@@ -7,6 +7,8 @@ TelegramBadRequest: there is no text in the message to edit
 Когда сообщение содержит фото (только caption), нельзя вызвать edit_text().
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Optional
 

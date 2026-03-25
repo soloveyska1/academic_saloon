@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
@@ -30,16 +33,16 @@ class Settings(BaseSettings):
     PAYMENT_NAME: str   # Имя получателя
 
     # ЮKassa (онлайн-оплата)
-    YOOKASSA_SHOP_ID: str | None = None         # ID магазина
-    YOOKASSA_SECRET_KEY: str | None = None      # Секретный ключ
+    YOOKASSA_SHOP_ID: Optional[str] = None      # ID магазина
+    YOOKASSA_SECRET_KEY: Optional[str] = None   # Секретный ключ
     YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
-    YOOKASSA_WEBHOOK_SECRET: str | None = None  # Для верификации webhook подписей (опционально)
+    YOOKASSA_WEBHOOK_SECRET: Optional[str] = None  # Для верификации webhook подписей (опционально)
 
     # Sentry (error tracking)
-    SENTRY_DSN: str | None = None
+    SENTRY_DSN: Optional[str] = None
 
     # Яндекс Диск (хранение файлов заказов)
-    YANDEX_DISK_TOKEN: str | None = None        # OAuth токен
+    YANDEX_DISK_TOKEN: Optional[str] = None     # OAuth токен
     YANDEX_DISK_FOLDER: str = "Academic_Saloon_Orders"  # Корневая папка для заказов
 
     # Медиа файлы

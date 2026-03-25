@@ -5,6 +5,8 @@ YooKassa payment endpoints.
 - POST /yookassa/webhook — process YooKassa callbacks (payment.succeeded, etc.)
 """
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 import ipaddress

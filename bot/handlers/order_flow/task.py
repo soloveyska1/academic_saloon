@@ -1,6 +1,8 @@
 """
 Order Flow Task Input - file/text input handlers.
 """
+from __future__ import annotations
+
 import logging
 
 from aiogram import F, Bot

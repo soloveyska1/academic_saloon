@@ -1,6 +1,8 @@
 """
 Order Flow Utilities - shared helper functions.
 """
+from __future__ import annotations
+
 import random
 import re
 from datetime import datetime, timedelta

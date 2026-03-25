@@ -86,6 +86,29 @@ export interface ProgressUpdateMessage extends WSMessage {
   emoji?: string
 }
 
+export interface ChatSocketMessage extends WSMessage {
+  type: 'chat_message'
+  order_id: number
+}
+
+export interface TypingIndicatorSocketMessage extends WSMessage {
+  type: 'typing_indicator'
+  order_id: number
+  is_typing: boolean
+}
+
+export function isChatSocketMessage(message: WSMessage): message is ChatSocketMessage {
+  return message.type === 'chat_message' && typeof message.order_id === 'number'
+}
+
+export function isTypingIndicatorSocketMessage(message: WSMessage): message is TypingIndicatorSocketMessage {
+  return (
+    message.type === 'typing_indicator' &&
+    typeof message.order_id === 'number' &&
+    typeof message.is_typing === 'boolean'
+  )
+}
+
 type MessageHandler = (message: WSMessage) => void
 
 interface UseWebSocketOptions {

@@ -8,6 +8,8 @@ Provides a singleton bot instance that can be used by both:
 This allows the API to send messages, create topics, and trigger admin notifications.
 """
 
+from __future__ import annotations
+
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -353,45 +356,45 @@ class Order(Base):
 
     # Основная информация
     work_type: Mapped[str] = mapped_column(String(50))
-    subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    deadline: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    subject: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    topic: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    deadline: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Финансы
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     discount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
-    promo_code: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Примененный промокод
+    promo_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Примененный промокод
     promo_discount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))  # Скидка от промокода (%)
     bonus_used: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))  # Списанные бонусы
     paid_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     # Схема и способ оплаты
-    payment_scheme: Mapped[str | None] = mapped_column(String(20), nullable=True)  # full / half
-    payment_method: Mapped[str | None] = mapped_column(String(20), nullable=True)  # card / sbp / transfer
-    yookassa_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)  # ID платежа в ЮKassa
+    payment_scheme: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # full / half
+    payment_method: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # card / sbp / transfer
+    yookassa_payment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True)  # ID платежа в ЮKassa
 
     # Статус
     status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value, index=True)
 
     # Прогресс выполнения (0-100%)
     progress: Mapped[int] = mapped_column(Integer, default=0)  # 0-100
-    progress_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    progress_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Служебное
-    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    files_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Yandex.Disk folder URL
+    admin_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    files_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Yandex.Disk folder URL
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Работа сдана (старт 30-дневных правок)
-    reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Работа сдана (старт 30-дневных правок)
+    reminder_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
     review_submitted: Mapped[bool] = mapped_column(default=False)  # Отзыв оставлен
     revision_count: Mapped[int] = mapped_column(Integer, default=0)  # Счётчик кругов правок (3 бесплатно)
     is_archived: Mapped[bool] = mapped_column(default=False)  # Архивный заказ (скрыт из основного списка)
 
     # Live-карточка в канале заказов
-    channel_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения в канале
+    channel_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)  # ID сообщения в канале
 
     @property
     def status_label(self) -> str:
@@ -474,17 +477,17 @@ class OrderMessage(Base):
     sender_id: Mapped[int] = mapped_column(BigInteger)  # telegram_id отправителя
 
     # Контент сообщения
-    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    message_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Файл (если есть)
-    file_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # photo/document/voice/video
-    file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Telegram file_id
-    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Оригинальное имя файла
-    yadisk_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Ссылка на Яндекс.Диск
+    file_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # photo/document/voice/video
+    file_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # Telegram file_id
+    file_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # Оригинальное имя файла
+    yadisk_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Ссылка на Яндекс.Диск
 
     # Telegram message IDs для редактирования/удаления
-    admin_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения у админа
-    client_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения у клиента
+    admin_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)  # ID сообщения у админа
+    client_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)  # ID сообщения у клиента
 
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -514,21 +517,21 @@ class Conversation(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
 
     # Привязка к заказу (опционально — может быть None для свободных диалогов)
-    order_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
+    order_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
 
     # Forum Topic ID в админской группе (message_thread_id)
-    topic_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    topic_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, index=True)
 
     # ID закреплённой карточки заказа внутри топика
-    topic_card_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    topic_card_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
 
     # Тип диалога
     conversation_type: Mapped[str] = mapped_column(String(20), default=ConversationType.FREE.value)
 
     # Последнее сообщение (для превью)
-    last_message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_message_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    last_sender: Mapped[str | None] = mapped_column(String(20), nullable=True)  # admin / client
+    last_sender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # admin / client
 
     # Статусы
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy import BigInteger, String, Boolean, DateTime, Integer, Numeric, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,14 +19,14 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-    username: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    fullname: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    fullname: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="user")
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Реферальная система
-    referrer_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    referrer_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     referrals_count: Mapped[int] = mapped_column(Integer, default=0)
     referral_earnings: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
@@ -32,26 +35,26 @@ class User(Base):
     total_spent: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     # Ежедневный бонус (Daily Luck)
-    last_daily_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_daily_bonus_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     daily_bonus_streak: Mapped[int] = mapped_column(Integer, default=0)  # Текущий стрик ежедневного бонуса
     streak_freeze_count: Mapped[int] = mapped_column(Integer, default=0)  # Количество заморозок серии
 
     # Сгорание бонусов
-    last_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Дата последнего начисления
+    last_bonus_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Дата последнего начисления
     bonus_expiry_notified: Mapped[bool] = mapped_column(Boolean, default=False)  # Флаг уведомления о сгорании
 
     # Оферта
-    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Модерация
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
-    banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    banned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    ban_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_watched: Mapped[bool] = mapped_column(Boolean, default=False)  # Режим слежки
-    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)  # Заметки админа
+    admin_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Заметки админа
 
     # Служебное
-    deep_link: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    deep_link: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
