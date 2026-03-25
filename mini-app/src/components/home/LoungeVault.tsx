@@ -1,6 +1,6 @@
 import { memo, useMemo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Copy, Crown, QrCode, Send, Gift, Award, Flame, Users, Star, Zap, Lock, Tag, GraduationCap, CheckCircle } from 'lucide-react'
+import { Check, Copy, Crown, QrCode, Send, Award, Flame, Users, Star, Zap, Lock, Tag, GraduationCap, CheckCircle, ChevronDown, UserPlus } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { formatMoney } from '../../lib/utils'
 import type { Order } from '../../types'
@@ -457,6 +457,175 @@ const AchievementCard = memo(function AchievementCard({
   )
 })
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   REFERRAL CARD — Compact collapsible with stats, code, share, promo
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ReferralCard = memo(function ReferralCard({
+  referralCode,
+  referralsCount,
+  referralEarnings,
+  copied,
+  onCopy,
+  onShowQR,
+  onTelegramShare,
+}: {
+  referralCode: string
+  referralsCount: number
+  referralEarnings: number
+  copied: boolean
+  onCopy: () => void
+  onShowQR: () => void
+  onTelegramShare: () => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const hasStats = referralsCount > 0 || referralEarnings > 0
+
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        background: '#0E0D0C',
+        border: '1px solid rgba(255,255,255,0.04)',
+        overflow: 'hidden',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+      }}
+    >
+      {/* ─── Compact header row (always visible) ─── */}
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          width: '100%',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          border: 'none',
+          background: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {/* Icon */}
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: 'rgba(212,175,55,0.06)',
+          border: '1px solid rgba(212,175,55,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <UserPlus size={16} strokeWidth={1.8} color="#D4AF37" />
+        </div>
+
+        {/* Text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+            Приглашения
+            {hasStats && (
+              <span style={{ color: 'var(--gold-400)', marginLeft: 8, fontSize: 11, fontWeight: 600 }}>
+                {referralsCount > 0 && `${referralsCount}`}
+                {referralsCount > 0 && referralEarnings > 0 && ' · '}
+                {referralEarnings > 0 && `${formatMoney(referralEarnings)}`}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.2 }}>
+            {expanded ? 'Поделитесь ссылкой с друзьями' : 'Рекомендуйте — получайте привилегии'}
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <motion.div
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          style={{ flexShrink: 0 }}
+        >
+          <ChevronDown size={16} strokeWidth={2} color="var(--text-muted)" />
+        </motion.div>
+      </motion.button>
+
+      {/* ─── Expandable content ─── */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '0 16px 14px' }}>
+              {/* Referral code + action buttons */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                gap: 6,
+                marginBottom: 10,
+              }}>
+                {/* Code button */}
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onCopy}
+                  style={{
+                    minWidth: 0, padding: '9px 12px', borderRadius: 10,
+                    border: '1px solid rgba(212,175,55,0.14)',
+                    background: 'rgba(212,175,55,0.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 6, cursor: 'pointer',
+                  }}
+                >
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                    letterSpacing: '0.08em', color: 'var(--gold-300)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {referralCode}
+                  </span>
+                  {copied ? (
+                    <Check size={14} color="var(--success-text)" strokeWidth={2} />
+                  ) : (
+                    <Copy size={14} color="var(--text-secondary)" strokeWidth={2} />
+                  )}
+                </motion.button>
+
+                {/* Share button */}
+                <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={onTelegramShare}
+                  style={{
+                    width: 38, height: 38, borderRadius: 10,
+                    border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'var(--text-secondary)',
+                  }}
+                >
+                  <Send size={14} strokeWidth={1.8} />
+                </motion.button>
+
+                {/* QR button */}
+                <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={onShowQR}
+                  style={{
+                    width: 38, height: 38, borderRadius: 10,
+                    border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'var(--text-secondary)',
+                  }}
+                >
+                  <QrCode size={14} strokeWidth={1.8} />
+                </motion.button>
+              </div>
+
+              {/* PromoCode section */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 10 }}>
+                <PromoCodeSection variant="full" collapsible defaultExpanded={false} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+})
+
 export const LoungeVault = memo(function LoungeVault({
   rank,
   // bonusBalance no longer displayed (shown in HomeHeader)
@@ -622,167 +791,17 @@ export const LoungeVault = memo(function LoungeVault({
         </div>
       </motion.div>
 
-      {/* ═══ Card C — Referral (LIGHT visual weight) ═══ */}
-      <div
-        className="glass-card"
-        style={{
-          padding: 16,
-          borderRadius: 12,
-          background: 'rgba(20,18,14,0.95)',
-          border: '1px solid rgba(212,175,55,0.08)',
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            marginBottom: 10,
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                marginBottom: 2,
-              }}
-            >
-              <Gift size={14} color="var(--gold-400)" strokeWidth={1.9} />
-              <span
-                style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                Приглашения
-              </span>
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                lineHeight: 1.35,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Рекомендуйте Салон — получайте привилегии
-              {(referralsCount > 0 || referralEarnings > 0) && (
-                <span style={{ color: 'var(--gold-300)', marginLeft: 6, fontSize: 11 }}>
-                  {referralsCount > 0 && `${referralsCount} ${referralsCount === 1 ? 'друг' : referralsCount < 5 ? 'друга' : 'друзей'}`}
-                  {referralsCount > 0 && referralEarnings > 0 && ' · '}
-                  {referralEarnings > 0 && `${formatMoney(referralEarnings)} заработано`}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Referral code + action buttons */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-            gap: 6,
-            marginBottom: 10,
-          }}
-        >
-          {/* Code button */}
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={onCopy}
-            style={{
-              minWidth: 0,
-              padding: '9px 12px',
-              borderRadius: 10,
-              border: '1px solid rgba(212,175,55,0.14)',
-              background: 'rgba(212,175,55,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 6,
-              cursor: 'pointer',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                color: 'var(--gold-300)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {referralCode}
-            </span>
-            {copied ? (
-              <Check size={14} color="var(--success-text)" strokeWidth={2} />
-            ) : (
-              <Copy size={14} color="var(--text-secondary)" strokeWidth={2} />
-            )}
-          </motion.button>
-
-          {/* Share button */}
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={onTelegramShare}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(255,255,255,0.03)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <Send size={15} strokeWidth={1.8} />
-          </motion.button>
-
-          {/* QR button */}
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={onShowQR}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(255,255,255,0.03)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <QrCode size={16} strokeWidth={1.8} />
-          </motion.button>
-        </div>
-
-        {/* PromoCode section — collapsible, separated */}
-        <div
-          style={{
-            borderTop: '1px solid rgba(255,255,255,0.05)',
-            paddingTop: 10,
-          }}
-        >
-          <PromoCodeSection variant="full" collapsible defaultExpanded={false} />
-        </div>
-      </div>
+      {/* ═══ Card C — Referral (collapsible, compact) ═══ */}
+      <ReferralCard
+        referralCode={referralCode}
+        referralsCount={referralsCount}
+        referralEarnings={referralEarnings}
+        copied={copied}
+        onCopy={onCopy}
+        onShowQR={onShowQR}
+        onTelegramShare={onTelegramShare}
+      />
+      {/* Old inline Card C removed — replaced by ReferralCard above */}
     </motion.section>
   )
 })
