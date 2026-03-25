@@ -233,8 +233,8 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                     fontWeight: 700,
                   }}
                 >
-                    <LockKeyhole size={14} strokeWidth={1.8} />
-                    {previewMode ? 'Предпросмотр первого входа' : 'Обязательный акцепт'}
+                  <LockKeyhole size={14} strokeWidth={1.8} />
+                  Обязательный акцепт
                 </div>
               </motion.div>
 
@@ -288,19 +288,6 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                   Перед первым входом откроем короткое приветствие и публичную оферту.
                   После акцепта станут доступны заказы, чат, оплата и файлы.
                 </p>
-                {previewMode && (
-                  <p
-                    style={{
-                      margin: '12px 0 0',
-                      fontSize: 12,
-                      lineHeight: 1.5,
-                      color: 'rgba(212,175,55,0.72)',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    Это админский просмотр сценария нового клиента. Реальный акцепт в аккаунт не записывается.
-                  </p>
-                )}
               </motion.div>
 
               <div
