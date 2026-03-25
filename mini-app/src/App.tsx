@@ -20,6 +20,7 @@ import {
   BalanceUpdateMessage,
   ProgressUpdateMessage,
   NotificationMessage,
+  FileDeliveryMessage,
   useWebSocketContext,
 } from './hooks/useWebSocket'
 import {
@@ -291,6 +292,25 @@ function AppContent() {
     refetch()
   }, [refetch])
 
+  const handleFileDelivery = useCallback((msg: FileDeliveryMessage) => {
+    const smartData: SmartNotificationData = {
+      type: 'notification',
+      title: msg.title || 'Файлы готовы',
+      message: msg.message || 'Файлы по заказу загружены и готовы к скачиванию.',
+      icon: msg.icon || 'download',
+      color: msg.color || '#22c55e',
+      priority: msg.priority || 'high',
+      action: 'view_order',
+      data: {
+        order_id: msg.order_id,
+        files_url: msg.files_url,
+      },
+    }
+
+    setNotification(smartData)
+    refetch()
+  }, [refetch])
+
   const handleRefresh = useCallback(() => {
     // Trigger data refresh based on refresh_type from server
     refetch()
@@ -348,6 +368,7 @@ function AppContent() {
           onProgressUpdate={handleProgressUpdate}
           onNotification={handleNotification}
           onRefresh={handleRefresh}
+          onFileDelivery={handleFileDelivery}
         >
           {/* Always show notifications even on error screen - no navigation action needed */}
           <SmartNotification
@@ -533,6 +554,7 @@ function AppContent() {
                   onProgressUpdate={handleProgressUpdate}
                   onNotification={handleNotification}
                   onRefresh={handleRefresh}
+                  onFileDelivery={handleFileDelivery}
                 >
                   <BrowserRouter>
                     <div className="app">

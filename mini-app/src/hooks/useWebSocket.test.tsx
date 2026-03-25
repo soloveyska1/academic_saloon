@@ -10,6 +10,7 @@ vi.mock('../api/userApi', () => ({
 
 import { useWebSocket } from './useWebSocket'
 import type { OrderUpdateMessage } from './useWebSocket'
+import type { FileDeliveryMessage } from './useWebSocket'
 
 class MockWebSocket {
   static CONNECTING = 0
@@ -57,14 +58,17 @@ let latestHook: ReturnType<typeof useWebSocket> | null = null
 function HookHarness({
   telegramId,
   onOrderUpdate,
+  onFileDelivery,
 }: {
   telegramId: number | null
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
+  onFileDelivery?: (msg: FileDeliveryMessage) => void
 }) {
   latestHook = useWebSocket(telegramId, {
     autoReconnect: true,
     reconnectInterval: 1000,
     onOrderUpdate,
+    onFileDelivery,
   })
 
   return null
@@ -181,5 +185,33 @@ describe('useWebSocket reconnect flow', () => {
     unsubscribeThrowing?.()
     unsubscribeHealthy?.()
     warnSpy.mockRestore()
+  })
+
+  it('forwards file delivery messages to the dedicated handler', () => {
+    const onFileDelivery = vi.fn()
+
+    act(() => {
+      root.render(<HookHarness telegramId={123} onFileDelivery={onFileDelivery} />)
+    })
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'file_delivery',
+        timestamp: new Date().toISOString(),
+        order_id: 91,
+        file_count: 3,
+        files_url: 'https://example.com/files',
+        title: 'Файлы готовы',
+        message: 'Загружено 3 файла',
+      })
+    })
+
+    expect(onFileDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 91,
+        file_count: 3,
+        files_url: 'https://example.com/files',
+      }),
+    )
   })
 })

@@ -465,6 +465,7 @@ interface WebSocketProviderProps {
   onProgressUpdate?: (msg: ProgressUpdateMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
+  onFileDelivery?: (msg: FileDeliveryMessage) => void
 }
 
 export function WebSocketProvider({
@@ -475,6 +476,7 @@ export function WebSocketProvider({
   onProgressUpdate,
   onNotification,
   onRefresh,
+  onFileDelivery,
 }: WebSocketProviderProps) {
   const ws = useWebSocket(telegramId, {
     onOrderUpdate,
@@ -482,6 +484,7 @@ export function WebSocketProvider({
     onProgressUpdate,
     onNotification,
     onRefresh,
+    onFileDelivery,
   })
 
   const contextValue = useMemo(() => ({
