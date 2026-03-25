@@ -10,6 +10,7 @@ vi.mock('../api/userApi', () => ({
 
 import { useWebSocket } from './useWebSocket'
 import type { OrderUpdateMessage } from './useWebSocket'
+import type { ChatSocketMessage } from './useWebSocket'
 import type { FileDeliveryMessage } from './useWebSocket'
 
 class MockWebSocket {
@@ -58,16 +59,19 @@ let latestHook: ReturnType<typeof useWebSocket> | null = null
 function HookHarness({
   telegramId,
   onOrderUpdate,
+  onChatMessage,
   onFileDelivery,
 }: {
   telegramId: number | null
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
+  onChatMessage?: (msg: ChatSocketMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
 }) {
   latestHook = useWebSocket(telegramId, {
     autoReconnect: true,
     reconnectInterval: 1000,
     onOrderUpdate,
+    onChatMessage,
     onFileDelivery,
   })
 
@@ -211,6 +215,32 @@ describe('useWebSocket reconnect flow', () => {
         order_id: 91,
         file_count: 3,
         files_url: 'https://example.com/files',
+      }),
+    )
+  })
+
+  it('forwards chat message notifications to the dedicated handler', () => {
+    const onChatMessage = vi.fn()
+
+    act(() => {
+      root.render(<HookHarness telegramId={123} onChatMessage={onChatMessage} />)
+    })
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'chat_message',
+        timestamp: new Date().toISOString(),
+        order_id: 45,
+        title: '💬 Менеджер',
+        message: 'Есть обновление по заказу',
+      })
+    })
+
+    expect(onChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 45,
+        title: '💬 Менеджер',
+        message: 'Есть обновление по заказу',
       }),
     )
   })

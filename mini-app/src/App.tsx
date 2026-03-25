@@ -20,6 +20,7 @@ import {
   BalanceUpdateMessage,
   ProgressUpdateMessage,
   NotificationMessage,
+  ChatSocketMessage,
   FileDeliveryMessage,
   useWebSocketContext,
 } from './hooks/useWebSocket'
@@ -292,6 +293,22 @@ function AppContent() {
     refetch()
   }, [refetch])
 
+  const handleChatMessage = useCallback((msg: ChatSocketMessage) => {
+    const smartData: SmartNotificationData = {
+      type: 'notification',
+      title: msg.title || 'Новое сообщение',
+      message: msg.message || 'Менеджер написал вам по заказу.',
+      icon: msg.icon || 'message-circle',
+      color: msg.color || '#22c55e',
+      priority: 'high',
+      action: 'view_order',
+      data: { order_id: msg.order_id },
+    }
+
+    setNotification(smartData)
+    refetch()
+  }, [refetch])
+
   const handleFileDelivery = useCallback((msg: FileDeliveryMessage) => {
     const smartData: SmartNotificationData = {
       type: 'notification',
@@ -366,6 +383,7 @@ function AppContent() {
           onOrderUpdate={handleOrderUpdate}
           onBalanceUpdate={handleBalanceUpdate}
           onProgressUpdate={handleProgressUpdate}
+          onChatMessage={handleChatMessage}
           onNotification={handleNotification}
           onRefresh={handleRefresh}
           onFileDelivery={handleFileDelivery}
@@ -552,6 +570,7 @@ function AppContent() {
                   onOrderUpdate={handleOrderUpdate}
                   onBalanceUpdate={handleBalanceUpdate}
                   onProgressUpdate={handleProgressUpdate}
+                  onChatMessage={handleChatMessage}
                   onNotification={handleNotification}
                   onRefresh={handleRefresh}
                   onFileDelivery={handleFileDelivery}

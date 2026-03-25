@@ -89,6 +89,10 @@ export interface ProgressUpdateMessage extends WSMessage {
 export interface ChatSocketMessage extends WSMessage {
   type: 'chat_message'
   order_id: number
+  title?: string
+  message?: string
+  icon?: string
+  color?: string
 }
 
 export interface TypingIndicatorSocketMessage extends WSMessage {
@@ -115,6 +119,7 @@ interface UseWebSocketOptions {
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
   onBalanceUpdate?: (msg: BalanceUpdateMessage) => void
   onProgressUpdate?: (msg: ProgressUpdateMessage) => void
+  onChatMessage?: (msg: ChatSocketMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
@@ -141,6 +146,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onOrderUpdate,
     onBalanceUpdate,
     onProgressUpdate,
+    onChatMessage,
     onNotification,
     onRefresh,
     onFileDelivery,
@@ -191,6 +197,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onOrderUpdate,
     onBalanceUpdate,
     onProgressUpdate,
+    onChatMessage,
     onNotification,
     onRefresh,
     onFileDelivery,
@@ -204,13 +211,14 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       onOrderUpdate,
       onBalanceUpdate,
       onProgressUpdate,
+      onChatMessage,
       onNotification,
       onRefresh,
       onFileDelivery,
       onConnect,
       onDisconnect,
     }
-  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, onFileDelivery, onConnect, onDisconnect])
+  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onChatMessage, onNotification, onRefresh, onFileDelivery, onConnect, onDisconnect])
 
   // Add message handler
   const addMessageHandler = useCallback((handler: MessageHandler) => {
@@ -261,6 +269,9 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           break
         case 'progress_update':
           handlers.onProgressUpdate?.(message as ProgressUpdateMessage)
+          break
+        case 'chat_message':
+          handlers.onChatMessage?.(message as ChatSocketMessage)
           break
         case 'notification':
           handlers.onNotification?.(message as NotificationMessage)
@@ -463,6 +474,7 @@ interface WebSocketProviderProps {
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
   onBalanceUpdate?: (msg: BalanceUpdateMessage) => void
   onProgressUpdate?: (msg: ProgressUpdateMessage) => void
+  onChatMessage?: (msg: ChatSocketMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
@@ -474,6 +486,7 @@ export function WebSocketProvider({
   onOrderUpdate,
   onBalanceUpdate,
   onProgressUpdate,
+  onChatMessage,
   onNotification,
   onRefresh,
   onFileDelivery,
@@ -482,6 +495,7 @@ export function WebSocketProvider({
     onOrderUpdate,
     onBalanceUpdate,
     onProgressUpdate,
+    onChatMessage,
     onNotification,
     onRefresh,
     onFileDelivery,
