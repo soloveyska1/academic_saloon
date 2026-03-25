@@ -46,7 +46,10 @@ jobs:
               - 'database/**'
               - 'main.py'
               - 'requirements.txt'
+              - 'ops/systemd/**'
               - 'scripts/remote_deploy.sh'
+              - 'scripts/systemd_prestart.sh'
+              - 'scripts/systemd_reload.sh'
               - 'scripts/deploy_notify.py'
               - '.github/workflows/deploy.yml'
             frontend:

@@ -7,6 +7,9 @@ SERVICE_NAME="${SERVICE_NAME:-saloon-bot}"
 WEB_ROOT="${WEB_ROOT:-/var/www/academic_saloon}"
 LOCK_FILE="${LOCK_FILE:-/tmp/saloon-deploy.lock}"
 FRONTEND_ARCHIVE_PATH="${FRONTEND_ARCHIVE_PATH:-/tmp/academic_saloon_deploy/frontend-dist.tgz}"
+SYSTEMD_TEMPLATE_PATH="${SYSTEMD_TEMPLATE_PATH:-$REPO_DIR/ops/systemd/${SERVICE_NAME}.service.template}"
+SYSTEMD_UNIT_PATH="${SYSTEMD_UNIT_PATH:-/etc/systemd/system/${SERVICE_NAME}.service}"
+SYSTEMD_HELPER_DIR="${SYSTEMD_HELPER_DIR:-/usr/local/lib/academic-saloon}"
 BACKEND_CHANGED="${BACKEND_CHANGED:-false}"
 FRONTEND_CHANGED="${FRONTEND_CHANGED:-false}"
 FRONTEND_BUILD_MODE="${FRONTEND_BUILD_MODE:-auto}"
@@ -18,6 +21,16 @@ NEW_COMMIT="${NEW_COMMIT:-unknown}"
 
 cleanup() {
   rm -f "$LOCK_FILE"
+}
+
+systemd_maybe_sudo() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    "$@"
+  fi
 }
 
 activate_venv() {
@@ -49,22 +62,22 @@ install_backend_dependencies() {
 }
 
 restart_backend() {
-  if ! systemctl restart "$SERVICE_NAME"; then
+  if ! systemd_maybe_sudo systemctl reload-or-restart "$SERVICE_NAME"; then
     echo "Initial restart failed, clearing port 8000 and retrying"
   fi
 
   sleep 1
 
-  if systemctl is-active --quiet "$SERVICE_NAME"; then
+  if systemd_maybe_sudo systemctl is-active --quiet "$SERVICE_NAME"; then
     return
   fi
 
   fuser -k -9 8000/tcp 2>/dev/null || true
   lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
   sleep 1
-  systemctl restart "$SERVICE_NAME"
+  systemd_maybe_sudo systemctl restart "$SERVICE_NAME"
   sleep 2
-  systemctl is-active --quiet "$SERVICE_NAME"
+  systemd_maybe_sudo systemctl is-active --quiet "$SERVICE_NAME"
 }
 
 install_frontend_dependencies() {
@@ -107,8 +120,8 @@ activate_frontend_dist() {
   mv "$next_dir" "$current_dir"
   rm -rf "$previous_dir"
 
-  nginx -t
-  systemctl reload nginx
+  systemd_maybe_sudo nginx -t
+  systemd_maybe_sudo systemctl reload nginx
 }
 
 deploy_frontend_bundle() {
@@ -183,6 +196,70 @@ send_notification() {
   set -e
 }
 
+install_systemd_helpers() {
+  local prestart_src reload_src
+
+  prestart_src="$REPO_DIR/scripts/systemd_prestart.sh"
+  reload_src="$REPO_DIR/scripts/systemd_reload.sh"
+
+  if [ ! -f "$prestart_src" ] || [ ! -f "$reload_src" ]; then
+    return
+  fi
+
+  systemd_maybe_sudo install -d -m 0755 "$SYSTEMD_HELPER_DIR"
+  systemd_maybe_sudo install -m 0755 "$prestart_src" "$SYSTEMD_HELPER_DIR/systemd_prestart.sh"
+  systemd_maybe_sudo install -m 0755 "$reload_src" "$SYSTEMD_HELPER_DIR/systemd_reload.sh"
+}
+
+install_systemd_unit() {
+  local tmp_unit owner_user owner_group env_file current_hash new_hash
+
+  if [ ! -f "$SYSTEMD_TEMPLATE_PATH" ]; then
+    return
+  fi
+
+  install_systemd_helpers
+
+  owner_user="$(stat -c '%U' "$REPO_DIR")"
+  owner_group="$(stat -c '%G' "$REPO_DIR")"
+  env_file="$REPO_DIR/.env"
+  tmp_unit="$(mktemp)"
+
+  python3 - <<PY > "$tmp_unit"
+from pathlib import Path
+
+template = Path("${SYSTEMD_TEMPLATE_PATH}").read_text()
+rendered = (
+    template
+    .replace("{{SERVICE_USER}}", "${owner_user}")
+    .replace("{{SERVICE_GROUP}}", "${owner_group}")
+    .replace("{{REPO_DIR}}", "${REPO_DIR}")
+    .replace("{{ENV_FILE}}", "${env_file}")
+    .replace("{{SYSTEMD_HELPER_DIR}}", "${SYSTEMD_HELPER_DIR}")
+)
+print(rendered, end="")
+PY
+
+  if command -v systemd-analyze >/dev/null 2>&1; then
+    systemd-analyze verify "$tmp_unit" >/dev/null
+  fi
+
+  new_hash="$(sha256sum "$tmp_unit" | cut -d' ' -f1)"
+  current_hash="$(
+    systemd_maybe_sudo bash -lc "if [ -f '$SYSTEMD_UNIT_PATH' ]; then sha256sum '$SYSTEMD_UNIT_PATH' | cut -d' ' -f1; fi"
+  )"
+
+  if [ "$new_hash" = "$current_hash" ]; then
+    rm -f "$tmp_unit"
+    return
+  fi
+
+  systemd_maybe_sudo install -m 0644 "$tmp_unit" "$SYSTEMD_UNIT_PATH"
+  rm -f "$tmp_unit"
+  systemd_maybe_sudo systemctl daemon-reload
+  systemd_maybe_sudo systemctl enable "$SERVICE_NAME" >/dev/null 2>&1 || true
+}
+
 trap cleanup EXIT
 touch "$LOCK_FILE"
 
@@ -194,6 +271,7 @@ if [ "$BACKEND_CHANGED" != "true" ] && [ "$FRONTEND_CHANGED" != "true" ]; then
 fi
 
 if [ "$BACKEND_CHANGED" = "true" ]; then
+  install_systemd_unit
   install_backend_dependencies
   if [ "$SKIP_DB_MIGRATIONS" != "true" ]; then
     alembic upgrade head
