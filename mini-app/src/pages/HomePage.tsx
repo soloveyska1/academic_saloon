@@ -312,6 +312,7 @@ export function HomePage({ user, onRefresh }: Props) {
             rank: { is_max: user.rank.is_max, name: user.rank.name, cashback: user.rank.cashback },
             orders_count: user.orders_count,
             has_active_orders: activeOrders > 0,
+            total_spent: user.total_spent,
           }}
           summary={{
             balance: user.balance,
