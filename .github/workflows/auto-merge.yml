@@ -10,6 +10,10 @@ on:
         description: 'Branch to merge (leave empty for current)'
         required: false
 
+concurrency:
+  group: auto-merge-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -20,6 +24,7 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,8 +36,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'mini-app/package-lock.json'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: mini-app/node_modules
+          key: node-modules-${{ hashFiles('mini-app/package-lock.json') }}
+
+      - name: Install if cache miss
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: cd mini-app && npm ci
 
       - name: Configure Git
         run: |
@@ -63,8 +77,7 @@ jobs:
             echo "Frontend files changed — running TypeScript check..."
             git checkout "origin/$BRANCH" --quiet
             cd mini-app
-            npm ci --prefer-offline 2>/dev/null || npm install
-            npx tsc --noEmit
+            ./node_modules/.bin/tsc --noEmit
             if [ $? -ne 0 ]; then
               echo "TypeScript errors on branch $BRANCH — merge blocked"
               exit 1
@@ -125,6 +138,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 15s
           envs: NOTIFY_CHAT_ID,MERGE_BRANCH,MERGE_COMMIT_COUNT,MERGE_COMMITS_TEXT,MERGE_FILE_TAGS,MERGE_FILES_STAT,MERGE_INSERTIONS,MERGE_DELETIONS
           script: |
             cd ~/academic_saloon
