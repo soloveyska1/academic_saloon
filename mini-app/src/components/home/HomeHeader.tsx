@@ -235,28 +235,7 @@ function CardBorder({ reduced }: { reduced: boolean }) {
   )
 }
 
-/* ─── Decorative divider ─── */
-function DiamondDivider({ reduced }: { reduced: boolean }) {
-  const content = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-      <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15))' }} />
-      <div style={{ width: 3, height: 3, borderRadius: 1, transform: 'rotate(45deg)', background: 'rgba(212,175,55,0.25)' }} />
-      <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.15), transparent)' }} />
-    </div>
-  )
-
-  if (reduced) return content
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scaleX: 0 }}
-      animate={{ opacity: 1, scaleX: 1 }}
-      transition={{ delay: 0.3, duration: 0.6 }}
-    >
-      {content}
-    </motion.div>
-  )
-}
+/* DiamondDivider removed — no longer used */
 
 /* ─── Online status hook ─── */
 function useOnline(): boolean {
