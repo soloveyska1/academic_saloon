@@ -412,7 +412,7 @@ export function HomePage({ user, onRefresh }: Props) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >
-                Узнать стоимость
+                Рассчитать мою работу
                 <ArrowRight size={16} strokeWidth={2} />
               </motion.button>
             </motion.div>

@@ -21,7 +21,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Каковы сроки выполнения?',
-    answer: 'Реферат — от 1 дня, курсовая — от 3, дипломная — от 7. Срочные заказы — от 24 часов.',
+    answer: 'Реферат — от 1 дня, курсовая — от 5, дипломная — от 14. Срочные заказы — от 24 часов.',
   },
   {
     question: 'Какая уникальность текста?',
@@ -153,13 +153,19 @@ export const FAQSection = memo(function FAQSection() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {FAQ_ITEMS.map((item, i) => (
-          <FAQAccordionItem
+          <motion.div
             key={i}
-            question={item.question}
-            answer={item.answer}
-            isOpen={openIndex === i}
-            onToggle={() => handleToggle(i)}
-          />
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 + i * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <FAQAccordionItem
+              question={item.question}
+              answer={item.answer}
+              isOpen={openIndex === i}
+              onToggle={() => handleToggle(i)}
+            />
+          </motion.div>
         ))}
       </div>
     </motion.div>

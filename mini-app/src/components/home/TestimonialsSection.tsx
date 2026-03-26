@@ -10,6 +10,7 @@ interface Testimonial {
   icon: LucideIcon
   text: string
   outcome: string
+  name: string
 }
 
 const TESTIMONIALS: Testimonial[] = [
@@ -18,36 +19,42 @@ const TESTIMONIALS: Testimonial[] = [
     icon: BookOpen,
     text: 'Сделали за 4 дня. Уникальность 87%. Преподаватель принял с первого раза.',
     outcome: 'Уникальность 87%',
+    name: 'Анна, Москва',
   },
   {
     workType: 'Дипломная',
     icon: GraduationCap,
     text: 'Работа на высшем уровне. Защитил на отлично. Рекомендую.',
     outcome: 'Защитил на отлично',
+    name: 'Дмитрий, СПб',
   },
   {
     workType: 'Эссе',
     icon: PenTool,
     text: 'Заказывала срочно, за 24 часа. Всё готово вовремя. Одна правка — и сдала.',
     outcome: 'Готово за 24ч',
+    name: 'Мария, Казань',
   },
   {
     workType: 'Реферат',
     icon: FileText,
     text: 'Оформили по ГОСТу за 2 дня. Преподаватель доволен, приняли без замечаний.',
     outcome: 'По ГОСТу',
+    name: 'Артём, Екатеринбург',
   },
   {
     workType: 'Контрольная',
     icon: Calculator,
     text: 'Решили 15 задач по матанализу. Все правильно, проверяла сама.',
     outcome: '15 задач',
+    name: 'Ольга, Новосибирск',
   },
   {
     workType: 'Презентация',
     icon: Presentation,
     text: '30 слайдов с дизайном за 3 дня. Выступил на отлично, преподаватель хвалил.',
     outcome: '30 слайдов',
+    name: 'Иван, Краснодар',
   },
 ]
 
@@ -188,7 +195,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                     <span style={{
                       fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.30)',
                     }}>
-                      Проверенный
+                      {t.name} · Проверенный заказ
                     </span>
                   </div>
                 </div>
@@ -200,7 +207,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
 
       {/* Dot indicators */}
       <div style={{
-        display: 'flex', justifyContent: 'center', gap: 6, marginTop: 14,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 44,
       }}>
         {TESTIMONIALS.map((_, i) => (
           <motion.div
