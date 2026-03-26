@@ -22,7 +22,7 @@ export const ShareDiscountCard = memo(function ShareDiscountCard({
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const shareLink = `https://t.me/${botUsername}?start=ref_${telegramId || referralCode}`
-  const shareText = `Скидка ${discountPercent}% на заказ в Академическом Салоне!\n\nПромокод: ${referralCode}\nКурсовые, дипломы, рефераты — от 990₽`
+  const shareText = `Скидка ${discountPercent}% на заказ в Академическом Салоне!\n\nПромокод: ${referralCode}\nКурсовые, дипломы, рефераты — индивидуально`
 
   const handleCopy = useCallback(async () => {
     haptic('light')

@@ -658,8 +658,8 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
           </GoldText>
         </motion.div>
 
-        {/* Spacer between name and finance card */}
-        <div style={{ height: 14 }} />
+        {/* Spacer between name and finance card (only when finance is visible) */}
+        {showFinance && <div style={{ height: 14 }} />}
 
         {/* ═══ Finance card — full-width ═══ */}
         {showFinance && (
