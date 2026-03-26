@@ -35,7 +35,7 @@ async def get_config(request: Request):
         bot_username=settings.BOT_USERNAME,
         support_username=settings.SUPPORT_USERNAME,
         reviews_channel=settings.REVIEWS_CHANNEL,
-        offer_url=settings.OFFER_URL,
+        offer_url=settings.public_offer_url,
     )
 
 @router.get("/user", response_model=UserResponse)

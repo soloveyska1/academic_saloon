@@ -8,6 +8,22 @@ from pydantic import SecretStr
 
 # Базовая директория проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
+CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26"
+LEGACY_OFFER_URLS = {
+    "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25",
+    "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30",
+}
+
+
+def normalize_offer_url(url: str | None) -> str:
+    if not url:
+        return CANONICAL_OFFER_URL
+
+    cleaned = url.strip()
+    if cleaned in LEGACY_OFFER_URLS:
+        return CANONICAL_OFFER_URL
+
+    return cleaned
 
 class Settings(BaseSettings):
     BOT_TOKEN: SecretStr  # From .env file
@@ -20,7 +36,7 @@ class Settings(BaseSettings):
     ORDERS_CHANNEL_ID: int = -1003331104298  # Канал для Live-карточек заказов
     ADMIN_GROUP_ID: int = -1003352978651  # Супергруппа с Forum Topics для тикетов
     SUPPORT_USERNAME: str = "Thisissaymoon"
-    OFFER_URL: str = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26"  # Публичная оферта
+    OFFER_URL: str = CANONICAL_OFFER_URL  # Публичная оферта
 
     # Mini App URL (Web App для Telegram)
     # Hosted on server via nginx at academic-saloon.duckdns.org
@@ -95,6 +111,10 @@ class Settings(BaseSettings):
         if placeholder in self.YOOKASSA_RETURN_URL:
             return self.YOOKASSA_RETURN_URL.format(bot_username=self.BOT_USERNAME)
         return self.YOOKASSA_RETURN_URL
+
+    @property
+    def public_offer_url(self) -> str:
+        return normalize_offer_url(self.OFFER_URL)
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
