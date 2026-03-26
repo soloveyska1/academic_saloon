@@ -31,10 +31,10 @@ const PRICING_ITEMS: PricingItem[] = [
   { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', price: 'от 2 990 ₽', timeline: 'от 5 дней' },
   { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', price: 'от 9 990 ₽', timeline: 'от 14 дней' },
   { icon: BookOpen, workType: 'Эссе', workTypeKey: 'essay', price: 'от 1 490 ₽', timeline: 'от 1 дня' },
-  { icon: ClipboardList, workType: 'Контрольная', workTypeKey: 'test_paper', price: 'от 1 290 ₽', timeline: 'от 2 дней' },
-  { icon: Briefcase, workType: 'Отчёт по практике', workTypeKey: 'practice_report', price: 'от 2 490 ₽', timeline: 'от 3 дней' },
+  { icon: ClipboardList, workType: 'Контрольная', workTypeKey: 'control', price: 'от 1 290 ₽', timeline: 'от 2 дней' },
+  { icon: Briefcase, workType: 'Отчёт по практике', workTypeKey: 'practice', price: 'от 2 490 ₽', timeline: 'от 3 дней' },
   { icon: Presentation, workType: 'Презентация', workTypeKey: 'presentation', price: 'от 990 ₽', timeline: 'от 2 дней' },
-  { icon: ScrollText, workType: 'Диссертация', workTypeKey: 'dissertation', price: 'от 29 990 ₽', timeline: 'от 30 дней' },
+  { icon: ScrollText, workType: 'Диссертация', workTypeKey: 'masters', price: 'от 29 990 ₽', timeline: 'от 30 дней' },
 ]
 
 const EASE = [0.16, 1, 0.3, 1] as unknown as number[]
