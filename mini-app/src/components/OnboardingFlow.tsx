@@ -81,7 +81,7 @@ const VALUE_CARDS = [
   { icon: FileCheck, title: 'Только оригинал', badge: '80%+ уникальность', desc: 'Антиплагиат пройден' },
   { icon: RefreshCcw, title: 'Правки включены', badge: '∞ итераций', desc: 'До полного согласования' },
   { icon: Shield, title: 'Полная защита', badge: '100% возврат', desc: 'Гарантия по договору' },
-  { icon: GraduationCap, title: 'Авторы с опытом', badge: 'к.н. и д.н.', desc: 'Кандидаты и доктора наук' },
+  { icon: GraduationCap, title: '6 лет опыта', badge: 'est. 2020', desc: 'Персональное ведение проекта' },
 ] as const
 
 const STAT_BLOCKS = [
