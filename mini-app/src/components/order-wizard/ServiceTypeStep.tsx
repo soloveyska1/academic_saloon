@@ -346,7 +346,7 @@ function ServiceCard({
           borderRadius: RADIUS.sm,
           background: selected
             ? 'rgba(201, 162, 39, 0.08)'
-            : isPremium ? 'rgba(201, 162, 39, 0.04)' : 'rgba(255, 255, 255, 0.04)',
+            : isPremium ? 'rgba(201, 162, 39, 0.04)' : 'rgba(201, 162, 39, 0.03)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -560,7 +560,7 @@ function CustomRequestCard({ onPress, index }: { onPress: () => void; index: num
         gap: SPACING.md,
         padding: `${SPACING.md + 2}px ${SPACING.lg}px`,
         background: 'none',
-        border: '1px dashed rgba(255, 255, 255, 0.05)',
+        border: '1px dashed rgba(201, 162, 39, 0.08)',
         borderRadius: RADIUS.md,
         cursor: 'pointer',
         textAlign: 'left',

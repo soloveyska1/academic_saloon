@@ -669,7 +669,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               <div style={{ fontSize: 14, fontWeight: 600, color: '#d4af37', marginBottom: 2 }}>
                 Ваш первый заказ
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Выберите тип работы и заполните детали
               </div>
             </div>
@@ -707,7 +707,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', marginBottom: 2 }}>
                 Повторный заказ
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Данные предзаполнены из прошлого заказа
               </div>
             </div>
@@ -763,7 +763,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 background: 'rgba(12, 12, 10, 0.6)',
                 backdropFilter: 'blur(16px) saturate(120%)',
                 WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-                border: '1px solid rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(212, 175, 55, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -789,7 +789,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                       borderRadius: 3,
                       background: s <= step
                         ? 'var(--gold-400)'
-                        : 'rgba(255, 255, 255, 0.06)',
+                        : 'rgba(212, 175, 55, 0.06)',
                       transition: 'width 0.3s ease, background 0.3s ease',
                     }}
                   />
@@ -836,8 +836,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 onClick={() => switchMode('full')}
                 style={{
                   padding: '8px 12px',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(212, 175, 55, 0.04)',
+                  border: '1px solid rgba(212, 175, 55, 0.10)',
                   borderRadius: 8,
                   color: 'var(--text-secondary)',
                   fontSize: 12,
