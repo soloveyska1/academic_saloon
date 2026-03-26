@@ -38,11 +38,7 @@ import {
   StreakFreezeCard,
   SeasonalBanner,
   SmartReorderCard,
-  LiveActivityFeed,
-  PriceCalculator,
-  SessionCountdown,
-  GuaranteeCertificate,
-  LiveAuthorsCounter,
+  // Removed: LiveActivityFeed, PriceCalculator, SessionCountdown, GuaranteeCertificate, LiveAuthorsCounter
 } from '../components/home'
 
 const loadQRCodeModal = () => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal }))
@@ -389,23 +385,13 @@ export function HomePage({ user, onRefresh }: Props) {
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
 
-            {/* ─── Live activity ticker — instant social proof ─── */}
-            <LiveActivityFeed />
-
-            {/* ─── Live authors counter — "X авторов работают прямо сейчас" ─── */}
-            <LiveAuthorsCounter />
-
             {/* ─── Seasonal banner ─── */}
             <Section>
               <SeasonalBanner onAction={handleNewOrder} />
             </Section>
 
-            {/* ─── Session deadline countdown — dynamic urgency ─── */}
-            <SessionCountdown onAction={handleNewOrder} />
-
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <WhyTrustUs />
-            <GuaranteeCertificate />
             <TestimonialsSection />
 
             {/* Repeat CTA after social proof — premium style with shine */}
@@ -458,14 +444,6 @@ export function HomePage({ user, onRefresh }: Props) {
                 <ArrowRight size={16} strokeWidth={2.2} style={{ position: 'relative', zIndex: 1 }} />
               </motion.button>
             </motion.div>
-
-            {/* ─── Inline price calculator — see price without leaving ─── */}
-            <Section>
-              <PriceCalculator
-                onCreateOrder={handleNewOrderWithType}
-                haptic={haptic}
-              />
-            </Section>
 
             <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
