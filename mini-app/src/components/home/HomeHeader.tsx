@@ -396,7 +396,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
 
   const staticRing = 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)'
   const variants = reduced ? staggerReduced : stagger
-  const AVATAR_SIZE = 48
+  const AVATAR_SIZE = isNewUser ? 40 : 48
 
   // ── Rank progress calculation ──
   const rankProgress = useMemo(() => {
@@ -463,7 +463,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
       )}
     </AnimatePresence>
 
-    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 14 : 10 }}>
+    <header ref={headerRef} className={s.header} style={{ marginBottom: showFinance ? 14 : 6 }}>
       <motion.div
         initial="initial"
         animate="animate"
@@ -505,8 +505,17 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 }}
               />
             )}
-            {/* Gold ring — full conic gradient for max rank, SVG progress arc otherwise */}
-            {rankProgress.isMax ? (
+            {/* Gold ring — full conic gradient for max rank, SVG progress arc otherwise, thin ring for new users */}
+            {isNewUser ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: -2,
+                  borderRadius: '50%',
+                  border: '1.5px solid rgba(212,175,55,0.25)',
+                }}
+              />
+            ) : rankProgress.isMax ? (
               <>
                 <motion.div
                   style={{
@@ -601,8 +610,8 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
               )}
             </div>
           </motion.button>
-          {/* Rank progress label — only for non-max rank */}
-          {!rankProgress.isMax && rankProgress.nextRankName && (
+          {/* Rank progress label — only for non-max rank, hide for new users */}
+          {!isNewUser && !rankProgress.isMax && rankProgress.nextRankName && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}

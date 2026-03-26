@@ -22,20 +22,19 @@ interface PricingItem {
   icon: LucideIcon
   workType: string
   workTypeKey: string
-  price: string
   timeline: string
   popular?: boolean
 }
 
 const PRICING_ITEMS: PricingItem[] = [
-  { icon: PenLine, workType: 'Реферат', workTypeKey: 'report', price: 'от 990 ₽', timeline: 'от 1 дня' },
-  { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', price: 'от 2 990 ₽', timeline: 'от 5 дней', popular: true },
-  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', price: 'от 9 990 ₽', timeline: 'от 14 дней', popular: true },
-  { icon: BookOpen, workType: 'Эссе', workTypeKey: 'essay', price: 'от 1 490 ₽', timeline: 'от 1 дня' },
-  { icon: ClipboardList, workType: 'Контрольная', workTypeKey: 'control', price: 'от 1 290 ₽', timeline: 'от 2 дней' },
-  { icon: Briefcase, workType: 'Отчёт по практике', workTypeKey: 'practice', price: 'от 2 490 ₽', timeline: 'от 3 дней' },
-  { icon: Presentation, workType: 'Презентация', workTypeKey: 'presentation', price: 'от 990 ₽', timeline: 'от 2 дней' },
-  { icon: ScrollText, workType: 'Диссертация', workTypeKey: 'masters', price: 'от 29 990 ₽', timeline: 'от 30 дней' },
+  { icon: PenLine, workType: 'Реферат', workTypeKey: 'report', timeline: 'от 1 дня' },
+  { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', timeline: 'от 5 дней', popular: true },
+  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', timeline: 'от 14 дней', popular: true },
+  { icon: BookOpen, workType: 'Эссе', workTypeKey: 'essay', timeline: 'от 1 дня' },
+  { icon: ClipboardList, workType: 'Контрольная', workTypeKey: 'control', timeline: 'от 2 дней' },
+  { icon: Briefcase, workType: 'Отчёт по практике', workTypeKey: 'practice', timeline: 'от 3 дней' },
+  { icon: Presentation, workType: 'Презентация', workTypeKey: 'presentation', timeline: 'от 2 дней' },
+  { icon: ScrollText, workType: 'Диссертация', workTypeKey: 'masters', timeline: 'от 30 дней' },
 ]
 
 const EASE = [0.16, 1, 0.3, 1] as unknown as number[]
@@ -211,21 +210,12 @@ export const PricingAnchor = memo(function PricingAnchor({
                   {item.workType}
                 </div>
 
-                {/* Price */}
-                <div style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: 'var(--gold-400)',
-                  marginBottom: 4,
-                }}>
-                  {item.price}
-                </div>
-
                 {/* Timeline */}
                 <div style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: 'var(--text-muted)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--gold-400)',
+                  opacity: 0.8,
                 }}>
                   {item.timeline}
                 </div>
@@ -265,7 +255,7 @@ export const PricingAnchor = memo(function PricingAnchor({
         textAlign: 'center',
         opacity: 0.5,
       }}>
-        Стоимость рассчитывается индивидуально
+        Точная стоимость — после консультации
       </div>
     </motion.div>
   )
