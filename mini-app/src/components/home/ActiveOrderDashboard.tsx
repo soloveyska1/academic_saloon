@@ -388,7 +388,7 @@ function OrderCard({
         width: '100%',
         padding: 0,
         borderRadius: 16,
-        background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(10,10,11,0.99) 40%, rgba(6,6,8,1) 100%)',
+        background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(12,11,10,0.99) 40%, rgba(8,7,6,1) 100%)',
         border: needsAction ? 'none' : '1px solid rgba(212,175,55,0.06)',
         textAlign: 'left',
         cursor: 'pointer',

@@ -36,7 +36,7 @@ export const COLORS = {
   },
   card: {
     bg: 'rgba(12, 12, 10, 0.6)',
-    border: 'rgba(255, 255, 255, 0.04)',
+    border: 'rgba(201, 162, 39, 0.06)',
     borderFocused: 'rgba(201, 162, 39, 0.15)',
   },
   assist: {

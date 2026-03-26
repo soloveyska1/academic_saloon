@@ -94,7 +94,7 @@ function DailyBonusCardInner({
 
   // Flame color based on streak length
   const flameStyle: React.CSSProperties = currentStreak >= 30
-    ? { flexShrink: 0, filter: 'hue-rotate(200deg) saturate(1.5)' }
+    ? { flexShrink: 0, color: '#d4af37', filter: 'saturate(1.4) brightness(1.2)' }
     : currentStreak >= 14
       ? { flexShrink: 0, color: '#e05a1a' }
       : currentStreak >= 7
@@ -110,13 +110,13 @@ function DailyBonusCardInner({
         marginLeft: 'auto',
         padding: '2px 8px',
         borderRadius: 999,
-        background: 'rgba(147, 197, 253, 0.08)',
-        border: '1px solid rgba(147, 197, 253, 0.12)',
+        background: 'rgba(212, 175, 55, 0.06)',
+        border: '1px solid rgba(212, 175, 55, 0.10)',
       }}
       title={freezePending ? 'Один пропуск уже покрыт защитой серии' : 'Один пропуск будет защищён автоматически'}
     >
       <span style={{ fontSize: 10 }}>❄️</span>
-      <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(147, 197, 253, 0.6)', letterSpacing: '0.02em' }}>
+      <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212, 175, 55, 0.50)', letterSpacing: '0.02em' }}>
         {freezePending
           ? 'Пропуск сохранён'
           : freezeActive

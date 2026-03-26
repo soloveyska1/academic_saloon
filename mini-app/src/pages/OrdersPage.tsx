@@ -136,8 +136,8 @@ const STATUS_META: Record<string, StatusMeta> = {
   verification_pending: {
     label: 'Проверяем оплату',
     hint: 'Платёж получен, сейчас подтверждаем зачисление.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 4,
     needsAction: false,
@@ -146,8 +146,8 @@ const STATUS_META: Record<string, StatusMeta> = {
   paid: {
     label: 'В работе',
     hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -156,8 +156,8 @@ const STATUS_META: Record<string, StatusMeta> = {
   paid_full: {
     label: 'В работе',
     hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -166,8 +166,8 @@ const STATUS_META: Record<string, StatusMeta> = {
   in_progress: {
     label: 'В работе',
     hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
