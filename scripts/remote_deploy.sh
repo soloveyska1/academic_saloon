@@ -272,6 +272,8 @@ install_systemd_unit() {
   owner_group="$(stat -c '%G' "$REPO_DIR")"
   env_file="$REPO_DIR/.env"
   tmp_unit="$(mktemp)"
+  mv "$tmp_unit" "${tmp_unit}.service"
+  tmp_unit="${tmp_unit}.service"
 
   python3 - <<PY > "$tmp_unit"
 from pathlib import Path
