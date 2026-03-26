@@ -18,14 +18,24 @@ export interface OrderCreateResponse {
 
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
-export const DEFAULT_OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2'
-export const DEFAULT_PRIVACY_POLICY_URL = 'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26'
-export const DEFAULT_EXECUTOR_INFO_URL = 'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26'
-export const DEFAULT_LEGAL_HUB_URL = 'https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26'
+export const DEFAULT_OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-3'
+export const DEFAULT_PRIVACY_POLICY_URL = 'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26-2'
+export const DEFAULT_EXECUTOR_INFO_URL = 'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26-2'
+export const DEFAULT_LEGAL_HUB_URL = 'https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26-2'
 const LEGACY_OFFER_URLS = new Set([
   'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25',
   'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30',
   'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26',
+  'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2',
+])
+const LEGACY_PRIVACY_POLICY_URLS = new Set([
+  'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26',
+])
+const LEGACY_EXECUTOR_INFO_URLS = new Set([
+  'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26',
+])
+const LEGACY_LEGAL_HUB_URLS = new Set([
+  'https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26',
 ])
 
 // Known production API host — used as fallback when VITE_API_URL is not set
@@ -161,15 +171,15 @@ function normalizeOfferUrl(url?: string): string {
 }
 
 function normalizePrivacyPolicyUrl(url?: string): string {
-  return normalizePublicDocUrl(url, DEFAULT_PRIVACY_POLICY_URL)
+  return normalizePublicDocUrl(url, DEFAULT_PRIVACY_POLICY_URL, LEGACY_PRIVACY_POLICY_URLS)
 }
 
 function normalizeExecutorInfoUrl(url?: string): string {
-  return normalizePublicDocUrl(url, DEFAULT_EXECUTOR_INFO_URL)
+  return normalizePublicDocUrl(url, DEFAULT_EXECUTOR_INFO_URL, LEGACY_EXECUTOR_INFO_URLS)
 }
 
 function normalizeLegalHubUrl(url?: string): string {
-  return normalizePublicDocUrl(url, DEFAULT_LEGAL_HUB_URL)
+  return normalizePublicDocUrl(url, DEFAULT_LEGAL_HUB_URL, LEGACY_LEGAL_HUB_URLS)
 }
 
 export async function fetchConfig(): Promise<PublicConfig> {

@@ -8,18 +8,25 @@ from pydantic import SecretStr
 
 # Базовая директория проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
-CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2"
-CANONICAL_PRIVACY_POLICY_URL = "https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26"
-CANONICAL_EXECUTOR_INFO_URL = "https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26"
-CANONICAL_LEGAL_HUB_URL = "https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26"
+CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-3"
+CANONICAL_PRIVACY_POLICY_URL = "https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26-2"
+CANONICAL_EXECUTOR_INFO_URL = "https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26-2"
+CANONICAL_LEGAL_HUB_URL = "https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26-2"
 LEGACY_OFFER_URLS = {
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25",
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30",
     "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26",
+    "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2",
 }
-LEGACY_PRIVACY_POLICY_URLS: set[str] = set()
-LEGACY_EXECUTOR_INFO_URLS: set[str] = set()
-LEGACY_LEGAL_HUB_URLS: set[str] = set()
+LEGACY_PRIVACY_POLICY_URLS: set[str] = {
+    "https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26",
+}
+LEGACY_EXECUTOR_INFO_URLS: set[str] = {
+    "https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26",
+}
+LEGACY_LEGAL_HUB_URLS: set[str] = {
+    "https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26",
+}
 
 
 def normalize_public_doc_url(url: str | None, canonical_url: str, legacy_urls: set[str] | None = None) -> str:
