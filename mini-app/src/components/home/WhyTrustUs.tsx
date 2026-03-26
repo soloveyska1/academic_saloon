@@ -59,13 +59,17 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
                   display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0',
                 }}
               >
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: 'rgba(212,175,55,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
+                <motion.div
+                  animate={{ scale: [1, 1.06, 1] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.5 }}
+                  style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: 'rgba(212,175,55,0.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}
+                >
                   <Icon size={15} strokeWidth={1.8} color="var(--gold-400)" />
-                </div>
+                </motion.div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
                     {item.title}

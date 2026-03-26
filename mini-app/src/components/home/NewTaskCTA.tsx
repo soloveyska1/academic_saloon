@@ -140,9 +140,22 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             </div>
 
             {/* CTA button */}
-            <LiquidGoldButton onClick={handleClick} icon={<ArrowRight size={18} />}>
-              Узнать стоимость
-            </LiquidGoldButton>
+            <div style={{ position: 'relative' }}>
+              {/* Breathing gold glow behind CTA */}
+              <motion.div
+                aria-hidden="true"
+                animate={{ opacity: [0, 0.12, 0], scale: [0.97, 1.02, 0.97] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute', inset: -6, borderRadius: 18,
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(191,149,63,0.15))',
+                  filter: 'blur(12px)', pointerEvents: 'none',
+                }}
+              />
+              <LiquidGoldButton onClick={handleClick} icon={<ArrowRight size={18} />}>
+                Узнать стоимость
+              </LiquidGoldButton>
+            </div>
 
             {/* Micro-reassurance */}
             <div
