@@ -91,11 +91,12 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
               }}
             >
               <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'rgba(212,175,55,0.06)',
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'rgba(212,175,55,0.10)',
+                border: '1px solid rgba(212,175,55,0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <Icon size={17} strokeWidth={1.8} color="var(--gold-400)" />
+                <Icon size={18} strokeWidth={1.8} color="#D4AF37" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
@@ -108,8 +109,8 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
             </motion.div>
             {i < ITEMS.length - 1 && (
               <div style={{
-                height: 1, marginLeft: 52,
-                background: 'linear-gradient(90deg, rgba(212,175,55,0.08) 0%, transparent 100%)',
+                height: 1, marginLeft: 56,
+                background: 'linear-gradient(90deg, rgba(212,175,55,0.12) 0%, transparent 80%)',
               }} />
             )}
           </div>
