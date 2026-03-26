@@ -17,7 +17,7 @@ export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { impactOccurred: haptic } = useHapticFeedback()
-  const { isHidden, isForcedHidden } = useNavigation()
+  const { isHidden, isForcedHidden, showBonusBadge } = useNavigation()
   const [isVisible, setIsVisible] = useState(true)
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
   const lastScrollY = useRef(0)
@@ -222,8 +222,8 @@ export const Navigation = () => {
                       strokeWidth={isActive ? 2.0 : 1.6}
                       color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
                     />
-                    {/* Gold notification dot — hide when user is already on the club page */}
-                    {item.path === '/club' && !isActive && (
+                    {/* Gold notification dot — only when daily bonus is claimable */}
+                    {item.path === '/club' && !isActive && showBonusBadge && (
                       <div style={{
                         position: 'absolute',
                         top: -2,
