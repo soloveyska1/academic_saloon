@@ -230,7 +230,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
 
   const firstName = useMemo(() => {
     const name = (user?.first_name || '').trim()
-    return name || 'друг'
+    return name || ''
   }, [user?.first_name])
 
   /* ─── Phase auto-transitions ─── */
@@ -467,12 +467,12 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 maxWidth: 360,
               }}
             >
-              {/* Monogram with SVG seal ring + breathing aura */}
+              {/* Monogram with gold circle glow */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: reduced ? 0 : 0.6, ease: EASE }}
-                style={{ position: 'relative', width: 88, height: 88, marginBottom: 24 }}
+                style={{ position: 'relative', width: 80, height: 80, marginBottom: 24 }}
               >
                 {/* Breathing gold aura */}
                 {!reduced && (
@@ -481,14 +481,14 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                     animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.9, 1.1, 0.9] }}
                     transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                     style={{
-                      position: 'absolute', inset: -20, borderRadius: 32,
+                      position: 'absolute', inset: -16, borderRadius: '50%',
                       background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
                       filter: 'blur(16px)', pointerEvents: 'none', willChange: 'transform, opacity',
                     }}
                   />
                 )}
-                {/* SVG animated seal ring */}
-                <svg viewBox="0 0 88 88" style={{ position: 'absolute', inset: 0, width: 88, height: 88 }}>
+                {/* SVG animated circle ring */}
+                <svg viewBox="0 0 80 80" style={{ position: 'absolute', inset: 0, width: 80, height: 80 }}>
                   <defs>
                     <linearGradient id="seal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#FCF6BA" />
@@ -496,23 +496,29 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                       <stop offset="100%" stopColor="#BF953F" />
                     </linearGradient>
                   </defs>
-                  <motion.rect
-                    x="1" y="1" width="86" height="86" rx="23" ry="23"
+                  <motion.circle
+                    cx="40" cy="40" r="38"
                     fill="none" stroke="url(#seal-grad)" strokeWidth="1.5"
-                    strokeDasharray="308"
-                    initial={{ strokeDashoffset: 308 }}
+                    strokeDasharray={2 * Math.PI * 38}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 38 }}
                     animate={{ strokeDashoffset: 0 }}
                     transition={{ duration: reduced ? 0 : 1.4, ease: [0.65, 0, 0.35, 1], delay: 0.2 }}
                   />
                 </svg>
-                {/* Inner glass container */}
+                {/* Inner circle with monogram */}
                 <div style={{
-                  position: 'absolute', inset: 3, borderRadius: 21,
-                  ...glassGoldStyle,
+                  position: 'absolute', inset: 4, borderRadius: '50%',
+                  background: 'rgba(12,12,10,0.8)',
+                  backdropFilter: 'blur(20px) saturate(130%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(130%)',
                   border: '1px solid rgba(212,175,55,0.10)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 0 40px -10px rgba(212,175,55,0.15)',
                 }}>
-                  <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 32, lineHeight: 1, fontWeight: 400 }}>
+                  <span style={{
+                    ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY,
+                    fontSize: 26, lineHeight: 1, fontWeight: 400, letterSpacing: '0.05em',
+                  }}>
                     АС
                   </span>
                 </div>
@@ -563,7 +569,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'var(--text-primary, #f5f5f0)',
                 }}
               >
-                Добро пожаловать, {firstName}
+                {firstName ? `Добро пожаловать, ${firstName}` : 'Добро пожаловать'}
               </motion.div>
             </motion.div>
           )}
@@ -592,21 +598,24 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 maxWidth: 360,
               }}
             >
-              {/* Small monogram 48x48 */}
+              {/* Small monogram 44x44 circle */}
               <div
                 style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
-                  ...glassGoldStyle,
-                  border: '1px solid rgba(212,175,55,0.14)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: 'rgba(12,12,10,0.8)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(212,175,55,0.12)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 10,
+                  boxShadow: '0 0 24px -6px rgba(212,175,55,0.12)',
                 }}
               >
-                <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 18, lineHeight: 1 }}>
+                <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 16, lineHeight: 1, letterSpacing: '0.04em' }}>
                   АС
                 </span>
               </div>
