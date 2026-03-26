@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useCallback } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Copy, Crown, QrCode, Send, Award, Flame, Users, Star, Zap, Lock, Tag, GraduationCap, CheckCircle, ChevronDown, UserPlus } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
@@ -225,20 +225,16 @@ function OverallProgressRing({ progress }: { progress: number }) {
 const AchievementCard = memo(function AchievementCard({
   achievement,
   index,
+  onSelect,
 }: {
   achievement: Achievement
   index: number
+  onSelect: () => void
 }) {
   const Icon = achievement.icon
   const unlocked = achievement.unlocked
   const progress = achievement.progress ?? 0
   const r = RARITY[achievement.rarity]
-  const [expanded, setExpanded] = useState(false)
-
-  const handleTap = useCallback(() => {
-    setExpanded(v => !v)
-    setTimeout(() => setExpanded(false), 3000)
-  }, [])
 
   return (
     <motion.div
@@ -251,7 +247,7 @@ const AchievementCard = memo(function AchievementCard({
         damping: 20,
       }}
       whileTap={{ scale: 0.97 }}
-      onClick={handleTap}
+      onClick={onSelect}
       style={{
         position: 'relative',
         display: 'flex',
@@ -269,6 +265,26 @@ const AchievementCard = memo(function AchievementCard({
           : '0 1px 4px rgba(0,0,0,0.2)',
       }}
     >
+      {/* ─── "NEW" gold dot for the first unlocked badge ─── */}
+      {unlocked && index === 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1, type: 'spring', stiffness: 200, damping: 15 }}
+          style={{
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#D4AF37',
+            boxShadow: '0 0 8px rgba(212,175,55,0.5)',
+            zIndex: 3,
+          }}
+        />
+      )}
+
       {/* ─── Top shine line для unlocked ─── */}
       {unlocked && (
         <div
@@ -507,39 +523,196 @@ const AchievementCard = memo(function AchievementCard({
         </div>
       ) : (
         /* Locked без прогресса — подсказка */
-        <AnimatePresence>
-          {expanded ? (
-            <motion.span
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.25)',
-                textAlign: 'center',
-                lineHeight: 1.3,
-                maxWidth: 110,
-              }}
-            >
-              {achievement.hint || 'Как открыть?'}
-            </motion.span>
-          ) : (
-            <motion.span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.15)',
-                textAlign: 'center',
-                letterSpacing: '0.04em',
-              }}
-            >
-              ???
-            </motion.span>
-          )}
-        </AnimatePresence>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.15)',
+            textAlign: 'center',
+            letterSpacing: '0.04em',
+          }}
+        >
+          ???
+        </span>
       )}
     </motion.div>
+  )
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACHIEVEMENT DETAIL MODAL — Full-screen detail for tapped badge
+   ═══════════════════════════════════════════════════════════════════════════ */
+const AchievementDetailModal = memo(function AchievementDetailModal({
+  achievement,
+  onClose,
+}: {
+  achievement: Achievement | null
+  onClose: () => void
+}) {
+  if (!achievement) return null
+  const r = RARITY[achievement.rarity]
+  const Icon = achievement.icon
+  const unlocked = achievement.unlocked
+
+  return (
+    <AnimatePresence>
+      {achievement && (
+        <motion.div
+          key="badge-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 300,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: 12,
+            }}
+          >
+            {/* Large icon 80px with glow */}
+            <motion.div
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: unlocked ? r.bg : 'rgba(255,255,255,0.03)',
+                border: `2px solid ${unlocked ? r.border : 'rgba(255,255,255,0.06)'}`,
+                boxShadow: unlocked
+                  ? `0 0 32px ${r.glow}, 0 0 64px ${r.glow}`
+                  : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon
+                size={36}
+                strokeWidth={1.6}
+                color={unlocked ? r.primary : 'rgba(255,255,255,0.15)'}
+              />
+            </motion.div>
+
+            {/* Rarity dots */}
+            <span style={{ fontSize: 10, color: r.labelColor, letterSpacing: '0.1em' }}>
+              {r.label}
+            </span>
+
+            {/* Title */}
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: unlocked ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)',
+              }}
+            >
+              {achievement.label}
+            </div>
+
+            {/* Description */}
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>
+              {achievement.description}
+            </div>
+
+            {/* Progress for locked */}
+            {!unlocked && achievement.progress !== undefined && achievement.progress > 0 && (
+              <div style={{ width: '100%', marginTop: 4 }}>
+                <div
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    background: 'rgba(255,255,255,0.06)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${achievement.progress * 100}%` }}
+                    transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ height: '100%', borderRadius: 2, background: '#D4AF37' }}
+                  />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#D4AF37', marginTop: 6 }}>
+                  {achievement.hint || `${Math.round(achievement.progress * 100)}%`}
+                </div>
+              </div>
+            )}
+
+            {/* Percentage of users */}
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.25)',
+                marginTop: 4,
+              }}
+            >
+              {achievement.percentOwners}% пользователей имеют
+            </div>
+
+            {/* Share button for unlocked */}
+            {unlocked && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  const text = `🏆 Достижение «${achievement.label}» получено!\n${achievement.description}\nТолько ${achievement.percentOwners}% имеют`
+                  const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(text)}`
+                  window.open(url, '_blank')
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px 20px',
+                  marginTop: 8,
+                  borderRadius: 12,
+                  border: `1px solid ${r.border}`,
+                  background: r.bg,
+                  color: r.primary,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <Send size={16} strokeWidth={1.8} />
+                Поделиться
+              </motion.button>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 })
 
@@ -730,6 +903,7 @@ export const LoungeVault = memo(function LoungeVault({
   const achievements = useAchievements(ordersCount, totalSpent, referralsCount, dailyStreak, rank.is_max, orders)
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const overallProgress = unlockedCount / achievements.length
+  const [selectedBadge, setSelectedBadge] = useState<Achievement | null>(null)
 
   // Сортировка: unlocked первыми, потом с прогрессом, потом locked
   const sortedAchievements = useMemo(() => {
@@ -875,7 +1049,7 @@ export const LoungeVault = memo(function LoungeVault({
         >
           {sortedAchievements.map((a, i) => (
             <div key={a.id} style={{ flexShrink: 0, width: 104, scrollSnapAlign: 'start' }}>
-              <AchievementCard achievement={a} index={i} />
+              <AchievementCard achievement={a} index={i} onSelect={() => setSelectedBadge(a)} />
             </div>
           ))}
         </div>
@@ -892,6 +1066,8 @@ export const LoungeVault = memo(function LoungeVault({
         onTelegramShare={onTelegramShare}
       />
       {/* Old inline Card C removed — replaced by ReferralCard above */}
+
+      <AchievementDetailModal achievement={selectedBadge} onClose={() => setSelectedBadge(null)} />
     </motion.section>
   )
 })
