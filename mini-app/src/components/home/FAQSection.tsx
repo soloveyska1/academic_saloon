@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { HelpCircle, ChevronDown } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FAQ — Accordion with unified card style.
+//  FAQ — Premium accordion with gold+black style.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const FAQ_ITEMS = [
@@ -41,12 +41,14 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
     <div
       style={{
         borderRadius: 'var(--radius-md)',
-        background: isOpen ? 'rgba(201, 162, 39, 0.04)' : 'rgba(12, 12, 10, 0.6)',
-        backdropFilter: 'blur(16px) saturate(120%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(120%)',
+        background: '#0E0D0C',
+        borderLeft: isOpen ? '2px solid var(--gold-400)' : '2px solid transparent',
         border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(255, 255, 255, 0.04)'}`,
+        borderLeftWidth: 2,
+        borderLeftStyle: 'solid',
+        borderLeftColor: isOpen ? 'var(--gold-400)' : 'transparent',
         overflow: 'hidden',
-        transition: 'background 0.2s, border-color 0.2s',
+        transition: 'border-color 0.2s',
       }}
     >
       <button
@@ -69,7 +71,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
           flex: 1,
           fontFamily: 'var(--font-display)',
           fontSize: 14,
-          fontWeight: 600,
+          fontWeight: 700,
           color: isOpen ? 'var(--gold-400)' : 'var(--text-primary)',
           lineHeight: 1.4,
           transition: 'color 0.2s',
@@ -81,7 +83,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
           transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
           style={{ flexShrink: 0 }}
         >
-          <ChevronDown size={15} color="var(--text-muted)" strokeWidth={2} />
+          <ChevronDown size={15} color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'} strokeWidth={2} />
         </motion.div>
       </button>
 
@@ -96,7 +98,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
           >
             <div style={{
               padding: '0 16px 16px',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 600,
               color: 'var(--text-secondary)',
               lineHeight: 1.55,
