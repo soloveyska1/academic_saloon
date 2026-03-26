@@ -3,7 +3,7 @@ import { motion, useInView } from 'framer-motion'
 import { ShieldCheck, RefreshCcw, Clock, EyeOff, Banknote, Award } from 'lucide-react'
 
 const ITEMS = [
-  { icon: Award, title: 'Авторы с учёными степенями', desc: 'Кандидаты и доктора наук из ведущих вузов' },
+  { icon: Award, title: '6 лет на рынке', desc: 'Каждый проект ведётся персонально от начала до защиты' },
   { icon: ShieldCheck, title: 'Каждая работа — с нуля', desc: 'Оригинальный текст, от 80% уникальности' },
   { icon: RefreshCcw, title: 'Правки без ограничений', desc: 'Дорабатываем бесплатно до полного соответствия' },
   { icon: Clock, title: 'Всегда в срок', desc: 'Дедлайн фиксируется до начала работы' },
