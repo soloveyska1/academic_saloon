@@ -1,7 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, GraduationCap, RefreshCcw, Shield } from 'lucide-react'
-import { acceptTerms, fetchConfig } from '../api/userApi'
+import {
+  acceptTerms,
+  DEFAULT_LEGAL_HUB_URL,
+  fetchConfig,
+} from '../api/userApi'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
 import { useReducedMotion } from '../hooks/useDeviceCapability'
@@ -209,7 +213,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [phase, setPhase] = useState<Phase>('reveal')
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
+  const [legalHubUrl, setLegalHubUrl] = useState(DEFAULT_LEGAL_HUB_URL)
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -228,7 +232,8 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   useEffect(() => {
     let alive = true
     fetchConfig().then((c) => {
-      if (alive && c.offer_url) setOfferUrl(c.offer_url)
+      if (!alive) return
+      if (c.legal_hub_url) setLegalHubUrl(c.legal_hub_url)
     }).catch(() => { /* keep default */ })
     return () => { alive = false }
   }, [])
@@ -312,10 +317,10 @@ export const OnboardingFlow = memo(function OnboardingFlow({
     }
   }, [accepting, previewMode, onAccepted, addTimer])
 
-  const handleOpenOffer = useCallback(() => {
+  const handleOpenLegalHub = useCallback(() => {
     haptic('light')
-    openExternalUrl(offerUrl)
-  }, [offerUrl])
+    openExternalUrl(legalHubUrl)
+  }, [legalHubUrl])
 
   if (alreadySeen.current) return null
 
@@ -889,7 +894,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               <motion.button
                 type="button"
                 whileTap={{ scale: TAP_SCALE }}
-                onClick={handleOpenOffer}
+                onClick={handleOpenLegalHub}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -905,7 +910,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   marginBottom: 32,
                 }}
               >
-                Полный текст оферты
+                Оферта, ПД и сведения
                 <ExternalLink size={12} strokeWidth={1.8} />
               </motion.button>
 
@@ -974,7 +979,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'rgba(255,255,255,0.35)',
                   fontFamily: FONT_BODY,
                 }}>
-                  Нажимая, вы принимаете публичную оферту (ст. 438 ГК РФ)
+                  Нажимая, вы принимаете публичную оферту. Политика обработки персональных данных и сведения об исполнителе доступны по кнопке выше.
                 </p>
 
                 {/* Accept button with breathing glow */}

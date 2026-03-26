@@ -21,6 +21,7 @@ const IS_DEV = import.meta.env.DEV || false
 export const DEFAULT_OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2'
 export const DEFAULT_PRIVACY_POLICY_URL = 'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26'
 export const DEFAULT_EXECUTOR_INFO_URL = 'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26'
+export const DEFAULT_LEGAL_HUB_URL = 'https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26'
 const LEGACY_OFFER_URLS = new Set([
   'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25',
   'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30',
@@ -144,6 +145,7 @@ export interface PublicConfig {
   offer_url?: string
   privacy_policy_url?: string
   executor_info_url?: string
+  legal_hub_url?: string
 }
 
 function normalizePublicDocUrl(url: string | undefined, fallback: string, legacyUrls?: Set<string>): string {
@@ -166,6 +168,10 @@ function normalizeExecutorInfoUrl(url?: string): string {
   return normalizePublicDocUrl(url, DEFAULT_EXECUTOR_INFO_URL)
 }
 
+function normalizeLegalHubUrl(url?: string): string {
+  return normalizePublicDocUrl(url, DEFAULT_LEGAL_HUB_URL)
+}
+
 export async function fetchConfig(): Promise<PublicConfig> {
   try {
     const config = await apiFetch<PublicConfig>('/config')
@@ -174,6 +180,7 @@ export async function fetchConfig(): Promise<PublicConfig> {
       offer_url: normalizeOfferUrl(config.offer_url),
       privacy_policy_url: normalizePrivacyPolicyUrl(config.privacy_policy_url),
       executor_info_url: normalizeExecutorInfoUrl(config.executor_info_url),
+      legal_hub_url: normalizeLegalHubUrl(config.legal_hub_url),
     }
   } catch {
     return {
@@ -182,6 +189,7 @@ export async function fetchConfig(): Promise<PublicConfig> {
       offer_url: DEFAULT_OFFER_URL,
       privacy_policy_url: DEFAULT_PRIVACY_POLICY_URL,
       executor_info_url: DEFAULT_EXECUTOR_INFO_URL,
+      legal_hub_url: DEFAULT_LEGAL_HUB_URL,
     }
   }
 }

@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2"
 CANONICAL_PRIVACY_POLICY_URL = "https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26"
 CANONICAL_EXECUTOR_INFO_URL = "https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26"
+CANONICAL_LEGAL_HUB_URL = "https://telegra.ph/Pravovye-dokumenty-servisa-Akademicheskij-Salon-03-26"
 LEGACY_OFFER_URLS = {
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25",
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30",
@@ -18,6 +19,7 @@ LEGACY_OFFER_URLS = {
 }
 LEGACY_PRIVACY_POLICY_URLS: set[str] = set()
 LEGACY_EXECUTOR_INFO_URLS: set[str] = set()
+LEGACY_LEGAL_HUB_URLS: set[str] = set()
 
 
 def normalize_public_doc_url(url: str | None, canonical_url: str, legacy_urls: set[str] | None = None) -> str:
@@ -42,6 +44,10 @@ def normalize_privacy_policy_url(url: str | None) -> str:
 def normalize_executor_info_url(url: str | None) -> str:
     return normalize_public_doc_url(url, CANONICAL_EXECUTOR_INFO_URL, LEGACY_EXECUTOR_INFO_URLS)
 
+
+def normalize_legal_hub_url(url: str | None) -> str:
+    return normalize_public_doc_url(url, CANONICAL_LEGAL_HUB_URL, LEGACY_LEGAL_HUB_URLS)
+
 class Settings(BaseSettings):
     BOT_TOKEN: SecretStr  # From .env file
     BOT_USERNAME: str
@@ -56,6 +62,7 @@ class Settings(BaseSettings):
     OFFER_URL: str = CANONICAL_OFFER_URL  # Публичная оферта
     PRIVACY_POLICY_URL: str = CANONICAL_PRIVACY_POLICY_URL  # Политика обработки ПД
     EXECUTOR_INFO_URL: str = CANONICAL_EXECUTOR_INFO_URL  # Сведения об исполнителе
+    LEGAL_HUB_URL: str = CANONICAL_LEGAL_HUB_URL  # Единый вход в правовые документы
 
     # Mini App URL (Web App для Telegram)
     # Hosted on server via nginx at academic-saloon.duckdns.org
@@ -142,6 +149,10 @@ class Settings(BaseSettings):
     @property
     def public_executor_info_url(self) -> str:
         return normalize_executor_info_url(self.EXECUTOR_INFO_URL)
+
+    @property
+    def public_legal_hub_url(self) -> str:
+        return normalize_legal_hub_url(self.LEGAL_HUB_URL)
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 

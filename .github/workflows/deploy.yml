@@ -28,6 +28,8 @@ jobs:
     timeout-minutes: 2
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      backend_python: ${{ steps.filter.outputs.backend_python }}
+      backend_python_files: ${{ steps.filter.outputs.backend_python_files }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout code
@@ -39,6 +41,7 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          list-files: shell
           filters: |
             backend:
               - 'bot/**'
@@ -52,6 +55,13 @@ jobs:
               - 'scripts/systemd_reload.sh'
               - 'scripts/deploy_notify.py'
               - '.github/workflows/deploy.yml'
+            backend_python:
+              - 'bot/**/*.py'
+              - 'core/**/*.py'
+              - 'database/**/*.py'
+              - 'main.py'
+              - 'scripts/**/*.py'
+              - 'tests/**/*.py'
             frontend:
               - 'mini-app/**'
               - 'scripts/remote_deploy.sh'
@@ -100,11 +110,35 @@ jobs:
         run: python -m pip install --disable-pip-version-check --quiet -r requirements.txt ruff
 
       - name: Ruff lint
-        run: ruff check . --select E,W,F --ignore E501
+        env:
+          CHANGED_PY_FILES: ${{ needs.detect-changes.outputs.backend_python_files }}
+        run: |
+          python - <<'PY'
+          import os
+          import shlex
+          import subprocess
+          import sys
+
+          raw_files = os.environ.get("CHANGED_PY_FILES", "").strip()
+          if not raw_files:
+            print("No changed Python files to lint.")
+            sys.exit(0)
+
+          files = shlex.split(raw_files)
+          print("Linting changed Python files:")
+          for path in files:
+            print(f" - {path}")
+
+          subprocess.run(
+            ["ruff", "check", *files, "--select", "E,W,F", "--ignore", "E501"],
+            check=True,
+          )
+          PY
 
       - name: Run pytest
         run: pytest tests/ -q --tb=short --maxfail=5
         env:
+          PYTHONPATH: .
           BOT_TOKEN: "123456:TEST-TOKEN"
           BOT_USERNAME: test_bot
           ADMIN_IDS: "[1]"

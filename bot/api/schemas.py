@@ -224,6 +224,7 @@ class ConfigResponse(BaseModel):
     offer_url: str
     privacy_policy_url: str
     executor_info_url: str
+    legal_hub_url: str
 
 
 class AcceptTermsResponse(BaseModel):
