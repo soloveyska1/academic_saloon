@@ -295,7 +295,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                   marginRight: 'auto',
                 }}
               >
-                Курсовые, дипломные и учебные работы — от замысла до защиты.
+                Курсовые, дипломные и учебные материалы — от запроса до готового результата.
                 Каждый проект ведётся индивидуально.
               </p>
             </motion.div>

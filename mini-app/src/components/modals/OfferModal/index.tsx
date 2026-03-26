@@ -11,8 +11,8 @@ import type { OfferSection } from './offerData'
 // ═══════════════════════════════════════════════════════════════════════════
 //  OFFER MODAL v8 — Client-centric elite design
 //  Focus: what matters to the CLIENT, not document metadata
-//  Hero: social proof + 3 key stats (100% возврат, ∞ правок, 24ч помощь)
-//  Body: interactive checklist with gold progress
+//  Hero: social proof + 3 key stats
+//  Body: summary + expandable legal text
 //  Footer: expandable legal text + elite CTA
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -261,8 +261,8 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
             }}>
               {[
                 { value: '100%', label: 'возврат до старта' },
-                { value: '∞', label: 'бесплатных правок' },
-                { value: '24ч', label: 'экстренная помощь' },
+                { value: '3', label: 'цикла правок' },
+                { value: 'чек', label: 'по оплате' },
               ].map((stat, i) => (
                 <m.div
                   key={i}

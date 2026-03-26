@@ -74,15 +74,15 @@ const SAFE_PAD_BOTTOM = 'max(28px, calc(env(safe-area-inset-bottom, 20px) + 24px
 const SAFE_PAD_X = 'max(20px, env(safe-area-inset-left, 20px))'
 
 const VALUE_CARDS = [
-  { icon: FileCheck, title: 'Только оригинал', badge: '80%+ уникальность' },
-  { icon: RefreshCcw, title: 'Правки включены', badge: '∞ итераций' },
-  { icon: Shield, title: 'Полная защита', badge: '100% возврат' },
+  { icon: FileCheck, title: 'Согласованное ТЗ', badge: 'цена и срок до старта' },
+  { icon: RefreshCcw, title: 'Правки по правилам', badge: 'до 3 циклов в рамках ТЗ' },
+  { icon: Shield, title: 'Юридическая ясность', badge: 'возврат по закону' },
 ] as const
 
 const STAT_BLOCKS = [
-  { value: '100%', label: 'возврат' },
-  { value: '∞', label: 'правок' },
-  { value: '24ч', label: 'поддержка' },
+  { value: '100%', label: 'до старта' },
+  { value: '3', label: 'цикла правок' },
+  { value: 'чек', label: 'по оплате' },
 ] as const
 
 const EASE = EASE_PREMIUM as unknown as number[]
@@ -652,7 +652,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 fontFamily: FONT_BODY,
                 maxWidth: 310,
               }}>
-                Курсовые, дипломные, научные работы. Индивидуально. С гарантией результата.
+                Курсовые, дипломные и исследовательские материалы. Индивидуально. С понятными условиями и прозрачным порядком работы.
               </p>
 
               {/* 3 value items — clean list with gold dividers */}
