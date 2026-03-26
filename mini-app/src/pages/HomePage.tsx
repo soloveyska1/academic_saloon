@@ -41,6 +41,8 @@ import {
   LiveActivityFeed,
   PriceCalculator,
   SessionCountdown,
+  GuaranteeCertificate,
+  LiveAuthorsCounter,
 } from '../components/home'
 
 const loadQRCodeModal = () => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal }))
@@ -390,6 +392,9 @@ export function HomePage({ user, onRefresh }: Props) {
             {/* ─── Live activity ticker — instant social proof ─── */}
             <LiveActivityFeed />
 
+            {/* ─── Live authors counter — "X авторов работают прямо сейчас" ─── */}
+            <LiveAuthorsCounter />
+
             {/* ─── Seasonal banner ─── */}
             <Section>
               <SeasonalBanner onAction={handleNewOrder} />
@@ -400,6 +405,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <WhyTrustUs />
+            <GuaranteeCertificate />
             <TestimonialsSection />
 
             {/* Repeat CTA after social proof — premium style with shine */}
