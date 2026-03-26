@@ -208,7 +208,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                 <div style={{
                   fontSize: 11,
                   fontWeight: 500,
-                  color: 'rgba(255,255,255,0.28)',
+                  color: 'var(--text-muted)',
                 }}>
                   {item.timeline}
                 </div>
@@ -220,7 +220,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 
       {/* Dot indicators */}
       <div style={{
-        display: 'flex', justifyContent: 'center', gap: 6, marginTop: 14,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 44,
       }}>
         {PRICING_ITEMS.map((_, i) => (
           <motion.div

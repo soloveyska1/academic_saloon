@@ -88,6 +88,14 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
             </div>
           )
         })}
+        {/* Social proof anchor */}
+        <div style={{
+          marginTop: 12, textAlign: 'center',
+          fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.30)',
+          letterSpacing: '0.02em',
+        }}>
+          Более 2 000 выполненных проектов
+        </div>
       </div>
     </motion.div>
   )

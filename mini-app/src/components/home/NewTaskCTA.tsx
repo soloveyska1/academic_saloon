@@ -223,7 +223,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             Оформить работу
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
-            Расчёт за 5 мин · от 990 ₽
+            Расчёт за 2 мин · от 990 ₽
           </div>
         </div>
 
@@ -260,7 +260,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           borderRadius: 12,
           background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 50%, rgba(9,9,10,1) 100%)',
           border: '1px solid rgba(212,175,55,0.18)',
-          boxShadow: 'var(--card-shadow), inset 0 1px 0 rgba(255,255,255,0.04)',
+          boxShadow: 'var(--card-shadow), inset 0 1px 0 rgba(212,175,55,0.06)',
           cursor: 'pointer',
           textAlign: 'left',
           overflow: 'hidden',
@@ -336,7 +336,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 lineHeight: 1.4,
               }}
             >
-              От 990 ₽ · расчёт за 5 минут
+              От 990 ₽ · расчёт за 2 минуты
             </div>
           </div>
 
@@ -360,7 +360,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               style={{
                 margin: '0 20px',
                 height: 1,
-                background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
+                background: 'linear-gradient(90deg, rgba(212,175,55,0.06), rgba(212,175,55,0.10), rgba(212,175,55,0.06))',
               }}
             />
             <motion.button

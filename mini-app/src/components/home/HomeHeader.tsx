@@ -631,7 +631,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
             style={{
               fontSize: TYPE.context,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'rgba(245,235,200,0.30)',
               marginBottom: 1,
               letterSpacing: '0.06em',
             }}
