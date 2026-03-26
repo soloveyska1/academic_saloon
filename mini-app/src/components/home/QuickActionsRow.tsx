@@ -66,7 +66,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                 gap: 12,
                 padding: '13px 0',
                 border: 'none',
-                borderTop: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                borderTop: index === 0 ? 'none' : '1px solid rgba(212,175,55,0.08)',
                 background: 'none',
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -81,8 +81,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(212,175,55,0.06)',
+                  border: '1px solid rgba(212,175,55,0.08)',
                   color: 'var(--gold-400)',
                 }}
               >
@@ -123,8 +123,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(212,175,55,0.06)',
+                  border: '1px solid rgba(212,175,55,0.08)',
                   color: 'var(--text-muted)',
                 }}
               >

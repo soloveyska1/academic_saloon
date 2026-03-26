@@ -1,6 +1,6 @@
 import {
   GraduationCap, Clock, Percent, Shield, Zap, Camera, FileText,
-  CreditCard, MessageCircle, RotateCcw, CheckCircle2
+  CreditCard, MessageCircle, RotateCcw, CheckCircle2, Headphones
 } from 'lucide-react'
 import { QuickAction, UrgentOption, OrderStatusInfo } from './types'
 
@@ -24,6 +24,14 @@ export const QUICK_ACTIONS: QuickAction[] = [
     subtitle: 'сроки и защита заказа',
     action: 'modal',
     modal: 'guarantees',
+  },
+  {
+    id: 'support',
+    icon: Headphones,
+    title: 'Поддержка',
+    subtitle: 'ответим за 5 мин',
+    action: 'navigate',
+    route: '/support',
   },
 ]
 
