@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, GraduationCap, RefreshCcw, Shield } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import {
   acceptTerms,
   DEFAULT_LEGAL_HUB_URL,
@@ -78,10 +78,9 @@ const SAFE_PAD_BOTTOM = 'max(28px, calc(env(safe-area-inset-bottom, 20px) + 24px
 const SAFE_PAD_X = 'max(20px, env(safe-area-inset-left, 20px))'
 
 const VALUE_CARDS = [
-  { icon: FileCheck, title: 'Только оригинал', badge: '80%+ уникальность', desc: 'Антиплагиат пройден' },
-  { icon: RefreshCcw, title: 'Правки включены', badge: '∞ итераций', desc: 'До полного согласования' },
-  { icon: Shield, title: 'Полная защита', badge: '100% возврат', desc: 'Гарантия по договору' },
-  { icon: GraduationCap, title: '6 лет опыта', badge: 'est. 2020', desc: 'Персональное ведение проекта' },
+  { icon: FileCheck, title: 'Только оригинал', badge: '80 %+' },
+  { icon: RefreshCcw, title: 'Правки включены', badge: '∞' },
+  { icon: Shield, title: 'Полная защита', badge: '100 % возврат' },
 ] as const
 
 const STAT_BLOCKS = [
@@ -647,7 +646,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 Академический Салон
               </motion.div>
 
-              {/* Headline — two explicit lines, no awkward wrap */}
+              {/* Headline — pain-oriented, direct */}
               <motion.h2
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -662,7 +661,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'var(--text-primary, #f5f5f0)',
                 }}
               >
-                <span style={{ display: 'block' }}>Сложные работы.</span>
+                <span style={{ display: 'block' }}>Дедлайн горит?</span>
                 <span style={{
                   display: 'block',
                   ...LIQUID_GOLD_TEXT,
@@ -671,16 +670,16 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   fontWeight: 700,
                   letterSpacing: '-0.03em',
                   lineHeight: 1.15,
-                }}>Простой путь.</span>
+                }}>Мы поможем.</span>
               </motion.h2>
 
-              {/* Subtitle — shorter and punchier */}
+              {/* Subtitle — emotional, concise */}
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0 : 0.5, ease: EASE }}
                 style={{
-                  margin: '0 0 24px',
+                  margin: '0 0 28px',
                   fontSize: 13,
                   fontWeight: 500,
                   lineHeight: 1.5,
@@ -690,79 +689,55 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   letterSpacing: '0.01em',
                 }}
               >
-                От реферата до диссертации.<br />Каждый проект — с нуля.
+                Расскажите, что нужно. Остальное — на нас.
               </motion.p>
 
-              {/* Value items — premium glassmorphic cards with gold accents */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', marginBottom: 24 }}>
+              {/* Value items — minimal transparent rows with gold dividers */}
+              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', marginBottom: 28 }}>
                 {VALUE_CARDS.map((card, i) => {
                   const Icon = card.icon
                   return (
                     <motion.div
                       key={card.title}
-                      initial={{ opacity: 0, x: -20, scale: 0.97 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{
-                        delay: reduced ? 0 : 0.25 + i * 0.08,
+                        delay: reduced ? 0 : 0.25 + i * 0.1,
                         duration: reduced ? 0 : TIMING.entrance,
                         ease: EASE,
                       }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                        padding: '10px 12px',
-                        borderRadius: 14,
-                        background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
-                        borderLeft: '2.5px solid rgba(212,175,55,0.40)',
-                        border: '1px solid rgba(212,175,55,0.08)',
-                        borderLeftWidth: '2.5px',
-                        borderLeftColor: 'rgba(212,175,55,0.40)',
-                        position: 'relative' as const,
-                        backdropFilter: 'blur(8px)',
-                        WebkitBackdropFilter: 'blur(8px)',
-                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                        <div style={{
-                          width: 38, height: 38, borderRadius: 10,
-                          background: 'linear-gradient(135deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.06) 100%)',
-                          border: '1px solid rgba(212,175,55,0.15)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                          boxShadow: '0 2px 8px -2px rgba(212,175,55,0.12)',
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '14px 0',
+                        }}
+                      >
+                        <Icon size={18} strokeWidth={1.6} color="var(--gold-400, #d4af37)" style={{ flexShrink: 0 }} />
+                        <span style={{
+                          fontSize: 14, fontWeight: 600,
+                          color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
+                          lineHeight: 1.3,
                         }}>
-                          <Icon size={17} strokeWidth={1.8} color="var(--gold-400, #d4af37)" />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 1, minWidth: 0 }}>
-                          <span style={{
-                            fontSize: 13.5, fontWeight: 700,
-                            color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
-                            lineHeight: 1.2,
-                          }}>
-                            {card.title}
-                          </span>
-                          <span style={{
-                            fontSize: 11, fontWeight: 500,
-                            color: 'rgba(176,176,176,0.55)', fontFamily: FONT_BODY,
-                            lineHeight: 1.2,
-                          }}>
-                            {card.desc}
-                          </span>
-                        </div>
+                          {card.title}
+                        </span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 600,
+                          color: 'rgba(240,208,96,0.85)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
+                          marginLeft: 'auto',
+                          flexShrink: 0,
+                        }}>
+                          {card.badge}
+                        </span>
                       </div>
-                      <span style={{
-                        fontSize: 10.5, fontWeight: 700,
-                        color: 'rgba(240,208,96,0.95)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
-                        padding: '4px 10px', borderRadius: 8,
-                        background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)',
-                        border: '1px solid rgba(212,175,55,0.14)',
-                        letterSpacing: '0.03em',
-                        textTransform: 'uppercase' as const,
-                        flexShrink: 0,
-                      }}>
-                        {card.badge}
-                      </span>
+                      {i < VALUE_CARDS.length - 1 && (
+                        <div style={{
+                          height: 1,
+                          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
+                        }} />
+                      )}
                     </motion.div>
                   )
                 })}
@@ -822,8 +797,8 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                       pointerEvents: 'none',
                     }} />
                   )}
-                  Далее
-                  <ChevronRight size={16} strokeWidth={2} style={{ color: '#0A0A0A' }} />
+                  Продолжить
+                  <ArrowRight size={16} strokeWidth={2} style={{ color: '#0A0A0A' }} />
                 </motion.button>
               </div>
             </motion.div>
