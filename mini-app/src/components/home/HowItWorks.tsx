@@ -6,7 +6,7 @@ const STEPS = [
   {
     icon: MessageSquareText,
     title: 'Опишите задачу',
-    description: 'Тип работы, предмет и требования. Ответим за 5 минут.',
+    description: 'Тип работы, предмет и требования. Ответим в кратчайший срок.',
   },
   {
     icon: CreditCard,
@@ -16,7 +16,7 @@ const STEPS = [
   {
     icon: FileCheck,
     title: 'Получите работу',
-    description: 'Эксперт выполнит в срок. С нуля. 3 правки включены.',
+    description: 'Эксперт выполнит в срок. С нуля. Правки включены.',
   },
 ] as const
 

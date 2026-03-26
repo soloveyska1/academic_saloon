@@ -21,13 +21,10 @@ import {
   QuickActionsRow,
   NewTaskCTA,
   UrgentHubSheet,
-  TrustStatsStrip,
-  HowItWorks,
-  GuaranteesShowcase,
   TestimonialsSection,
-  LiveActivityFeed,
+  WhyTrustUs,
   StickyBottomCTA,
-  // WelcomeTour removed — content already on HomePage (HowItWorks, GuaranteesShowcase)
+  // WelcomeTour removed — content already on HomePage
   SaloonFooter,
   ExamSeasonBanner,
   BonusExpiryAlert,
@@ -392,11 +389,8 @@ export function HomePage({ user, onRefresh }: Props) {
             </Section>
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
-            <LiveActivityFeed />
-            <TrustStatsStrip />
-            <HowItWorks />
+            <WhyTrustUs />
             <TestimonialsSection />
-            <GuaranteesShowcase />
             <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
             <StickyBottomCTA onClick={handleNewOrder} />

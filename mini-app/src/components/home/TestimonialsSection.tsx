@@ -1,11 +1,9 @@
 import { memo } from 'react'
-import { Star, Quote } from 'lucide-react'
+import { Star, ShieldCheck } from 'lucide-react'
 import { StaggerReveal } from '../ui/StaggerReveal'
 import { TiltCard } from '../ui/TiltCard'
 
 interface Testimonial {
-  name: string
-  university: string
   workType: string
   stars: number
   text: string
@@ -14,24 +12,18 @@ interface Testimonial {
 
 const TESTIMONIALS: Testimonial[] = [
   {
-    name: 'Алина М.',
-    university: 'ВШЭ',
     workType: 'Курсовая',
     stars: 5,
     text: 'Сделали за 4 дня. Уникальность 87%. Преподаватель принял с первого раза.',
     outcome: 'Уникальность 87%',
   },
   {
-    name: 'Дмитрий К.',
-    university: 'МГУ',
     workType: 'Дипломная',
     stars: 5,
     text: 'Работа на высшем уровне. Защитил на отлично. Рекомендую.',
     outcome: 'Защитил на отлично',
   },
   {
-    name: 'Екатерина В.',
-    university: 'РУДН',
     workType: 'Эссе',
     stars: 4,
     text: 'Заказывала срочно, за 24 часа. Всё готово вовремя. Одна правка — и сдала.',
@@ -63,47 +55,23 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 8,
           marginBottom: 12,
           paddingLeft: 2,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Quote size={12} color="var(--gold-400)" strokeWidth={2} />
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-            }}
-          >
-            Отзывы
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Star
-            size={11}
-            fill="var(--gold-400)"
-            color="var(--gold-400)"
-            strokeWidth={0}
-          />
-          <span
-            style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}
-          >
-            4.8
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-            }}
-          >
-            · 2 400+
-          </span>
-        </div>
+        <Star size={12} color="var(--gold-400)" strokeWidth={2} fill="var(--gold-400)" />
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          }}
+        >
+          Отзывы
+        </span>
       </div>
 
       {/* Testimonial cards */}
@@ -114,7 +82,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
       >
         {TESTIMONIALS.map((t) => (
-          <TiltCard key={t.name} tiltMaxAngle={3}>
+          <TiltCard key={t.workType} tiltMaxAngle={3}>
             <div
               style={{
                 padding: 16,
@@ -160,24 +128,13 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                 «{t.text}»
               </p>
 
-              {/* Author */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    background: 'rgba(201,162,39,0.06)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: 'var(--gold-400)',
-                  }}
-                >
-                  {t.name.charAt(0)}
-                </div>
+              {/* Verified order badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck
+                  size={13}
+                  color="var(--gold-400)"
+                  strokeWidth={1.8}
+                />
                 <span
                   style={{
                     fontSize: 12,
@@ -185,7 +142,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                     color: 'var(--text-muted)',
                   }}
                 >
-                  {t.name} · {t.workType} · {t.university}
+                  Проверенный заказ · {t.workType}
                 </span>
               </div>
             </div>
