@@ -51,7 +51,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
         {/* Support link */}
         <div style={{ marginTop: 12 }}>
           <a
-            href="https://t.me/AcademicSaloonBot"
+            href="https://t.me/Thisissaymoon"
             target="_blank"
             rel="noopener noreferrer"
             style={{
