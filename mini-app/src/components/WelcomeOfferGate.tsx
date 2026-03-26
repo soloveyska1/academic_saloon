@@ -3,10 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import {
   acceptTerms,
-  DEFAULT_OFFER_URL,
+  DEFAULT_LEGAL_HUB_URL,
   fetchConfig,
-  DEFAULT_EXECUTOR_INFO_URL,
-  DEFAULT_PRIVACY_POLICY_URL,
 } from '../api/userApi'
 import { OfferModal } from './modals/OfferModal'
 import { glassGoldStyle } from './home/shared'
@@ -88,9 +86,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
   const [accepting, setAccepting] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState<string>(DEFAULT_OFFER_URL)
-  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState<string>(DEFAULT_PRIVACY_POLICY_URL)
-  const [executorInfoUrl, setExecutorInfoUrl] = useState<string>(DEFAULT_EXECUTOR_INFO_URL)
+  const [legalHubUrl, setLegalHubUrl] = useState<string>(DEFAULT_LEGAL_HUB_URL)
 
   useEffect(() => {
     let alive = true
@@ -98,9 +94,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
     fetchConfig()
       .then((config) => {
         if (!alive) return
-        if (config.offer_url) setOfferUrl(config.offer_url)
-        if (config.privacy_policy_url) setPrivacyPolicyUrl(config.privacy_policy_url)
-        if (config.executor_info_url) setExecutorInfoUrl(config.executor_info_url)
+        if (config.legal_hub_url) setLegalHubUrl(config.legal_hub_url)
       })
       .catch(() => {
         // Keep the default public offer URL
@@ -158,20 +152,10 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
     }
   }, [accepting, onAccepted, previewMode])
 
-  const handleOpenExternalOffer = useCallback(() => {
+  const handleOpenLegalHub = useCallback(() => {
     haptic('light')
-    openExternalUrl(offerUrl)
-  }, [offerUrl])
-
-  const handleOpenPrivacyPolicy = useCallback(() => {
-    haptic('light')
-    openExternalUrl(privacyPolicyUrl)
-  }, [privacyPolicyUrl])
-
-  const handleOpenExecutorInfo = useCallback(() => {
-    haptic('light')
-    openExternalUrl(executorInfoUrl)
-  }, [executorInfoUrl])
+    openExternalUrl(legalHubUrl)
+  }, [legalHubUrl])
 
   return (
     <>
@@ -474,9 +458,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 }}
               >
                 {[
-                  { label: 'Полный текст оферты', onClick: handleOpenExternalOffer },
-                  { label: 'Политика ПД', onClick: handleOpenPrivacyPolicy },
-                  { label: 'Исполнитель', onClick: handleOpenExecutorInfo },
+                  { label: 'Оферта, ПД и сведения', onClick: handleOpenLegalHub },
                 ].map((link) => (
                   <motion.button
                     key={link.label}

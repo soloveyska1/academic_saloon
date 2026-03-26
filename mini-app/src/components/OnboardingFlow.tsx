@@ -3,10 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
 import {
   acceptTerms,
-  DEFAULT_OFFER_URL,
+  DEFAULT_LEGAL_HUB_URL,
   fetchConfig,
-  DEFAULT_EXECUTOR_INFO_URL,
-  DEFAULT_PRIVACY_POLICY_URL,
 } from '../api/userApi'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
@@ -210,9 +208,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [phase, setPhase] = useState<Phase>('reveal')
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState(DEFAULT_OFFER_URL)
-  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState(DEFAULT_PRIVACY_POLICY_URL)
-  const [executorInfoUrl, setExecutorInfoUrl] = useState(DEFAULT_EXECUTOR_INFO_URL)
+  const [legalHubUrl, setLegalHubUrl] = useState(DEFAULT_LEGAL_HUB_URL)
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -235,9 +231,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
     let alive = true
     fetchConfig().then((c) => {
       if (!alive) return
-      if (c.offer_url) setOfferUrl(c.offer_url)
-      if (c.privacy_policy_url) setPrivacyPolicyUrl(c.privacy_policy_url)
-      if (c.executor_info_url) setExecutorInfoUrl(c.executor_info_url)
+      if (c.legal_hub_url) setLegalHubUrl(c.legal_hub_url)
     }).catch(() => { /* keep default */ })
     return () => { alive = false }
   }, [])
@@ -321,20 +315,10 @@ export const OnboardingFlow = memo(function OnboardingFlow({
     }
   }, [accepting, previewMode, onAccepted, addTimer])
 
-  const handleOpenOffer = useCallback(() => {
+  const handleOpenLegalHub = useCallback(() => {
     haptic('light')
-    openExternalUrl(offerUrl)
-  }, [offerUrl])
-
-  const handleOpenPrivacyPolicy = useCallback(() => {
-    haptic('light')
-    openExternalUrl(privacyPolicyUrl)
-  }, [privacyPolicyUrl])
-
-  const handleOpenExecutorInfo = useCallback(() => {
-    haptic('light')
-    openExternalUrl(executorInfoUrl)
-  }, [executorInfoUrl])
+    openExternalUrl(legalHubUrl)
+  }, [legalHubUrl])
 
   if (alreadySeen.current) return null
 
@@ -856,9 +840,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 }}
               >
                 {[
-                  { label: 'Полный текст оферты', onClick: handleOpenOffer },
-                  { label: 'Политика ПД', onClick: handleOpenPrivacyPolicy },
-                  { label: 'Исполнитель', onClick: handleOpenExecutorInfo },
+                  { label: 'Оферта, ПД и сведения', onClick: handleOpenLegalHub },
                 ].map((link) => (
                   <motion.button
                     key={link.label}
@@ -950,7 +932,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'rgba(255,255,255,0.35)',
                   fontFamily: FONT_BODY,
                 }}>
-                  Нажимая, вы принимаете публичную оферту и можете ознакомиться с политикой обработки персональных данных и сведениями об исполнителе.
+                  Нажимая, вы принимаете публичную оферту. Политика обработки персональных данных и сведения об исполнителе доступны по кнопке выше.
                 </p>
 
                 {/* Accept button with breathing glow */}

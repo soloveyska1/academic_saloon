@@ -38,6 +38,7 @@ async def get_config(request: Request):
         offer_url=settings.public_offer_url,
         privacy_policy_url=settings.public_privacy_policy_url,
         executor_info_url=settings.public_executor_info_url,
+        legal_hub_url=settings.public_legal_hub_url,
     )
 
 @router.get("/user", response_model=UserResponse)

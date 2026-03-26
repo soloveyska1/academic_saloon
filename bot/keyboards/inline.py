@@ -104,7 +104,7 @@ def get_codex_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="Подробные условия",
-                url=settings.public_offer_url
+                url=settings.public_legal_hub_url
             )
         ],
         [

@@ -6,16 +6,12 @@ import { prefersReducedMotion } from './profileHelpers'
 
 interface Props {
   onOpenSupport: () => void
-  onOpenOffer?: () => void
-  onOpenPrivacyPolicy?: () => void
-  onOpenExecutorInfo?: () => void
+  onOpenLegalHub?: () => void
 }
 
 export const ProfileFooter = memo(function ProfileFooter({
   onOpenSupport,
-  onOpenOffer,
-  onOpenPrivacyPolicy,
-  onOpenExecutorInfo,
+  onOpenLegalHub,
 }: Props) {
   return (
     <motion.footer
@@ -43,11 +39,11 @@ export const ProfileFooter = memo(function ProfileFooter({
           Поддержка
         </motion.button>
 
-        {onOpenOffer && (
+        {onOpenLegalHub && (
           <motion.button
             type="button"
             whileTap={{ scale: 0.97 }}
-            onClick={onOpenOffer}
+            onClick={onOpenLegalHub}
             className={s.goldButton}
             style={{
               flex: 1,
@@ -58,59 +54,10 @@ export const ProfileFooter = memo(function ProfileFooter({
             }}
           >
             <ScrollText size={14} />
-            Оферта
+            Документы
           </motion.button>
         )}
       </div>
-
-      {(onOpenPrivacyPolicy || onOpenExecutorInfo) && (
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            width: '100%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginTop: 10,
-            flexWrap: 'wrap',
-          }}
-        >
-          {onOpenPrivacyPolicy && (
-            <button
-              type="button"
-              onClick={onOpenPrivacyPolicy}
-              style={{
-                border: 'none',
-                background: 'none',
-                padding: 0,
-                color: 'var(--gold-label)',
-                fontSize: 11,
-                letterSpacing: '0.06em',
-                cursor: 'pointer',
-              }}
-            >
-              Политика ПД
-            </button>
-          )}
-          {onOpenExecutorInfo && (
-            <button
-              type="button"
-              onClick={onOpenExecutorInfo}
-              style={{
-                border: 'none',
-                background: 'none',
-                padding: 0,
-                color: 'var(--gold-label)',
-                fontSize: 11,
-                letterSpacing: '0.06em',
-                cursor: 'pointer',
-              }}
-            >
-              Исполнитель
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Brand footer */}
       <div className={s.footerBrand}>

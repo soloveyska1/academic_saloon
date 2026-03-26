@@ -9,14 +9,12 @@ import { SkeletonProfileHeader, SkeletonStatsGrid, SkeletonCard } from '../compo
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { TransactionsModal } from '../components/modals/TransactionsModal'
-import { OfferModal } from '../components/modals/OfferModal'
 import { useToast } from '../components/ui/Toast'
 import { copyTextSafely } from '../utils/clipboard'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import {
+  DEFAULT_LEGAL_HUB_URL,
   fetchConfig,
-  DEFAULT_EXECUTOR_INFO_URL,
-  DEFAULT_PRIVACY_POLICY_URL,
 } from '../api/userApi'
 
 import { ProfileHero } from '../components/profile/ProfileHero'
@@ -39,9 +37,7 @@ export function ProfilePageNew({ user }: Props) {
   const { showToast } = useToast()
   const [showQR, setShowQR] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
-  const [showOffer, setShowOffer] = useState(false)
-  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState(DEFAULT_PRIVACY_POLICY_URL)
-  const [executorInfoUrl, setExecutorInfoUrl] = useState(DEFAULT_EXECUTOR_INFO_URL)
+  const [legalHubUrl, setLegalHubUrl] = useState(DEFAULT_LEGAL_HUB_URL)
 
   /* ═══════ Computed ═══════ */
 
@@ -58,8 +54,7 @@ export function ProfilePageNew({ user }: Props) {
     fetchConfig()
       .then((config) => {
         if (!alive) return
-        if (config.privacy_policy_url) setPrivacyPolicyUrl(config.privacy_policy_url)
-        if (config.executor_info_url) setExecutorInfoUrl(config.executor_info_url)
+        if (config.legal_hub_url) setLegalHubUrl(config.legal_hub_url)
       })
       .catch(() => {
         // Keep canonical defaults
@@ -94,11 +89,6 @@ export function ProfilePageNew({ user }: Props) {
     navigate('/club')
   }, [haptic, navigate])
 
-  const handleOpenOffer = useCallback(() => {
-    haptic('light')
-    setShowOffer(true)
-  }, [haptic])
-
   const openExternalUrl = useCallback((url: string) => {
     try {
       const webApp = tg as (typeof tg & { openLink?: (href: string) => void }) | undefined
@@ -112,15 +102,10 @@ export function ProfilePageNew({ user }: Props) {
     window.open(url, '_blank', 'noopener,noreferrer')
   }, [tg])
 
-  const handleOpenPrivacyPolicy = useCallback(() => {
+  const handleOpenLegalHub = useCallback(() => {
     haptic('light')
-    openExternalUrl(privacyPolicyUrl)
-  }, [haptic, openExternalUrl, privacyPolicyUrl])
-
-  const handleOpenExecutorInfo = useCallback(() => {
-    haptic('light')
-    openExternalUrl(executorInfoUrl)
-  }, [executorInfoUrl, haptic, openExternalUrl])
+    openExternalUrl(legalHubUrl)
+  }, [haptic, legalHubUrl, openExternalUrl])
 
   const handleOpenActionableOrder = useCallback(() => {
     if (!actionableOrder) {
@@ -251,9 +236,7 @@ export function ProfilePageNew({ user }: Props) {
         {/* 7. Footer */}
         <ProfileFooter
           onOpenSupport={handleOpenSupport}
-          onOpenOffer={handleOpenOffer}
-          onOpenPrivacyPolicy={handleOpenPrivacyPolicy}
-          onOpenExecutorInfo={handleOpenExecutorInfo}
+          onOpenLegalHub={handleOpenLegalHub}
         />
       </div>
 
@@ -268,11 +251,6 @@ export function ProfilePageNew({ user }: Props) {
             setShowTransactions(false)
             navigate('/club')
           }}
-        />
-
-        <OfferModal
-          isOpen={showOffer}
-          onClose={() => setShowOffer(false)}
         />
 
         {showQR && inviteLink && (
