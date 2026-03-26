@@ -123,7 +123,21 @@ function useBalanceFraming(balance: number, ordersCount?: number) {
       ? Math.max(200, Math.min(800, balance / Math.max(ordersCount, 1)))
       : 350
     const orderEstimate = balance >= avgCost ? Math.floor(balance / avgCost) : 0
-    return { delta, orderEstimate }
+
+    // Sparkline data: last 7 balance values from history
+    const history = getBalanceHistory()
+    let sparklineData: number[]
+    if (history.length >= 2) {
+      sparklineData = history.slice(-7).map(e => e.balance)
+    } else if (delta !== null && delta !== 0) {
+      // Synthetic: interpolate from (balance - delta) to balance
+      const start = balance - delta
+      sparklineData = Array.from({ length: 7 }, (_, i) => start + (delta * i) / 6)
+    } else {
+      sparklineData = []
+    }
+
+    return { delta, orderEstimate, sparklineData }
   }, [balance, ordersCount])
 }
 
@@ -237,6 +251,41 @@ function CardBorder({ reduced }: { reduced: boolean }) {
 
 /* DiamondDivider removed — no longer used */
 
+/* ─── Mini sparkline SVG component ─── */
+function Sparkline({ data, width = 48, height = 16 }: { data: number[]; width?: number; height?: number }) {
+  if (data.length < 2) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width
+    const y = height - ((v - min) / range) * height
+    return `${x},${y}`
+  }).join(' ')
+  const lastPoint = points.split(' ').pop()?.split(',') || ['0', '0']
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--gold-400, #D4AF37)"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.6}
+      />
+      {/* Last point dot */}
+      <circle
+        cx={parseFloat(lastPoint[0])}
+        cy={parseFloat(lastPoint[1])}
+        r={2}
+        fill="var(--gold-400, #D4AF37)"
+      />
+    </svg>
+  )
+}
+
 /* ─── Online status hook ─── */
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true)
@@ -300,7 +349,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const cashback = summary?.cashback ?? 0
   const totalSaved = summary?.totalSaved ?? 0
   const showFinance = !isNewUser && summary
-  const { delta: weeklyDelta } = useBalanceFraming(balance, user.orders_count)
+  const { delta: weeklyDelta, sparklineData } = useBalanceFraming(balance, user.orders_count)
 
   // Sticky mini-bar: track when header scrolls out of view
   const headerRef = useRef<HTMLElement>(null)
@@ -819,7 +868,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 4,
+                        gap: 6,
                         padding: '3px 10px',
                         borderRadius: 999,
                         background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
@@ -835,6 +884,9 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                             ? `+${formatNum(Math.abs(weeklyDelta))} за неделю`
                             : `\u2212${formatNum(Math.abs(weeklyDelta))} за неделю`}
                         </span>
+                        {sparklineData.length >= 2 && (
+                          <Sparkline data={sparklineData} />
+                        )}
                       </div>
                     )}
                     {totalSaved > 0 && (
