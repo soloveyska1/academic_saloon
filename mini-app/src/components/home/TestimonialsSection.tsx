@@ -75,7 +75,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.28 }}
+      transition={{ delay: 0.28, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 24 }}
     >
       {/* Section header */}
@@ -186,7 +186,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <ShieldCheck size={12} color="rgba(212,175,55,0.40)" strokeWidth={1.8} />
                     <span style={{
-                      fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.30)',
+                      fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.30)',
                     }}>
                       Проверенный
                     </span>
@@ -207,7 +207,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             key={i}
             animate={{
               width: i === activeIndex ? 18 : 6,
-              background: i === activeIndex ? 'var(--gold-400, #D4AF37)' : 'rgba(255,255,255,0.12)',
+              background: i === activeIndex ? 'var(--gold-400, #D4AF37)' : 'rgba(212,175,55,0.12)',
             }}
             transition={{ duration: 0.25, ease: EASE }}
             style={{

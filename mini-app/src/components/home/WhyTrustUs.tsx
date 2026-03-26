@@ -15,7 +15,7 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
+      transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 24 }}
     >
       {/* Section label */}
@@ -35,9 +35,18 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
       {/* Card container */}
       <div style={{
         borderRadius: 12, padding: '4px 16px',
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.04)',
+        background: 'rgba(212,175,55,0.02)',
+        border: '1px solid rgba(212,175,55,0.06)',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
       }}>
+        {/* Top shine line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+          background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.10) 50%, transparent 90%)',
+          pointerEvents: 'none',
+        }} />
         {ITEMS.map((item, i) => {
           const Icon = item.icon
           return (
