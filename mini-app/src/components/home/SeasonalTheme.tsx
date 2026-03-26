@@ -87,7 +87,19 @@ function getCurrentSeason(): SeasonTheme | null {
     }
   }
 
-  return null // Spring (Mar-Apr), early Dec — no banner
+  // Spring: Mar - Apr
+  if (month >= 3 && month <= 4) {
+    return {
+      id: 'spring',
+      name: 'Весенний семестр',
+      icon: BookOpen,
+      bannerText: 'Весенний семестр',
+      bannerSubtext: 'Курсовые и дипломы — время оформлять заказ',
+      ctaText: 'Оформить заказ',
+    }
+  }
+
+  return null // early Dec — no banner
 }
 
 export function useSeasonalTheme(): SeasonTheme | null {

@@ -400,7 +400,7 @@ export function HomePage({ user, onRefresh }: Props) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-              style={{ marginBottom: 24, position: 'relative' }}
+              style={{ marginBottom: 16, position: 'relative' }}
             >
               {/* Breathing ambient glow */}
               <motion.div

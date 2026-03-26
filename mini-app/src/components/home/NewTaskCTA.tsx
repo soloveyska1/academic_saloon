@@ -223,7 +223,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             Оформить работу
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
-            Расчёт за 2 мин · от 990 ₽
+            Бесплатный расчёт за 2 минуты
           </div>
         </div>
 
@@ -336,7 +336,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 lineHeight: 1.4,
               }}
             >
-              От 990 ₽ · расчёт за 2 минуты
+              Бесплатный расчёт за 2 минуты
             </div>
           </div>
 
