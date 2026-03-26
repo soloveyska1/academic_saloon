@@ -1,10 +1,46 @@
-import { memo, useRef } from 'react'
-import { motion, useInView } from 'framer-motion'
+import { memo, useRef, useState, useCallback } from 'react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { GoldText } from '../ui/GoldText'
+
+/* ─── Easter egg: 5 quick taps on the brand mark → gold burst ─── */
+function useEasterEgg() {
+  const [triggered, setTriggered] = useState(false)
+  const tapCountRef = useRef(0)
+  const lastTapRef = useRef(0)
+
+  const handleTap = useCallback(() => {
+    const now = Date.now()
+    if (now - lastTapRef.current > 600) {
+      tapCountRef.current = 1
+    } else {
+      tapCountRef.current += 1
+      if (tapCountRef.current >= 5) {
+        setTriggered(true)
+        tapCountRef.current = 0
+        setTimeout(() => setTriggered(false), 2400)
+      }
+    }
+    lastTapRef.current = now
+  }, [])
+
+  return { triggered, handleTap }
+}
+
+/* ─── Gold sparkle burst particles ─── */
+const SPARKLES = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i / 12) * Math.PI * 2
+  return {
+    x: Math.cos(angle) * (40 + Math.random() * 30),
+    y: Math.sin(angle) * (40 + Math.random() * 30),
+    delay: Math.random() * 0.15,
+    size: 3 + Math.random() * 4,
+  }
+})
 
 export const SaloonFooter = memo(function SaloonFooter() {
   const footerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(footerRef, { once: true, margin: '-40px' })
+  const { triggered, handleTap } = useEasterEgg()
 
   return (
     <footer
@@ -64,11 +100,13 @@ export const SaloonFooter = memo(function SaloonFooter() {
         &#x2726;
       </motion.div>
 
-      {/* Brand mark — serif for gravitas */}
+      {/* Brand mark — serif for gravitas + Easter egg tap target */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
         transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        onClick={handleTap}
+        style={{ cursor: 'default', position: 'relative', display: 'inline-block' }}
       >
         <GoldText
           size="sm"
@@ -82,6 +120,51 @@ export const SaloonFooter = memo(function SaloonFooter() {
         >
           Академический Салон
         </GoldText>
+
+        {/* Easter egg: gold sparkle burst */}
+        <AnimatePresence>
+          {triggered && (
+            <>
+              {SPARKLES.map((s, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                  animate={{ x: s.x, y: s.y, opacity: 0, scale: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8, delay: s.delay, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: s.size,
+                    height: s.size,
+                    borderRadius: '50%',
+                    background: 'var(--gold-400, #D4AF37)',
+                    boxShadow: '0 0 6px rgba(212,175,55,0.6)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              ))}
+              <motion.div
+                initial={{ scale: 0, opacity: 0.7 }}
+                animate={{ scale: 3, opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: 20,
+                  height: 20,
+                  marginLeft: -10,
+                  marginTop: -10,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(212,175,55,0.3), transparent 70%)',
+                  pointerEvents: 'none',
+                }}
+              />
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Stats line */}
