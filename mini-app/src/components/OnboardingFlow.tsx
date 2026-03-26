@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, GraduationCap, RefreshCcw, Shield } from 'lucide-react'
 import {
   acceptTerms,
   DEFAULT_LEGAL_HUB_URL,
@@ -78,15 +78,16 @@ const SAFE_PAD_BOTTOM = 'max(28px, calc(env(safe-area-inset-bottom, 20px) + 24px
 const SAFE_PAD_X = 'max(20px, env(safe-area-inset-left, 20px))'
 
 const VALUE_CARDS = [
-  { icon: FileCheck, title: 'Согласованное ТЗ', badge: 'цена и срок до старта' },
-  { icon: RefreshCcw, title: 'Правки по правилам', badge: 'до 3 циклов в рамках ТЗ' },
-  { icon: Shield, title: 'Юридическая ясность', badge: 'возврат по закону' },
+  { icon: FileCheck, title: 'Только оригинал', badge: '80%+ уникальность', desc: 'Антиплагиат пройден' },
+  { icon: RefreshCcw, title: 'Правки включены', badge: '∞ итераций', desc: 'До полного согласования' },
+  { icon: Shield, title: 'Полная защита', badge: '100% возврат', desc: 'Гарантия по договору' },
+  { icon: GraduationCap, title: 'Авторы с опытом', badge: 'к.н. и д.н.', desc: 'Кандидаты и доктора наук' },
 ] as const
 
 const STAT_BLOCKS = [
-  { value: '100%', label: 'до старта' },
-  { value: '3', label: 'цикла правок' },
-  { value: 'чек', label: 'по оплате' },
+  { value: '100%', label: 'возврат' },
+  { value: '∞', label: 'правок' },
+  { value: '24ч', label: 'поддержка' },
 ] as const
 
 const EASE = EASE_PREMIUM as unknown as number[]
@@ -102,6 +103,10 @@ const keyframeStyle = `
 @keyframes shimmer-sweep {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+@keyframes breathing-glow {
+  0%, 100% { opacity: 0.15; transform: scale(0.97); }
+  50% { opacity: 0.35; transform: scale(1.02); }
 }
 `
 
@@ -220,10 +225,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
 
   /* Cleanup all timers on unmount */
   useEffect(() => {
-    const timers = timersRef.current
-    return () => {
-      timers.forEach(clearTimeout)
-    }
+    return () => { timersRef.current.forEach(clearTimeout) }
   }, [])
 
   /* Fetch config for offer URL */
@@ -403,14 +405,14 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   borderRadius: 999,
                   border: 'none',
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.35)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.22)',
+                  fontSize: 10,
+                  fontWeight: 500,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
                 }}
               >
-                <ChevronLeft size={14} strokeWidth={2} />
+                <ChevronLeft size={12} strokeWidth={2} />
                 Назад
               </motion.button>
             )}
@@ -437,15 +439,15 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   borderRadius: 999,
                   border: 'none',
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.35)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.22)',
+                  fontSize: 10,
+                  fontWeight: 500,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
                 }}
               >
                 {phase === 'reveal' ? 'Пропустить' : 'К условиям'}
-                <ChevronRight size={14} strokeWidth={2} />
+                <ChevronRight size={12} strokeWidth={2} />
               </motion.button>
             )}
           </>
@@ -603,7 +605,10 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               }}
             >
               {/* Small monogram 44x44 circle */}
-              <div
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: reduced ? 0 : 0.5, ease: EASE }}
                 style={{
                   width: 44,
                   height: 44,
@@ -611,160 +616,216 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   background: 'rgba(12,12,10,0.8)',
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(212,175,55,0.12)',
+                  border: '1px solid rgba(212,175,55,0.18)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 10,
-                  boxShadow: '0 0 24px -6px rgba(212,175,55,0.12)',
+                  boxShadow: '0 0 28px -4px rgba(212,175,55,0.15)',
                 }}
               >
                 <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 16, lineHeight: 1, letterSpacing: '0.04em' }}>
                   АС
                 </span>
-              </div>
+              </motion.div>
 
               {/* Badge */}
-              <div style={{
-                fontSize: 10,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'rgba(212,175,55,0.45)',
-                fontWeight: 700,
-                fontFamily: FONT_BODY,
-                marginBottom: 20,
-              }}>
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0 : 0.4, ease: EASE }}
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212,175,55,0.50)',
+                  fontWeight: 700,
+                  fontFamily: FONT_BODY,
+                  marginBottom: 18,
+                }}
+              >
                 Академический Салон
-              </div>
+              </motion.div>
 
-              {/* Headline */}
-              <h2 style={{
-                margin: '0 0 8px',
-                fontFamily: FONT_DISPLAY,
-                fontSize: 'clamp(24px, 6.5vw, 32px)',
-                lineHeight: 1.15,
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: 'var(--text-primary, #f5f5f0)',
-              }}>
-                Сложные работы. Простой путь.
-              </h2>
+              {/* Headline — two explicit lines, no awkward wrap */}
+              <motion.h2
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.1, duration: reduced ? 0 : 0.5, ease: EASE }}
+                style={{
+                  margin: '0 0 6px',
+                  fontFamily: FONT_DISPLAY,
+                  fontSize: 28,
+                  lineHeight: 1.15,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--text-primary, #f5f5f0)',
+                }}
+              >
+                <span style={{ display: 'block' }}>Сложные работы.</span>
+                <span style={{
+                  display: 'block',
+                  ...LIQUID_GOLD_TEXT,
+                  fontSize: 28,
+                  fontFamily: FONT_DISPLAY,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.15,
+                }}>Простой путь.</span>
+              </motion.h2>
 
-              {/* Subtitle */}
-              <p style={{
-                margin: '0 0 28px',
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.5,
-                color: 'var(--text-secondary, rgba(176,176,176,1))',
-                fontFamily: FONT_BODY,
-                maxWidth: 310,
-              }}>
-                Курсовые, дипломные и исследовательские материалы. Индивидуально. С понятными условиями и прозрачным порядком работы.
-              </p>
+              {/* Subtitle — shorter and punchier */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0 : 0.5, ease: EASE }}
+                style={{
+                  margin: '0 0 24px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  lineHeight: 1.5,
+                  color: 'rgba(176,176,176,0.8)',
+                  fontFamily: FONT_BODY,
+                  maxWidth: 280,
+                  letterSpacing: '0.01em',
+                }}
+              >
+                От реферата до диссертации.<br />Каждый проект — с нуля.
+              </motion.p>
 
-              {/* 3 value items — clean list with gold dividers */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, width: '100%', marginBottom: 24 }}>
+              {/* Value items — premium glassmorphic cards with gold accents */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', marginBottom: 24 }}>
                 {VALUE_CARDS.map((card, i) => {
                   const Icon = card.icon
                   return (
-                    <div key={card.title}>
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: reduced ? 0 : 0.3 + i * 0.1,
-                          duration: reduced ? 0 : TIMING.entrance,
-                          ease: EASE,
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 12,
-                          padding: '14px 0',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            background: 'rgba(212,175,55,0.08)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                          }}>
-                            <Icon size={16} strokeWidth={1.8} color="var(--gold-400, #d4af37)" />
-                          </div>
+                    <motion.div
+                      key={card.title}
+                      initial={{ opacity: 0, x: -20, scale: 0.97 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{
+                        delay: reduced ? 0 : 0.25 + i * 0.08,
+                        duration: reduced ? 0 : TIMING.entrance,
+                        ease: EASE,
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 14,
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+                        borderLeft: '2.5px solid rgba(212,175,55,0.40)',
+                        border: '1px solid rgba(212,175,55,0.08)',
+                        borderLeftWidth: '2.5px',
+                        borderLeftColor: 'rgba(212,175,55,0.40)',
+                        position: 'relative' as const,
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 10,
+                          background: 'linear-gradient(135deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.06) 100%)',
+                          border: '1px solid rgba(212,175,55,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          boxShadow: '0 2px 8px -2px rgba(212,175,55,0.12)',
+                        }}>
+                          <Icon size={17} strokeWidth={1.8} color="var(--gold-400, #d4af37)" />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 1, minWidth: 0 }}>
                           <span style={{
-                            fontSize: 14, fontWeight: 700,
+                            fontSize: 13.5, fontWeight: 700,
                             color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
+                            lineHeight: 1.2,
                           }}>
                             {card.title}
                           </span>
+                          <span style={{
+                            fontSize: 11, fontWeight: 500,
+                            color: 'rgba(176,176,176,0.55)', fontFamily: FONT_BODY,
+                            lineHeight: 1.2,
+                          }}>
+                            {card.desc}
+                          </span>
                         </div>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700,
-                          color: 'rgba(212,175,55,0.85)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
-                          padding: '4px 10px', borderRadius: 8, background: 'rgba(212,175,55,0.10)',
-                          letterSpacing: '0.01em',
-                        }}>
-                          {card.badge}
-                        </span>
-                      </motion.div>
-                      {/* Gold divider between items */}
-                      {i < VALUE_CARDS.length - 1 && (
-                        <div style={{
-                          height: 1,
-                          background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.15) 20%, rgba(212,175,55,0.15) 80%, transparent 100%)',
-                        }} />
-                      )}
-                    </div>
+                      </div>
+                      <span style={{
+                        fontSize: 10.5, fontWeight: 700,
+                        color: 'rgba(240,208,96,0.95)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
+                        padding: '4px 10px', borderRadius: 8,
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)',
+                        border: '1px solid rgba(212,175,55,0.14)',
+                        letterSpacing: '0.03em',
+                        textTransform: 'uppercase' as const,
+                        flexShrink: 0,
+                      }}>
+                        {card.badge}
+                      </span>
+                    </motion.div>
                   )
                 })}
               </div>
 
-              {/* Gold CTA "Далее" */}
-              <motion.button
-                type="button"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduced ? 0 : 0.7, duration: reduced ? 0 : 0.4, ease: EASE }}
-                whileTap={{ scale: TAP_SCALE }}
-                onClick={advanceFromValue}
-                style={{
-                  width: '100%',
-                  padding: '16px 24px',
-                  borderRadius: 12,
-                  border: 'none',
-                  background: LIQUID_GOLD,
-                  backgroundSize: '200% 200%',
-                  animation: 'liquid-gold-shift 4s ease-in-out infinite',
-                  color: '#0A0A0A',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  fontFamily: FONT_BODY,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase' as const,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  boxShadow: '0 4px 20px -4px rgba(212,175,55,0.35)',
-                  position: 'relative' as const,
-                  overflow: 'hidden' as const,
-                }}
-              >
-                {/* Shimmer */}
+              {/* Gold CTA "Далее" with breathing glow */}
+              <div style={{ position: 'relative', width: '100%' }}>
                 {!reduced && (
-                  <span aria-hidden="true" style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
-                    animation: 'shimmer-sweep 2.5s ease-in-out infinite',
-                    pointerEvents: 'none',
-                  }} />
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute', inset: -4, borderRadius: 16,
+                      background: 'linear-gradient(135deg, #BF953F, #D4AF37, #BF953F)',
+                      filter: 'blur(20px)', pointerEvents: 'none',
+                      animation: 'breathing-glow 5s ease-in-out infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  />
                 )}
-                Далее
-                <ChevronRight size={16} strokeWidth={2} style={{ color: '#0A0A0A' }} />
-              </motion.button>
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reduced ? 0 : 0.7, duration: reduced ? 0 : 0.4, ease: EASE }}
+                  whileTap={{ scale: TAP_SCALE }}
+                  onClick={advanceFromValue}
+                  style={{
+                    width: '100%',
+                    padding: '16px 24px',
+                    borderRadius: 12,
+                    border: 'none',
+                    background: LIQUID_GOLD,
+                    backgroundSize: '200% 200%',
+                    animation: 'liquid-gold-shift 4s ease-in-out infinite',
+                    color: '#0A0A0A',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    fontFamily: FONT_BODY,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase' as const,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 20px -4px rgba(212,175,55,0.35)',
+                    position: 'relative' as const,
+                    overflow: 'hidden' as const,
+                  }}
+                >
+                  {/* Shimmer */}
+                  {!reduced && (
+                    <span aria-hidden="true" style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                      animation: 'shimmer-sweep 2.5s ease-in-out infinite',
+                      pointerEvents: 'none',
+                    }} />
+                  )}
+                  Далее
+                  <ChevronRight size={16} strokeWidth={2} style={{ color: '#0A0A0A' }} />
+                </motion.button>
+              </div>
             </motion.div>
           )}
 
@@ -829,43 +890,29 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               {/* 3 animated stat blocks */}
               <StatBlocksRow active={phase === 'offer'} reduced={reduced} />
 
-              <div
+              {/* Offer link */}
+              <motion.button
+                type="button"
+                whileTap={{ scale: TAP_SCALE }}
+                onClick={handleOpenLegalHub}
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 14,
+                  gap: 5,
+                  padding: 0,
+                  border: 'none',
+                  background: 'none',
+                  color: 'rgba(212,175,55,0.45)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: FONT_BODY,
+                  cursor: 'pointer',
                   marginBottom: 32,
                 }}
               >
-                {[
-                  { label: 'Оферта, ПД и сведения', onClick: handleOpenLegalHub },
-                ].map((link) => (
-                  <motion.button
-                    key={link.label}
-                    type="button"
-                    whileTap={{ scale: TAP_SCALE }}
-                    onClick={link.onClick}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      padding: 0,
-                      border: 'none',
-                      background: 'none',
-                      color: 'rgba(212,175,55,0.45)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: FONT_BODY,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {link.label}
-                    <ExternalLink size={12} strokeWidth={1.8} />
-                  </motion.button>
-                ))}
-              </div>
+                Оферта, ПД и сведения
+                <ExternalLink size={12} strokeWidth={1.8} />
+              </motion.button>
 
               {/* Error banner */}
               <AnimatePresence>
