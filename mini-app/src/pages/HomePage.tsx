@@ -11,6 +11,7 @@ import { Confetti } from '../components/ui/Confetti'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
+import { useNavigation } from '../contexts/NavigationContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import { claimDailyBonus } from '../api/userApi'
@@ -84,6 +85,7 @@ export function HomePage({ user, onRefresh }: Props) {
   const { haptic, tg, botUsername } = useTelegram()
   const admin = useAdmin()
   const capability = useCapability()
+  const { setShowBonusBadge } = useNavigation()
 
   const { containerRef, PullIndicator } = usePullToRefresh({
     onRefresh: async () => { if (onRefresh) await onRefresh() },
@@ -211,10 +213,11 @@ export function HomePage({ user, onRefresh }: Props) {
     if (claimedAmount && claimedAmount > 0) {
       setOptimisticBonusAdd(prev => prev + claimedAmount)
     }
+    setShowBonusBadge(false) // Clear nav badge immediately
     if (onRefresh) {
       void onRefresh().then(() => setOptimisticBonusAdd(0))
     }
-  }, [onRefresh])
+  }, [onRefresh, setShowBonusBadge])
 
   // Calculate total savings from cashback transactions
   const totalSaved = useMemo(() => {
@@ -279,6 +282,11 @@ export function HomePage({ user, onRefresh }: Props) {
     (user?.streak_freeze_count ?? 0) > 0
   )
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
+
+  // Sync bonus badge dot on navigation Бонусы tab
+  useEffect(() => {
+    setShowBonusBadge(Boolean(user?.daily_luck_available))
+  }, [user?.daily_luck_available, setShowBonusBadge])
 
   /* ─── Gold shimmer skeleton ─── */
   const goldSkeletonStyle: React.CSSProperties = {

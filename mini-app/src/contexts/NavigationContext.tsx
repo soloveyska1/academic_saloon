@@ -28,6 +28,10 @@ interface NavigationContextType {
     forceHide: () => void
     forceShow: () => void
     isForcedHidden: boolean
+
+    // Badge dot on Бонусы tab — only when daily bonus is claimable
+    showBonusBadge: boolean
+    setShowBonusBadge: (show: boolean) => void
 }
 
 const NavigationContext = createContext<NavigationContextType | null>(null)
@@ -35,6 +39,7 @@ const NavigationContext = createContext<NavigationContextType | null>(null)
 export function NavigationProvider({ children }: { children: ReactNode }) {
     const [isHidden, setHiddenState] = useState(false)
     const [isForcedHidden, setForcedHidden] = useState(false)
+    const [showBonusBadge, setShowBonusBadge] = useState(false)
     const [modalCount, setModalCount] = useState(0)
     const [legacyModalOpen, setLegacyModalOpen] = useState(false)
     const activeModalsRef = useRef<Set<string>>(new Set())
@@ -87,7 +92,9 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
                 registerModal,
                 forceHide,
                 forceShow,
-                isForcedHidden
+                isForcedHidden,
+                showBonusBadge,
+                setShowBonusBadge
             }}
         >
             {children}
