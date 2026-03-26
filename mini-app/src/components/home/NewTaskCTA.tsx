@@ -37,7 +37,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           style={{
             position: 'relative',
             width: '100%',
-            marginBottom: 20,
+            marginBottom: 24,
             overflow: 'hidden',
             borderRadius: 12,
             background: 'linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(10,10,11,0.99) 100%)',
@@ -141,21 +141,21 @@ export const NewTaskCTA = memo(function NewTaskCTA({
 
             {/* CTA button */}
             <LiquidGoldButton onClick={handleClick} icon={<ArrowRight size={18} />}>
-              Оформить заказ
+              Узнать стоимость
             </LiquidGoldButton>
 
             {/* Micro-reassurance */}
             <div
               style={{
                 marginTop: 12,
-                fontSize: 11,
+                fontSize: 12,
                 color: 'var(--text-muted)',
                 fontWeight: 600,
                 textAlign: 'center',
-                opacity: 0.5,
+                opacity: 0.8,
               }}
             >
-              Расчёт бесплатно · оплата после проверки
+              Бесплатный расчёт за 2 минуты
             </div>
           </div>
         </div>

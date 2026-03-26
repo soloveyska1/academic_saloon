@@ -67,7 +67,7 @@ export const PricingAnchor = memo(function PricingAnchor({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.34 }}
+      transition={{ delay: 0.34, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 24 }}
     >
       {/* Section header */}
@@ -227,7 +227,7 @@ export const PricingAnchor = memo(function PricingAnchor({
             key={i}
             animate={{
               width: i === activeIndex ? 18 : 6,
-              background: i === activeIndex ? 'var(--gold-400, #D4AF37)' : 'rgba(255,255,255,0.12)',
+              background: i === activeIndex ? 'var(--gold-400, #D4AF37)' : 'rgba(212,175,55,0.12)',
             }}
             transition={{ duration: 0.25, ease: EASE }}
             style={{

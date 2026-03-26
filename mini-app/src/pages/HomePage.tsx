@@ -1,6 +1,7 @@
 import { useCallback, useRef, useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -391,6 +392,31 @@ export function HomePage({ user, onRefresh }: Props) {
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <WhyTrustUs />
             <TestimonialsSection />
+
+            {/* Repeat CTA after social proof */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              style={{ marginBottom: 24, textAlign: 'center' }}
+            >
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={handleNewOrder}
+                style={{
+                  width: '100%', padding: '16px 24px', borderRadius: 12,
+                  border: '1px solid rgba(212,175,55,0.15)',
+                  background: 'rgba(212,175,55,0.06)', color: 'var(--gold-400)',
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                Узнать стоимость
+                <ArrowRight size={16} strokeWidth={2} />
+              </motion.button>
+            </motion.div>
+
             <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
           </>
