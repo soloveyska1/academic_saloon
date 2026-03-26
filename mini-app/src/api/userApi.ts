@@ -18,7 +18,14 @@ export interface OrderCreateResponse {
 
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
-const DEFAULT_OFFER_URL = 'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25'
+export const DEFAULT_OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2'
+export const DEFAULT_PRIVACY_POLICY_URL = 'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26'
+export const DEFAULT_EXECUTOR_INFO_URL = 'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26'
+const LEGACY_OFFER_URLS = new Set([
+  'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25',
+  'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30',
+  'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26',
+])
 
 // Known production API host — used as fallback when VITE_API_URL is not set
 const PRODUCTION_API_URL = 'https://academic-saloon.duckdns.org/api'
@@ -135,16 +142,46 @@ export interface PublicConfig {
   support_username: string
   reviews_channel?: string
   offer_url?: string
+  privacy_policy_url?: string
+  executor_info_url?: string
+}
+
+function normalizePublicDocUrl(url: string | undefined, fallback: string, legacyUrls?: Set<string>): string {
+  const trimmed = (url || '').trim()
+  if (!trimmed || (legacyUrls && legacyUrls.has(trimmed))) {
+    return fallback
+  }
+  return trimmed
+}
+
+function normalizeOfferUrl(url?: string): string {
+  return normalizePublicDocUrl(url, DEFAULT_OFFER_URL, LEGACY_OFFER_URLS)
+}
+
+function normalizePrivacyPolicyUrl(url?: string): string {
+  return normalizePublicDocUrl(url, DEFAULT_PRIVACY_POLICY_URL)
+}
+
+function normalizeExecutorInfoUrl(url?: string): string {
+  return normalizePublicDocUrl(url, DEFAULT_EXECUTOR_INFO_URL)
 }
 
 export async function fetchConfig(): Promise<PublicConfig> {
   try {
-    return await apiFetch<PublicConfig>('/config')
+    const config = await apiFetch<PublicConfig>('/config')
+    return {
+      ...config,
+      offer_url: normalizeOfferUrl(config.offer_url),
+      privacy_policy_url: normalizePrivacyPolicyUrl(config.privacy_policy_url),
+      executor_info_url: normalizeExecutorInfoUrl(config.executor_info_url),
+    }
   } catch {
     return {
       bot_username: 'Kladovaya_GIPSR_bot',
       support_username: 'Thisissaymoon',
       offer_url: DEFAULT_OFFER_URL,
+      privacy_policy_url: DEFAULT_PRIVACY_POLICY_URL,
+      executor_info_url: DEFAULT_EXECUTOR_INFO_URL,
     }
   }
 }

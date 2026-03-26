@@ -7,9 +7,16 @@ import { prefersReducedMotion } from './profileHelpers'
 interface Props {
   onOpenSupport: () => void
   onOpenOffer?: () => void
+  onOpenPrivacyPolicy?: () => void
+  onOpenExecutorInfo?: () => void
 }
 
-export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport, onOpenOffer }: Props) {
+export const ProfileFooter = memo(function ProfileFooter({
+  onOpenSupport,
+  onOpenOffer,
+  onOpenPrivacyPolicy,
+  onOpenExecutorInfo,
+}: Props) {
   return (
     <motion.footer
       initial={prefersReducedMotion ? {} : { opacity: 0 }}
@@ -55,6 +62,55 @@ export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport, onOpen
           </motion.button>
         )}
       </div>
+
+      {(onOpenPrivacyPolicy || onOpenExecutorInfo) && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            width: '100%',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: 10,
+            flexWrap: 'wrap',
+          }}
+        >
+          {onOpenPrivacyPolicy && (
+            <button
+              type="button"
+              onClick={onOpenPrivacyPolicy}
+              style={{
+                border: 'none',
+                background: 'none',
+                padding: 0,
+                color: 'var(--gold-label)',
+                fontSize: 11,
+                letterSpacing: '0.06em',
+                cursor: 'pointer',
+              }}
+            >
+              Политика ПД
+            </button>
+          )}
+          {onOpenExecutorInfo && (
+            <button
+              type="button"
+              onClick={onOpenExecutorInfo}
+              style={{
+                border: 'none',
+                background: 'none',
+                padding: 0,
+                color: 'var(--gold-label)',
+                fontSize: 11,
+                letterSpacing: '0.06em',
+                cursor: 'pointer',
+              }}
+            >
+              Исполнитель
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Brand footer */}
       <div className={s.footerBrand}>

@@ -16,7 +16,17 @@ def get_terms_short_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="📄 Читать полную юр. оферту",
-                url=settings.OFFER_URL
+                url=settings.public_offer_url
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🛡 Политика ПД",
+                url=settings.public_privacy_policy_url
+            ),
+            InlineKeyboardButton(
+                text="👤 Исполнитель",
+                url=settings.public_executor_info_url
             )
         ]
     ])
