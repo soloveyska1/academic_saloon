@@ -1,68 +1,155 @@
-import { memo } from 'react'
-import { motion } from 'framer-motion'
-import { Reveal } from '../ui/StaggerReveal'
+import { memo, useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
 import { GoldText } from '../ui/GoldText'
 
 export const SaloonFooter = memo(function SaloonFooter() {
+  const footerRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(footerRef, { once: true, margin: '-40px' })
+
   return (
-    <Reveal animation="fade" delay={0.3}>
-      <footer style={{ textAlign: 'center', padding: '40px 0 32px' }}>
-        {/* Gold divider with whileInView animation */}
-        <motion.div
-          initial={{ width: 0, opacity: 0 }}
-          whileInView={{ width: 60, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          aria-hidden="true"
+    <footer
+      ref={footerRef}
+      style={{
+        textAlign: 'center',
+        padding: '48px 0 36px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Ambient gold glow — crescendo at the bottom of the page */}
+      <motion.div
+        aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 1.2 }}
+        style={{
+          position: 'absolute',
+          bottom: -60,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 300,
+          height: 200,
+          borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(212,175,55,0.06) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          filter: 'blur(30px)',
+        }}
+      />
+
+      {/* Gold divider — expands on scroll into view */}
+      <motion.div
+        initial={{ width: 0, opacity: 0 }}
+        animate={isInView ? { width: 80, opacity: 1 } : { width: 0, opacity: 0 }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        aria-hidden="true"
+        style={{
+          height: 1,
+          margin: '0 auto 20px',
+          background: 'linear-gradient(90deg, transparent, var(--gold-400, #D4AF37), transparent)',
+        }}
+      />
+
+      {/* Decorative diamond */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={isInView ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        transition={{ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        aria-hidden="true"
+        style={{
+          fontSize: 10,
+          color: 'var(--gold-400)',
+          marginBottom: 14,
+        }}
+      >
+        &#x2726;
+      </motion.div>
+
+      {/* Brand mark — serif for gravitas */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+        transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <GoldText
+          size="sm"
+          weight={700}
+          variant="static"
           style={{
-            height: 1,
-            margin: '0 auto 16px',
-            background: 'linear-gradient(90deg, transparent, var(--border-gold), transparent)',
+            fontFamily: "var(--font-display, 'Playfair Display', serif)",
+            letterSpacing: '0.06em',
+            display: 'block',
           }}
-        />
+        >
+          Академический Салон
+        </GoldText>
+      </motion.div>
 
-        {/* Brand mark */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <GoldText size="xs" weight={600} uppercase tracking="wider" variant="static">
-            Академический Салон
-          </GoldText>
-          <span style={{ fontSize: 7, color: 'var(--gold-400)' }}>&#x2726;</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em', fontWeight: 600 }}>
-            est. 2020
-          </span>
-        </div>
+      {/* Stats line */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+        style={{
+          marginTop: 10, fontSize: 11, fontWeight: 600,
+          color: 'rgba(212,175,55,0.55)', letterSpacing: '0.03em',
+        }}
+      >
+        2 000+ работ &middot; 4.9 &star; &middot; Гарантия возврата
+      </motion.div>
 
-        {/* Stats line — honest, rounded */}
-        <div style={{
-          marginTop: 8, fontSize: 11, fontWeight: 600,
-          color: 'rgba(212,175,55,0.50)', letterSpacing: '0.02em',
-        }}>
-          Более 2 000 работ · Оценка 4.9 · Возврат гарантирован
-        </div>
+      {/* Tagline — serif italic for elegance */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ delay: 0.45, duration: 0.5 }}
+        style={{
+          marginTop: 8, fontSize: 11,
+          fontFamily: "var(--font-display, 'Playfair Display', serif)",
+          fontStyle: 'italic',
+          color: 'rgba(212,175,55,0.35)',
+          letterSpacing: '0.02em',
+        }}
+      >
+        Качество &middot; Конфиденциальность &middot; Результат
+      </motion.div>
 
-        {/* Tagline */}
-        <div style={{
-          marginTop: 6, fontSize: 10,
-          color: 'var(--text-muted)', letterSpacing: '0.02em',
-        }}>
-          Качество · Конфиденциальность · Результат
-        </div>
+      {/* Support link */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ delay: 0.55, duration: 0.5 }}
+        style={{ marginTop: 16 }}
+      >
+        <a
+          href="https://t.me/Thisissaymoon"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.45)',
+            textDecoration: 'none',
+            letterSpacing: '0.02em',
+          }}
+        >
+          Поддержка в Telegram &rarr;
+        </a>
+      </motion.div>
 
-        {/* Support link */}
-        <div style={{ marginTop: 12 }}>
-          <a
-            href="https://t.me/Thisissaymoon"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.40)',
-              textDecoration: 'none',
-            }}
-          >
-            Поддержка в Telegram →
-          </a>
-        </div>
-      </footer>
-    </Reveal>
+      {/* Established year — quiet, final */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ delay: 0.65, duration: 0.5 }}
+        style={{
+          marginTop: 12,
+          fontSize: 9,
+          fontWeight: 500,
+          color: 'rgba(212,175,55,0.20)',
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+        }}
+      >
+        est. 2020
+      </motion.div>
+    </footer>
   )
 })

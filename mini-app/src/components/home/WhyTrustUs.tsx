@@ -1,5 +1,5 @@
-import { memo } from 'react'
-import { motion } from 'framer-motion'
+import { memo, useEffect, useRef, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
 import { ShieldCheck, RefreshCcw, Clock, EyeOff, Banknote } from 'lucide-react'
 
 const ITEMS = [
@@ -10,12 +10,44 @@ const ITEMS = [
   { icon: Banknote, title: 'Возврат до старта', desc: 'Оплата только после согласования условий' },
 ]
 
+// ─── Animated counter: counts from 0 to target when visible ───
+function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const isInView = useInView(ref, { once: true })
+  const [display, setDisplay] = useState(0)
+
+  useEffect(() => {
+    if (!isInView) return
+    const duration = 1800
+    const start = performance.now()
+    const step = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      // easeOutExpo for a satisfying deceleration
+      const eased = 1 - Math.pow(1 - progress, 4)
+      setDisplay(Math.round(eased * value))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [isInView, value])
+
+  return (
+    <span ref={ref} style={{ fontVariantNumeric: 'tabular-nums' }}>
+      {display.toLocaleString('ru-RU')}{suffix}
+    </span>
+  )
+}
+
 export const WhyTrustUs = memo(function WhyTrustUs() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(sectionRef, { once: true, margin: '-60px' })
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      ref={sectionRef}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 32 }}
     >
       {/* Section label */}
@@ -52,9 +84,9 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
           return (
             <div key={item.title}>
               <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, x: -12 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -12 }}
+                transition={{ delay: i * 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0',
                 }}
@@ -90,14 +122,14 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
             </div>
           )
         })}
-        {/* Social proof anchor */}
+        {/* Social proof anchor with animated counter */}
         <div style={{
           marginTop: 12, textAlign: 'center',
           fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.50)',
           letterSpacing: '0.02em',
           paddingTop: 14, borderTop: '1px solid rgba(212,175,55,0.06)',
         }}>
-          Более 2 000 выполненных проектов
+          Более <AnimatedCounter value={2000} /> выполненных проектов
         </div>
       </div>
     </motion.div>
