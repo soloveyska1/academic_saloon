@@ -5,10 +5,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  OFFER DATA — Публичная оферта / Большой Кодекс Академического Салуна
-//  Структура: summary cards (Layer 1) + full legal sections (Layer 2)
-//  Правовая база: ГК РФ ст. 435-443, 779-783; ЗоЗПП; 152-ФЗ
-//  v4.1 — Brand voice + legal hardening (ЗоЗПП ст. 17, 18; ГК РФ ст. 432, 1286)
+//  OFFER DATA — Публичная оферта Академического Салона
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface SummaryCard {
@@ -27,9 +24,6 @@ export interface OfferSection {
   icon: LucideIcon
   clauses: string[]
 }
-
-// ═══════════ LAYER 1: HUMAN-READABLE SUMMARY ═══════════
-// Порядок: Что это → Оплата → Качество → Сроки → Возврат → Уникальность → Конфиденциальность → 18+
 
 export const SUMMARY_CARDS: SummaryCard[] = [
   {
@@ -105,8 +99,6 @@ export const SUMMARY_CARDS: SummaryCard[] = [
     sectionIndex: 9,
   },
 ]
-
-// ═══════════ LAYER 2: FULL LEGAL TEXT ═══════════
 
 export const OFFER_SECTIONS: OfferSection[] = [
   // ─── 1. ПРЕДМЕТ СОГЛАШЕНИЯ ───
@@ -286,10 +278,9 @@ export const OFFER_SECTIONS: OfferSection[] = [
 // ═══════════ META ═══════════
 
 export const OFFER_META = {
-  title: 'Большой Кодекс Академического Салуна',
+  title: 'Публичная оферта сервиса «Академический Салон»',
   subtitle: 'Публичная оферта об оказании информационно-консультационных услуг',
-  intro: 'Твои права и наши обязательства — кратко или полностью',
-  version: '4.1',
+  intro: 'Условия оказания услуг, оплаты, возврата и конфиденциальности',
   effectiveDate: '25 марта 2026 г.',
   totalSections: OFFER_SECTIONS.length,
 }

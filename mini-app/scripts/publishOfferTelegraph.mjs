@@ -36,87 +36,13 @@ function buildHeroNodes(meta) {
   return [
     toParagraph(meta.subtitle),
     {
-      tag: 'blockquote',
-      children: [
-        'Это официальная редакция публичной оферты сервиса «Академический Салон». Клиент принимает её перед первым входом в приложение, а текст ниже синхронизирован с действующей редакцией внутри сервиса.',
-      ],
-    },
-    {
       tag: 'aside',
       children: [
-        `Редакция ${meta.version} · действует с ${meta.effectiveDate}`,
+        `Действует с ${meta.effectiveDate}`,
       ],
     },
-    toHeading('h3', 'Назначение публикации'),
-    toParagraph('Документ фиксирует порядок акцепта, оказания услуг, оплаты, правок, возвратов, конфиденциальности и обработки персональных данных до открытия полного функционала приложения.'),
-  ]
-}
-
-function buildValueManifest(summaryCards) {
-  return [
-    toHeading('h3', 'Если коротко'),
-    {
-      tag: 'ul',
-      children: [
-        {
-          tag: 'li',
-          children: ['До первого заказа клиент видит ключевые условия, гарантии, схему оплаты и право на возврат.'],
-        },
-        {
-          tag: 'li',
-          children: ['Акцепт фиксируется кнопкой в приложении и означает согласие с офертой по ст. 438 ГК РФ.'],
-        },
-        {
-          tag: 'li',
-          children: ['Полная редакция ниже не сокращена и соответствует той, что зашита в приложение.'],
-        },
-      ],
-    },
-    {
-      tag: 'aside',
-      children: ['Краткая выжимка по ключевым условиям'],
-    },
-    ...summaryCards.flatMap((card, index) => [
-      toHeading('h4', card.title),
-      {
-        tag: 'p',
-        children: [{ tag: 'em', children: [card.hook] }],
-      },
-      toParagraph(card.text),
-      {
-        tag: 'aside',
-        children: [`${card.proof} · ${card.proofLabel}`],
-      },
-      ...(index < summaryCards.length - 1 ? [{ tag: 'hr' }] : []),
-    ]),
-  ]
-}
-
-function buildAcceptanceNodes() {
-  return [
-    { tag: 'hr' },
-    toHeading('h3', 'Как работает акцепт'),
-    {
-      tag: 'ol',
-      children: [
-        {
-          tag: 'li',
-          children: ['Клиент открывает приветственный экран и получает доступ к краткой выжимке по условиям.'],
-        },
-        {
-          tag: 'li',
-          children: ['Полный текст оферты доступен прямо перед входом и может быть открыт до нажатия кнопки акцепта.'],
-        },
-        {
-          tag: 'li',
-          children: ['Нажатие кнопки принятия означает согласие с офертой и открывает доступ к кабинету, заказам, чату, оплате и файлам.'],
-        },
-      ],
-    },
-    {
-      tag: 'aside',
-      children: ['Акцепт фиксируется электронной кнопкой в интерфейсе в соответствии со ст. 438 ГК РФ.'],
-    },
+    toHeading('h3', 'Официальная редакция'),
+    toParagraph('Настоящий документ является публичной офертой сервиса «Академический Салон» и публикуется в действующей редакции без сокращений полного текста.'),
   ]
 }
 
@@ -139,7 +65,7 @@ function buildSectionNodes(sections) {
   ])
 }
 
-function buildTelegraphContent({ summaryCards, sections, meta, imageUrl }) {
+function buildTelegraphContent({ sections, meta, imageUrl }) {
   const content = []
 
   if (imageUrl) {
@@ -147,24 +73,16 @@ function buildTelegraphContent({ summaryCards, sections, meta, imageUrl }) {
       tag: 'figure',
       children: [
         { tag: 'img', attrs: { src: imageUrl } },
-        { tag: 'figcaption', children: ['Академический Салон · официальная публикация оферты и условий сервиса'] },
+        { tag: 'figcaption', children: ['Академический Салон · публичная оферта'] },
       ],
     })
   }
 
   content.push(
     ...buildHeroNodes(meta),
-    ...buildValueManifest(summaryCards),
-    ...buildAcceptanceNodes(),
     { tag: 'hr' },
     toHeading('h3', 'Полная редакция'),
     ...buildSectionNodes(sections),
-    {
-      tag: 'aside',
-      children: [
-        'Текст синхронизирован с приложением «Академический Салон» и публикуется из того же источника, что используется внутри сервиса.',
-      ],
-    },
   )
 
   return content
@@ -265,7 +183,7 @@ async function uploadOfferImage() {
 }
 
 async function publish() {
-  const { summaryCards, sections, meta } = loadOfferData()
+  const { sections, meta } = loadOfferData()
   const { accessToken, created } = await ensureAccessToken()
   let imageUrl = null
   try {
@@ -274,7 +192,7 @@ async function publish() {
     console.warn(error instanceof Error ? error.message : String(error))
     imageUrl = REMOTE_OFFER_IMAGE_URL
   }
-  const content = buildTelegraphContent({ summaryCards, sections, meta, imageUrl })
+  const content = buildTelegraphContent({ sections, meta, imageUrl })
 
   const pagePath = process.env.TELEGRAPH_PAGE_PATH
   const commonParams = {

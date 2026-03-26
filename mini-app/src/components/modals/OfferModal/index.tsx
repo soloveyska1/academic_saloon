@@ -347,7 +347,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
           >
             <FileText size={11} color="var(--text-muted)" strokeWidth={2} />
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
-              {showFullText ? 'Скрыть юридический текст' : `Юридический текст · ${OFFER_META.totalSections} разделов`}
+              {showFullText ? 'Скрыть полный текст оферты' : `Полный текст оферты · ${OFFER_META.totalSections} разделов`}
             </span>
             <m.div animate={{ rotate: showFullText ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown size={11} color="var(--text-muted)" strokeWidth={2} />
@@ -375,12 +375,6 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
                       onToggle={() => toggleSection(section.id)}
                     />
                   ))}
-                  <div style={{
-                    marginTop: 8, textAlign: 'center',
-                    fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, opacity: 0.6,
-                  }}>
-                    ГК РФ ст. 435-443, 779-783 · ЗоЗПП · 152-ФЗ
-                  </div>
                 </div>
               </m.div>
             )}
@@ -406,7 +400,7 @@ export function OfferModal({ isOpen, onClose, onAccept, dismissible = true, acce
               color: 'var(--text-muted)',
             }}
           >
-            Нажатие кнопки ниже означает акцепт публичной оферты. Полный текст доступен выше в этом же окне для предварительного ознакомления.
+            Полный текст оферты доступен в этом же окне. Продолжение означает принятие её условий.
           </div>
           <m.button
             type="button"

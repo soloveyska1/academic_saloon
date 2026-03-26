@@ -875,7 +875,7 @@ alembic history
 | API Docs | https://academic-saloon.duckdns.org/api/docs |
 | API ReDoc | https://academic-saloon.duckdns.org/api/redoc |
 | Support | @Thisissaymoon |
-| Terms | https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25 |
+| Terms | https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26 |
 
 ### 12.3 Useful Commands
 

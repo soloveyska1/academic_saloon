@@ -82,7 +82,7 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
   const [accepting, setAccepting] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState<string>('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
+  const [offerUrl, setOfferUrl] = useState<string>('https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26')
 
   useEffect(() => {
     let alive = true

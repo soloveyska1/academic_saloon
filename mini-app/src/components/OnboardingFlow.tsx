@@ -204,7 +204,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [phase, setPhase] = useState<Phase>('reveal')
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30')
+  const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26')
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 

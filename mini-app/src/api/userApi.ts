@@ -18,7 +18,7 @@ export interface OrderCreateResponse {
 
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
-const DEFAULT_OFFER_URL = 'https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25'
+const DEFAULT_OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26'
 
 // Known production API host — used as fallback when VITE_API_URL is not set
 const PRODUCTION_API_URL = 'https://academic-saloon.duckdns.org/api'
