@@ -23,7 +23,7 @@ import {
   UrgentHubSheet,
   TestimonialsSection,
   WhyTrustUs,
-  StickyBottomCTA,
+  // StickyBottomCTA removed — hero CTA is always visible for new users
   // WelcomeTour removed — content already on HomePage
   SaloonFooter,
   ExamSeasonBanner,
@@ -393,7 +393,6 @@ export function HomePage({ user, onRefresh }: Props) {
             <TestimonialsSection />
             <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
-            <StickyBottomCTA onClick={handleNewOrder} />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════
