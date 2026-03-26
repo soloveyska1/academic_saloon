@@ -222,7 +222,8 @@ export const Navigation = () => {
                       strokeWidth={isActive ? 2.0 : 1.6}
                       color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
                     />
-                    {item.path === '/club' && (
+                    {/* Gold notification dot — hide when user is already on the club page */}
+                    {item.path === '/club' && !isActive && (
                       <div style={{
                         position: 'absolute',
                         top: -2,

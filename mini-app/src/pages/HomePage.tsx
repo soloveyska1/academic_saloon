@@ -440,7 +440,7 @@ export function HomePage({ user, onRefresh }: Props) {
                     pointerEvents: 'none',
                   }}
                 />
-                <span style={{ position: 'relative', zIndex: 1 }}>Рассчитать мою работу</span>
+                <span style={{ position: 'relative', zIndex: 1 }}>Узнать стоимость</span>
                 <ArrowRight size={16} strokeWidth={2.2} style={{ position: 'relative', zIndex: 1 }} />
               </motion.button>
             </motion.div>
