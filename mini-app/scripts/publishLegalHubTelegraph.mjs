@@ -4,7 +4,7 @@ import process from 'node:process'
 const OFFER_URL = 'https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-3'
 const PRIVACY_URL = 'https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26-2'
 const EXECUTOR_URL = 'https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26-2'
-const HERO_IMAGE_URL = 'https://raw.githubusercontent.com/soloveyska1/academic_saloon/main/bot/media/saloon_welcome.jpg'
+const HERO_IMAGE_URL = 'https://raw.githubusercontent.com/soloveyska1/academic_saloon/main/bot/media/legal_hub_cover.png'
 
 function p(text) {
   return { tag: 'p', children: [text] }
