@@ -1,3 +1,4 @@
+// deploy-trigger
 import { memo, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, useReducedMotion, useInView } from 'framer-motion'
 import { HelpCircle, ChevronDown, MessageCircle } from 'lucide-react'
