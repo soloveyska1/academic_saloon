@@ -84,23 +84,11 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 marginBottom: 16,
               }}
             >
-              Академический Салон
+              Первый заказ
             </div>
 
             {/* Headline — two lines, elegant serif, not screaming */}
             <div style={{ marginBottom: 12 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                  fontSize: 'clamp(24px, 6.5vw, 32px)',
-                  fontWeight: 700,
-                  lineHeight: 1.15,
-                  letterSpacing: '-0.03em',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                Работы под ключ.
-              </div>
               <div
                 style={{
                   fontFamily: "var(--font-display, 'Playfair Display', serif)",
@@ -119,8 +107,20 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                     lineHeight: 'inherit',
                   }}
                 >
-                  Точно в срок.
+                  Работы под ключ.
                 </GoldText>
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 'clamp(24px, 6.5vw, 32px)',
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Точно в срок.
               </div>
             </div>
 
@@ -135,14 +135,13 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 maxWidth: 300,
               }}
             >
-              Курсовые, дипломы, рефераты — от{' '}
-              <span style={{ color: 'var(--gold-300)', fontWeight: 700 }}>990 ₽</span>.
-              {' '}Расчёт за 5 минут.
+              Курсовые, дипломные, научные работы.
+              {' '}Индивидуально, без шаблонов.
             </div>
 
             {/* CTA button */}
             <LiquidGoldButton onClick={handleClick} icon={<ArrowRight size={18} />}>
-              Рассчитать стоимость
+              Оформить заказ
             </LiquidGoldButton>
 
             {/* Micro-reassurance */}
@@ -156,7 +155,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 opacity: 0.5,
               }}
             >
-              Бесплатно · без предоплаты · в чате
+              Расчёт бесплатно · оплата после проверки
             </div>
           </div>
         </div>
