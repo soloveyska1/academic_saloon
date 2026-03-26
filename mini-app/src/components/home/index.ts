@@ -41,6 +41,7 @@ export { SeasonalBanner, useSeasonalTheme } from './SeasonalTheme'
 export { ShareDiscountCard } from './ShareDiscountCard'
 export { ReferralBattle } from './ReferralBattle'
 export { SmartReorderCard } from './SmartReorderCard'
+export { SessionCountdown } from './SessionCountdown'
 // Skeleton Loaders
 export {
   BenefitsCardSkeleton,
