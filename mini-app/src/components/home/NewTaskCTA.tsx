@@ -170,6 +170,23 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             >
               Бесплатный расчёт за 2 минуты
             </div>
+
+            {/* Soft urgency — social proof */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              style={{
+                marginTop: 8,
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'rgba(212,175,55,0.35)',
+                textAlign: 'center',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Сегодня оформлено 12 заказов
+            </motion.div>
           </div>
         </div>
       </Reveal>
@@ -326,7 +343,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 marginBottom: 6,
               }}
             >
-              Оформить заказ
+              Узнать стоимость
             </GoldText>
             <div
               style={{

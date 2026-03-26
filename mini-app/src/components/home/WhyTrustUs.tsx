@@ -1,8 +1,9 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { ShieldCheck, RefreshCcw, Clock, EyeOff, Banknote } from 'lucide-react'
+import { ShieldCheck, RefreshCcw, Clock, EyeOff, Banknote, Award } from 'lucide-react'
 
 const ITEMS = [
+  { icon: Award, title: 'Авторы с учёными степенями', desc: 'Кандидаты и доктора наук из ведущих вузов' },
   { icon: ShieldCheck, title: 'Каждая работа — с нуля', desc: 'Оригинальный текст, от 80% уникальности' },
   { icon: RefreshCcw, title: 'Правки без ограничений', desc: 'Дорабатываем бесплатно до полного соответствия' },
   { icon: Clock, title: 'Всегда в срок', desc: 'Дедлайн фиксируется до начала работы' },
