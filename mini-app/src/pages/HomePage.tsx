@@ -38,6 +38,9 @@ import {
   StreakFreezeCard,
   SeasonalBanner,
   SmartReorderCard,
+  LiveActivityFeed,
+  PriceCalculator,
+  SessionCountdown,
 } from '../components/home'
 
 const loadQRCodeModal = () => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal }))
@@ -384,10 +387,16 @@ export function HomePage({ user, onRefresh }: Props) {
               <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             </div>
 
+            {/* ─── Live activity ticker — instant social proof ─── */}
+            <LiveActivityFeed />
+
             {/* ─── Seasonal banner ─── */}
             <Section>
               <SeasonalBanner onAction={handleNewOrder} />
             </Section>
+
+            {/* ─── Session deadline countdown — dynamic urgency ─── */}
+            <SessionCountdown onAction={handleNewOrder} />
 
             {shouldShowExamBanner && <ExamSeasonBanner />}
             <WhyTrustUs />
@@ -443,6 +452,14 @@ export function HomePage({ user, onRefresh }: Props) {
                 <ArrowRight size={16} strokeWidth={2.2} style={{ position: 'relative', zIndex: 1 }} />
               </motion.button>
             </motion.div>
+
+            {/* ─── Inline price calculator — see price without leaving ─── */}
+            <Section>
+              <PriceCalculator
+                onCreateOrder={handleNewOrderWithType}
+                haptic={haptic}
+              />
+            </Section>
 
             <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
             <FAQSection />
