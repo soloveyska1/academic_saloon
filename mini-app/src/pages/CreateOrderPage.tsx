@@ -175,8 +175,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   // Is this a reorder?
   const isReorder = !!prefillData
 
-  // Wizard
-  const [step, setStep] = useState(1)
+  // Wizard — skip step 1 if type is pre-selected from carousel/reorder
+  const [step, setStep] = useState(preselectedType && !isFastMode ? 2 : 1)
   const [direction, setDirection] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const totalSteps = isFastMode ? 2 : 3
