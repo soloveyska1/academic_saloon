@@ -272,8 +272,9 @@ textarea:focus-visible,
 
   /* Card Shadow — Gold Aura Effect (THE SIGNATURE) */
   --card-shadow:
-    0 4px 12px -4px rgba(0, 0, 0, 0.4),
-    0 0 8px -4px rgba(212, 175, 55, 0.06);
+    0 4px 16px -6px rgba(0,0,0,0.5),
+    0 12px 40px -12px rgba(0,0,0,0.3),
+    0 0 12px -6px rgba(212,175,55,0.06);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      DESIGN TOKENS — Standardized values for consistency
@@ -494,10 +495,9 @@ textarea:focus-visible,
 
   /* Card Shadow — The Signature (warm bronze glow) */
   --card-shadow:
-    0 1px 2px rgba(120, 85, 40, 0.04),
-    0 4px 8px rgba(120, 85, 40, 0.06),
-    0 12px 24px -4px rgba(120, 85, 40, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    0 4px 16px -6px rgba(0,0,0,0.5),
+    0 12px 40px -12px rgba(0,0,0,0.3),
+    0 0 12px -6px rgba(212,175,55,0.06);
 
   /* Gold Glow Effects */
   --glow-gold: 0 0 20px -4px rgba(180, 142, 38, 0.3);

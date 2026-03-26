@@ -6,11 +6,11 @@ import { GoldText } from '../ui/GoldText'
 export const SaloonFooter = memo(function SaloonFooter() {
   return (
     <Reveal animation="fade" delay={0.3}>
-      <footer style={{ textAlign: 'center', padding: '24px 0 20px' }}>
+      <footer style={{ textAlign: 'center', padding: '40px 0 32px' }}>
         {/* Gold divider with whileInView animation */}
         <motion.div
           initial={{ width: 0, opacity: 0 }}
-          whileInView={{ width: 40, opacity: 1 }}
+          whileInView={{ width: 60, opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           aria-hidden="true"
@@ -35,7 +35,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
         {/* Stats line — honest, rounded */}
         <div style={{
           marginTop: 8, fontSize: 11, fontWeight: 600,
-          color: 'rgba(212,175,55,0.35)', letterSpacing: '0.02em',
+          color: 'rgba(212,175,55,0.50)', letterSpacing: '0.02em',
         }}>
           Более 2 000 работ · Оценка 4.9 · Возврат гарантирован
         </div>

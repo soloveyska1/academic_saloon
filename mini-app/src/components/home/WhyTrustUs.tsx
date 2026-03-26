@@ -16,17 +16,17 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 24 }}
+      style={{ marginBottom: 32 }}
     >
       {/* Section label */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        marginBottom: 14, paddingLeft: 2,
+        marginBottom: 18, paddingLeft: 2,
       }}>
         <ShieldCheck size={12} color="var(--gold-400)" strokeWidth={2} />
         <span style={{
           fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: 'var(--text-muted)',
+          textTransform: 'uppercase', color: 'rgba(212,175,55,0.50)',
         }}>
           Почему нам доверяют
         </span>
@@ -34,12 +34,12 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
 
       {/* Card container */}
       <div style={{
-        borderRadius: 12, padding: '4px 16px',
+        borderRadius: 12, padding: '16px 20px 20px',
         background: 'rgba(212,175,55,0.02)',
         border: '1px solid rgba(212,175,55,0.06)',
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+        boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), 0 1px 0 rgba(212,175,55,0.06) inset',
       }}>
         {/* Top shine line */}
         <div style={{
@@ -65,6 +65,8 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
                   style={{
                     width: 32, height: 32, borderRadius: '50%',
                     background: 'rgba(212,175,55,0.06)',
+                    border: '1px solid rgba(212,175,55,0.12)',
+                    boxShadow: '0 2px 8px -2px rgba(212,175,55,0.10)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}
                 >
@@ -91,8 +93,9 @@ export const WhyTrustUs = memo(function WhyTrustUs() {
         {/* Social proof anchor */}
         <div style={{
           marginTop: 12, textAlign: 'center',
-          fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.30)',
+          fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.50)',
           letterSpacing: '0.02em',
+          paddingTop: 14, borderTop: '1px solid rgba(212,175,55,0.06)',
         }}>
           Более 2 000 выполненных проектов
         </div>
