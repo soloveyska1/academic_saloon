@@ -56,7 +56,7 @@ function DailyBonusCardInner({
   const compactCardStyle: React.CSSProperties = {
     background: embedded
       ? 'rgba(212,175,55,0.03)'
-      : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
+      : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(14, 13, 11, 0.98) 46%, rgba(10, 10, 9, 1) 100%)',
     backdropFilter: 'blur(16px) saturate(120%)',
     WebkitBackdropFilter: 'blur(16px) saturate(120%)',
     border: embedded ? '1px solid rgba(212,175,55,0.06)' : '1px solid rgba(212,175,55,0.12)',
