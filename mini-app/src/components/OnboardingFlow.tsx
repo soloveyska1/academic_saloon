@@ -400,14 +400,14 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   borderRadius: 999,
                   border: 'none',
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.35)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.22)',
+                  fontSize: 10,
+                  fontWeight: 500,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
                 }}
               >
-                <ChevronLeft size={14} strokeWidth={2} />
+                <ChevronLeft size={12} strokeWidth={2} />
                 Назад
               </motion.button>
             )}
@@ -434,15 +434,15 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   borderRadius: 999,
                   border: 'none',
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.35)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.22)',
+                  fontSize: 10,
+                  fontWeight: 500,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
                 }}
               >
                 {phase === 'reveal' ? 'Пропустить' : 'К условиям'}
-                <ChevronRight size={14} strokeWidth={2} />
+                <ChevronRight size={12} strokeWidth={2} />
               </motion.button>
             )}
           </>
@@ -600,7 +600,10 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               }}
             >
               {/* Small monogram 44x44 circle */}
-              <div
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: reduced ? 0 : 0.5, ease: EASE }}
                 style={{
                   width: 44,
                   height: 44,
@@ -608,70 +611,94 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   background: 'rgba(12,12,10,0.8)',
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(212,175,55,0.12)',
+                  border: '1px solid rgba(212,175,55,0.18)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 10,
-                  boxShadow: '0 0 24px -6px rgba(212,175,55,0.12)',
+                  boxShadow: '0 0 28px -4px rgba(212,175,55,0.15)',
                 }}
               >
                 <span style={{ ...LIQUID_GOLD_TEXT, fontFamily: FONT_DISPLAY, fontSize: 16, lineHeight: 1, letterSpacing: '0.04em' }}>
                   АС
                 </span>
-              </div>
+              </motion.div>
 
               {/* Badge */}
-              <div style={{
-                fontSize: 10,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'rgba(212,175,55,0.45)',
-                fontWeight: 700,
-                fontFamily: FONT_BODY,
-                marginBottom: 20,
-              }}>
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0 : 0.4, ease: EASE }}
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212,175,55,0.50)',
+                  fontWeight: 700,
+                  fontFamily: FONT_BODY,
+                  marginBottom: 18,
+                }}
+              >
                 Академический Салон
-              </div>
+              </motion.div>
 
               {/* Headline — two explicit lines, no awkward wrap */}
-              <h2 style={{
-                margin: '0 0 8px',
-                fontFamily: FONT_DISPLAY,
-                fontSize: 28,
-                lineHeight: 1.15,
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: 'var(--text-primary, #f5f5f0)',
-              }}>
+              <motion.h2
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.1, duration: reduced ? 0 : 0.5, ease: EASE }}
+                style={{
+                  margin: '0 0 6px',
+                  fontFamily: FONT_DISPLAY,
+                  fontSize: 28,
+                  lineHeight: 1.15,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--text-primary, #f5f5f0)',
+                }}
+              >
                 <span style={{ display: 'block' }}>Сложные работы.</span>
-                <span style={{ display: 'block' }}>Простой путь.</span>
-              </h2>
+                <span style={{
+                  display: 'block',
+                  ...LIQUID_GOLD_TEXT,
+                  fontSize: 28,
+                  fontFamily: FONT_DISPLAY,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.15,
+                }}>Простой путь.</span>
+              </motion.h2>
 
               {/* Subtitle — shorter and punchier */}
-              <p style={{
-                margin: '0 0 28px',
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.5,
-                color: 'var(--text-secondary, rgba(176,176,176,1))',
-                fontFamily: FONT_BODY,
-                maxWidth: 310,
-              }}>
-                От реферата до диссертации. Каждый проект — с нуля.
-              </p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0 : 0.5, ease: EASE }}
+                style={{
+                  margin: '0 0 24px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  lineHeight: 1.5,
+                  color: 'rgba(176,176,176,0.8)',
+                  fontFamily: FONT_BODY,
+                  maxWidth: 280,
+                  letterSpacing: '0.01em',
+                }}
+              >
+                От реферата до диссертации.<br />Каждый проект — с нуля.
+              </motion.p>
 
-              {/* Value items — premium card-like rows with gold left accent */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', marginBottom: 24 }}>
+              {/* Value items — premium glassmorphic cards with gold accents */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', marginBottom: 24 }}>
                 {VALUE_CARDS.map((card, i) => {
                   const Icon = card.icon
                   return (
                     <motion.div
                       key={card.title}
-                      initial={{ opacity: 0, x: -16 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, x: -20, scale: 0.97 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
                       transition={{
-                        delay: reduced ? 0 : 0.3 + i * 0.1,
+                        delay: reduced ? 0 : 0.25 + i * 0.08,
                         duration: reduced ? 0 : TIMING.entrance,
                         ease: EASE,
                       }}
@@ -679,37 +706,55 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        gap: 12,
-                        padding: '12px 14px',
-                        borderRadius: 12,
-                        background: 'rgba(212,175,55,0.04)',
-                        borderLeft: '2px solid rgba(212,175,55,0.35)',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 14,
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+                        borderLeft: '2.5px solid rgba(212,175,55,0.40)',
+                        border: '1px solid rgba(212,175,55,0.08)',
+                        borderLeftWidth: '2.5px',
+                        borderLeftColor: 'rgba(212,175,55,0.40)',
                         position: 'relative' as const,
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                         <div style={{
-                          width: 36, height: 36, borderRadius: '50%',
-                          background: 'rgba(212,175,55,0.10)',
-                          border: '1px solid rgba(212,175,55,0.12)',
+                          width: 38, height: 38, borderRadius: 10,
+                          background: 'linear-gradient(135deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.06) 100%)',
+                          border: '1px solid rgba(212,175,55,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          boxShadow: '0 2px 8px -2px rgba(212,175,55,0.12)',
                         }}>
                           <Icon size={17} strokeWidth={1.8} color="var(--gold-400, #d4af37)" />
                         </div>
-                        <span style={{
-                          fontSize: 14, fontWeight: 700,
-                          color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
-                        }}>
-                          {card.title}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 1, minWidth: 0 }}>
+                          <span style={{
+                            fontSize: 13.5, fontWeight: 700,
+                            color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
+                            lineHeight: 1.2,
+                          }}>
+                            {card.title}
+                          </span>
+                          <span style={{
+                            fontSize: 11, fontWeight: 500,
+                            color: 'rgba(176,176,176,0.55)', fontFamily: FONT_BODY,
+                            lineHeight: 1.2,
+                          }}>
+                            {card.desc}
+                          </span>
+                        </div>
                       </div>
                       <span style={{
-                        fontSize: 11, fontWeight: 700,
-                        color: 'rgba(212,175,55,0.95)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
-                        padding: '5px 12px', borderRadius: 8,
-                        background: 'rgba(212,175,55,0.12)',
-                        border: '1px solid rgba(212,175,55,0.10)',
-                        letterSpacing: '0.02em',
+                        fontSize: 10.5, fontWeight: 700,
+                        color: 'rgba(240,208,96,0.95)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
+                        padding: '4px 10px', borderRadius: 8,
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)',
+                        border: '1px solid rgba(212,175,55,0.14)',
+                        letterSpacing: '0.03em',
+                        textTransform: 'uppercase' as const,
+                        flexShrink: 0,
                       }}>
                         {card.badge}
                       </span>
