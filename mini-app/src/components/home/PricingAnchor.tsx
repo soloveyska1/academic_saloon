@@ -24,12 +24,13 @@ interface PricingItem {
   workTypeKey: string
   price: string
   timeline: string
+  popular?: boolean
 }
 
 const PRICING_ITEMS: PricingItem[] = [
   { icon: PenLine, workType: 'Реферат', workTypeKey: 'report', price: 'от 990 ₽', timeline: 'от 1 дня' },
-  { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', price: 'от 2 990 ₽', timeline: 'от 5 дней' },
-  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', price: 'от 9 990 ₽', timeline: 'от 14 дней' },
+  { icon: FileText, workType: 'Курсовая', workTypeKey: 'coursework', price: 'от 2 990 ₽', timeline: 'от 5 дней', popular: true },
+  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diploma', price: 'от 9 990 ₽', timeline: 'от 14 дней', popular: true },
   { icon: BookOpen, workType: 'Эссе', workTypeKey: 'essay', price: 'от 1 490 ₽', timeline: 'от 1 дня' },
   { icon: ClipboardList, workType: 'Контрольная', workTypeKey: 'control', price: 'от 1 290 ₽', timeline: 'от 2 дней' },
   { icon: Briefcase, workType: 'Отчёт по практике', workTypeKey: 'practice', price: 'от 2 490 ₽', timeline: 'от 3 дней' },
@@ -68,7 +69,7 @@ export const PricingAnchor = memo(function PricingAnchor({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.34, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 24 }}
+      style={{ marginBottom: 32 }}
     >
       {/* Section header */}
       <div
@@ -76,7 +77,7 @@ export const PricingAnchor = memo(function PricingAnchor({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 14,
+          marginBottom: 18,
           paddingLeft: 2,
           paddingRight: 2,
         }}
@@ -87,7 +88,7 @@ export const PricingAnchor = memo(function PricingAnchor({
             fontWeight: 700,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'var(--text-muted)',
+            color: 'rgba(212,175,55,0.50)',
           }}
         >
           Направления
@@ -114,7 +115,12 @@ export const PricingAnchor = memo(function PricingAnchor({
       </div>
 
       {/* Carousel */}
-      <div ref={constraintsRef} style={{ overflow: 'hidden', margin: '0 -20px', padding: '0 20px' }}>
+      <div ref={constraintsRef} style={{ overflow: 'hidden', margin: '0 -20px', padding: '0 20px', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0, width: 40,
+          background: 'linear-gradient(90deg, transparent, #0A0A0B)',
+          pointerEvents: 'none', zIndex: 2,
+        }} />
         <motion.div
           drag="x"
           dragConstraints={{ left: -(PRICING_ITEMS.length - 1) * (CARD_WIDTH + CARD_GAP), right: 0 }}
@@ -148,7 +154,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                   padding: 16,
                   borderRadius: 16,
                   background: '#0E0D0C',
-                  border: '1px solid rgba(212,175,55,0.08)',
+                  border: `1px solid rgba(212,175,55,${item.popular ? '0.20' : '0.08'})`,
                   boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
                   cursor: 'pointer',
                   appearance: 'none',
@@ -163,6 +169,15 @@ export const PricingAnchor = memo(function PricingAnchor({
                   background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.10) 50%, transparent 90%)',
                   pointerEvents: 'none',
                 }} />
+
+                {item.popular && (
+                  <div style={{
+                    position: 'absolute', top: 8, right: 8,
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                    color: 'rgba(212,175,55,0.70)', background: 'rgba(212,175,55,0.08)',
+                    padding: '2px 6px', borderRadius: 4,
+                  }}>Хит</div>
+                )}
 
                 {/* Gold icon circle */}
                 <div
@@ -195,11 +210,10 @@ export const PricingAnchor = memo(function PricingAnchor({
 
                 {/* Price */}
                 <div style={{
-                  fontSize: 12,
-                  fontWeight: 600,
+                  fontSize: 13,
+                  fontWeight: 700,
                   color: 'var(--gold-400)',
                   marginBottom: 4,
-                  opacity: 0.8,
                 }}>
                   {item.price}
                 </div>
@@ -220,7 +234,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 
       {/* Dot indicators */}
       <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 44,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 28,
       }}>
         {PRICING_ITEMS.map((_, i) => (
           <motion.div

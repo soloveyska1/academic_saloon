@@ -41,7 +41,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             overflow: 'hidden',
             borderRadius: 12,
             background: 'linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(10,10,11,0.99) 100%)',
-            border: '1px solid rgba(212,175,55,0.10)',
+            border: '1px solid rgba(212,175,55,0.15)',
+            boxShadow: '0 4px 24px -8px rgba(0,0,0,0.6), 0 1px 0 rgba(212,175,55,0.04) inset',
           }}
         >
           {/* Subtle gold ambient glow — top right only */}
@@ -72,7 +73,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             }}
           />
 
-          <div style={{ position: 'relative', zIndex: 1, padding: '32px 20px 24px' }}>
+          <div style={{ position: 'relative', zIndex: 1, padding: '40px 24px 32px' }}>
             {/* Eyebrow — small, quiet */}
             <div
               style={{
@@ -80,7 +81,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 fontWeight: 700,
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                color: 'rgba(212,175,55,0.45)',
+                color: 'rgba(212,175,55,0.65)',
                 marginBottom: 16,
               }}
             >
@@ -162,10 +163,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               style={{
                 marginTop: 12,
                 fontSize: 12,
-                color: 'var(--text-muted)',
+                color: 'rgba(212,175,55,0.50)',
                 fontWeight: 600,
                 textAlign: 'center',
-                opacity: 0.8,
               }}
             >
               Бесплатный расчёт за 2 минуты

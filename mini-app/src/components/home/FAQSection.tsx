@@ -41,10 +41,10 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
     <div
       style={{
         borderRadius: 'var(--radius-md)',
-        background: '#0E0D0C',
+        background: isOpen ? 'linear-gradient(135deg, rgba(22,18,10,0.95) 0%, #0E0D0C 100%)' : '#0E0D0C',
         borderLeft: isOpen ? '2px solid var(--gold-400)' : '2px solid transparent',
         border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(212,175,55,0.04)'}`,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        boxShadow: isOpen ? '0 8px 32px -12px rgba(0,0,0,0.5), 0 1px 0 rgba(212,175,55,0.05) inset' : '0 2px 8px rgba(0,0,0,0.2)',
         borderLeftWidth: 2,
         borderLeftStyle: 'solid',
         borderLeftColor: isOpen ? 'var(--gold-400)' : 'transparent',
@@ -61,7 +61,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
           alignItems: 'center',
           gap: 12,
           width: '100%',
-          padding: 16,
+          padding: 18,
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -126,14 +126,14 @@ export const FAQSection = memo(function FAQSection() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.38, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 24 }}
+      style={{ marginBottom: 32 }}
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 14,
+          marginBottom: 18,
           paddingLeft: 2,
         }}
       >
@@ -144,14 +144,14 @@ export const FAQSection = memo(function FAQSection() {
             fontWeight: 700,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'var(--text-muted)',
+            color: 'rgba(212,175,55,0.50)',
           }}
         >
           Частые вопросы
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {FAQ_ITEMS.map((item, i) => (
           <motion.div
             key={i}

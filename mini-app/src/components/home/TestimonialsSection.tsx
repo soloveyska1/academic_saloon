@@ -83,7 +83,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.28, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 24 }}
+      style={{ marginBottom: 32 }}
     >
       {/* Section header */}
       <div
@@ -91,7 +91,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 14,
+          marginBottom: 18,
           paddingLeft: 2,
         }}
       >
@@ -102,7 +102,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             fontWeight: 700,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'var(--text-muted)',
+            color: 'rgba(212,175,55,0.50)',
           }}
         >
           Отзывы
@@ -110,7 +110,12 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
       </div>
 
       {/* Carousel container */}
-      <div ref={constraintsRef} style={{ overflow: 'hidden', margin: '0 -20px', padding: '0 20px' }}>
+      <div ref={constraintsRef} style={{ overflow: 'hidden', margin: '0 -20px', padding: '0 20px', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0, width: 40,
+          background: 'linear-gradient(90deg, transparent, #0A0A0B)',
+          pointerEvents: 'none', zIndex: 2,
+        }} />
         <motion.div
           drag="x"
           dragConstraints={{ left: -(TESTIMONIALS.length - 1) * (CARD_WIDTH + CARD_GAP), right: 0 }}
@@ -137,9 +142,9 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                   flexShrink: 0,
                   padding: 20,
                   borderRadius: 16,
-                  background: '#0E0D0C',
-                  border: '1px solid rgba(212,175,55,0.08)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                  background: 'linear-gradient(180deg, #111010 0%, #0C0B0A 100%)',
+                  border: '1px solid rgba(212,175,55,0.12)',
+                  boxShadow: '0 8px 32px -12px rgba(0,0,0,0.6), 0 1px 0 rgba(212,175,55,0.05) inset',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -165,10 +170,16 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                   </span>
                 </div>
 
+                {/* Decorative quote mark */}
+                <div aria-hidden="true" style={{
+                  fontFamily: 'Georgia, serif', fontSize: 40, lineHeight: 1,
+                  color: 'rgba(212,175,55,0.10)', marginBottom: -8, userSelect: 'none',
+                }}>«</div>
+
                 {/* Quote text */}
                 <p style={{
                   fontSize: 14, fontWeight: 500, lineHeight: 1.6,
-                  color: 'var(--text-secondary)', marginBottom: 14,
+                  color: 'rgba(245,235,220,0.80)', marginBottom: 14,
                 }}>
                   {t.text}
                 </p>
@@ -207,7 +218,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
 
       {/* Dot indicators */}
       <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 44,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, minHeight: 28,
       }}>
         {TESTIMONIALS.map((_, i) => (
           <motion.div
