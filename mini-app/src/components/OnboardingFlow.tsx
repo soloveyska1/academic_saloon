@@ -131,14 +131,14 @@ function AnimatedStatValue({ target, suffix, delay, active, reduced }: {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: reduced ? 0 : 0.5, delay, ease: EASE }}
-        style={{ ...LIQUID_GOLD_TEXT, fontSize: 28, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}
+        style={{ ...LIQUID_GOLD_TEXT, fontSize: 34, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}
       >
         ∞
       </motion.span>
     )
   }
   return (
-    <span style={{ ...LIQUID_GOLD_TEXT, fontSize: 28, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}>
+    <span style={{ ...LIQUID_GOLD_TEXT, fontSize: 34, fontWeight: 800, fontFamily: FONT_BODY, lineHeight: 1.1 }}>
       {reduced ? target : count}{suffix}
     </span>
   )
@@ -854,9 +854,10 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               </h2>
 
               <p style={{
-                margin: '0 0 24px',
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.45)',
+                margin: '0 0 20px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'rgba(212,175,55,0.45)',
                 fontFamily: FONT_BODY,
               }}>
                 Ваши права зафиксированы юридически
@@ -882,7 +883,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   fontWeight: 600,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
-                  marginBottom: 32,
+                  marginBottom: 20,
                 }}
               >
                 Оферта, ПД и сведения
@@ -954,7 +955,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'rgba(255,255,255,0.35)',
                   fontFamily: FONT_BODY,
                 }}>
-                  Нажимая, вы принимаете публичную оферту. Политика обработки персональных данных и сведения об исполнителе доступны по кнопке выше.
+                  Нажимая, вы принимаете публичную оферту. Документы доступны по ссылке выше.
                 </p>
 
                 {/* Accept button with breathing glow */}
