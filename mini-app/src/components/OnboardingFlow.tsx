@@ -394,11 +394,9 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   padding: '8px 12px',
                   borderRadius: 999,
                   border: 'none',
-                  background: 'rgba(255,255,255,0.06)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  color: 'rgba(255,255,255,0.50)',
-                  fontSize: 12,
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.35)',
+                  fontSize: 11,
                   fontWeight: 600,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
@@ -430,11 +428,9 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   padding: '8px 14px',
                   borderRadius: 999,
                   border: 'none',
-                  background: 'rgba(255,255,255,0.06)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  color: 'rgba(255,255,255,0.50)',
-                  fontSize: 12,
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.35)',
+                  fontSize: 11,
                   fontWeight: 600,
                   fontFamily: FONT_BODY,
                   cursor: 'pointer',
@@ -659,87 +655,65 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 Курсовые, дипломные, научные работы. Индивидуально. С гарантией результата.
               </p>
 
-              {/* 3 value cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', marginBottom: 28 }}>
+              {/* 3 value items — clean list with gold dividers */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, width: '100%', marginBottom: 24 }}>
                 {VALUE_CARDS.map((card, i) => {
                   const Icon = card.icon
                   return (
-                    <motion.div
-                      key={card.title}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        delay: reduced ? 0 : 0.3 + i * 0.12,
-                        duration: reduced ? 0 : TIMING.entrance,
-                        ease: EASE,
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        ...glassGoldStyle,
-                        position: 'relative' as const,
-                        overflow: 'hidden' as const,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 12,
-                          background: 'linear-gradient(145deg, rgba(212,175,55,0.14), rgba(212,175,55,0.04))',
-                          border: '1px solid rgba(212,175,55,0.12)',
+                    <div key={card.title}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: reduced ? 0 : 0.3 + i * 0.1,
+                          duration: reduced ? 0 : TIMING.entrance,
+                          ease: EASE,
+                        }}
+                        style={{
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}>
-                          <Icon size={20} strokeWidth={1.6} color="var(--gold-400, #d4af37)" />
-                        </div>
-                        <span style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: 'var(--text-primary, #f5f5f0)',
-                          fontFamily: FONT_BODY,
-                        }}>
-                          {card.title}
-                        </span>
-                      </div>
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: [1, 1.08, 1] }}
-                        transition={{ delay: reduced ? 0 : 0.3 + i * 0.12 + 0.5, duration: reduced ? 0 : 0.4, ease: EASE }}
-                        style={{
-                          fontSize: 11, fontWeight: 600,
-                          color: 'rgba(212,175,55,0.65)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
-                          padding: '3px 8px', borderRadius: 6, background: 'rgba(212,175,55,0.06)',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          padding: '14px 0',
                         }}
                       >
-                        {card.badge}
-                      </motion.span>
-                      {/* Gold shimmer sweep */}
-                      {!reduced && (
-                        <motion.div
-                          aria-hidden="true"
-                          initial={{ x: '-100%', opacity: 0 }}
-                          animate={{ x: '200%', opacity: [0, 0.6, 0] }}
-                          transition={{ delay: 0.3 + i * 0.12 + 0.5, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                          style={{
-                            position: 'absolute', top: 0, left: 0, width: '40%', height: '100%',
-                            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
-                            pointerEvents: 'none', borderRadius: 12,
-                          }}
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: 'rgba(212,175,55,0.08)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}>
+                            <Icon size={16} strokeWidth={1.8} color="var(--gold-400, #d4af37)" />
+                          </div>
+                          <span style={{
+                            fontSize: 14, fontWeight: 700,
+                            color: 'var(--text-primary, #f5f5f0)', fontFamily: FONT_BODY,
+                          }}>
+                            {card.title}
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700,
+                          color: 'rgba(212,175,55,0.85)', fontFamily: FONT_BODY, whiteSpace: 'nowrap',
+                          padding: '4px 10px', borderRadius: 8, background: 'rgba(212,175,55,0.10)',
+                          letterSpacing: '0.01em',
+                        }}>
+                          {card.badge}
+                        </span>
+                      </motion.div>
+                      {/* Gold divider between items */}
+                      {i < VALUE_CARDS.length - 1 && (
+                        <div style={{
+                          height: 1,
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.15) 20%, rgba(212,175,55,0.15) 80%, transparent 100%)',
+                        }} />
                       )}
-                    </motion.div>
+                    </div>
                   )
                 })}
               </div>
 
-              {/* Explicit "Далее" CTA */}
+              {/* Gold CTA "Далее" */}
               <motion.button
                 type="button"
                 initial={{ opacity: 0, y: 10 }}
@@ -749,24 +723,39 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                 onClick={advanceFromValue}
                 style={{
                   width: '100%',
-                  padding: '14px 24px',
+                  padding: '16px 24px',
                   borderRadius: 12,
-                  border: '1px solid rgba(212,175,55,0.15)',
-                  background: 'rgba(212,175,55,0.06)',
-                  color: 'var(--gold-400, #d4af37)',
-                  fontSize: 14,
+                  border: 'none',
+                  background: LIQUID_GOLD,
+                  backgroundSize: '200% 200%',
+                  animation: 'liquid-gold-shift 4s ease-in-out infinite',
+                  color: '#0A0A0A',
+                  fontSize: 15,
                   fontWeight: 700,
                   fontFamily: FONT_BODY,
-                  letterSpacing: '0.02em',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase' as const,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
+                  boxShadow: '0 4px 20px -4px rgba(212,175,55,0.35)',
+                  position: 'relative' as const,
+                  overflow: 'hidden' as const,
                 }}
               >
+                {/* Shimmer */}
+                {!reduced && (
+                  <span aria-hidden="true" style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                    animation: 'shimmer-sweep 2.5s ease-in-out infinite',
+                    pointerEvents: 'none',
+                  }} />
+                )}
                 Далее
-                <ChevronRight size={16} strokeWidth={2} />
+                <ChevronRight size={16} strokeWidth={2} style={{ color: '#0A0A0A' }} />
               </motion.button>
             </motion.div>
           )}
