@@ -1,4 +1,4 @@
-/* global fetch, FormData, File, URLSearchParams, console */
+/* global fetch, URLSearchParams, console */
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
@@ -8,8 +8,7 @@ import ts from 'typescript'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..', '..')
-const offerDataPath = path.join(repoRoot, 'mini-app', 'src', 'components', 'modals', 'OfferModal', 'offerData.ts')
-const offerImagePath = path.join(repoRoot, 'bot', 'media', 'saloon_welcome.jpg')
+const legalDataPath = path.join(repoRoot, 'mini-app', 'src', 'legal', 'legalPublicData.ts')
 const REMOTE_OFFER_IMAGE_URL = 'https://raw.githubusercontent.com/soloveyska1/academic_saloon/main/bot/media/saloon_welcome.jpg'
 
 function toParagraph(text) {
@@ -37,12 +36,10 @@ function buildHeroNodes(meta) {
     toParagraph(meta.subtitle),
     {
       tag: 'aside',
-      children: [
-        `Действует с ${meta.effectiveDate}`,
-      ],
+      children: [`Действует с ${meta.effectiveDate}`],
     },
     toHeading('h3', 'Официальная редакция'),
-    toParagraph('Настоящий документ является публичной офертой сервиса «Академический Салон» и публикуется в действующей редакции без сокращений полного текста.'),
+    toParagraph(meta.intro),
   ]
 }
 
@@ -62,63 +59,49 @@ function buildSectionNodes(sections) {
   ])
 }
 
-function buildTelegraphContent({ sections, meta, imageUrl }) {
-  const content = []
-
-  if (imageUrl) {
-    content.push({
+function buildTelegraphContent({ doc }) {
+  return [
+    {
       tag: 'figure',
       children: [
-        { tag: 'img', attrs: { src: imageUrl } },
-        { tag: 'figcaption', children: ['Академический Салон · публичная оферта'] },
+        { tag: 'img', attrs: { src: REMOTE_OFFER_IMAGE_URL } },
+        { tag: 'figcaption', children: ['Академический Салон · официальный правовой контур'] },
       ],
-    })
-  }
-
-  content.push(
-    ...buildHeroNodes(meta),
+    },
+    ...buildHeroNodes(doc.meta),
     { tag: 'hr' },
     toHeading('h3', 'Полная редакция'),
-    ...buildSectionNodes(sections),
-  )
-
-  return content
+    ...buildSectionNodes(doc.sections),
+  ]
 }
 
-function loadOfferData() {
-  const source = fs.readFileSync(offerDataPath, 'utf8')
+function loadLegalData() {
+  const source = fs.readFileSync(legalDataPath, 'utf8')
   const transpiled = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2020,
       esModuleInterop: true,
     },
-    fileName: offerDataPath,
+    fileName: legalDataPath,
   }).outputText
 
   const module = { exports: {} }
   const sandbox = {
     module,
     exports: module.exports,
-    require: (specifier) => {
-      if (specifier === 'lucide-react') {
-        return new Proxy({}, { get: () => ({}) })
-      }
-      throw new Error(`Unsupported dependency in offerData: ${specifier}`)
-    },
   }
 
-  vm.runInNewContext(transpiled, sandbox, { filename: offerDataPath })
+  vm.runInNewContext(transpiled, sandbox, { filename: legalDataPath })
 
-  const { SUMMARY_CARDS, OFFER_SECTIONS, OFFER_META } = module.exports
-  if (!SUMMARY_CARDS || !OFFER_SECTIONS || !OFFER_META) {
-    throw new Error('Не удалось загрузить данные оферты из offerData.ts')
+  const { PRIVACY_POLICY_DATA, EXECUTOR_PUBLIC_INFO } = module.exports
+  if (!PRIVACY_POLICY_DATA || !EXECUTOR_PUBLIC_INFO) {
+    throw new Error('Не удалось загрузить публичные legal-данные из legalPublicData.ts')
   }
 
   return {
-    summaryCards: SUMMARY_CARDS,
-    sections: OFFER_SECTIONS,
-    meta: OFFER_META,
+    privacy: PRIVACY_POLICY_DATA,
+    executor: EXECUTOR_PUBLIC_INFO,
   }
 }
 
@@ -150,7 +133,7 @@ async function ensureAccessToken() {
   }
 
   const result = await telegraphApi('createAccount', {
-    short_name: 'academic_saloon',
+    short_name: 'academic_saloon_legal',
     author_name: 'Академический Салон',
     author_url: 'https://academic-saloon.duckdns.org',
   })
@@ -161,40 +144,21 @@ async function ensureAccessToken() {
   }
 }
 
-async function uploadOfferImage() {
-  const form = new FormData()
-  const imageBuffer = fs.readFileSync(offerImagePath)
-  form.set('file', new File([imageBuffer], 'saloon_welcome.jpg', { type: 'image/jpeg' }))
-
-  const response = await fetch('https://telegra.ph/upload', {
-    method: 'POST',
-    body: form,
-  })
-
-  const data = await response.json()
-  if (!Array.isArray(data) || !data[0]?.src) {
-    throw new Error(`Telegraph image upload failed: ${JSON.stringify(data)}`)
-  }
-
-  return `https://telegra.ph${data[0].src}`
-}
-
 async function publish() {
-  const { sections, meta } = loadOfferData()
-  const { accessToken, created } = await ensureAccessToken()
-  let imageUrl = null
-  try {
-    imageUrl = await uploadOfferImage()
-  } catch (error) {
-    console.warn(error instanceof Error ? error.message : String(error))
-    imageUrl = REMOTE_OFFER_IMAGE_URL
-  }
-  const content = buildTelegraphContent({ sections, meta, imageUrl })
+  const documents = loadLegalData()
+  const kind = (process.env.LEGAL_DOC || 'privacy').trim()
+  const doc = documents[kind]
 
+  if (!doc) {
+    throw new Error(`Неизвестный документ LEGAL_DOC=${kind}. Ожидается privacy или executor.`)
+  }
+
+  const { accessToken, created } = await ensureAccessToken()
+  const content = buildTelegraphContent({ doc })
   const pagePath = process.env.TELEGRAPH_PAGE_PATH
   const commonParams = {
     access_token: accessToken,
-    title: meta.title,
+    title: doc.meta.title,
     author_name: 'Академический Салон',
     author_url: 'https://academic-saloon.duckdns.org',
     content: JSON.stringify(content),
@@ -205,14 +169,12 @@ async function publish() {
     ? await telegraphApi('editPage', { path: pagePath, ...commonParams })
     : await telegraphApi('createPage', commonParams)
 
-  const output = {
+  process.stdout.write(`${JSON.stringify({
+    kind,
     url: result.url,
     path: result.path,
-    imageUrl,
     accessToken: created ? accessToken : undefined,
-  }
-
-  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
+  }, null, 2)}\n`)
 }
 
 publish().catch((error) => {

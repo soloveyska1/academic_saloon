@@ -8,22 +8,39 @@ from pydantic import SecretStr
 
 # Базовая директория проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
-CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26"
+CANONICAL_OFFER_URL = "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26-2"
+CANONICAL_PRIVACY_POLICY_URL = "https://telegra.ph/Politika-obrabotki-personalnyh-dannyh-servisa-Akademicheskij-Salon-03-26"
+CANONICAL_EXECUTOR_INFO_URL = "https://telegra.ph/Svedeniya-ob-ispolnitele-servisa-Akademicheskij-Salon-03-26"
 LEGACY_OFFER_URLS = {
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-03-25",
     "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30",
+    "https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26",
 }
+LEGACY_PRIVACY_POLICY_URLS: set[str] = set()
+LEGACY_EXECUTOR_INFO_URLS: set[str] = set()
+
+
+def normalize_public_doc_url(url: str | None, canonical_url: str, legacy_urls: set[str] | None = None) -> str:
+    if not url:
+        return canonical_url
+
+    cleaned = url.strip()
+    if legacy_urls and cleaned in legacy_urls:
+        return canonical_url
+
+    return cleaned
 
 
 def normalize_offer_url(url: str | None) -> str:
-    if not url:
-        return CANONICAL_OFFER_URL
+    return normalize_public_doc_url(url, CANONICAL_OFFER_URL, LEGACY_OFFER_URLS)
 
-    cleaned = url.strip()
-    if cleaned in LEGACY_OFFER_URLS:
-        return CANONICAL_OFFER_URL
 
-    return cleaned
+def normalize_privacy_policy_url(url: str | None) -> str:
+    return normalize_public_doc_url(url, CANONICAL_PRIVACY_POLICY_URL, LEGACY_PRIVACY_POLICY_URLS)
+
+
+def normalize_executor_info_url(url: str | None) -> str:
+    return normalize_public_doc_url(url, CANONICAL_EXECUTOR_INFO_URL, LEGACY_EXECUTOR_INFO_URLS)
 
 class Settings(BaseSettings):
     BOT_TOKEN: SecretStr  # From .env file
@@ -37,6 +54,8 @@ class Settings(BaseSettings):
     ADMIN_GROUP_ID: int = -1003352978651  # Супергруппа с Forum Topics для тикетов
     SUPPORT_USERNAME: str = "Thisissaymoon"
     OFFER_URL: str = CANONICAL_OFFER_URL  # Публичная оферта
+    PRIVACY_POLICY_URL: str = CANONICAL_PRIVACY_POLICY_URL  # Политика обработки ПД
+    EXECUTOR_INFO_URL: str = CANONICAL_EXECUTOR_INFO_URL  # Сведения об исполнителе
 
     # Mini App URL (Web App для Telegram)
     # Hosted on server via nginx at academic-saloon.duckdns.org
@@ -115,6 +134,14 @@ class Settings(BaseSettings):
     @property
     def public_offer_url(self) -> str:
         return normalize_offer_url(self.OFFER_URL)
+
+    @property
+    def public_privacy_policy_url(self) -> str:
+        return normalize_privacy_policy_url(self.PRIVACY_POLICY_URL)
+
+    @property
+    def public_executor_info_url(self) -> str:
+        return normalize_executor_info_url(self.EXECUTOR_INFO_URL)
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 

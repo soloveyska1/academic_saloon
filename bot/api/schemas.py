@@ -222,6 +222,8 @@ class ConfigResponse(BaseModel):
     support_username: str
     reviews_channel: str
     offer_url: str
+    privacy_policy_url: str
+    executor_info_url: str
 
 
 class AcceptTermsResponse(BaseModel):

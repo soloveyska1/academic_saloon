@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
-import { acceptTerms, fetchConfig } from '../api/userApi'
+import {
+  acceptTerms,
+  DEFAULT_OFFER_URL,
+  fetchConfig,
+  DEFAULT_EXECUTOR_INFO_URL,
+  DEFAULT_PRIVACY_POLICY_URL,
+} from '../api/userApi'
 import { OfferModal } from './modals/OfferModal'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
@@ -82,16 +88,19 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
   const [accepting, setAccepting] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState<string>('https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26')
+  const [offerUrl, setOfferUrl] = useState<string>(DEFAULT_OFFER_URL)
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState<string>(DEFAULT_PRIVACY_POLICY_URL)
+  const [executorInfoUrl, setExecutorInfoUrl] = useState<string>(DEFAULT_EXECUTOR_INFO_URL)
 
   useEffect(() => {
     let alive = true
 
     fetchConfig()
       .then((config) => {
-        if (alive && config.offer_url) {
-          setOfferUrl(config.offer_url)
-        }
+        if (!alive) return
+        if (config.offer_url) setOfferUrl(config.offer_url)
+        if (config.privacy_policy_url) setPrivacyPolicyUrl(config.privacy_policy_url)
+        if (config.executor_info_url) setExecutorInfoUrl(config.executor_info_url)
       })
       .catch(() => {
         // Keep the default public offer URL
@@ -153,6 +162,16 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
     haptic('light')
     openExternalUrl(offerUrl)
   }, [offerUrl])
+
+  const handleOpenPrivacyPolicy = useCallback(() => {
+    haptic('light')
+    openExternalUrl(privacyPolicyUrl)
+  }, [privacyPolicyUrl])
+
+  const handleOpenExecutorInfo = useCallback(() => {
+    haptic('light')
+    openExternalUrl(executorInfoUrl)
+  }, [executorInfoUrl])
 
   return (
     <>
@@ -444,29 +463,44 @@ export function WelcomeOfferGate({ user, onAccepted, previewMode = false }: Welc
                 Для начала работы потребуется принять условия сервиса
               </div>
 
-              {/* External offer link */}
-              <div style={{ textAlign: 'center', marginTop: 10 }}>
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: TAP_SCALE }}
-                  onClick={handleOpenExternalOffer}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: 0,
-                    border: 'none',
-                    background: 'none',
-                    color: 'rgba(212,175,55,0.50)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    fontFamily: "var(--font-body, 'Manrope', sans-serif)",
-                    cursor: 'pointer',
-                  }}
-                >
-                  Полный текст оферты
-                  <ExternalLink size={12} strokeWidth={1.8} />
-                </motion.button>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 12,
+                  marginTop: 10,
+                }}
+              >
+                {[
+                  { label: 'Полный текст оферты', onClick: handleOpenExternalOffer },
+                  { label: 'Политика ПД', onClick: handleOpenPrivacyPolicy },
+                  { label: 'Исполнитель', onClick: handleOpenExecutorInfo },
+                ].map((link) => (
+                  <motion.button
+                    key={link.label}
+                    type="button"
+                    whileTap={{ scale: TAP_SCALE }}
+                    onClick={link.onClick}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: 0,
+                      border: 'none',
+                      background: 'none',
+                      color: 'rgba(212,175,55,0.50)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: "var(--font-body, 'Manrope', sans-serif)",
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {link.label}
+                    <ExternalLink size={12} strokeWidth={1.8} />
+                  </motion.button>
+                ))}
               </div>
             </motion.div>
           </motion.div>

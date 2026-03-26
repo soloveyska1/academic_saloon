@@ -36,6 +36,8 @@ async def get_config(request: Request):
         support_username=settings.SUPPORT_USERNAME,
         reviews_channel=settings.REVIEWS_CHANNEL,
         offer_url=settings.public_offer_url,
+        privacy_policy_url=settings.public_privacy_policy_url,
+        executor_info_url=settings.public_executor_info_url,
     )
 
 @router.get("/user", response_model=UserResponse)

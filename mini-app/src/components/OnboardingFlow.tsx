@@ -1,7 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, RefreshCcw, Shield } from 'lucide-react'
-import { acceptTerms, fetchConfig } from '../api/userApi'
+import {
+  acceptTerms,
+  DEFAULT_OFFER_URL,
+  fetchConfig,
+  DEFAULT_EXECUTOR_INFO_URL,
+  DEFAULT_PRIVACY_POLICY_URL,
+} from '../api/userApi'
 import { glassGoldStyle } from './home/shared'
 import { EASE_PREMIUM, TIMING, TAP_SCALE, haptic } from '../utils/animation'
 import { useReducedMotion } from '../hooks/useDeviceCapability'
@@ -204,7 +210,9 @@ export const OnboardingFlow = memo(function OnboardingFlow({
   const [phase, setPhase] = useState<Phase>('reveal')
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [offerUrl, setOfferUrl] = useState('https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26')
+  const [offerUrl, setOfferUrl] = useState(DEFAULT_OFFER_URL)
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState(DEFAULT_PRIVACY_POLICY_URL)
+  const [executorInfoUrl, setExecutorInfoUrl] = useState(DEFAULT_EXECUTOR_INFO_URL)
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -216,14 +224,20 @@ export const OnboardingFlow = memo(function OnboardingFlow({
 
   /* Cleanup all timers on unmount */
   useEffect(() => {
-    return () => { timersRef.current.forEach(clearTimeout) }
+    const timers = timersRef.current
+    return () => {
+      timers.forEach(clearTimeout)
+    }
   }, [])
 
   /* Fetch config for offer URL */
   useEffect(() => {
     let alive = true
     fetchConfig().then((c) => {
-      if (alive && c.offer_url) setOfferUrl(c.offer_url)
+      if (!alive) return
+      if (c.offer_url) setOfferUrl(c.offer_url)
+      if (c.privacy_policy_url) setPrivacyPolicyUrl(c.privacy_policy_url)
+      if (c.executor_info_url) setExecutorInfoUrl(c.executor_info_url)
     }).catch(() => { /* keep default */ })
     return () => { alive = false }
   }, [])
@@ -311,6 +325,16 @@ export const OnboardingFlow = memo(function OnboardingFlow({
     haptic('light')
     openExternalUrl(offerUrl)
   }, [offerUrl])
+
+  const handleOpenPrivacyPolicy = useCallback(() => {
+    haptic('light')
+    openExternalUrl(privacyPolicyUrl)
+  }, [privacyPolicyUrl])
+
+  const handleOpenExecutorInfo = useCallback(() => {
+    haptic('light')
+    openExternalUrl(executorInfoUrl)
+  }, [executorInfoUrl])
 
   if (alreadySeen.current) return null
 
@@ -821,29 +845,45 @@ export const OnboardingFlow = memo(function OnboardingFlow({
               {/* 3 animated stat blocks */}
               <StatBlocksRow active={phase === 'offer'} reduced={reduced} />
 
-              {/* Offer link */}
-              <motion.button
-                type="button"
-                whileTap={{ scale: TAP_SCALE }}
-                onClick={handleOpenOffer}
+              <div
                 style={{
-                  display: 'inline-flex',
+                  display: 'flex',
+                  flexWrap: 'wrap',
                   alignItems: 'center',
-                  gap: 5,
-                  padding: 0,
-                  border: 'none',
-                  background: 'none',
-                  color: 'rgba(212,175,55,0.45)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: FONT_BODY,
-                  cursor: 'pointer',
+                  justifyContent: 'center',
+                  gap: 14,
                   marginBottom: 32,
                 }}
               >
-                Полный текст оферты
-                <ExternalLink size={12} strokeWidth={1.8} />
-              </motion.button>
+                {[
+                  { label: 'Полный текст оферты', onClick: handleOpenOffer },
+                  { label: 'Политика ПД', onClick: handleOpenPrivacyPolicy },
+                  { label: 'Исполнитель', onClick: handleOpenExecutorInfo },
+                ].map((link) => (
+                  <motion.button
+                    key={link.label}
+                    type="button"
+                    whileTap={{ scale: TAP_SCALE }}
+                    onClick={link.onClick}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: 0,
+                      border: 'none',
+                      background: 'none',
+                      color: 'rgba(212,175,55,0.45)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: FONT_BODY,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {link.label}
+                    <ExternalLink size={12} strokeWidth={1.8} />
+                  </motion.button>
+                ))}
+              </div>
 
               {/* Error banner */}
               <AnimatePresence>
@@ -910,7 +950,7 @@ export const OnboardingFlow = memo(function OnboardingFlow({
                   color: 'rgba(255,255,255,0.35)',
                   fontFamily: FONT_BODY,
                 }}>
-                  Нажимая, вы принимаете публичную оферту (ст. 438 ГК РФ)
+                  Нажимая, вы принимаете публичную оферту и можете ознакомиться с политикой обработки персональных данных и сведениями об исполнителе.
                 </p>
 
                 {/* Accept button with breathing glow */}
