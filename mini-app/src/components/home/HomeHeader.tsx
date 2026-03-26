@@ -447,14 +447,14 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
           <GoldText variant="static" size="sm" weight={700}>
             {firstName}
           </GoldText>
-          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 14, background: 'rgba(212,175,55,0.12)' }} />
           <GoldText variant="static" size="sm" weight={700} style={{ fontVariantNumeric: 'tabular-nums' }}>
             {balanceHidden ? '• • •' : `${formatNum(balance)} ₽`}
           </GoldText>
           {user.rank.name && (
             <>
-              <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)' }} />
-              <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <div style={{ width: 1, height: 14, background: 'rgba(212,175,55,0.12)' }} />
+              <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(245,235,200,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 {user.rank.name}
               </span>
             </>
@@ -631,7 +631,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
             style={{
               fontSize: TYPE.context,
               fontWeight: 500,
-              color: 'rgba(245,235,200,0.30)',
+              color: 'rgba(245,235,200,0.45)',
               marginBottom: 1,
               letterSpacing: '0.06em',
             }}
@@ -844,7 +844,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   <span style={{
                     fontSize: TYPE.context,
                     fontWeight: 600,
-                    color: 'rgba(255,255,255,0.30)',
+                    color: 'rgba(245,235,200,0.40)',
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
                   }}>
@@ -872,13 +872,13 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                         gap: 6,
                         padding: '3px 10px',
                         borderRadius: 999,
-                        background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${weeklyDelta > 0 ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.06)'}`,
+                        background: weeklyDelta > 0 ? 'rgba(74,222,128,0.06)' : 'rgba(212,175,55,0.03)',
+                        border: `1px solid ${weeklyDelta > 0 ? 'rgba(74,222,128,0.10)' : 'rgba(212,175,55,0.06)'}`,
                       }}>
                         <span style={{
                           fontSize: 10,
                           fontWeight: 600,
-                          color: weeklyDelta > 0 ? 'rgba(74,222,128,0.7)' : 'rgba(255,255,255,0.25)',
+                          color: weeklyDelta > 0 ? 'rgba(74,222,128,0.7)' : 'rgba(245,235,200,0.30)',
                           letterSpacing: '0.02em',
                         }}>
                           {weeklyDelta > 0
@@ -917,8 +917,8 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                           gap: 5,
                           padding: '4px 10px',
                           borderRadius: 999,
-                          background: isVIP ? 'rgba(212,175,55,0.10)' : 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${isVIP ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.06)'}`,
+                          background: isVIP ? 'rgba(212,175,55,0.10)' : 'rgba(212,175,55,0.04)',
+                          border: `1px solid ${isVIP ? 'rgba(212,175,55,0.18)' : 'rgba(212,175,55,0.06)'}`,
                         }}>
                           {isVIP && <Crown size={10} color="var(--gold-400)" strokeWidth={2.2} />}
                           <span style={{
@@ -957,7 +957,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   <span style={{
                     fontSize: 10,
                     fontWeight: 600,
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'rgba(245,235,200,0.40)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.10em',
                     whiteSpace: 'nowrap',

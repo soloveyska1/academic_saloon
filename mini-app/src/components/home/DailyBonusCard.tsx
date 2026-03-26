@@ -46,7 +46,7 @@ function DailyBonusCardInner({
     background: 'rgba(12, 12, 10, 0.6)',
     backdropFilter: 'blur(16px) saturate(120%)',
     WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-    border: '1px solid rgba(255,255,255,0.04)',
+    border: '1px solid rgba(212,175,55,0.06)',
     borderRadius: 12,
     padding: 24,
     position: 'relative',
@@ -55,11 +55,11 @@ function DailyBonusCardInner({
 
   const compactCardStyle: React.CSSProperties = {
     background: embedded
-      ? 'rgba(255,255,255,0.03)'
+      ? 'rgba(212,175,55,0.03)'
       : 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
     backdropFilter: 'blur(16px) saturate(120%)',
     WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-    border: embedded ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(212,175,55,0.12)',
+    border: embedded ? '1px solid rgba(212,175,55,0.06)' : '1px solid rgba(212,175,55,0.12)',
     borderRadius: 12,
     padding: embedded ? 16 : 18,
     position: 'relative',
@@ -367,7 +367,7 @@ function DailyBonusCardInner({
                     gap: 6,
                     padding: '10px 12px',
                     borderRadius: 10,
-                    background: 'rgba(255,255,255,0.04)',
+                    background: 'rgba(212,175,55,0.04)',
                     border: '1px solid var(--border-default)',
                     color: 'var(--text-secondary)',
                     fontSize: 12,
@@ -392,7 +392,7 @@ function DailyBonusCardInner({
                   right: DAY_SIZE / 2,
                   height: 2,
                   borderRadius: 1,
-                  background: 'rgba(255,255,255,0.06)',
+                  background: 'rgba(212,175,55,0.08)',
                 }}
               >
                 {/* Gold filled portion */}
