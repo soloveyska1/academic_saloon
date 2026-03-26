@@ -138,6 +138,7 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -q --tb=short --maxfail=5
         env:
+          PYTHONPATH: .
           BOT_TOKEN: "123456:TEST-TOKEN"
           BOT_USERNAME: test_bot
           ADMIN_IDS: "[1]"
