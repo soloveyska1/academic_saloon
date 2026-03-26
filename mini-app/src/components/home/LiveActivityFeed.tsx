@@ -85,7 +85,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: 'var(--success-text)',
+              background: 'var(--gold-400, #D4AF37)',
             }}
           />
           {!shouldReduceMotion && (
@@ -100,7 +100,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
                 position: 'absolute',
                 inset: 0,
                 borderRadius: '50%',
-                background: 'var(--success-text)',
+                background: 'var(--gold-400, #D4AF37)',
               }}
             />
           )}
