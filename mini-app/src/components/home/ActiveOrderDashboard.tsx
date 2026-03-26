@@ -196,7 +196,7 @@ function ShimmerSweep() {
         left: 0,
         width: '40%',
         height: '100%',
-        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.04), rgba(255,255,255,0.02), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.04), rgba(245,235,200,0.02), transparent)',
         pointerEvents: 'none',
         zIndex: 1,
       }}
@@ -245,7 +245,7 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
         position: 'relative',
         height: 3,
         borderRadius: 2,
-        background: 'rgba(255,255,255,0.06)',
+        background: 'rgba(212,175,55,0.06)',
       }}>
         <motion.div
           initial={{ width: 0 }}
@@ -274,7 +274,7 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
                 ? '#D4AF37'
                 : i === stageIdx
                   ? 'rgba(212,175,55,0.4)'
-                  : 'rgba(255,255,255,0.12)',
+                  : 'rgba(212,175,55,0.12)',
               border: `1px solid rgba(20,18,14,0.7)`,
               zIndex: 2,
               transition: 'background 0.3s',
@@ -302,7 +302,7 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
                 size={9}
                 strokeWidth={2.2}
                 style={{
-                  color: completed || active ? 'var(--gold-400)' : 'rgba(255,255,255,0.15)',
+                  color: completed || active ? 'var(--gold-400)' : 'rgba(212,175,55,0.15)',
                   transition: 'color 0.3s',
                 }}
               />
@@ -313,7 +313,7 @@ function CompactProgress({ stageIdx }: { stageIdx: number }) {
                   ? 'var(--gold-400)'
                   : completed
                     ? 'rgba(212,175,55,0.55)'
-                    : 'rgba(255,255,255,0.15)',
+                    : 'rgba(212,175,55,0.15)',
                 whiteSpace: 'nowrap',
                 transition: 'color 0.3s',
               }}>
@@ -334,7 +334,7 @@ const URGENCY_COLORS = {
   safe: { text: 'rgba(74,222,128,0.85)', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' },
   warning: { text: 'rgba(251,191,36,0.9)', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
   urgent: { text: 'rgba(248,113,113,0.9)', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.15)' },
-  unknown: { text: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)' },
+  unknown: { text: 'rgba(245,235,200,0.40)', bg: 'rgba(212,175,55,0.04)', border: 'rgba(212,175,55,0.06)' },
 }
 const PAUSE_COLORS = {
   text: 'rgba(212,175,55,0.92)',
@@ -389,7 +389,7 @@ function OrderCard({
         padding: 0,
         borderRadius: 16,
         background: 'linear-gradient(165deg, rgba(18,16,12,0.98) 0%, rgba(10,10,11,0.99) 40%, rgba(6,6,8,1) 100%)',
-        border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        border: needsAction ? 'none' : '1px solid rgba(212,175,55,0.06)',
         textAlign: 'left',
         cursor: 'pointer',
         appearance: 'none',
@@ -412,7 +412,7 @@ function OrderCard({
           height: 80,
           background: needsAction
             ? 'radial-gradient(ellipse at top, rgba(212,175,55,0.06) 0%, transparent 70%)'
-            : 'radial-gradient(ellipse at top, rgba(255,255,255,0.02) 0%, transparent 70%)',
+            : 'radial-gradient(ellipse at top, rgba(212,175,55,0.03) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
@@ -456,7 +456,7 @@ function OrderCard({
           <div style={{
             fontSize: 13,
             fontWeight: 500,
-            color: 'rgba(255,255,255,0.30)',
+            color: 'rgba(245,235,200,0.38)',
             lineHeight: 1.3,
           }}>
             {subline}
@@ -557,7 +557,7 @@ function OrderCard({
         {/* Separator */}
         <div style={{
           height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.06), transparent)',
           marginBottom: 14,
         }} />
 
@@ -574,17 +574,17 @@ function OrderCard({
             borderRadius: 12,
             background: needsAction
               ? 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)'
-              : 'rgba(255,255,255,0.04)',
-            border: needsAction ? 'none' : '1px solid rgba(255,255,255,0.06)',
+              : 'rgba(212,175,55,0.04)',
+            border: needsAction ? 'none' : '1px solid rgba(212,175,55,0.08)',
             boxShadow: needsAction
-              ? '0 0 30px -5px rgba(212,175,55,0.5), 0 10px 30px -10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1)'
+              ? '0 0 30px -5px rgba(212,175,55,0.5), 0 10px 30px -10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(252,246,186,0.4), inset 0 -2px 4px rgba(0,0,0,0.1)'
               : 'none',
           }}
         >
           <span style={{
             fontSize: 14,
             fontWeight: 700,
-            color: needsAction ? 'rgba(15,12,8,0.92)' : 'rgba(255,255,255,0.50)',
+            color: needsAction ? 'rgba(15,12,8,0.92)' : 'rgba(245,235,200,0.55)',
             letterSpacing: '0.01em',
           }}>
             {needsAction && financeAmount
@@ -596,7 +596,7 @@ function OrderCard({
           <ArrowRight
             size={15}
             strokeWidth={2.5}
-            style={{ color: needsAction ? 'rgba(15,12,8,0.70)' : 'rgba(255,255,255,0.35)' }}
+            style={{ color: needsAction ? 'rgba(15,12,8,0.70)' : 'rgba(245,235,200,0.40)' }}
           />
         </motion.div>
 
@@ -651,7 +651,7 @@ function DotIndicator({ count, active }: { count: number; active: number }) {
             key={idx}
             animate={{ width: idx === active ? 16 : 6, opacity: idx === active ? 1 : 0.35 }}
             transition={{ duration: 0.2 }}
-            style={{ height: 3.5, borderRadius: 2, background: idx === active ? 'var(--gold-400)' : 'rgba(255,255,255,0.2)' }}
+            style={{ height: 3.5, borderRadius: 2, background: idx === active ? 'var(--gold-400)' : 'rgba(212,175,55,0.15)' }}
           />
         )
       })}
@@ -694,12 +694,12 @@ function SeeAllOrdersLink({
       <span style={{
         fontSize: 12,
         fontWeight: 600,
-        color: 'rgba(255,255,255,0.30)',
+        color: 'rgba(212,175,55,0.35)',
         letterSpacing: '0.01em',
       }}>
         Все заказы
       </span>
-      <ArrowRight size={12} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.20)' }} />
+      <ArrowRight size={12} strokeWidth={2} style={{ color: 'rgba(212,175,55,0.25)' }} />
     </motion.button>
   )
 }

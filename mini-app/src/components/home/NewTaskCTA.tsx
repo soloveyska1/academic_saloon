@@ -40,7 +40,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             marginBottom: 24,
             overflow: 'hidden',
             borderRadius: 12,
-            background: 'linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(10,10,11,0.99) 100%)',
+            background: 'linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%)',
             border: '1px solid rgba(212,175,55,0.15)',
             boxShadow: '0 4px 24px -8px rgba(0,0,0,0.6), 0 1px 0 rgba(212,175,55,0.04) inset',
           }}
@@ -170,23 +170,6 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             >
               Бесплатный расчёт за 2 минуты
             </div>
-
-            {/* Soft urgency — social proof */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              style={{
-                marginTop: 8,
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'rgba(212,175,55,0.35)',
-                textAlign: 'center',
-                letterSpacing: '0.02em',
-              }}
-            >
-              Сегодня оформлено 12 заказов
-            </motion.div>
           </div>
         </div>
       </Reveal>
@@ -275,7 +258,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           position: 'relative',
           width: '100%',
           borderRadius: 12,
-          background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 50%, rgba(9,9,10,1) 100%)',
+          background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(16,14,10,0.98) 50%, rgba(12,11,9,1) 100%)',
           border: '1px solid rgba(212,175,55,0.18)',
           boxShadow: 'var(--card-shadow), inset 0 1px 0 rgba(212,175,55,0.06)',
           cursor: 'pointer',

@@ -94,23 +94,23 @@ export const SaloonFooter = memo(function SaloonFooter() {
           color: 'rgba(212,175,55,0.55)', letterSpacing: '0.03em',
         }}
       >
-        2 000+ работ &middot; 4.9 &star; &middot; Гарантия возврата
+        2 000+ работ · 4.9 ★ · Гарантия возврата
       </motion.div>
 
-      {/* Tagline — serif italic for elegance */}
+      {/* Tagline — serif italic */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
         transition={{ delay: 0.45, duration: 0.5 }}
         style={{
-          marginTop: 8, fontSize: 11,
+          marginTop: 6, fontSize: 10,
           fontFamily: "var(--font-display, 'Playfair Display', serif)",
           fontStyle: 'italic',
-          color: 'rgba(212,175,55,0.35)',
+          color: 'rgba(212,175,55,0.30)',
           letterSpacing: '0.02em',
         }}
       >
-        Качество &middot; Конфиденциальность &middot; Результат
+        Качество · Конфиденциальность · Результат
       </motion.div>
 
       {/* Support link */}

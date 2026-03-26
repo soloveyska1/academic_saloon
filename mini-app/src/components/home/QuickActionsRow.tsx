@@ -138,24 +138,26 @@ export const QuickActionsRow = memo(function QuickActionsRow({
 
   // ── Non-embedded: unified gold horizontal cards ──
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
       {actions.map((action) => (
         <motion.button
           key={action.id}
           whileTap={{ scale: 0.97 }}
           onClick={() => handleClick(action)}
           style={{
-            flex: 1,
+            flex: '1 0 0',
+            minWidth: 0,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: 10,
-            padding: '14px 14px',
+            gap: 8,
+            padding: '14px 8px 12px',
             borderRadius: 12,
             background: 'rgba(20,18,14,0.95)',
             border: '1px solid rgba(212,175,55,0.08)',
             cursor: 'pointer',
             appearance: 'none' as const,
-            textAlign: 'left' as const,
+            textAlign: 'center' as const,
           }}
         >
           <div
@@ -177,9 +179,9 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               style={{ color: 'var(--gold-400)' }}
             />
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, width: '100%' }}>
             <div style={{
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 700,
               lineHeight: 1.2,
               color: 'var(--text-primary)',
@@ -187,10 +189,14 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               {action.title}
             </div>
             <div style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 600,
               color: 'var(--text-muted)',
               lineHeight: 1.3,
+              marginTop: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}>
               {action.subtitle}
             </div>
