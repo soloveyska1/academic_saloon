@@ -393,27 +393,54 @@ export function HomePage({ user, onRefresh }: Props) {
             <WhyTrustUs />
             <TestimonialsSection />
 
-            {/* Repeat CTA after social proof */}
+            {/* Repeat CTA after social proof — premium style with shine */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              style={{ marginBottom: 24, textAlign: 'center' }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              style={{ marginBottom: 24, position: 'relative' }}
             >
+              {/* Breathing ambient glow */}
+              <motion.div
+                aria-hidden="true"
+                animate={{ opacity: [0, 0.08, 0], scale: [0.98, 1.01, 0.98] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute', inset: -8, borderRadius: 20,
+                  background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.15), transparent 70%)',
+                  filter: 'blur(16px)', pointerEvents: 'none',
+                }}
+              />
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.97 }}
                 onClick={handleNewOrder}
                 style={{
-                  width: '100%', padding: '16px 24px', borderRadius: 12,
-                  border: '1px solid rgba(212,175,55,0.15)',
-                  background: 'rgba(212,175,55,0.06)', color: 'var(--gold-400)',
-                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  position: 'relative',
+                  width: '100%', padding: '18px 24px', borderRadius: 14,
+                  border: '1px solid rgba(212,175,55,0.20)',
+                  background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
+                  color: 'var(--gold-400)',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), 0 1px 0 rgba(212,175,55,0.06) inset',
+                  overflow: 'hidden',
                 }}
               >
-                Рассчитать мою работу
-                <ArrowRight size={16} strokeWidth={2} />
+                {/* Travelling shine effect */}
+                <motion.div
+                  aria-hidden="true"
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, width: '50%', height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <span style={{ position: 'relative', zIndex: 1 }}>Рассчитать мою работу</span>
+                <ArrowRight size={16} strokeWidth={2.2} style={{ position: 'relative', zIndex: 1 }} />
               </motion.button>
             </motion.div>
 

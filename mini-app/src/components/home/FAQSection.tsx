@@ -1,6 +1,6 @@
-import { memo, useState, useCallback } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { HelpCircle, ChevronDown } from 'lucide-react'
+import { memo, useState, useCallback, useRef } from 'react'
+import { motion, AnimatePresence, useReducedMotion, useInView } from 'framer-motion'
+import { HelpCircle, ChevronDown, MessageCircle } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FAQ — Premium accordion with gold+black style.
@@ -116,6 +116,8 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
 
 export const FAQSection = memo(function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(sectionRef, { once: true, margin: '-60px' })
 
   const handleToggle = useCallback((index: number) => {
     setOpenIndex(prev => prev === index ? null : index)
@@ -123,9 +125,10 @@ export const FAQSection = memo(function FAQSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.38, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      ref={sectionRef}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 32 }}
     >
       <div
@@ -155,9 +158,9 @@ export const FAQSection = memo(function FAQSection() {
         {FAQ_ITEMS.map((item, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38 + i * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+            transition={{ delay: i * 0.06, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           >
             <FAQAccordionItem
               question={item.question}
@@ -168,6 +171,46 @@ export const FAQSection = memo(function FAQSection() {
           </motion.div>
         ))}
       </div>
+
+      {/* ─── "Не нашли ответ?" CTA ─── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        style={{
+          marginTop: 20,
+          textAlign: 'center',
+        }}
+      >
+        <a
+          href="https://t.me/Thisissaymoon"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 20px',
+            borderRadius: 10,
+            background: 'rgba(212,175,55,0.04)',
+            border: '1px solid rgba(212,175,55,0.10)',
+            textDecoration: 'none',
+            transition: 'border-color 0.2s, background 0.2s',
+          }}
+        >
+          <MessageCircle size={14} color="var(--gold-400)" strokeWidth={1.8} />
+          <span style={{
+            fontSize: 13, fontWeight: 700, color: 'var(--gold-400)',
+          }}>
+            Не нашли ответ?
+          </span>
+          <span style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)',
+          }}>
+            Напишите нам
+          </span>
+        </a>
+      </motion.div>
     </motion.div>
   )
 })

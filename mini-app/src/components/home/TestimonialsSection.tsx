@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { Star, ShieldCheck, BookOpen, GraduationCap, PenTool, FileText, Calculator, Presentation } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -67,6 +67,8 @@ const CARD_GAP = 12
 export const TestimonialsSection = memo(function TestimonialsSection() {
   const [activeIndex, setActiveIndex] = useState(0)
   const constraintsRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(sectionRef, { once: true, margin: '-60px' })
 
   const handleDragEnd = useCallback((_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
     const threshold = 50
@@ -80,9 +82,10 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.28, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      ref={sectionRef}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 32 }}
     >
       {/* Section header */}
