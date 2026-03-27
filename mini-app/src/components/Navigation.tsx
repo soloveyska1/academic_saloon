@@ -13,6 +13,19 @@ interface NavItem {
   label: string
 }
 
+const navItems: NavItem[] = [
+  { id: 'home', icon: Home, label: 'Главная', path: '/' },
+  { id: 'orders', icon: List, label: 'Заказы', path: '/orders' },
+  { id: 'club', icon: Crown, label: 'Бонусы', path: '/club' },
+  { id: 'profile', icon: User, label: 'Профиль', path: '/profile' },
+]
+
+/* ── Spring presets ─────────────────────────────────────────────── */
+const springNav   = { type: 'spring' as const, damping: 24, stiffness: 300 }
+const springPill  = { type: 'spring' as const, damping: 26, stiffness: 320 }
+const springIcon  = { type: 'spring' as const, damping: 28, stiffness: 400 }
+const springTap   = { type: 'spring' as const, damping: 30, stiffness: 500 }
+
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -43,6 +56,7 @@ export const Navigation = () => {
     }
   }, [getScrollContainer])
 
+  /* ── Keyboard detection ───────────────────────────────────────── */
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
@@ -55,12 +69,10 @@ export const Navigation = () => {
 
     updateKeyboardState()
     viewport.addEventListener('resize', updateKeyboardState)
-
-    return () => {
-      viewport.removeEventListener('resize', updateKeyboardState)
-    }
+    return () => viewport.removeEventListener('resize', updateKeyboardState)
   }, [])
 
+  /* ── Scroll hide/show ─────────────────────────────────────────── */
   useEffect(() => {
     const container = getScrollContainer()
 
@@ -91,6 +103,7 @@ export const Navigation = () => {
     return () => target.removeEventListener('scroll', handleScroll)
   }, [shouldHideNav, getScrollContainer])
 
+  /* ── Route change → reset ─────────────────────────────────────── */
   useEffect(() => {
     if (shouldHideNav) {
       setIsVisible(false)
@@ -99,13 +112,6 @@ export const Navigation = () => {
     }
     lastScrollY.current = 0
   }, [location.pathname, shouldHideNav])
-
-  const navItems: NavItem[] = [
-    { id: 'home', icon: Home, label: 'Главная', path: '/' },
-    { id: 'orders', icon: List, label: 'Заказы', path: '/orders' },
-    { id: 'club', icon: Crown, label: 'Бонусы', path: '/club' },
-    { id: 'profile', icon: User, label: 'Профиль', path: '/profile' }
-  ]
 
   if (shouldHideNav && !isVisible) return null
 
@@ -116,11 +122,9 @@ export const Navigation = () => {
           initial={false}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 22,
-            stiffness: 280,
-          }}
+          transition={springNav}
+          role="navigation"
+          aria-label="Основная навигация"
           style={{
             position: 'fixed',
             bottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
@@ -132,20 +136,43 @@ export const Navigation = () => {
             pointerEvents: 'none',
           }}
         >
-          <div style={{
-            width: 'min(92%, 360px)',
-            height: 52,
-            borderRadius: 9999,
-            background: 'rgba(12, 12, 12, 0.92)',
-            backdropFilter: 'blur(16px) saturate(120%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 8px 32px -12px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04)',
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            pointerEvents: 'auto',
-          }}>
+          {/* ── Capsule container ──────────────────────────────────── */}
+          <div
+            role="tablist"
+            style={{
+              position: 'relative',
+              width: 'min(92%, 360px)',
+              height: 58,
+              borderRadius: 9999,
+              background: 'rgba(14, 13, 12, 0.88)',
+              backdropFilter: 'blur(20px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+              border: '1px solid rgba(255, 255, 255, 0.07)',
+              boxShadow: [
+                '0 8px 32px -8px rgba(0, 0, 0, 0.4)',
+                '0 4px 16px -4px rgba(212, 175, 55, 0.05)',
+                'inset 0 0.5px 0 rgba(255, 255, 255, 0.06)',
+              ].join(', '),
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              pointerEvents: 'auto',
+              overflow: 'hidden',
+            }}
+          >
+            {/* ── Gold edge light (top highlight) ─────────────────── */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '20%',
+                right: '20%',
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent)',
+                pointerEvents: 'none',
+              }}
+            />
+
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
@@ -154,7 +181,9 @@ export const Navigation = () => {
                 <motion.button
                   key={item.id}
                   type="button"
+                  role="tab"
                   aria-label={item.label}
+                  aria-selected={isActive}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => {
                     haptic(isActive ? 'soft' : 'light')
@@ -164,15 +193,16 @@ export const Navigation = () => {
                     }
                     navigate(item.path)
                   }}
-                  whileTap={{ scale: 0.92 }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={springTap}
                   style={{
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 2,
-                    height: 52,
+                    gap: 3,
+                    height: 58,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -181,48 +211,69 @@ export const Navigation = () => {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  {/* Active dot indicator above icon */}
-                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* ── Sliding active pill (the WOW feature) ─────── */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="navActivePill"
+                      transition={springPill}
+                      style={{
+                        position: 'absolute',
+                        top: 7,
+                        bottom: 7,
+                        left: 10,
+                        right: 10,
+                        borderRadius: 18,
+                        background: 'rgba(212, 175, 55, 0.10)',
+                        border: '1px solid rgba(212, 175, 55, 0.08)',
+                        boxShadow: '0 0 12px rgba(212, 175, 55, 0.06)',
+                      }}
+                    />
+                  )}
+
+                  {/* ── Active bar indicator (top) ────────────────── */}
+                  <div style={{ height: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {isActive && (
                       <motion.div
-                        layoutId="navDot"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 380,
-                          damping: 24,
-                        }}
+                        layoutId="navActiveBar"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={springIcon}
                         style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          background: 'var(--gold-400, #C5A028)',
-                          boxShadow: '0 0 8px rgba(212,175,55,0.4)',
+                          width: 20,
+                          height: 2.5,
+                          borderRadius: 2,
+                          background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.6), var(--gold-400, #D4AF37), rgba(212, 175, 55, 0.6))',
+                          boxShadow: '0 0 8px rgba(212, 175, 55, 0.35)',
                         }}
                       />
                     )}
                   </div>
 
-                  {/* Icon */}
+                  {/* ── Icon ───────────────────────────────────────── */}
                   <motion.div
                     animate={{
-                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)',
+                      scale: isActive ? 1.06 : 1,
+                      filter: isActive
+                        ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.25))'
+                        : 'drop-shadow(0 0 0px transparent)',
                     }}
-                    transition={{ duration: 0.2 }}
+                    transition={springIcon}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       position: 'relative',
+                      zIndex: 1,
                     }}
                   >
                     <Icon
-                      size={20}
-                      strokeWidth={isActive ? 2.0 : 1.6}
-                      color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
+                      size={isActive ? 22 : 20}
+                      strokeWidth={isActive ? 2.2 : 1.5}
+                      color={isActive ? 'var(--gold-400, #D4AF37)' : 'rgba(255, 255, 255, 0.45)'}
+                      style={{ transition: 'color 0.2s ease-out' }}
                     />
-                    {/* Gold notification dot — only when daily bonus is claimable */}
+
+                    {/* ── Bonus notification badge with pulse ──────── */}
                     {item.path === '/club' && !isActive && showBonusBadge && (
                       <div style={{
                         position: 'absolute',
@@ -232,24 +283,48 @@ export const Navigation = () => {
                         height: 6,
                         borderRadius: '50%',
                         background: '#D4AF37',
-                        boxShadow: '0 0 6px rgba(212,175,55,0.5)',
-                      }} />
+                        boxShadow: '0 0 6px rgba(212, 175, 55, 0.5)',
+                      }}>
+                        {/* Pulse ring */}
+                        <motion.div
+                          animate={{
+                            scale: [1, 2, 2],
+                            opacity: [0.6, 0, 0],
+                          }}
+                          transition={{
+                            duration: 2.5,
+                            repeat: Infinity,
+                            ease: 'easeOut',
+                          }}
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: '50%',
+                            border: '1px solid #D4AF37',
+                          }}
+                        />
+                      </div>
                     )}
                   </motion.div>
 
-                  {/* Label */}
-                  <span
+                  {/* ── Label ──────────────────────────────────────── */}
+                  <motion.span
+                    animate={{
+                      color: isActive ? 'var(--gold-400, #D4AF37)' : 'rgba(255, 255, 255, 0.42)',
+                    }}
+                    transition={{ duration: 0.2 }}
                     style={{
                       fontSize: 10,
-                      fontWeight: isActive ? 700 : 600,
+                      fontWeight: isActive ? 700 : 500,
                       letterSpacing: '0.02em',
-                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.35)',
                       whiteSpace: 'nowrap',
                       lineHeight: 1,
+                      position: 'relative',
+                      zIndex: 1,
                     }}
                   >
                     {item.label}
-                  </span>
+                  </motion.span>
                 </motion.button>
               )
             })}

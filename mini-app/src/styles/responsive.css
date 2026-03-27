@@ -80,11 +80,11 @@
   /* ─────────────────────────────────────────────────────────────────────────
      NAVIGATION SIZES
      ───────────────────────────────────────────────────────────────────────── */
-  --nav-height: clamp(56px, 14vw, 72px);
+  --nav-height: clamp(58px, 14vw, 72px);
   --nav-width: clamp(280px, 85vw, 360px);
   --nav-bottom-offset: clamp(16px, 4vw, 24px);
-  --nav-icon-size: clamp(18px, 4.5vw, 24px);
-  --nav-label-size: clamp(9px, 2.25vw, 11px);
+  --nav-icon-size: clamp(20px, 5vw, 24px);
+  --nav-label-size: clamp(10px, 2.5vw, 11px);
 
   /* ─────────────────────────────────────────────────────────────────────────
      TOUCH TARGETS — Minimum 44px for accessibility
