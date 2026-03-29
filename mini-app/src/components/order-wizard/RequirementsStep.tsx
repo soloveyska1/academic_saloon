@@ -155,7 +155,7 @@ export function RequirementsStep({
           type="text"
           value={topic}
           onChange={(e) => onTopicChange(e.target.value)}
-          placeholder="Если есть — укажите"
+          placeholder="Например: Анализ рентабельности предприятия"
           disabled={disabled}
           enterKeyHint="done"
           autoCapitalize="sentences"
@@ -228,7 +228,7 @@ export function RequirementsStep({
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  fontSize: 15,
+  fontSize: 16, // Must be ≥16px to prevent iOS Safari auto-zoom on focus
   lineHeight: 1.4,
   fontWeight: 600,
   fontFamily: "'Manrope', sans-serif",
@@ -272,7 +272,13 @@ function FieldCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      onFocusCapture={() => setFocused(true)}
+      onFocusCapture={(e) => {
+        setFocused(true)
+        // Scroll input into center of viewport (avoids keyboard hiding it)
+        setTimeout(() => {
+          (e.target as HTMLElement)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+        }, 150)
+      }}
       onBlurCapture={() => setFocused(false)}
       style={{
         borderRadius: 14,
@@ -544,7 +550,7 @@ function AttachmentsCard({
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {files.length > 0
                 ? `${formatFileSize(totalSize)} · Нажмите чтобы добавить ещё`
-                : 'Методичка, задание, пример — до 50 МБ'}
+                : 'Прикрепите задание — оценка будет точнее'}
             </div>
           </div>
 
