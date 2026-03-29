@@ -2,7 +2,6 @@ import { useMemo, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowRight, Check, Timer, MessageSquare, Shield,
-  Camera, HelpCircle,
 } from 'lucide-react'
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
