@@ -733,24 +733,24 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               gap: 12,
               padding: '12px 16px',
               marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
-              border: '1px solid rgba(34,197,94,0.3)',
-              borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.03))',
+              border: '1px solid rgba(212,175,55,0.18)',
+              borderRadius: 14,
             }}
           >
             <div style={{
               width: 36,
               height: 36,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #d4af37, #b38728)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Check size={20} color="#050505" />
+              <Check size={20} color="#0A0A0A" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', marginBottom: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold-400)', marginBottom: 2 }}>
                 Повторный заказ
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
