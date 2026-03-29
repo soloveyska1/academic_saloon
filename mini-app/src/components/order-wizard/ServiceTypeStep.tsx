@@ -43,26 +43,26 @@ interface GuaranteeBadge {
 const SERVICE_GUARANTEES: Record<string, GuaranteeBadge[]> = {
   diploma: [
     { icon: Shield, text: 'Антиплагиат от 70%' },
-    { icon: RefreshCw, text: '3 бесплатные правки' },
+    { icon: RefreshCw, text: 'Безлимитные правки' },
     { icon: CheckCircle, text: 'Сопровождение до защиты' },
   ],
   masters: [
     { icon: Shield, text: 'Антиплагиат от 70%' },
     { icon: CheckCircle, text: 'Научная новизна' },
-    { icon: RefreshCw, text: 'Правки до защиты' },
+    { icon: RefreshCw, text: 'Безлимитные правки' },
   ],
   coursework: [
     { icon: Shield, text: 'Антиплагиат от 60%' },
-    { icon: RefreshCw, text: 'Бесплатные правки' },
+    { icon: RefreshCw, text: 'Безлимитные правки' },
     { icon: CheckCircle, text: 'По методичке ВУЗа' },
   ],
   practice: [
     { icon: CheckCircle, text: 'Дневник + отчёт' },
-    { icon: RefreshCw, text: 'Правки включены' },
+    { icon: RefreshCw, text: 'Безлимитные правки' },
   ],
   presentation: [
     { icon: Sparkles, text: 'Дизайн + речь' },
-    { icon: RefreshCw, text: 'Правки включены' },
+    { icon: RefreshCw, text: 'Безлимитные правки' },
   ],
   essay: [
     { icon: Shield, text: 'Без воды' },
@@ -90,19 +90,48 @@ const CUSTOM_SERVICES: ServiceType[] = SERVICE_TYPES.filter(s => CUSTOM_FLOW_IDS
 
 // ─── Haptic ──────────────────────────────────────────────────────────
 
-function triggerHaptic() {
+function triggerHaptic(type: 'light' | 'medium' | 'selection' = 'light') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tg = (window as any).Telegram
     const haptic = tg?.WebApp?.HapticFeedback
     if (!haptic) return
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    if (isIOS && haptic.selectionChanged) {
+    if (type === 'selection' && isIOS && haptic.selectionChanged) {
       haptic.selectionChanged()
     } else {
-      haptic.impactOccurred?.('light')
+      haptic.impactOccurred?.(type)
     }
   } catch { /* noop */ }
+}
+
+/* Choreographed selection: haptic + subtle sound via Web Audio */
+function playSelectFeedback() {
+  // 1. Haptic: selection tick
+  triggerHaptic('selection')
+  // 2. After 50ms: medium impact (feels like "locking in")
+  setTimeout(() => triggerHaptic('medium'), 50)
+
+  // 3. Subtle audio chime via Web Audio API (no file needed)
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    // Premium "ding" — two quick sine tones
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, ctx.currentTime) // A5
+    osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.06) // E6
+    gain.gain.setValueAtTime(0.03, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.15)
+    // Cleanup
+    setTimeout(() => ctx.close().catch(() => {}), 200)
+  } catch { /* audio optional */ }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -123,7 +152,7 @@ export function ServiceTypeStep({
   const standardServices = useMemo(() => CATALOG.filter(s => s.category !== 'premium'), [])
 
   const handleSelect = useCallback((id: string) => {
-    triggerHaptic()
+    playSelectFeedback()
     onSelect(id)
     setTimeout(() => {
       selectedCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -385,7 +414,7 @@ export function ServiceTypeStep({
           letterSpacing: '0.03em',
           textAlign: 'center',
         }}>
-          Правки включены · Возврат до старта · 93% сдают с первого раза
+          Безлимитные правки · Возврат до старта · 93% сдают с первого раза
         </span>
       </div>
     </div>
@@ -639,7 +668,7 @@ function PremiumServiceCard({
       </div>
 
       {/* Post-selection trust line */}
-      <TrustLine visible={selected} />
+      <TrustLine visible={selected} service={service} />
 
       {/* Guarantee badges */}
       {!selected && <GuaranteeBadges serviceId={service.id} />}
@@ -826,7 +855,7 @@ function ServiceCard({
       </div>
 
       {/* Post-selection trust line */}
-      <TrustLine visible={selected} />
+      <TrustLine visible={selected} service={service} />
 
       {/* Guarantee badges */}
       {!selected && <GuaranteeBadges serviceId={service.id} />}
@@ -993,7 +1022,9 @@ function SelectionIndicator({ selected }: { selected: boolean }) {
   )
 }
 
-function TrustLine({ visible }: { visible: boolean }) {
+function TrustLine({ visible, service }: { visible: boolean; service: ServiceType }) {
+  const isPremium = service.category === 'premium'
+
   return (
     <AnimatePresence>
       {visible && (
@@ -1001,24 +1032,59 @@ function TrustLine({ visible }: { visible: boolean }) {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           style={{ overflow: 'hidden' }}
         >
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginTop: SPACING.sm,
-            paddingTop: SPACING.sm,
+            marginTop: SPACING.md,
+            paddingTop: SPACING.md,
             borderTop: '1px solid rgba(212, 175, 55, 0.08)',
-            fontSize: FONT.size['2xs'],
-            color: COLORS.gold.badge,
           }}>
-            <Shield size={10} strokeWidth={1.5} />
-            <span>Оплата после согласования деталей</span>
+            {/* What's included — expanded info */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px 16px',
+              marginBottom: SPACING.sm,
+            }}>
+              <IncludedItem text="Безлимитные правки" />
+              <IncludedItem text="Возврат до старта" />
+              {isPremium && <IncludedItem text="Личный менеджер" />}
+              {isPremium && <IncludedItem text="Антиплагиат" />}
+              {!isPremium && <IncludedItem text="Оформление" />}
+            </div>
+
+            {/* Bottom trust line */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: FONT.size['2xs'],
+              color: COLORS.gold.badge,
+              opacity: 0.8,
+            }}>
+              <Shield size={9} strokeWidth={1.5} />
+              <span>Оплата после согласования деталей</span>
+            </div>
           </div>
         </motion.div>
       )}
     </AnimatePresence>
+  )
+}
+
+function IncludedItem({ text }: { text: string }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+      fontSize: FONT.size['2xs'],
+      color: 'rgba(74, 222, 128, 0.7)',
+      fontWeight: 500,
+    }}>
+      <CheckCircle size={9} strokeWidth={2} />
+      <span>{text}</span>
+    </div>
   )
 }
