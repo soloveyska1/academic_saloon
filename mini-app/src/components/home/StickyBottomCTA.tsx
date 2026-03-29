@@ -19,7 +19,7 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick }: Sticky
       transition={{ delay: 0.4 }}
       style={{
         position: 'sticky',
-        bottom: 78,
+        bottom: 82,
         zIndex: 40,
         padding: '0 4px',
         pointerEvents: 'none',

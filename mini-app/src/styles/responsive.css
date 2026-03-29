@@ -80,7 +80,7 @@
   /* ─────────────────────────────────────────────────────────────────────────
      NAVIGATION SIZES
      ───────────────────────────────────────────────────────────────────────── */
-  --nav-height: clamp(58px, 14vw, 72px);
+  --nav-height: clamp(62px, 15vw, 76px);
   --nav-width: clamp(280px, 85vw, 360px);
   --nav-bottom-offset: clamp(16px, 4vw, 24px);
   --nav-icon-size: clamp(20px, 5vw, 24px);
