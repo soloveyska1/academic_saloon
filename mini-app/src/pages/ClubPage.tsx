@@ -277,12 +277,12 @@ function ReferralBlock({ user }: { user: UserData }) {
             padding: '13px 16px',
             borderRadius: 12,
             background: copied
-              ? 'rgba(34,197,94,0.15)'
+              ? 'rgba(212, 175, 55, 0.12)'
               : 'var(--gold-glass-subtle)',
             border: `1px solid ${copied
-              ? 'rgba(34,197,94,0.25)'
+              ? 'rgba(212, 175, 55, 0.25)'
               : 'var(--border-gold)'}`,
-            color: copied ? 'var(--success-text)' : 'var(--gold-200)',
+            color: copied ? 'var(--gold-400)' : 'var(--gold-200)',
             fontSize: 14,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",

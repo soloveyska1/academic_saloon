@@ -208,12 +208,15 @@ function FieldCard({
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={() => setFocused(false)}
       style={{
-        borderRadius: 12,
+        borderRadius: 14,
         border: `1px solid ${focused ? goldBorder : cardBorder}`,
-        background: cardBg,
+        background: focused ? 'rgba(212, 175, 55, 0.03)' : cardBg,
         padding: '14px',
         opacity: disabled ? 0.6 : 1,
-        transition: 'border-color 0.2s ease',
+        transition: 'border-color 0.2s ease, background 0.2s ease',
+        boxShadow: focused
+          ? 'inset 0 1px 0 rgba(212, 175, 55, 0.06), 0 0 16px -8px rgba(212, 175, 55, 0.08)'
+          : 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
       {/* Label row */}
@@ -496,15 +499,15 @@ function AttachmentsCard({
           margin: '0 14px 12px',
           padding: '10px 12px',
           borderRadius: 8,
-          background: 'rgba(245, 158, 11, 0.08)',
-          border: '1px solid rgba(245, 158, 11, 0.18)',
+          background: 'rgba(212, 175, 55, 0.06)',
+          border: '1px solid rgba(212, 175, 55, 0.12)',
 
           display: 'flex',
           alignItems: 'flex-start',
           gap: 8,
         }}>
-          <AlertTriangle size={14} color="var(--warning-text)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 12, lineHeight: 1.5, color: '#f8c26a' }}>{notice}</span>
+          <AlertTriangle size={14} color="rgba(212, 175, 55, 0.7)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, lineHeight: 1.5, color: 'rgba(212, 175, 55, 0.65)' }}>{notice}</span>
         </div>
       )}
 
