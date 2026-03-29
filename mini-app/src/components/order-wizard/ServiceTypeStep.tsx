@@ -136,7 +136,18 @@ export function ServiceTypeStep({
   }, [onUrgentRequest])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm, position: 'relative' }}>
+
+      {/* ── Noise texture overlay (expensive paper feel) ──────── */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        opacity: 0.015,
+        backgroundImage: 'var(--noise-overlay)',
+        pointerEvents: 'none',
+        mixBlendMode: 'overlay',
+        borderRadius: RADIUS.md,
+      }} />
 
       {/* ─── Draft recovery card ───────────────────────────────── */}
       {draftInfo && onContinueDraft && !selected && (
@@ -228,6 +239,19 @@ export function ServiceTypeStep({
         </motion.div>
       )}
 
+      {/* ─── Premium section label ──────────────────────────────── */}
+      <div style={{
+        fontSize: FONT.size['2xs'],
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase' as const,
+        color: 'rgba(212, 175, 55, 0.45)',
+        paddingLeft: 4,
+        marginTop: SPACING.xs,
+      }}>
+        Выпускные работы
+      </div>
+
       {/* ─── Premium services ──────────────────────────────────── */}
       {premiumServices.map((service, i) => (
         <div key={service.id} ref={selected === service.id ? selectedCardRef : undefined}>
@@ -246,6 +270,18 @@ export function ServiceTypeStep({
         margin: `${SPACING.lg}px ${SPACING.xl}px`,
         background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.06), rgba(180,190,210,0.04), transparent)',
       }} />
+
+      {/* ─── Standard section label ─────────────────────────────── */}
+      <div style={{
+        fontSize: FONT.size['2xs'],
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase' as const,
+        color: 'rgba(180, 190, 210, 0.35)',
+        paddingLeft: 4,
+      }}>
+        Учебные задания
+      </div>
 
       {/* ─── Standard + express services ───────────────────────── */}
       {standardServices.map((service, i) => (
@@ -384,19 +420,24 @@ function PremiumServiceCard({
       viewport={{ once: true, margin: '50px' }}
       transition={entranceTransition}
       whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
+      animate={{ y: selected ? -1 : 0 }}
       onClick={onSelect}
       style={{
         width: '100%',
         padding: CARD_PADDING_PREMIUM,
         borderRadius: RADIUS.lg,
-        background: selected ? 'rgba(212, 175, 55, 0.05)' : COLORS.card.bgPremium,
+        background: selected ? 'rgba(212, 175, 55, 0.06)' : COLORS.card.bgPremium,
         backdropFilter,
         WebkitBackdropFilter: backdropFilter,
         border: selected
           ? `1.5px solid ${COLORS.gold.borderStrong}`
           : `1.5px solid ${COLORS.card.borderPremium}`,
         boxShadow: selected
-          ? '0 0 24px -8px rgba(212, 175, 55, 0.15), inset 0 1px 0 rgba(212, 175, 55, 0.08)'
+          ? [
+              '0 4px 20px -4px rgba(212, 175, 55, 0.18)',
+              '0 0 30px -8px rgba(212, 175, 55, 0.10)',
+              'inset 0 1px 0 rgba(255, 248, 214, 0.08)',
+            ].join(', ')
           : COLORS.card.insetHighlight,
         cursor: 'pointer',
         textAlign: 'left',
@@ -425,6 +466,21 @@ function PremiumServiceCard({
         }} />
       </div>
 
+      {/* Selected: metallic conic gradient border overlay */}
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: RADIUS.lg,
+          padding: 1.5,
+          background: 'conic-gradient(from 180deg, rgba(212,175,55,0.08), rgba(212,175,55,0.25), rgba(245,230,163,0.15), rgba(212,175,55,0.08))',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude' as const,
+          pointerEvents: 'none',
+        }} />
+      )}
+
       {/* Selected: gold left accent bar */}
       {selected && (
         <motion.div
@@ -434,12 +490,13 @@ function PremiumServiceCard({
           style={{
             position: 'absolute',
             left: 0,
-            top: '18%',
-            bottom: '18%',
+            top: '15%',
+            bottom: '15%',
             width: 3,
             borderRadius: '0 2px 2px 0',
-            background: 'linear-gradient(180deg, rgba(212,175,55,0.8), rgba(212,175,55,0.4))',
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.9), rgba(245,230,163,0.5), rgba(212,175,55,0.4))',
             transformOrigin: 'top',
+            boxShadow: '0 0 8px rgba(212, 175, 55, 0.3)',
           }}
         />
       )}
@@ -510,11 +567,12 @@ function PremiumServiceCard({
           gap: SPACING.xs,
         }}>
           <span style={{
-            fontSize: FONT.size.base,
-            fontWeight: 600,
+            fontFamily: FONT.family.mono,
+            fontSize: FONT.size.md,
+            fontWeight: 500,
             color: 'var(--gold-400)',
             whiteSpace: 'nowrap',
-            letterSpacing: '-0.01em',
+            letterSpacing: '0.02em',
           }}>
             {service.price}
           </span>
@@ -694,10 +752,12 @@ function ServiceCard({
             </span>
           ) : (
             <span style={{
-              fontSize: FONT.size.md,
-              fontWeight: 700,
+              fontFamily: FONT.family.mono,
+              fontSize: FONT.size.sm,
+              fontWeight: 500,
               color: selected ? 'var(--gold-400)' : 'var(--text-secondary)',
               whiteSpace: 'nowrap',
+              letterSpacing: '0.02em',
               transition: 'color 0.2s',
             }}>
               {service.price}
