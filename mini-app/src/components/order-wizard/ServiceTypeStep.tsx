@@ -1,72 +1,38 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useMemo, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  ArrowRight, Check, ChevronRight, Timer, MessageSquare, Shield,
-  Camera, HelpCircle, ChevronDown,
+  ArrowRight, Check, Timer, MessageSquare, Shield,
+  Camera, HelpCircle,
 } from 'lucide-react'
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
-import { SPACING, RADIUS, COLORS, FONT, TAP_SCALE } from './design-tokens'
+import { SPACING, RADIUS, COLORS, FONT, ICON_BOX, TAP_SCALE, CARD_PADDING, CARD_PADDING_PREMIUM } from './design-tokens'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVICE TYPE STEP — v11 «Clean Selection»
+   SERVICE TYPE STEP — v12 «Premium Catalog»
 
-   Design principles:
-   - Top 3 visible immediately (covers 80% of users)
-   - Rest collapsed under "Ещё N услуг" — discoverable, not noisy
-   - Assist card at position 4 (before fatigue)
-   - photo_task / other → fast mode (dashed cards at bottom)
-   - 5 elements per card: icon, title, description, price+duration, indicator
-   - No fabricated social proof, no badges, no section labels
-   - Trust footer at bottom — earns trust after showing value
-   - Selection: border + check + single haptic. Nothing else.
-   - All copy in Вы-form
-
-   Card order: popular first, then by natural flow
+   Principles:
+   - Premium services (diploma/masters) first — anchoring effect
+   - Two visually distinct card tiers: premium vs standard
+   - All services visible — no collapse, no hidden inventory
+   - Assist prompt at bottom (not mid-catalog)
+   - Solid borders everywhere — no dashed = no placeholder feel
+   - Selection: gold border + radio circle + trust line
+   - Descriptions sell outcomes, not deliverables
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ServiceTypeStepProps {
   selected: string | null
   onSelect: (id: string) => void
-  /** Triggers fast mode — optionally with a specific service id */
   onUrgentRequest?: (serviceId?: string) => void
 }
 
-// ─── Services excluded from standard catalog (route to fast mode) ─────
 const CUSTOM_FLOW_IDS = new Set(['photo_task', 'other'])
 
-// ─── Display order: popular first ─────────────────────────────────────
-const DISPLAY_ORDER: string[] = [
-  'coursework', 'report', 'essay',           // Top 3 — always visible
-  'presentation', 'practice', 'control',      // Expandable
-  'independent',                              // Expandable
-  'diploma', 'masters',                       // Premium (expandable)
-]
-
-const TOP_COUNT = 3 // How many cards shown before "Ещё"
-
-const CATALOG: ServiceType[] = (() => {
-  const byId = new Map(SERVICE_TYPES.map(s => [s.id, s]))
-  const result: ServiceType[] = []
-  const seen = new Set<string>()
-
-  for (const id of DISPLAY_ORDER) {
-    const service = byId.get(id)
-    if (service) {
-      result.push(service)
-      seen.add(id)
-    }
-  }
-
-  for (const service of SERVICE_TYPES) {
-    if (!seen.has(service.id) && !CUSTOM_FLOW_IDS.has(service.id)) {
-      result.push(service)
-    }
-  }
-
-  return result
-})()
+// All standard/premium services in display order (premium first)
+const CATALOG: ServiceType[] = SERVICE_TYPES.filter(s => !CUSTOM_FLOW_IDS.has(s.id))
+const CUSTOM_SERVICES: ServiceType[] = SERVICE_TYPES.filter(s => CUSTOM_FLOW_IDS.has(s.id))
 
 // ─── Haptic ──────────────────────────────────────────────────────────
 
@@ -76,7 +42,6 @@ function triggerHaptic() {
     const tg = (window as any).Telegram
     const haptic = tg?.WebApp?.HapticFeedback
     if (!haptic) return
-
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     if (isIOS && haptic.selectionChanged) {
       haptic.selectionChanged()
@@ -95,26 +60,14 @@ export function ServiceTypeStep({
   onSelect,
   onUrgentRequest,
 }: ServiceTypeStepProps) {
-  const { tier } = useCapability()
-  const [expanded, setExpanded] = useState(false)
   const selectedCardRef = useRef<HTMLDivElement>(null)
 
-  // If user already selected something in the collapsed section, keep it expanded
-  const hasSelectedInCollapsed = useMemo(() => {
-    if (!selected) return false
-    const collapsedIds = CATALOG.slice(TOP_COUNT).map(s => s.id)
-    return collapsedIds.includes(selected)
-  }, [selected])
-
-  const isExpanded = expanded || hasSelectedInCollapsed
-
-  const topServices = CATALOG.slice(0, TOP_COUNT)
-  const moreServices = CATALOG.slice(TOP_COUNT)
+  const premiumServices = useMemo(() => CATALOG.filter(s => s.category === 'premium'), [])
+  const standardServices = useMemo(() => CATALOG.filter(s => s.category !== 'premium'), [])
 
   const handleSelect = useCallback((id: string) => {
     triggerHaptic()
     onSelect(id)
-
     setTimeout(() => {
       selectedCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, 100)
@@ -125,18 +78,13 @@ export function ServiceTypeStep({
     onUrgentRequest?.(serviceId)
   }, [onUrgentRequest])
 
-  const toggleExpanded = useCallback(() => {
-    triggerHaptic()
-    setExpanded(prev => !prev)
-  }, [])
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-      {/* ─── Top services (always visible) ──────────────────── */}
-      {topServices.map((service, i) => (
+      {/* ─── Premium services ──────────────────────────────────── */}
+      {premiumServices.map((service, i) => (
         <div key={service.id} ref={selected === service.id ? selectedCardRef : undefined}>
-          <ServiceCard
+          <PremiumServiceCard
             service={service}
             selected={selected === service.id}
             onSelect={() => handleSelect(service.id)}
@@ -145,120 +93,270 @@ export function ServiceTypeStep({
         </div>
       ))}
 
-      {/* ─── Assist card at position 4 ──────────────────────── */}
-      {onUrgentRequest && (
-        <AssistCard onPress={() => handleFastMode()} index={TOP_COUNT} />
-      )}
+      {/* ─── Divider ───────────────────────────────────────────── */}
+      <div style={{
+        height: 1,
+        margin: `${SPACING.xs}px ${SPACING.xl}px`,
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
+      }} />
 
-      {/* ─── "Ещё N услуг" expander ────────────────────────── */}
-      {moreServices.length > 0 && (
-        <>
-          <motion.button
-            type="button"
-            onClick={toggleExpanded}
-            whileTap={{ scale: tier >= 2 ? 0.98 : 1 }}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: `${SPACING.md}px`,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-              userSelect: 'none',
-            }}
-          >
-            <span style={{
-              fontSize: FONT.size.sm,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.01em',
-            }}>
-              {isExpanded ? 'Свернуть' : `Ещё ${moreServices.length} услуг`}
-            </span>
-            <motion.div
-              animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown size={14} color="var(--text-muted)" />
-            </motion.div>
-          </motion.button>
-
-          <AnimatePresence initial={false}>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                style={{ overflow: 'hidden' }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
-                  {moreServices.map((service, i) => (
-                    <div
-                      key={service.id}
-                      ref={selected === service.id ? selectedCardRef : undefined}
-                    >
-                      <ServiceCard
-                        service={service}
-                        selected={selected === service.id}
-                        onSelect={() => handleSelect(service.id)}
-                        index={TOP_COUNT + 1 + i}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
-      )}
-
-      {/* ─── Custom flow cards (fast mode) ──────────────────── */}
-      {onUrgentRequest && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: SPACING.sm,
-          marginTop: SPACING.sm,
-        }}>
-          <PhotoTaskCard
-            onPress={() => handleFastMode('photo_task')}
-            index={CATALOG.length}
-          />
-          <CustomRequestCard
-            onPress={() => handleFastMode('other')}
-            index={CATALOG.length + 1}
+      {/* ─── Standard + express services ───────────────────────── */}
+      {standardServices.map((service, i) => (
+        <div key={service.id} ref={selected === service.id ? selectedCardRef : undefined}>
+          <ServiceCard
+            service={service}
+            selected={selected === service.id}
+            onSelect={() => handleSelect(service.id)}
+            index={premiumServices.length + 1 + i}
           />
         </div>
+      ))}
+
+      {/* ─── Divider ───────────────────────────────────────────── */}
+      <div style={{
+        height: 1,
+        margin: `${SPACING.xs}px ${SPACING.xl}px`,
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
+      }} />
+
+      {/* ─── Custom flow cards (photo + other) ─────────────────── */}
+      {onUrgentRequest && CUSTOM_SERVICES.map((service, i) => (
+        <CustomFlowCard
+          key={service.id}
+          service={service}
+          onPress={() => handleFastMode(service.id)}
+          index={CATALOG.length + i}
+        />
+      ))}
+
+      {/* ─── Assist prompt (bottom, inline — not a card) ───────── */}
+      {onUrgentRequest && (
+        <motion.button
+          type="button"
+          onClick={() => handleFastMode()}
+          whileTap={{ scale: TAP_SCALE.card }}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: SPACING.md,
+            padding: `${SPACING.lg}px ${SPACING.xl}px`,
+            background: COLORS.assist.bg,
+            border: `1px solid ${COLORS.assist.border}`,
+            borderRadius: RADIUS.md,
+            cursor: 'pointer',
+            textAlign: 'left',
+            WebkitTapHighlightColor: 'transparent',
+            userSelect: 'none',
+            touchAction: 'manipulation',
+          }}
+        >
+          <div style={{
+            width: ICON_BOX.md,
+            height: ICON_BOX.md,
+            borderRadius: RADIUS.sm,
+            background: COLORS.assist.icon,
+            border: `1px solid ${COLORS.gold.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <MessageSquare size={18} color="var(--gold-400)" strokeWidth={1.5} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontSize: FONT.size.lg,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              lineHeight: 1.3,
+            }}>
+              Сложная или нестандартная задача?
+            </div>
+            <div style={{
+              fontSize: FONT.size.sm,
+              color: 'var(--text-muted)',
+              marginTop: 2,
+            }}>
+              Напишите — разберёмся вместе
+            </div>
+          </div>
+          <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.5 }} />
+        </motion.button>
       )}
 
-      {/* ─── Trust footer ───────────────────────────────────── */}
+      {/* ─── Trust footer ───────────────────────────────────────── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
         padding: `${SPACING.lg}px ${SPACING.md}px ${SPACING.sm}px`,
-        fontSize: FONT.size['2xs'],
+        fontSize: FONT.size.xs,
         color: 'var(--text-muted)',
-        opacity: 0.5,
+        opacity: 0.7,
         letterSpacing: '0.01em',
         textAlign: 'center',
       }}>
-        <Shield size={9} color={COLORS.gold.primary} strokeWidth={1.5} style={{ flexShrink: 0 }} />
-        <span>Бесплатные правки · Возврат до старта · 93% сдают с 1 раза</span>
+        <Shield size={12} color={COLORS.gold.primary} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+        <span>Правки включены · Возврат до начала работы · 93% сдают с первого раза</span>
       </div>
     </div>
   )
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   SERVICE CARD — Clean, 5-element design
-   icon | title + description | price + duration | indicator
+   PREMIUM SERVICE CARD — Visually distinct, larger, gold accent
+   ═════════════════════════════════════════════════════════════════════════ */
+
+function PremiumServiceCard({
+  service,
+  selected,
+  onSelect,
+  index,
+}: {
+  service: ServiceType
+  selected: boolean
+  onSelect: () => void
+  index: number
+}) {
+  const Icon = service.icon
+  const { tier, canUseBlur } = useCapability()
+
+  const entranceTransition = tier === 1
+    ? { duration: 0 }
+    : { delay: Math.min(index * 0.05, 0.2), type: 'spring' as const, stiffness: 280, damping: 26 }
+
+  const backdropFilter = canUseBlur ? 'blur(24px) saturate(140%)' : 'none'
+
+  return (
+    <motion.button
+      type="button"
+      initial={tier >= 2 ? { opacity: 0, y: 10 } : false}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '50px' }}
+      transition={entranceTransition}
+      whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
+      onClick={onSelect}
+      style={{
+        width: '100%',
+        padding: CARD_PADDING_PREMIUM,
+        borderRadius: RADIUS.lg,
+        background: selected ? 'rgba(212, 175, 55, 0.05)' : COLORS.card.bgPremium,
+        backdropFilter,
+        WebkitBackdropFilter: backdropFilter,
+        border: selected
+          ? `1.5px solid ${COLORS.gold.borderStrong}`
+          : `1.5px solid ${COLORS.card.borderPremium}`,
+        boxShadow: selected
+          ? '0 0 24px -8px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(212, 175, 55, 0.06)'
+          : 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
+        position: 'relative',
+        overflow: 'hidden',
+        touchAction: 'manipulation',
+        userSelect: 'none',
+        transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
+      }}
+    >
+      {/* Gold accent line at top */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 20,
+        right: 20,
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.35), transparent)',
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {/* Icon — larger for premium */}
+        <div style={{
+          width: ICON_BOX.lg,
+          height: ICON_BOX.lg,
+          borderRadius: 13,
+          background: 'rgba(212, 175, 55, 0.08)',
+          border: '1px solid rgba(212, 175, 55, 0.20)',
+          boxShadow: selected ? COLORS.gold.shadow : '0 0 12px -4px rgba(212, 175, 55, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'box-shadow 0.3s',
+        }}>
+          <Icon
+            size={20}
+            color={COLORS.gold.primary}
+            strokeWidth={1.5}
+          />
+        </div>
+
+        {/* Title + description */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            fontSize: FONT.size.xl,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            lineHeight: 1.3,
+            letterSpacing: '-0.01em',
+          }}>
+            {service.label}
+          </span>
+          <div style={{
+            fontSize: FONT.size.sm,
+            color: 'var(--text-muted)',
+            lineHeight: 1.4,
+            marginTop: 2,
+          }}>
+            {service.description}
+          </div>
+        </div>
+
+        {/* Price + duration */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          flexShrink: 0,
+          gap: 3,
+        }}>
+          <span style={{
+            fontSize: FONT.size.base,
+            fontWeight: 700,
+            color: 'var(--gold-400)',
+            whiteSpace: 'nowrap',
+          }}>
+            {service.price}
+          </span>
+          <span style={{
+            fontSize: FONT.size.xs,
+            color: 'var(--text-muted)',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            opacity: 0.8,
+          }}>
+            <Timer size={10} />
+            {service.duration}
+          </span>
+        </div>
+
+        {/* Selection indicator — radio circle */}
+        <SelectionIndicator selected={selected} />
+      </div>
+
+      {/* Post-selection trust line */}
+      <TrustLine visible={selected} />
+    </motion.button>
+  )
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   STANDARD SERVICE CARD — Clean, solid, aligned with design system
    ═════════════════════════════════════════════════════════════════════════ */
 
 function ServiceCard({
@@ -274,28 +372,13 @@ function ServiceCard({
 }) {
   const Icon = service.icon
   const isCustomPrice = service.priceNum === 0
-  const isPremium = service.category === 'premium'
   const { tier, canUseBlur } = useCapability()
 
   const entranceTransition = tier === 1
     ? { duration: 0 }
-    : {
-        delay: Math.min(index * 0.04, 0.3),
-        type: 'spring' as const,
-        stiffness: 300,
-        damping: 28,
-      }
+    : { delay: Math.min(index * 0.04, 0.3), type: 'spring' as const, stiffness: 300, damping: 28 }
 
-  const backdropFilter = canUseBlur ? 'blur(16px) saturate(120%)' : 'none'
-  const cardBg = canUseBlur ? COLORS.card.bg : 'rgba(12, 12, 10, 0.92)'
-
-  // Premium gradient border (subtle distinction for diploma/masters)
-  const premiumBorderStyle = isPremium && !selected ? {
-    border: '1.5px solid transparent',
-    backgroundImage: `linear-gradient(${cardBg}, ${cardBg}), linear-gradient(135deg, rgba(201,162,39,0.25), rgba(201,162,39,0.05))`,
-    backgroundOrigin: 'border-box' as const,
-    backgroundClip: 'padding-box, border-box' as const,
-  } : {}
+  const backdropFilter = canUseBlur ? 'blur(20px) saturate(130%)' : 'none'
 
   return (
     <motion.button
@@ -308,14 +391,17 @@ function ServiceCard({
       onClick={onSelect}
       style={{
         width: '100%',
-        padding: `${SPACING.lg}px`,
+        padding: CARD_PADDING,
         borderRadius: RADIUS.md,
-        background: selected ? 'rgba(201, 162, 39, 0.06)' : cardBg,
+        background: selected ? 'rgba(212, 175, 55, 0.04)' : COLORS.card.bg,
         backdropFilter,
         WebkitBackdropFilter: backdropFilter,
         border: selected
           ? `1.5px solid ${COLORS.gold.borderStrong}`
           : `1px solid ${COLORS.card.border}`,
+        boxShadow: selected
+          ? '0 0 24px -8px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(212, 175, 55, 0.06)'
+          : 'none',
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -323,47 +409,35 @@ function ServiceCard({
         overflow: 'hidden',
         touchAction: 'manipulation',
         userSelect: 'none',
-        transition: 'border-color 0.2s, background 0.2s',
-        ...premiumBorderStyle,
+        transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
       }}
     >
-      {/* Premium inner glow */}
-      {isPremium && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: RADIUS.md,
-          background: 'radial-gradient(ellipse at top right, rgba(201,162,39,0.04) 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }} />
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.md }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         {/* Icon */}
         <div style={{
-          width: 34,
-          height: 34,
+          width: ICON_BOX.md,
+          height: ICON_BOX.md,
           borderRadius: RADIUS.sm,
-          background: selected
-            ? 'rgba(201, 162, 39, 0.08)'
-            : isPremium ? 'rgba(201, 162, 39, 0.04)' : 'rgba(201, 162, 39, 0.03)',
+          background: selected ? 'rgba(212, 175, 55, 0.08)' : COLORS.gold.soft,
+          border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.15)' : COLORS.gold.border}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          transition: 'background 0.2s',
+          transition: 'background 0.2s, border-color 0.2s',
         }}>
           <Icon
-            size={16}
-            color={selected ? COLORS.gold.primary : isPremium ? COLORS.gold.badge : 'var(--text-muted)'}
-            strokeWidth={1.7}
+            size={18}
+            color={selected ? COLORS.gold.primary : 'var(--text-muted)'}
+            strokeWidth={1.5}
+            style={{ opacity: selected ? 1 : 0.7, transition: 'opacity 0.2s' }}
           />
         </div>
 
         {/* Title + description */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{
-            fontSize: FONT.size.base,
+            fontSize: FONT.size.lg,
             fontWeight: 700,
             color: 'var(--text-primary)',
             lineHeight: 1.3,
@@ -374,11 +448,12 @@ function ServiceCard({
           <div style={{
             fontSize: FONT.size.sm,
             color: 'var(--text-muted)',
-            lineHeight: 1.3,
-            marginTop: 1,
-            whiteSpace: 'nowrap',
+            lineHeight: 1.4,
+            marginTop: 2,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical' as const,
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
           }}>
             {service.description}
           </div>
@@ -390,11 +465,11 @@ function ServiceCard({
           flexDirection: 'column',
           alignItems: 'flex-end',
           flexShrink: 0,
-          gap: 2,
+          gap: 3,
         }}>
           {isCustomPrice ? (
             <span style={{
-              fontSize: FONT.size.xs,
+              fontSize: FONT.size.sm,
               fontWeight: 600,
               color: 'var(--text-muted)',
               whiteSpace: 'nowrap',
@@ -403,100 +478,54 @@ function ServiceCard({
             </span>
           ) : (
             <span style={{
-              fontSize: FONT.size.sm,
+              fontSize: FONT.size.md,
               fontWeight: 700,
               color: selected ? 'var(--gold-400)' : 'var(--text-secondary)',
               whiteSpace: 'nowrap',
+              transition: 'color 0.2s',
             }}>
               {service.price}
             </span>
           )}
           <span style={{
-            fontSize: FONT.size['2xs'],
+            fontSize: FONT.size.xs,
             color: 'var(--text-muted)',
             whiteSpace: 'nowrap',
             display: 'flex',
             alignItems: 'center',
-            gap: 3,
-            opacity: 0.6,
+            gap: 4,
+            opacity: 0.8,
           }}>
-            <Timer size={9} />
+            <Timer size={10} />
             {service.duration}
           </span>
         </div>
 
         {/* Selection indicator */}
-        <AnimatePresence mode="popLayout">
-          {selected ? (
-            <motion.div
-              key="check"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: RADIUS.full,
-                background: COLORS.gold.primary,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Check size={12} color="#121212" strokeWidth={3} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="chevron"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.15 }}
-              exit={{ opacity: 0 }}
-              style={{ flexShrink: 0 }}
-            >
-              <ChevronRight size={14} color="var(--text-muted)" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <SelectionIndicator selected={selected} />
       </div>
 
       {/* Post-selection trust line */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginTop: SPACING.sm,
-              paddingTop: SPACING.sm,
-              borderTop: '1px solid rgba(201,162,39,0.08)',
-              fontSize: FONT.size['2xs'],
-              color: COLORS.gold.badge,
-            }}>
-              <Shield size={10} strokeWidth={1.5} />
-              <span>Оплата после обсуждения деталей</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TrustLine visible={selected} />
     </motion.button>
   )
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   SPECIAL FLOW CARDS — Route to fast mode
+   CUSTOM FLOW CARD — photo_task / other (solid border, not dashed)
    ═════════════════════════════════════════════════════════════════════════ */
 
-function PhotoTaskCard({ onPress, index }: { onPress: () => void; index: number }) {
+function CustomFlowCard({
+  service,
+  onPress,
+  index,
+}: {
+  service: ServiceType
+  onPress: () => void
+  index: number
+}) {
   const { tier } = useCapability()
+  const Icon = service.icon
 
   return (
     <motion.button
@@ -511,10 +540,10 @@ function PhotoTaskCard({ onPress, index }: { onPress: () => void; index: number 
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        gap: SPACING.md,
-        padding: `${SPACING.md + 2}px ${SPACING.lg}px`,
-        background: 'rgba(201, 162, 39, 0.015)',
-        border: '1.5px dashed rgba(201, 162, 39, 0.1)',
+        gap: 14,
+        padding: `${SPACING.md + 2}px ${SPACING.xl}px`,
+        background: COLORS.card.bg,
+        border: `1px solid ${COLORS.card.border}`,
         borderRadius: RADIUS.md,
         cursor: 'pointer',
         textAlign: 'left',
@@ -523,132 +552,98 @@ function PhotoTaskCard({ onPress, index }: { onPress: () => void; index: number 
         touchAction: 'manipulation',
       }}
     >
-      <Camera size={16} color="var(--gold-400)" strokeWidth={1.7} style={{ flexShrink: 0 }} />
+      <Icon size={18} color="var(--gold-400)" strokeWidth={1.5} style={{ flexShrink: 0, opacity: 0.7 }} />
       <div style={{ flex: 1 }}>
-        <span style={{ fontSize: FONT.size.sm, fontWeight: 600, color: 'var(--text-primary)' }}>
-          Задача по фото
+        <span style={{ fontSize: FONT.size.lg, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {service.label}
         </span>
         <span style={{
-          fontSize: FONT.size.xs,
-          color: 'var(--text-muted)',
-          marginLeft: 8,
-        }}>
-          Сфотографируйте — решим
-        </span>
-      </div>
-      <ArrowRight size={13} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.3 }} />
-    </motion.button>
-  )
-}
-
-function CustomRequestCard({ onPress, index }: { onPress: () => void; index: number }) {
-  const { tier } = useCapability()
-
-  return (
-    <motion.button
-      type="button"
-      initial={tier >= 2 ? { opacity: 0, y: 8 } : false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: Math.min(index * 0.04, 0.3) }}
-      whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
-      onClick={onPress}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: SPACING.md,
-        padding: `${SPACING.md + 2}px ${SPACING.lg}px`,
-        background: 'none',
-        border: '1px dashed rgba(201, 162, 39, 0.08)',
-        borderRadius: RADIUS.md,
-        cursor: 'pointer',
-        textAlign: 'left',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-        touchAction: 'manipulation',
-      }}
-    >
-      <HelpCircle size={16} color="var(--text-muted)" strokeWidth={1.7} style={{ flexShrink: 0 }} />
-      <div style={{ flex: 1 }}>
-        <span style={{ fontSize: FONT.size.sm, fontWeight: 600, color: 'var(--text-primary)' }}>
-          Другое
-        </span>
-        <span style={{
-          fontSize: FONT.size.xs,
-          color: 'var(--text-muted)',
-          marginLeft: 8,
-        }}>
-          Опишите задачу — подберём формат
-        </span>
-      </div>
-      <ArrowRight size={13} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.2 }} />
-    </motion.button>
-  )
-}
-
-/* ═════════════════════════════════════════════════════════════════════════
-   ASSIST CARD — "Не уверены?" at position 4
-   ═════════════════════════════════════════════════════════════════════════ */
-
-function AssistCard({ onPress, index }: { onPress: () => void; index: number }) {
-  const { tier } = useCapability()
-
-  return (
-    <motion.button
-      type="button"
-      initial={tier >= 2 ? { opacity: 0, y: 8 } : false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: Math.min(index * 0.04, 0.3) }}
-      whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
-      onClick={onPress}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: SPACING.md,
-        padding: `${SPACING.lg}px`,
-        background: 'rgba(201, 162, 39, 0.02)',
-        border: '1.5px dashed rgba(201, 162, 39, 0.12)',
-        borderRadius: RADIUS.lg,
-        cursor: 'pointer',
-        textAlign: 'left',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-        touchAction: 'manipulation',
-      }}
-    >
-      <div style={{
-        width: 34,
-        height: 34,
-        borderRadius: RADIUS.md,
-        background: 'rgba(201, 162, 39, 0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <MessageSquare size={16} color="var(--gold-400)" strokeWidth={1.7} />
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{
           fontSize: FONT.size.sm,
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          lineHeight: 1.3,
-        }}>
-          Не уверены, что выбрать?
-        </div>
-        <div style={{
-          fontSize: FONT.size.xs,
           color: 'var(--text-muted)',
-          marginTop: 1,
+          marginLeft: 8,
         }}>
-          Напишите — подберём вместе
-        </div>
+          {service.description}
+        </span>
       </div>
-      <ArrowRight size={13} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.4 }} />
+      <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.35 }} />
     </motion.button>
+  )
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   SHARED SUB-COMPONENTS
+   ═════════════════════════════════════════════════════════════════════════ */
+
+function SelectionIndicator({ selected }: { selected: boolean }) {
+  return (
+    <AnimatePresence mode="popLayout">
+      {selected ? (
+        <motion.div
+          key="check"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: RADIUS.full,
+            background: COLORS.gold.primary,
+            boxShadow: '0 0 12px -2px rgba(212, 175, 55, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Check size={13} color="#121212" strokeWidth={3} />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="ring"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: RADIUS.full,
+            border: '1.5px solid rgba(255, 255, 255, 0.08)',
+            background: 'transparent',
+            flexShrink: 0,
+          }}
+        />
+      )}
+    </AnimatePresence>
+  )
+}
+
+function TrustLine({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ overflow: 'hidden' }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: SPACING.sm,
+            paddingTop: SPACING.sm,
+            borderTop: '1px solid rgba(212, 175, 55, 0.08)',
+            fontSize: FONT.size['2xs'],
+            color: COLORS.gold.badge,
+          }}>
+            <Shield size={10} strokeWidth={1.5} />
+            <span>Сначала обсудим детали — оплата потом</span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
