@@ -26,6 +26,7 @@ import {
   DRAFT_KEY,
 } from '../components/order-wizard'
 import { FastComposer } from '../components/order-wizard/FastComposer'
+import { AuroraBackground } from '../components/order-wizard/AuroraBackground'
 import { PhotoTaskComposer } from '../components/order-wizard/PhotoTaskComposer'
 import { OtherComposer } from '../components/order-wizard/OtherComposer'
 // homeStyles moved to SuccessScreen component
@@ -49,9 +50,24 @@ const slideVariants = prefersReducedMotion
       exit: () => ({ opacity: 0 }),
     }
   : {
-      enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-      center: { x: 0, opacity: 1 },
-      exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
+      enter: (dir: number) => ({
+        x: dir > 0 ? 60 : -60,
+        opacity: 0,
+        scale: 0.97,
+        filter: 'blur(4px)',
+      }),
+      center: {
+        x: 0,
+        opacity: 1,
+        scale: 1,
+        filter: 'blur(0px)',
+      },
+      exit: (dir: number) => ({
+        x: dir < 0 ? 60 : -60,
+        opacity: 0,
+        scale: 0.97,
+        filter: 'blur(4px)',
+      }),
     }
 
 const FAST_STEPS_GENERIC = [
@@ -348,7 +364,33 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
 
   const goNext = useCallback(() => {
+    // Choreographed step transition: haptic + rising whoosh
     haptic('medium')
+    setTimeout(() => {
+      try {
+        const tg = (window as any).Telegram // eslint-disable-line @typescript-eslint/no-explicit-any
+        tg?.WebApp?.HapticFeedback?.impactOccurred?.('soft')
+      } catch { /* noop */ }
+    }, 50)
+    // Rising sine sweep (step_forward sound)
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (AudioCtx) {
+        const ctx = new AudioCtx()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(400, ctx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.12)
+        gain.gain.setValueAtTime(0.04, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.18)
+        setTimeout(() => ctx.close().catch(() => {}), 250)
+      }
+    } catch { /* audio optional */ }
     setDirection(1)
     setStep((s) => Math.min(s + 1, totalSteps))
   }, [haptic, totalSteps])
@@ -623,7 +665,11 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       background: 'var(--bg-main)',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
     }}>
+      {/* Aurora ambient background */}
+      <AuroraBackground />
+
       {/* Scrollable Content */}
       <div
         ref={scrollContainerRef}
@@ -863,7 +909,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               {isFastMode && preselectedType === 'photo_task' ? (
                 <PhotoTaskComposer
@@ -931,7 +977,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               <RequirementsStep
                 serviceTypeId={serviceTypeId}
@@ -957,7 +1003,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               <DeadlineStep
                 selected={deadline}

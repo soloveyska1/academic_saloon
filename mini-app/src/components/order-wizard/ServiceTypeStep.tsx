@@ -7,6 +7,7 @@ import {
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
 import { SPACING, RADIUS, COLORS, FONT, ICON_BOX, TAP_SCALE, CARD_PADDING, CARD_PADDING_PREMIUM } from './design-tokens'
+import { PremiumPriceTag } from './PremiumPriceTag'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -165,7 +166,13 @@ export function ServiceTypeStep({
   }, [onUrgentRequest])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm, position: 'relative' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: SPACING.sm,
+      position: 'relative',
+      scrollSnapType: 'y proximity' as const,
+    }}>
 
       {/* ── Noise texture overlay (expensive paper feel) ──────── */}
       <div style={{
@@ -480,6 +487,7 @@ function PremiumServiceCard({
         touchAction: 'manipulation',
         userSelect: 'none',
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
+        scrollSnapAlign: 'start' as const,
       }}
     >
       {/* Gold accent line at top */}
@@ -639,16 +647,7 @@ function PremiumServiceCard({
           flexShrink: 0,
           gap: SPACING.xs,
         }}>
-          <span style={{
-            fontFamily: FONT.family.mono,
-            fontSize: FONT.size.md,
-            fontWeight: 500,
-            color: 'var(--gold-400)',
-            whiteSpace: 'nowrap',
-            letterSpacing: '0.02em',
-          }}>
-            {service.price}
-          </span>
+          <PremiumPriceTag price={service.price} selected={selected} />
           <span style={{
             fontSize: FONT.size.xs,
             color: 'var(--text-muted)',
@@ -692,7 +691,6 @@ function ServiceCard({
   index: number
 }) {
   const Icon = service.icon
-  const isCustomPrice = service.priceNum === 0
   const { tier, canUseBlur } = useCapability()
 
   const entranceTransition = tier === 1
@@ -731,6 +729,7 @@ function ServiceCard({
         touchAction: 'manipulation',
         userSelect: 'none',
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
+        scrollSnapAlign: 'start' as const,
       }}
     >
       {/* Selected: gold left accent bar */}
@@ -814,28 +813,7 @@ function ServiceCard({
           flexShrink: 0,
           gap: 3,
         }}>
-          {isCustomPrice ? (
-            <span style={{
-              fontSize: FONT.size.sm,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              whiteSpace: 'nowrap',
-            }}>
-              По запросу
-            </span>
-          ) : (
-            <span style={{
-              fontFamily: FONT.family.mono,
-              fontSize: FONT.size.sm,
-              fontWeight: 500,
-              color: selected ? 'var(--gold-400)' : 'var(--text-secondary)',
-              whiteSpace: 'nowrap',
-              letterSpacing: '0.02em',
-              transition: 'color 0.2s',
-            }}>
-              {service.price}
-            </span>
-          )}
+          <PremiumPriceTag price={service.price} selected={selected} />
           <span style={{
             fontSize: FONT.size.xs,
             color: 'var(--text-muted)',
@@ -1078,12 +1056,13 @@ function IncludedItem({ text }: { text: string }) {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 4,
+      gap: 5,
       fontSize: FONT.size['2xs'],
-      color: 'rgba(74, 222, 128, 0.7)',
+      color: 'rgba(212, 175, 55, 0.65)',
       fontWeight: 500,
+      letterSpacing: '0.01em',
     }}>
-      <CheckCircle size={9} strokeWidth={2} />
+      <Check size={9} strokeWidth={2.5} style={{ opacity: 0.7 }} />
       <span>{text}</span>
     </div>
   )
