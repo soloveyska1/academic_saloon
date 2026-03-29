@@ -7,6 +7,7 @@ import {
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
 import { SPACING, RADIUS, COLORS, FONT, ICON_BOX, TAP_SCALE, CARD_PADDING, CARD_PADDING_PREMIUM } from './design-tokens'
+import { PremiumPriceTag } from './PremiumPriceTag'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -639,16 +640,7 @@ function PremiumServiceCard({
           flexShrink: 0,
           gap: SPACING.xs,
         }}>
-          <span style={{
-            fontFamily: FONT.family.mono,
-            fontSize: FONT.size.md,
-            fontWeight: 500,
-            color: 'var(--gold-400)',
-            whiteSpace: 'nowrap',
-            letterSpacing: '0.02em',
-          }}>
-            {service.price}
-          </span>
+          <PremiumPriceTag price={service.price} selected={selected} />
           <span style={{
             fontSize: FONT.size.xs,
             color: 'var(--text-muted)',
@@ -814,28 +806,7 @@ function ServiceCard({
           flexShrink: 0,
           gap: 3,
         }}>
-          {isCustomPrice ? (
-            <span style={{
-              fontSize: FONT.size.sm,
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              whiteSpace: 'nowrap',
-            }}>
-              По запросу
-            </span>
-          ) : (
-            <span style={{
-              fontFamily: FONT.family.mono,
-              fontSize: FONT.size.sm,
-              fontWeight: 500,
-              color: selected ? 'var(--gold-400)' : 'var(--text-secondary)',
-              whiteSpace: 'nowrap',
-              letterSpacing: '0.02em',
-              transition: 'color 0.2s',
-            }}>
-              {service.price}
-            </span>
-          )}
+          <PremiumPriceTag price={service.price} selected={selected} />
           <span style={{
             fontSize: FONT.size.xs,
             color: 'var(--text-muted)',
