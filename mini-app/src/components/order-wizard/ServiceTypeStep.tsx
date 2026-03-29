@@ -136,7 +136,7 @@ export function ServiceTypeStep({
   }, [onUrgentRequest])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
 
       {/* ─── Draft recovery card ───────────────────────────────── */}
       {draftInfo && onContinueDraft && !selected && (
@@ -240,11 +240,11 @@ export function ServiceTypeStep({
         </div>
       ))}
 
-      {/* ─── Divider ───────────────────────────────────────────── */}
+      {/* ─── Section divider ─────────────────────────────────── */}
       <div style={{
         height: 1,
-        margin: `${SPACING.xs}px ${SPACING.xl}px`,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
+        margin: `${SPACING.lg}px ${SPACING.xl}px`,
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.06), rgba(180,190,210,0.04), transparent)',
       }} />
 
       {/* ─── Standard + express services ───────────────────────── */}
@@ -259,11 +259,11 @@ export function ServiceTypeStep({
         </div>
       ))}
 
-      {/* ─── Divider ───────────────────────────────────────────── */}
+      {/* ─── Section divider ─────────────────────────────────── */}
       <div style={{
         height: 1,
-        margin: `${SPACING.xs}px ${SPACING.xl}px`,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
+        margin: `${SPACING.lg}px ${SPACING.xl}px`,
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.06), rgba(180,190,210,0.04), transparent)',
       }} />
 
       {/* ─── Custom flow cards (photo + other) ─────────────────── */}
@@ -396,8 +396,8 @@ function PremiumServiceCard({
           ? `1.5px solid ${COLORS.gold.borderStrong}`
           : `1.5px solid ${COLORS.card.borderPremium}`,
         boxShadow: selected
-          ? '0 0 24px -8px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(212, 175, 55, 0.06)'
-          : 'none',
+          ? '0 0 24px -8px rgba(212, 175, 55, 0.15), inset 0 1px 0 rgba(212, 175, 55, 0.08)'
+          : COLORS.card.insetHighlight,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -408,37 +408,75 @@ function PremiumServiceCard({
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
       }}
     >
-      {/* Gold accent line at top */}
+      {/* Gold accent line at top — animated shimmer */}
       <div style={{
         position: 'absolute',
         top: 0,
-        left: 20,
-        right: 20,
+        left: 0,
+        right: 0,
         height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.35), transparent)',
+        overflow: 'hidden',
         pointerEvents: 'none',
-      }} />
+      }}>
+        <div style={{
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent 15%, rgba(212, 175, 55, 0.35) 50%, transparent 85%)',
+        }} />
+      </div>
+
+      {/* Selected: gold left accent bar */}
+      {selected && (
+        <motion.div
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '18%',
+            bottom: '18%',
+            width: 3,
+            borderRadius: '0 2px 2px 0',
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.8), rgba(212,175,55,0.4))',
+            transformOrigin: 'top',
+          }}
+        />
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {/* Icon — larger for premium */}
+        {/* Icon — larger for premium, with glow on select */}
         <div style={{
           width: ICON_BOX.lg,
           height: ICON_BOX.lg,
           borderRadius: 13,
-          background: 'rgba(212, 175, 55, 0.08)',
-          border: '1px solid rgba(212, 175, 55, 0.20)',
-          boxShadow: selected ? COLORS.gold.shadow : '0 0 12px -4px rgba(212, 175, 55, 0.08)',
+          background: selected
+            ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 70%)'
+            : 'rgba(212, 175, 55, 0.08)',
+          border: `1px solid rgba(212, 175, 55, ${selected ? 0.25 : 0.20})`,
+          boxShadow: selected
+            ? '0 0 16px -4px rgba(212, 175, 55, 0.25), inset 0 0 8px rgba(212, 175, 55, 0.06)'
+            : '0 0 12px -4px rgba(212, 175, 55, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          transition: 'box-shadow 0.3s',
+          transition: 'all 0.3s ease',
         }}>
-          <Icon
-            size={20}
-            color={COLORS.gold.primary}
-            strokeWidth={1.5}
-          />
+          <motion.div
+            animate={{ scale: selected ? 1.08 : 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            <Icon
+              size={20}
+              color={COLORS.gold.primary}
+              strokeWidth={1.5}
+              style={{
+                filter: selected ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.4))' : 'none',
+                transition: 'filter 0.3s',
+              }}
+            />
+          </motion.div>
         </div>
 
         {/* Title + description */}
@@ -447,16 +485,17 @@ function PremiumServiceCard({
             fontSize: FONT.size.xl,
             fontWeight: 700,
             color: 'var(--text-primary)',
-            lineHeight: 1.3,
-            letterSpacing: '-0.01em',
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
           }}>
             {service.label}
           </span>
           <div style={{
             fontSize: FONT.size.sm,
             color: 'var(--text-muted)',
-            lineHeight: 1.4,
-            marginTop: 2,
+            lineHeight: 1.45,
+            marginTop: SPACING.xs,
+            letterSpacing: '0.01em',
           }}>
             {service.description}
           </div>
@@ -468,13 +507,14 @@ function PremiumServiceCard({
           flexDirection: 'column',
           alignItems: 'flex-end',
           flexShrink: 0,
-          gap: 3,
+          gap: SPACING.xs,
         }}>
           <span style={{
             fontSize: FONT.size.base,
-            fontWeight: 700,
+            fontWeight: 600,
             color: 'var(--gold-400)',
             whiteSpace: 'nowrap',
+            letterSpacing: '-0.01em',
           }}>
             {service.price}
           </span>
@@ -551,7 +591,7 @@ function ServiceCard({
           : `1px solid ${COLORS.card.border}`,
         boxShadow: selected
           ? '0 0 24px -8px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(212, 175, 55, 0.06)'
-          : 'none',
+          : COLORS.card.insetHighlight,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -562,25 +602,50 @@ function ServiceCard({
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
       }}
     >
+      {/* Selected: gold left accent bar */}
+      {selected && (
+        <motion.div
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '18%',
+            bottom: '18%',
+            width: 3,
+            borderRadius: '0 2px 2px 0',
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.7), rgba(212,175,55,0.3))',
+            transformOrigin: 'top',
+          }}
+        />
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         {/* Icon */}
         <div style={{
           width: ICON_BOX.md,
           height: ICON_BOX.md,
           borderRadius: RADIUS.sm,
-          background: selected ? 'rgba(212, 175, 55, 0.08)' : COLORS.gold.soft,
+          background: selected
+            ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 70%)'
+            : COLORS.gold.soft,
           border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.15)' : COLORS.gold.border}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          transition: 'background 0.2s, border-color 0.2s',
+          transition: 'all 0.3s ease',
         }}>
           <Icon
             size={18}
             color={selected ? COLORS.gold.primary : 'var(--text-muted)'}
             strokeWidth={1.5}
-            style={{ opacity: selected ? 1 : 0.7, transition: 'opacity 0.2s' }}
+            style={{
+              opacity: selected ? 1 : 0.7,
+              filter: selected ? 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.3))' : 'none',
+              transition: 'opacity 0.2s, filter 0.3s',
+            }}
           />
         </div>
 
@@ -590,16 +655,17 @@ function ServiceCard({
             fontSize: FONT.size.lg,
             fontWeight: 700,
             color: 'var(--text-primary)',
-            lineHeight: 1.3,
-            letterSpacing: '-0.01em',
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
           }}>
             {service.label}
           </span>
           <div style={{
             fontSize: FONT.size.sm,
             color: 'var(--text-muted)',
-            lineHeight: 1.4,
-            marginTop: 2,
+            lineHeight: 1.45,
+            marginTop: SPACING.xs,
+            letterSpacing: '0.01em',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical' as const,
@@ -770,45 +836,40 @@ function GuaranteeBadges({ serviceId }: { serviceId: string }) {
 
 function SelectionIndicator({ selected }: { selected: boolean }) {
   return (
-    <AnimatePresence mode="popLayout">
-      {selected ? (
-        <motion.div
-          key="check"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: RADIUS.full,
-            background: COLORS.gold.primary,
-            boxShadow: '0 0 12px -2px rgba(212, 175, 55, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Check size={13} color="#121212" strokeWidth={3} />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="ring"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: RADIUS.full,
-            border: '1.5px solid rgba(255, 255, 255, 0.08)',
-            background: 'transparent',
-            flexShrink: 0,
-          }}
-        />
-      )}
-    </AnimatePresence>
+    <div style={{
+      width: 22,
+      height: 22,
+      borderRadius: RADIUS.full,
+      border: `1.5px solid ${selected ? COLORS.gold.primary : 'rgba(255, 255, 255, 0.10)'}`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      transition: 'border-color 0.2s ease',
+    }}>
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.05 }}
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: RADIUS.full,
+              background: COLORS.gold.primary,
+              boxShadow: '0 0 8px -1px rgba(212, 175, 55, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Check size={9} color="#0A0A0A" strokeWidth={3} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 

@@ -1,6 +1,6 @@
 /**
  * Design tokens for Order Wizard — aligned with global design system.
- * Uses the same values as homepage glass cards.
+ * v13: Premium visual refinements — depth, typography, temperature
  */
 
 // ─── Spacing Scale (8px rhythm) ─────────────────────────────────────────
@@ -36,11 +36,16 @@ export const COLORS = {
     badge: 'rgba(212, 175, 55, 0.75)',
   },
   card: {
-    bg: 'rgba(14, 13, 12, 0.88)',
-    bgPremium: 'linear-gradient(145deg, rgba(212, 175, 55, 0.05), rgba(14, 13, 12, 0.88) 40%)',
+    // Standard: cool undertone for subtle hierarchy
+    bg: 'rgba(13, 13, 16, 0.88)',
+    // Premium: warm undertone — feels closer, more valuable
+    bgPremium: 'linear-gradient(145deg, rgba(212, 175, 55, 0.05), rgba(18, 15, 10, 0.90) 40%)',
     border: 'rgba(255, 255, 255, 0.06)',
     borderPremium: 'rgba(212, 175, 55, 0.15)',
     borderFocused: 'rgba(212, 175, 55, 0.15)',
+    // Inset top highlight (glass lit edge — Raycast/Vercel style)
+    insetHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+    insetHighlightSelected: 'inset 0 1px 0 rgba(212, 175, 55, 0.06)',
   },
   assist: {
     primary: 'var(--gold-400)',
@@ -90,5 +95,5 @@ export const TAP_SCALE = {
 } as const
 
 // ─── Card Padding ───────────────────────────────────────────────────────
-export const CARD_PADDING = `${SPACING.lg}px ${SPACING.xl - 2}px`
-export const CARD_PADDING_PREMIUM = `${SPACING.xl - 2}px ${SPACING.xl}px`
+export const CARD_PADDING = `14px 18px`
+export const CARD_PADDING_PREMIUM = `20px 20px`
