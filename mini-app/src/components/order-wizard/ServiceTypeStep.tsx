@@ -691,7 +691,6 @@ function ServiceCard({
   index: number
 }) {
   const Icon = service.icon
-  const isCustomPrice = service.priceNum === 0
   const { tier, canUseBlur } = useCapability()
 
   const entranceTransition = tier === 1
