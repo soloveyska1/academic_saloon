@@ -567,9 +567,10 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         style={{
           position: 'relative',
           padding: '28px 24px 24px',
-          borderRadius: 12,
+          borderRadius: 16,
           background: 'linear-gradient(165deg, rgba(212,175,55,0.04) 0%, rgba(20,20,23,0.6) 35%, rgba(20,20,23,0.6) 100%)',
           border: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
           overflow: 'hidden',
         }}
       >
@@ -2083,7 +2084,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             className="w-full max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col"
             style={{
               background: DS.colors.bgSurface,
-              borderRadius: '12px 12px 0 0',
+              borderRadius: '24px 24px 0 0',
             }}
           >
             {/* ─── Header ─── */}
@@ -2215,7 +2216,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
                       display: 'flex', alignItems: 'center', gap: 8,
                     }}>
-                      <FileImage size={11} color="rgba(34,197,94,0.7)" />
+                      <FileImage size={11} color="rgba(212,175,55,0.7)" />
                       <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                         {screenshot?.name}
                       </span>
@@ -2228,7 +2229,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                     borderRadius: 8,
                     cursor: 'pointer',
                     background: 'transparent',
-                    border: '1px dashed rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.08)',
                   }}>
                     <input
                       type="file"
@@ -2421,7 +2422,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
             className="w-full max-w-[480px] overflow-hidden flex flex-col"
             style={{
               background: DS.colors.bgSurface,
-              borderRadius: '12px 12px 0 0',
+              borderRadius: '24px 24px 0 0',
             }}
           >
             {/* Header */}
@@ -2948,8 +2949,9 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
         style={{
           width: '100%',
           padding: '16px 20px',
-          borderRadius: 12,
+          borderRadius: 16,
           background: 'rgba(255,255,255,0.02)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.04)',
           cursor: 'pointer',
           display: 'flex',
