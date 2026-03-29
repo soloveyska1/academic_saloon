@@ -98,19 +98,19 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Hint */}
+      {/* Hint — short, benefit-framed */}
       <div style={{
-        fontSize: 13,
+        fontSize: 12,
         lineHeight: 1.5,
         color: 'rgba(255,255,255,0.35)',
         padding: '0 4px',
         marginBottom: 2,
       }}>
-        Базовая цена — при стандартных сроках. За скорость — наценка.
+        Чем больше времени — тем ниже стоимость
       </div>
 
       {/* Sections */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {sections.map((section, sectionIndex) => (
           <DeadlineSection
             key={section.category}
@@ -121,6 +121,18 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
             basePrice={basePrice}
           />
         ))}
+      </div>
+
+      {/* Reassurance */}
+      <div style={{
+        fontSize: 11,
+        color: 'var(--text-muted)',
+        opacity: 0.4,
+        textAlign: 'center',
+        padding: '8px 0 0',
+        letterSpacing: '0.01em',
+      }}>
+        Точную стоимость обсудим после оформления
       </div>
     </div>
   )
@@ -150,26 +162,21 @@ function DeadlineSection({
       transition={{ delay: sectionIndex * 0.06, type: 'spring', stiffness: 300, damping: 28 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
     >
-      {/* Section header — plain colored text */}
+      {/* Section header — premium label */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         marginBottom: 8,
-        padding: '0 2px',
+        padding: '0 4px',
       }}>
-        <div style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          background: section.accent,
-          flexShrink: 0,
-        }} />
         <span style={{
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: 600,
           color: section.accent,
-          letterSpacing: '0.02em',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase' as const,
+          opacity: 0.7,
         }}>
           {section.title}
         </span>
