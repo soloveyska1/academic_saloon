@@ -281,7 +281,7 @@ export function SuccessScreen({
                     {loyaltySavings > 0 && (
                       <div style={RECEIPT_ROW}>
                         <span style={RECEIPT_LABEL}>Скидка {loyaltyDiscount}%</span>
-                        <span style={{ ...RECEIPT_VALUE, color: '#86efac' }}>
+                        <span style={{ ...RECEIPT_VALUE, color: 'rgba(212, 175, 55, 0.75)' }}>
                           −{loyaltySavings.toLocaleString('ru-RU')} ₽
                         </span>
                       </div>
@@ -291,7 +291,7 @@ export function SuccessScreen({
                     {promoUsed && savings > 0 && (
                       <div style={RECEIPT_ROW}>
                         <span style={RECEIPT_LABEL}>Промокод {promoUsed.code}</span>
-                        <span style={{ ...RECEIPT_VALUE, color: '#86efac' }}>
+                        <span style={{ ...RECEIPT_VALUE, color: 'rgba(212, 175, 55, 0.75)' }}>
                           −{savings.toLocaleString('ru-RU')} ₽
                         </span>
                       </div>

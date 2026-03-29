@@ -13,6 +13,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
     ? Math.round(baseEstimate * (1 - loyaltyDiscount / 100))
     : null
   const hasLoyaltyDiscount = loyaltyDiscount > 0
+  const hasAnyDiscount = activePromo || hasLoyaltyDiscount
 
   return (
     <motion.div
@@ -22,13 +23,25 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
       style={{
         marginTop: 24,
         padding: '20px 24px',
-        background: 'var(--gold-glass-medium)',
-        border: '2px solid var(--border-gold)',
-        borderRadius: 12,
+        background: 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.88) 50%)',
+        border: '1.5px solid rgba(212, 175, 55, 0.18)',
+        borderRadius: 14,
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: 'inset 0 1px 0 rgba(255, 248, 214, 0.06), 0 4px 20px -8px rgba(212, 175, 55, 0.08)',
       }}
     >
+      {/* Top accent line */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 20,
+        right: 20,
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.25), transparent)',
+        pointerEvents: 'none',
+      }} />
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -36,19 +49,25 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
               Ориентировочно
             </span>
           </div>
-          {(activePromo || hasLoyaltyDiscount) && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', display: 'block', marginTop: 2 }}>
+          {hasAnyDiscount && (
+            <span style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'rgba(212, 175, 55, 0.7)',
+              display: 'block',
+              marginTop: 4,
+            }}>
               {hasLoyaltyDiscount && activePromo
                 ? `Статус ${loyaltyDiscount}% + промокод ${activePromo.discount}%`
                 : hasLoyaltyDiscount
-                  ? `С учетом личной скидки ${loyaltyDiscount}%`
-                  : `С промокодом ${activePromo?.discount}%`}
+                  ? `Личная скидка ${loyaltyDiscount}%`
+                  : `Промокод ${activePromo?.discount}%`}
             </span>
           )}
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          {(activePromo || hasLoyaltyDiscount) && baseEstimate && (
+          {hasAnyDiscount && baseEstimate && (
             <>
               <div style={{
                 fontSize: 14,
@@ -56,6 +75,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
                 textDecoration: 'line-through',
                 marginBottom: 4,
                 fontFamily: "'JetBrains Mono', monospace",
+                opacity: 0.6,
               }}>
                 {baseEstimate.toLocaleString('ru-RU')} ₽
               </div>
@@ -78,30 +98,31 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
             style={{
               fontSize: 24,
               fontWeight: 700,
-              color: activePromo || hasLoyaltyDiscount ? 'var(--success-text)' : 'var(--gold-400)',
+              color: 'var(--gold-400)',
               fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.02em',
             }}
           >
             {estimate.toLocaleString('ru-RU')} ₽
           </motion.span>
-          {(activePromo || hasLoyaltyDiscount) && (
+          {hasAnyDiscount && (
             <div style={{
               fontSize: 12,
               fontWeight: 600,
-              color: '#22c55e',
+              color: 'rgba(212, 175, 55, 0.65)',
               marginTop: 4,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              gap: 8,
+              gap: 6,
             }}>
               {activePromo ? (
                 <>
-                  <Tag size={12} />
+                  <Tag size={11} />
                   {activePromo.code} −{activePromo.discount}%
                 </>
               ) : (
-                `Личная скидка −${loyaltyDiscount}%`
+                `Скидка −${loyaltyDiscount}%`
               )}
             </div>
           )}
