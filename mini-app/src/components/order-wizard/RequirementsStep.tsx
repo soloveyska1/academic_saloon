@@ -51,6 +51,13 @@ interface RequirementsStepProps {
   disabled?: boolean
 }
 
+/* ── Popular subjects for quick tap suggestions ──────────────────────── */
+const POPULAR_SUBJECTS = [
+  'Экономика', 'Менеджмент', 'Маркетинг', 'Юриспруденция',
+  'Психология', 'Информатика', 'Финансы', 'Педагогика',
+  'История', 'Математика', 'Социология', 'Бухучёт',
+]
+
 export function RequirementsStep({
   serviceTypeId,
   subject,
@@ -68,79 +75,139 @@ export function RequirementsStep({
   const service = SERVICE_TYPES.find(item => item.id === serviceTypeId)
   const isExpress = service?.category === 'express'
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Подсказка */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          padding: '10px 14px',
-          borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.04)',
-          border: '1px solid rgba(212, 175, 55, 0.08)',
-          fontSize: 12,
-          lineHeight: 1.5,
-          color: 'var(--text-muted)',
-        }}
-      >
-        {service
-          ? <>Для <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>«{service.label}»</span> {isExpress ? 'предмет можно не указывать — укажите тему или прикрепите файлы.' : 'укажите предмет и тему — это ускорит оценку.'}</>
-          : 'Укажите предмет и тему — это ускорит оценку и поможет подобрать автора.'}
-      </motion.div>
+  // Filter suggestions: hide already-typed subject, show max 6
+  const suggestions = useMemo(() => {
+    if (subject.trim().length > 0) return []
+    return POPULAR_SUBJECTS.slice(0, 8)
+  }, [subject])
 
-      {/* Предмет */}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      {/* ─── Предмет ──────────────────────────────────────────── */}
       <FieldCard
-        label="Предмет / дисциплина"
+        label="Предмет"
         required={!isExpress}
-        hint={isExpress ? 'по желанию' : undefined}
+        hint={isExpress ? 'необязательно' : undefined}
         icon={BookOpen}
         disabled={disabled}
-        delay={0.05}
+        delay={0.03}
       >
         <input
           type="text"
           value={subject}
           onChange={(e) => onSubjectChange(e.target.value)}
-          placeholder="Экономика, маркетинг, Python..."
+          placeholder="Например: Микроэкономика"
           disabled={disabled}
+          enterKeyHint="next"
+          autoCapitalize="sentences"
           style={inputStyle}
         />
       </FieldCard>
 
-      {/* Тема */}
+      {/* Quick subject suggestions */}
+      {suggestions.length > 0 && !disabled && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            marginTop: -4,
+          }}
+        >
+          {suggestions.map((s) => (
+            <motion.button
+              key={s}
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSubjectChange(s)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 8,
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                color: 'var(--text-muted)',
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
+            >
+              {s}
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+
+      {/* ─── Тема ─────────────────────────────────────────────── */}
       <FieldCard
         label="Тема работы"
-        hint="по желанию"
+        hint="необязательно"
         icon={FileText}
         disabled={disabled}
-        delay={0.1}
+        delay={0.06}
       >
         <input
           type="text"
           value={topic}
           onChange={(e) => onTopicChange(e.target.value)}
-          placeholder="Если тема уже есть, напишите"
+          placeholder="Если есть — укажите"
           disabled={disabled}
+          enterKeyHint="done"
+          autoCapitalize="sentences"
           style={inputStyle}
         />
       </FieldCard>
 
-      {/* Требования */}
-      <RequirementsButton
-        value={requirements}
-        onEdit={() => setShowEditor(true)}
-        onClear={() => onRequirementsChange('')}
-        disabled={disabled}
-      />
+      {/* ─── Требования + Файлы (secondary section) ───────────── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        marginTop: 4,
+      }}>
+        <div style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'var(--text-muted)',
+          opacity: 0.5,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase' as const,
+          paddingLeft: 2,
+        }}>
+          Дополнительно
+        </div>
 
-      {/* Файлы */}
-      <AttachmentsCard
-        files={files}
-        onAdd={onFilesAdd}
-        onRemove={onFileRemove}
-        disabled={disabled}
-      />
+        <RequirementsButton
+          value={requirements}
+          onEdit={() => setShowEditor(true)}
+          onClear={() => onRequirementsChange('')}
+          disabled={disabled}
+        />
+
+        <AttachmentsCard
+          files={files}
+          onAdd={onFilesAdd}
+          onRemove={onFileRemove}
+          disabled={disabled}
+        />
+      </div>
+
+      {/* ─── Reassurance ──────────────────────────────────────── */}
+      <div style={{
+        fontSize: 11,
+        color: 'var(--text-muted)',
+        opacity: 0.45,
+        textAlign: 'center',
+        padding: '4px 0',
+        letterSpacing: '0.01em',
+      }}>
+        Всё можно уточнить в чате после оформления
+      </div>
 
       {/* Модальный редактор требований */}
       <RequirementsEditorModal
