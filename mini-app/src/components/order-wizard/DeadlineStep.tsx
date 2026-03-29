@@ -40,16 +40,16 @@ const SECTION_META: Record<UrgencyCategory, SectionMeta> = {
   standard: {
     category: 'standard',
     title: 'Стандартные сроки',
-    accent: '#22c55e',
-    accentSoft: 'rgba(34, 197, 94, 0.08)',
-    accentBorder: 'rgba(34, 197, 94, 0.16)',
+    accent: '#d4af37',
+    accentSoft: 'rgba(212, 175, 55, 0.06)',
+    accentBorder: 'rgba(212, 175, 55, 0.12)',
   },
   express: {
     category: 'express',
     title: 'Экспресс',
-    accent: '#f59e0b',
-    accentSoft: 'rgba(245, 158, 11, 0.08)',
-    accentBorder: 'rgba(245, 158, 11, 0.20)',
+    accent: '#E8C547',
+    accentSoft: 'rgba(232, 197, 71, 0.06)',
+    accentBorder: 'rgba(232, 197, 71, 0.15)',
   },
 }
 
@@ -177,10 +177,11 @@ function DeadlineSection({
 
       {/* Rows inside bordered card */}
       <div style={{
-        borderRadius: 12,
+        borderRadius: 14,
         overflow: 'hidden',
         border: `1px solid ${section.accentBorder}`,
-        background: 'rgba(255, 255, 255, 0.015)',
+        background: 'rgba(14, 13, 12, 0.88)',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}>
         {section.deadlines.map((dl, i) => (
           <DeadlineRow
@@ -286,17 +287,17 @@ function DeadlineRow({
             <span style={{
               padding: '2px 7px',
               borderRadius: 999,
-              background: 'rgba(34, 197, 94, 0.10)',
-              border: '1px solid rgba(34, 197, 94, 0.18)',
+              background: 'rgba(212, 175, 55, 0.08)',
+              border: '1px solid rgba(212, 175, 55, 0.12)',
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: '0.04em',
               textTransform: 'uppercase' as const,
-              color: '#22c55e',
+              color: 'rgba(212, 175, 55, 0.7)',
               lineHeight: 1,
               flexShrink: 0,
             }}>
-              лучшая цена/скорость
+              оптимально
             </span>
           )}
         </div>
@@ -309,8 +310,8 @@ function DeadlineRow({
           color: estimatedPrice
             ? (selected ? sectionMeta.accent : 'var(--text-secondary)')
             : (deadline.multiplierNum === 1.0
-              ? 'rgba(34, 197, 94, 0.70)'
-              : `${deadline.color}99`),
+              ? 'rgba(212, 175, 55, 0.65)'
+              : 'var(--text-muted)'),
           lineHeight: 1,
           whiteSpace: 'nowrap',
           flexShrink: 0,
@@ -321,45 +322,41 @@ function DeadlineRow({
             : meta.surchargeLabel}
         </span>
 
-        {/* Radio circle */}
-        <AnimatePresence mode="wait">
-          {selected ? (
-            <motion.div
-              key="check"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                background: sectionMeta.accent,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Check size={12} color="#050505" strokeWidth={3} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="radio"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: '1.5px solid rgba(255, 255, 255, 0.12)',
-                background: 'transparent',
-                flexShrink: 0,
-              }}
-            />
-          )}
-        </AnimatePresence>
+        {/* Radio — double-ring pattern */}
+        <div style={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          border: `1.5px solid ${selected ? sectionMeta.accent : 'rgba(255, 255, 255, 0.10)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'border-color 0.2s ease',
+        }}>
+          <AnimatePresence>
+            {selected && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.05 }}
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: '50%',
+                  background: sectionMeta.accent,
+                  boxShadow: `0 0 8px -1px ${sectionMeta.accent}80`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Check size={9} color="#0A0A0A" strokeWidth={3} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </motion.button>
   )
