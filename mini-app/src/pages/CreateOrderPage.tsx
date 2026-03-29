@@ -204,7 +204,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [otherDescription, setOtherDescription] = useState('')
 
   // Drafts per service type
-  const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
+  const { drafts, saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
     serviceTypeId,
     currentData: { topic, requirements, subject },
   })
@@ -904,6 +904,19 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                     selected={serviceTypeId}
                     onSelect={handleServiceTypeSelect}
                     onUrgentRequest={(serviceId) => switchMode('fast', serviceId)}
+                    isFirstOrder={!user?.orders_count}
+                    draftInfo={(() => {
+                      if (serviceTypeId) return null
+                      const entries = Object.entries(drafts).filter(([, d]) => d && d.timestamp > Date.now() - 86400000)
+                      if (entries.length === 0) return null
+                      const [draftId, draft] = entries.sort((a, b) => b[1].timestamp - a[1].timestamp)[0]
+                      const svc = SERVICE_TYPES.find(s => s.id === draftId)
+                      if (!svc) return null
+                      const mins = Math.round((Date.now() - draft.timestamp) / 60000)
+                      const timeAgo = mins < 60 ? `${mins} мин назад` : mins < 1440 ? `${Math.round(mins / 60)} ч назад` : 'вчера'
+                      return { serviceTypeId: draftId, serviceLabel: svc.label, timeAgo }
+                    })()}
+                    onContinueDraft={(id) => { handleServiceTypeSelect(id); }}
                   />
                 </div>
               )}

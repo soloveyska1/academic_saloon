@@ -2,6 +2,7 @@ import { useMemo, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowRight, Check, Timer, MessageSquare, Shield,
+  CheckCircle, RefreshCw, Clock, Sparkles, FileText,
 } from 'lucide-react'
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
@@ -9,22 +10,76 @@ import { SPACING, RADIUS, COLORS, FONT, ICON_BOX, TAP_SCALE, CARD_PADDING, CARD_
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVICE TYPE STEP — v12 «Premium Catalog»
+   SERVICE TYPE STEP — v13 «Premium Catalog + Trust Features»
 
-   Principles:
-   - Premium services (diploma/masters) first — anchoring effect
-   - Two visually distinct card tiers: premium vs standard
-   - All services visible — no collapse, no hidden inventory
-   - Assist prompt at bottom (not mid-catalog)
-   - Solid borders everywhere — no dashed = no placeholder feel
-   - Selection: gold border + radio circle + trust line
-   - Descriptions sell outcomes, not deliverables
+   v13 additions:
+   - Guarantee badges per service type (trust builders)
+   - First-order welcome banner with promo hint
+   - Draft recovery card at top (continue where you left off)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+interface DraftInfo {
+  serviceTypeId: string
+  serviceLabel: string
+  timeAgo: string
+}
 
 interface ServiceTypeStepProps {
   selected: string | null
   onSelect: (id: string) => void
   onUrgentRequest?: (serviceId?: string) => void
+  isFirstOrder?: boolean
+  draftInfo?: DraftInfo | null
+  onContinueDraft?: (serviceTypeId: string) => void
+}
+
+/* ── Guarantee badges per service ────────────────────────────────────── */
+
+interface GuaranteeBadge {
+  icon: typeof Shield
+  text: string
+}
+
+const SERVICE_GUARANTEES: Record<string, GuaranteeBadge[]> = {
+  diploma: [
+    { icon: Shield, text: 'Антиплагиат от 70%' },
+    { icon: RefreshCw, text: '3 бесплатные правки' },
+    { icon: CheckCircle, text: 'Сопровождение до защиты' },
+  ],
+  masters: [
+    { icon: Shield, text: 'Антиплагиат от 70%' },
+    { icon: CheckCircle, text: 'Научная новизна' },
+    { icon: RefreshCw, text: 'Правки до защиты' },
+  ],
+  coursework: [
+    { icon: Shield, text: 'Антиплагиат от 60%' },
+    { icon: RefreshCw, text: 'Бесплатные правки' },
+    { icon: CheckCircle, text: 'По методичке ВУЗа' },
+  ],
+  practice: [
+    { icon: CheckCircle, text: 'Дневник + отчёт' },
+    { icon: RefreshCw, text: 'Правки включены' },
+  ],
+  presentation: [
+    { icon: Sparkles, text: 'Дизайн + речь' },
+    { icon: RefreshCw, text: 'Правки включены' },
+  ],
+  essay: [
+    { icon: Shield, text: 'Без воды' },
+    { icon: Clock, text: 'Можно за 1 день' },
+  ],
+  report: [
+    { icon: Shield, text: 'По ГОСТу' },
+    { icon: CheckCircle, text: 'Реальные источники' },
+  ],
+  control: [
+    { icon: FileText, text: 'Ход решения' },
+    { icon: Clock, text: 'Можно за 1 день' },
+  ],
+  independent: [
+    { icon: FileText, text: 'По методичке' },
+    { icon: Clock, text: 'Можно за 1 день' },
+  ],
 }
 
 const CUSTOM_FLOW_IDS = new Set(['photo_task', 'other'])
@@ -58,6 +113,9 @@ export function ServiceTypeStep({
   selected,
   onSelect,
   onUrgentRequest,
+  isFirstOrder,
+  draftInfo,
+  onContinueDraft,
 }: ServiceTypeStepProps) {
   const selectedCardRef = useRef<HTMLDivElement>(null)
 
@@ -79,6 +137,96 @@ export function ServiceTypeStep({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* ─── Draft recovery card ───────────────────────────────── */}
+      {draftInfo && onContinueDraft && !selected && (
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          whileTap={{ scale: TAP_SCALE.card }}
+          onClick={() => { triggerHaptic(); onContinueDraft(draftInfo.serviceTypeId) }}
+          style={{
+            width: '100%',
+            padding: `${SPACING.lg}px ${SPACING.xl}px`,
+            borderRadius: RADIUS.md,
+            background: 'rgba(212, 175, 55, 0.06)',
+            border: '1px solid rgba(212, 175, 55, 0.18)',
+            cursor: 'pointer',
+            textAlign: 'left',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: RADIUS.sm,
+            background: 'rgba(212, 175, 55, 0.10)',
+            border: '1px solid rgba(212, 175, 55, 0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <FileText size={16} color={COLORS.gold.primary} strokeWidth={1.5} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: FONT.size.lg,
+              fontWeight: 700,
+              color: 'var(--gold-400)',
+              lineHeight: 1.3,
+            }}>
+              Продолжить: {draftInfo.serviceLabel}
+            </div>
+            <div style={{
+              fontSize: FONT.size.xs,
+              color: 'var(--text-muted)',
+              marginTop: 2,
+            }}>
+              Черновик · {draftInfo.timeAgo}
+            </div>
+          </div>
+          <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.6 }} />
+        </motion.button>
+      )}
+
+      {/* ─── First-order welcome banner ────────────────────────── */}
+      {isFirstOrder && !selected && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{
+            padding: `${SPACING.md}px ${SPACING.lg}px`,
+            borderRadius: RADIUS.md,
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03))',
+            border: '1px solid rgba(212, 175, 55, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <Sparkles size={16} color={COLORS.gold.primary} style={{ flexShrink: 0 }} />
+          <div>
+            <span style={{
+              fontSize: FONT.size.sm,
+              fontWeight: 700,
+              color: 'var(--gold-400)',
+            }}>
+              Первый заказ?
+            </span>
+            <span style={{
+              fontSize: FONT.size.sm,
+              color: 'var(--text-secondary)',
+              marginLeft: 6,
+            }}>
+              Расчёт бесплатно, оплата после обсуждения деталей
+            </span>
+          </div>
+        </motion.div>
+      )}
 
       {/* ─── Premium services ──────────────────────────────────── */}
       {premiumServices.map((service, i) => (
@@ -350,6 +498,9 @@ function PremiumServiceCard({
 
       {/* Post-selection trust line */}
       <TrustLine visible={selected} />
+
+      {/* Guarantee badges */}
+      {!selected && <GuaranteeBadges serviceId={service.id} />}
     </motion.button>
   )
 }
@@ -506,6 +657,9 @@ function ServiceCard({
 
       {/* Post-selection trust line */}
       <TrustLine visible={selected} />
+
+      {/* Guarantee badges */}
+      {!selected && <GuaranteeBadges serviceId={service.id} />}
     </motion.button>
   )
 }
@@ -572,6 +726,47 @@ function CustomFlowCard({
 /* ═════════════════════════════════════════════════════════════════════════
    SHARED SUB-COMPONENTS
    ═════════════════════════════════════════════════════════════════════════ */
+
+function GuaranteeBadges({ serviceId }: { serviceId: string }) {
+  const badges = SERVICE_GUARANTEES[serviceId]
+  if (!badges || badges.length === 0) return null
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: SPACING.sm,
+      paddingTop: SPACING.sm,
+      borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+    }}>
+      {badges.map((badge, i) => {
+        const BadgeIcon = badge.icon
+        return (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 8px',
+              borderRadius: 8,
+              background: 'rgba(212, 175, 55, 0.04)',
+              border: '1px solid rgba(212, 175, 55, 0.06)',
+              fontSize: FONT.size['2xs'],
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <BadgeIcon size={9} color={COLORS.gold.primary} strokeWidth={2} style={{ opacity: 0.7 }} />
+            {badge.text}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function SelectionIndicator({ selected }: { selected: boolean }) {
   return (
