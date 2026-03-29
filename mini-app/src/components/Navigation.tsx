@@ -233,7 +233,7 @@ export const Navigation = () => {
               mixBlendMode: 'overlay',
             }} />
 
-            {navItems.map((item, index) => {
+            {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
 
