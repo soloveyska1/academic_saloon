@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useRef, useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Home, List, Crown, User, LucideIcon } from 'lucide-react'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
@@ -21,10 +21,33 @@ const navItems: NavItem[] = [
 ]
 
 /* ── Spring presets ─────────────────────────────────────────────── */
-const springNav   = { type: 'spring' as const, damping: 24, stiffness: 300 }
-const springPill  = { type: 'spring' as const, damping: 26, stiffness: 320 }
-const springIcon  = { type: 'spring' as const, damping: 28, stiffness: 400 }
-const springTap   = { type: 'spring' as const, damping: 30, stiffness: 500 }
+const springNav  = { type: 'spring' as const, damping: 22, stiffness: 260 }
+const springPill = { type: 'spring' as const, damping: 24, stiffness: 300 }
+const springIcon = { type: 'spring' as const, damping: 26, stiffness: 380 }
+const springTap  = { type: 'spring' as const, damping: 30, stiffness: 500 }
+
+/* ── Capsule styles (static, no re-creation on render) ──────────── */
+const capsuleStyle: React.CSSProperties = {
+  position: 'relative',
+  width: 'min(92%, 360px)',
+  height: 62,
+  borderRadius: 9999,
+  background: 'linear-gradient(135deg, rgba(18, 16, 12, 0.94), rgba(10, 10, 10, 0.96))',
+  backdropFilter: 'blur(24px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+  border: '1px solid rgba(212, 175, 55, 0.09)',
+  boxShadow: [
+    '0 12px 40px -8px rgba(0, 0, 0, 0.55)',
+    '0 4px 20px -4px rgba(212, 175, 55, 0.08)',
+    'inset 0 1px 0 rgba(255, 255, 255, 0.07)',
+    'inset 0 -1px 0 rgba(0, 0, 0, 0.3)',
+  ].join(', '),
+  display: 'flex',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  pointerEvents: 'auto' as const,
+  overflow: 'hidden',
+}
 
 export const Navigation = () => {
   const navigate = useNavigate()
@@ -38,6 +61,29 @@ export const Navigation = () => {
     typeof window !== 'undefined'
       ? window.visualViewport?.height ?? window.innerHeight
       : 0
+  )
+
+  /* ── Ambient glow intensity: tracks active index for glow position ─ */
+  const activeIndex = useMemo(() => {
+    const idx = navItems.findIndex(item => isNavigationItemActive(location.pathname, item.path))
+    return idx >= 0 ? idx : 0
+  }, [location.pathname])
+
+  const glowX = useMotionValue(activeIndex * 25 + 12.5)
+
+  useEffect(() => {
+    animate(glowX, activeIndex * 25 + 12.5, {
+      type: 'spring', damping: 28, stiffness: 200,
+    })
+  }, [activeIndex, glowX])
+
+  const glowGradient = useTransform(
+    glowX,
+    [0, 100],
+    [
+      'radial-gradient(ellipse 80px 40px at 0% 100%, rgba(212,175,55,0.12), transparent)',
+      'radial-gradient(ellipse 80px 40px at 100% 100%, rgba(212,175,55,0.12), transparent)',
+    ]
   )
 
   const isHiddenPage = shouldHideBottomNavigation(location.pathname)
@@ -136,42 +182,56 @@ export const Navigation = () => {
             pointerEvents: 'none',
           }}
         >
-          {/* ── Capsule container ──────────────────────────────────── */}
-          <div
-            role="tablist"
+          {/* ── Ambient gold glow UNDER the capsule ───────────────── */}
+          <motion.div
             style={{
-              position: 'relative',
-              width: 'min(92%, 360px)',
-              height: 58,
-              borderRadius: 9999,
-              background: 'rgba(14, 13, 12, 0.88)',
-              backdropFilter: 'blur(20px) saturate(140%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(140%)',
-              border: '1px solid rgba(255, 255, 255, 0.07)',
-              boxShadow: [
-                '0 8px 32px -8px rgba(0, 0, 0, 0.4)',
-                '0 4px 16px -4px rgba(212, 175, 55, 0.05)',
-                'inset 0 0.5px 0 rgba(255, 255, 255, 0.06)',
-              ].join(', '),
-              display: 'flex',
-              justifyContent: 'space-around',
-              alignItems: 'center',
-              pointerEvents: 'auto',
-              overflow: 'hidden',
+              position: 'absolute',
+              bottom: -8,
+              left: '15%',
+              right: '15%',
+              height: 32,
+              background: glowGradient,
+              filter: 'blur(16px)',
+              pointerEvents: 'none',
+              opacity: 0.7,
             }}
-          >
-            {/* ── Gold edge light (top highlight) ─────────────────── */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: '20%',
-                right: '20%',
-                height: 1,
-                background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent)',
-                pointerEvents: 'none',
-              }}
-            />
+          />
+
+          {/* ── Capsule container ──────────────────────────────────── */}
+          <div role="tablist" style={capsuleStyle}>
+
+            {/* ── Top edge light — gold reflection ────────────────── */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '15%',
+              right: '15%',
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.25), rgba(255, 248, 214, 0.15), rgba(212, 175, 55, 0.25), transparent)',
+              pointerEvents: 'none',
+            }} />
+
+            {/* ── Bottom inner edge — depth ───────────────────────── */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: '20%',
+              right: '20%',
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent)',
+              pointerEvents: 'none',
+            }} />
+
+            {/* ── Noise texture overlay ───────────────────────────── */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: 9999,
+              backgroundImage: 'var(--noise-overlay)',
+              opacity: 0.4,
+              pointerEvents: 'none',
+              mixBlendMode: 'overlay',
+            }} />
 
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
@@ -193,7 +253,7 @@ export const Navigation = () => {
                     }
                     navigate(item.path)
                   }}
-                  whileTap={{ scale: 0.94 }}
+                  whileTap={{ scale: 0.92 }}
                   transition={springTap}
                   style={{
                     flex: 1,
@@ -201,8 +261,8 @@ export const Navigation = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 3,
-                    height: 58,
+                    gap: 4,
+                    height: 62,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -211,51 +271,55 @@ export const Navigation = () => {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  {/* ── Sliding active pill (the WOW feature) ─────── */}
+                  {/* ═══ ACTIVE PILL — liquid gold backdrop ═══ */}
                   {isActive && (
                     <motion.div
                       layoutId="navActivePill"
                       transition={springPill}
                       style={{
                         position: 'absolute',
-                        top: 7,
-                        bottom: 7,
-                        left: 10,
-                        right: 10,
-                        borderRadius: 18,
-                        background: 'rgba(212, 175, 55, 0.10)',
-                        border: '1px solid rgba(212, 175, 55, 0.08)',
-                        boxShadow: '0 0 12px rgba(212, 175, 55, 0.06)',
+                        top: 6,
+                        bottom: 6,
+                        left: 8,
+                        right: 8,
+                        borderRadius: 20,
+                        background: 'linear-gradient(180deg, rgba(212, 175, 55, 0.14), rgba(212, 175, 55, 0.06))',
+                        border: '1px solid rgba(212, 175, 55, 0.12)',
+                        boxShadow: [
+                          '0 0 16px rgba(212, 175, 55, 0.10)',
+                          'inset 0 1px 0 rgba(255, 248, 214, 0.08)',
+                          'inset 0 -1px 0 rgba(212, 175, 55, 0.04)',
+                        ].join(', '),
                       }}
                     />
                   )}
 
-                  {/* ── Active bar indicator (top) ────────────────── */}
-                  <div style={{ height: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* ═══ ACTIVE TOP BAR — molten gold accent ═══ */}
+                  <div style={{
+                    height: 3,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                  }}>
                     {isActive && (
                       <motion.div
                         layoutId="navActiveBar"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
                         transition={springIcon}
                         style={{
-                          width: 20,
-                          height: 2.5,
-                          borderRadius: 2,
-                          background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.6), var(--gold-400, #D4AF37), rgba(212, 175, 55, 0.6))',
-                          boxShadow: '0 0 8px rgba(212, 175, 55, 0.35)',
+                          width: 24,
+                          height: 3,
+                          borderRadius: 3,
+                          background: 'linear-gradient(90deg, #B38728, #D4AF37, #FFF8D6, #D4AF37, #B38728)',
+                          boxShadow: '0 0 10px rgba(212, 175, 55, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)',
                         }}
                       />
                     )}
                   </div>
 
-                  {/* ── Icon ───────────────────────────────────────── */}
+                  {/* ═══ ICON — with glow ring on active ═══ */}
                   <motion.div
                     animate={{
-                      scale: isActive ? 1.06 : 1,
-                      filter: isActive
-                        ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.25))'
-                        : 'drop-shadow(0 0 0px transparent)',
+                      scale: isActive ? 1.12 : 1,
                     }}
                     transition={springIcon}
                     style={{
@@ -264,63 +328,110 @@ export const Navigation = () => {
                       justifyContent: 'center',
                       position: 'relative',
                       zIndex: 1,
+                      width: 32,
+                      height: 32,
                     }}
                   >
+                    {/* Gold glow behind active icon */}
+                    {isActive && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        style={{
+                          position: 'absolute',
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.20) 0%, rgba(212, 175, 55, 0) 70%)',
+                          filter: 'blur(2px)',
+                        }}
+                      />
+                    )}
+
                     <Icon
-                      size={isActive ? 22 : 20}
-                      strokeWidth={isActive ? 2.2 : 1.5}
-                      color={isActive ? 'var(--gold-400, #D4AF37)' : 'rgba(255, 255, 255, 0.45)'}
-                      style={{ transition: 'color 0.2s ease-out' }}
+                      size={isActive ? 23 : 20}
+                      strokeWidth={isActive ? 2.3 : 1.4}
+                      color={isActive ? '#D4AF37' : 'rgba(255, 255, 255, 0.40)'}
+                      style={{
+                        transition: 'color 0.25s ease-out, stroke-width 0.25s ease-out',
+                        filter: isActive
+                          ? 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.4)) drop-shadow(0 0 2px rgba(255, 248, 214, 0.2))'
+                          : 'none',
+                      }}
                     />
 
                     {/* ── Bonus notification badge with pulse ──────── */}
                     {item.path === '/club' && !isActive && showBonusBadge && (
                       <div style={{
                         position: 'absolute',
-                        top: -2,
-                        right: -4,
-                        width: 6,
-                        height: 6,
+                        top: 1,
+                        right: 1,
+                        width: 7,
+                        height: 7,
                         borderRadius: '50%',
-                        background: '#D4AF37',
-                        boxShadow: '0 0 6px rgba(212, 175, 55, 0.5)',
+                        background: 'linear-gradient(135deg, #D4AF37, #FFF8D6)',
+                        boxShadow: '0 0 8px rgba(212, 175, 55, 0.6), 0 0 3px rgba(255, 248, 214, 0.4)',
+                        border: '1px solid rgba(14, 13, 12, 0.9)',
                       }}>
-                        {/* Pulse ring */}
+                        {/* Pulse ring 1 */}
                         <motion.div
                           animate={{
-                            scale: [1, 2, 2],
-                            opacity: [0.6, 0, 0],
+                            scale: [1, 2.5, 2.5],
+                            opacity: [0.7, 0, 0],
                           }}
                           transition={{
-                            duration: 2.5,
+                            duration: 2,
                             repeat: Infinity,
                             ease: 'easeOut',
                           }}
                           style={{
                             position: 'absolute',
-                            inset: 0,
+                            inset: -1,
                             borderRadius: '50%',
-                            border: '1px solid #D4AF37',
+                            border: '1.5px solid rgba(212, 175, 55, 0.6)',
+                          }}
+                        />
+                        {/* Pulse ring 2 — staggered */}
+                        <motion.div
+                          animate={{
+                            scale: [1, 2.5, 2.5],
+                            opacity: [0.5, 0, 0],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: 'easeOut',
+                            delay: 0.8,
+                          }}
+                          style={{
+                            position: 'absolute',
+                            inset: -1,
+                            borderRadius: '50%',
+                            border: '1px solid rgba(212, 175, 55, 0.4)',
                           }}
                         />
                       </div>
                     )}
                   </motion.div>
 
-                  {/* ── Label ──────────────────────────────────────── */}
+                  {/* ═══ LABEL ═══ */}
                   <motion.span
                     animate={{
-                      color: isActive ? 'var(--gold-400, #D4AF37)' : 'rgba(255, 255, 255, 0.42)',
+                      color: isActive ? '#D4AF37' : 'rgba(255, 255, 255, 0.38)',
                     }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.25 }}
                     style={{
                       fontSize: 10,
                       fontWeight: isActive ? 700 : 500,
-                      letterSpacing: '0.02em',
+                      letterSpacing: isActive ? '0.03em' : '0.01em',
                       whiteSpace: 'nowrap',
                       lineHeight: 1,
                       position: 'relative',
                       zIndex: 1,
+                      textShadow: isActive
+                        ? '0 0 12px rgba(212, 175, 55, 0.3)'
+                        : 'none',
                     }}
                   >
                     {item.label}
