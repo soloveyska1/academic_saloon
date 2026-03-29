@@ -222,7 +222,7 @@ export function ServiceTypeStep({
               color: 'var(--text-secondary)',
               marginLeft: 6,
             }}>
-              Расчёт бесплатно, оплата после обсуждения деталей
+              Расчёт бесплатно · оплата после согласования
             </span>
           </div>
         </motion.div>
@@ -318,14 +318,14 @@ export function ServiceTypeStep({
               color: 'var(--text-primary)',
               lineHeight: 1.3,
             }}>
-              Сложная или нестандартная задача?
+              Нестандартная задача?
             </div>
             <div style={{
               fontSize: FONT.size.sm,
               color: 'var(--text-muted)',
               marginTop: 2,
             }}>
-              Напишите — разберёмся вместе
+              Напишите — подберём решение
             </div>
           </div>
           <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.5 }} />
@@ -346,7 +346,7 @@ export function ServiceTypeStep({
         textAlign: 'center',
       }}>
         <Shield size={12} color={COLORS.gold.primary} strokeWidth={1.5} style={{ flexShrink: 0 }} />
-        <span>Правки включены · Возврат до начала работы · 93% сдают с первого раза</span>
+        <span>Правки включены · Возврат до старта · 93% сдают с первого раза</span>
       </div>
     </div>
   )
@@ -834,7 +834,7 @@ function TrustLine({ visible }: { visible: boolean }) {
             color: COLORS.gold.badge,
           }}>
             <Shield size={10} strokeWidth={1.5} />
-            <span>Сначала обсудим детали — оплата потом</span>
+            <span>Оплата после согласования деталей</span>
           </div>
         </motion.div>
       )}
