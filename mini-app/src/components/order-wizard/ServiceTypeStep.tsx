@@ -166,7 +166,13 @@ export function ServiceTypeStep({
   }, [onUrgentRequest])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm, position: 'relative' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: SPACING.sm,
+      position: 'relative',
+      scrollSnapType: 'y proximity' as const,
+    }}>
 
       {/* ── Noise texture overlay (expensive paper feel) ──────── */}
       <div style={{
@@ -481,6 +487,7 @@ function PremiumServiceCard({
         touchAction: 'manipulation',
         userSelect: 'none',
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
+        scrollSnapAlign: 'start' as const,
       }}
     >
       {/* Gold accent line at top */}
@@ -723,6 +730,7 @@ function ServiceCard({
         touchAction: 'manipulation',
         userSelect: 'none',
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
+        scrollSnapAlign: 'start' as const,
       }}
     >
       {/* Selected: gold left accent bar */}

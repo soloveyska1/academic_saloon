@@ -364,7 +364,33 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
 
   const goNext = useCallback(() => {
+    // Choreographed step transition: haptic + rising whoosh
     haptic('medium')
+    setTimeout(() => {
+      try {
+        const tg = (window as any).Telegram // eslint-disable-line @typescript-eslint/no-explicit-any
+        tg?.WebApp?.HapticFeedback?.impactOccurred?.('soft')
+      } catch { /* noop */ }
+    }, 50)
+    // Rising sine sweep (step_forward sound)
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (AudioCtx) {
+        const ctx = new AudioCtx()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(400, ctx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.12)
+        gain.gain.setValueAtTime(0.04, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.18)
+        setTimeout(() => ctx.close().catch(() => {}), 250)
+      }
+    } catch { /* audio optional */ }
     setDirection(1)
     setStep((s) => Math.min(s + 1, totalSteps))
   }, [haptic, totalSteps])
