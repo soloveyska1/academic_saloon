@@ -1049,12 +1049,13 @@ function IncludedItem({ text }: { text: string }) {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 4,
+      gap: 5,
       fontSize: FONT.size['2xs'],
-      color: 'rgba(74, 222, 128, 0.7)',
+      color: 'rgba(212, 175, 55, 0.65)',
       fontWeight: 500,
+      letterSpacing: '0.01em',
     }}>
-      <CheckCircle size={9} strokeWidth={2} />
+      <Check size={9} strokeWidth={2.5} style={{ opacity: 0.7 }} />
       <span>{text}</span>
     </div>
   )
