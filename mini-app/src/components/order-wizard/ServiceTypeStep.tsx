@@ -373,16 +373,20 @@ export function ServiceTypeStep({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        padding: `${SPACING.lg}px ${SPACING.md}px ${SPACING.sm}px`,
-        fontSize: FONT.size.xs,
-        color: 'var(--text-muted)',
-        opacity: 0.7,
-        letterSpacing: '0.01em',
-        textAlign: 'center',
+        gap: 6,
+        padding: `${SPACING.xl}px ${SPACING.md}px ${SPACING.sm}px`,
+        marginTop: SPACING.sm,
       }}>
-        <Shield size={12} color={COLORS.gold.primary} strokeWidth={1.5} style={{ flexShrink: 0 }} />
-        <span>Правки включены · Возврат до старта · 93% сдают с первого раза</span>
+        <Shield size={11} color={COLORS.gold.primary} strokeWidth={1.5} style={{ flexShrink: 0, opacity: 0.4 }} />
+        <span style={{
+          fontSize: FONT.size['2xs'],
+          color: 'var(--text-muted)',
+          opacity: 0.5,
+          letterSpacing: '0.03em',
+          textAlign: 'center',
+        }}>
+          Правки включены · Возврат до старта · 93% сдают с первого раза
+        </span>
       </div>
     </div>
   )
@@ -449,7 +453,7 @@ function PremiumServiceCard({
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.3s',
       }}
     >
-      {/* Gold accent line at top — animated shimmer */}
+      {/* Gold accent line at top */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -462,9 +466,39 @@ function PremiumServiceCard({
         <div style={{
           width: '100%',
           height: '100%',
-          background: 'linear-gradient(90deg, transparent 15%, rgba(212, 175, 55, 0.35) 50%, transparent 85%)',
+          background: 'linear-gradient(90deg, transparent 10%, rgba(212, 175, 55, 0.30) 40%, rgba(255, 248, 214, 0.20) 50%, rgba(212, 175, 55, 0.30) 60%, transparent 90%)',
         }} />
       </div>
+
+      {/* Shimmer sweep — plays once on mount */}
+      <motion.div
+        initial={{ x: '-100%' }}
+        whileInView={{ x: '250%' }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.3 + index * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '30%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.04), rgba(255, 248, 214, 0.03), transparent)',
+          pointerEvents: 'none',
+          transform: 'skewX(-15deg)',
+        }}
+      />
+
+      {/* Radial glow at top-right corner — premium ambient light */}
+      <div style={{
+        position: 'absolute',
+        top: -20,
+        right: -20,
+        width: 80,
+        height: 80,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212, 175, 55, 0.04) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
 
       {/* Selected: metallic conic gradient border overlay */}
       {selected && (
@@ -520,8 +554,16 @@ function PremiumServiceCard({
           flexShrink: 0,
           transition: 'all 0.3s ease',
         }}>
+          {/* Inner shine ring on icon box */}
+          <div style={{
+            position: 'absolute',
+            inset: 1,
+            borderRadius: 12,
+            border: '1px solid rgba(255, 248, 214, 0.06)',
+            pointerEvents: 'none',
+          }} />
           <motion.div
-            animate={{ scale: selected ? 1.08 : 1 }}
+            animate={{ scale: selected ? 1.1 : 1, rotate: selected ? -3 : 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
             <Icon
@@ -529,7 +571,9 @@ function PremiumServiceCard({
               color={COLORS.gold.primary}
               strokeWidth={1.5}
               style={{
-                filter: selected ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.4))' : 'none',
+                filter: selected
+                  ? 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.5)) drop-shadow(0 0 2px rgba(255, 248, 214, 0.2))'
+                  : 'drop-shadow(0 0 2px rgba(212, 175, 55, 0.15))',
                 transition: 'filter 0.3s',
               }}
             />
@@ -824,6 +868,7 @@ function CustomFlowCard({
         background: COLORS.card.bg,
         border: `1px solid ${COLORS.card.border}`,
         borderRadius: RADIUS.md,
+        boxShadow: COLORS.card.insetHighlight,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -831,20 +876,34 @@ function CustomFlowCard({
         touchAction: 'manipulation',
       }}
     >
-      <Icon size={18} color="var(--gold-400)" strokeWidth={1.5} style={{ flexShrink: 0, opacity: 0.7 }} />
+      <div style={{
+        width: 32, height: 32, borderRadius: 10,
+        background: COLORS.gold.soft,
+        border: `1px solid ${COLORS.gold.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={15} color="var(--gold-400)" strokeWidth={1.5} style={{ opacity: 0.7 }} />
+      </div>
       <div style={{ flex: 1 }}>
-        <span style={{ fontSize: FONT.size.lg, fontWeight: 600, color: 'var(--text-primary)' }}>
+        <span style={{
+          fontSize: FONT.size.base,
+          fontWeight: 700,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
+        }}>
           {service.label}
         </span>
         <span style={{
-          fontSize: FONT.size.sm,
+          fontSize: FONT.size.xs,
           color: 'var(--text-muted)',
           marginLeft: 8,
+          letterSpacing: '0.01em',
         }}>
           {service.description}
         </span>
       </div>
-      <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.35 }} />
+      <ArrowRight size={13} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.3 }} />
     </motion.button>
   )
 }
@@ -862,9 +921,9 @@ function GuaranteeBadges({ serviceId }: { serviceId: string }) {
       display: 'flex',
       flexWrap: 'wrap',
       gap: 6,
-      marginTop: SPACING.sm,
+      marginTop: SPACING.md,
       paddingTop: SPACING.sm,
-      borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+      borderTop: '1px solid rgba(255, 255, 255, 0.03)',
     }}>
       {badges.map((badge, i) => {
         const BadgeIcon = badge.icon
@@ -874,18 +933,19 @@ function GuaranteeBadges({ serviceId }: { serviceId: string }) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
-              padding: '3px 8px',
+              gap: 5,
+              padding: '4px 10px',
               borderRadius: 8,
-              background: 'rgba(212, 175, 55, 0.04)',
-              border: '1px solid rgba(212, 175, 55, 0.06)',
+              background: 'rgba(212, 175, 55, 0.03)',
+              border: '1px solid rgba(212, 175, 55, 0.05)',
               fontSize: FONT.size['2xs'],
               fontWeight: 600,
-              color: 'var(--text-muted)',
+              color: 'rgba(212, 175, 55, 0.55)',
               whiteSpace: 'nowrap',
+              letterSpacing: '0.01em',
             }}
           >
-            <BadgeIcon size={9} color={COLORS.gold.primary} strokeWidth={2} style={{ opacity: 0.7 }} />
+            <BadgeIcon size={9} color={COLORS.gold.primary} strokeWidth={2} style={{ opacity: 0.5 }} />
             {badge.text}
           </div>
         )
