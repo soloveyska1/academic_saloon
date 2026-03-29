@@ -1314,11 +1314,11 @@ const StickyActionBar = memo(function StickyActionBar({
                 cursor: 'pointer',
                 background: needsSecondPayment
                   ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
-                  : 'linear-gradient(135deg, rgba(34,197,94,0.8), rgba(22,163,74,0.9))',
+                  : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
                 boxShadow: needsSecondPayment
                   ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
-                  : '0 4px 16px -2px rgba(34,197,94,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
-                color: '#fff',
+                  : '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                color: 'var(--text-on-gold)',
                 fontSize: 15,
                 fontWeight: 700,
               }}
@@ -1550,12 +1550,12 @@ const PaymentSheet = memo(function PaymentSheet({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: copiedField === fieldKey ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.04)',
+            background: copiedField === fieldKey ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)',
             transition: 'background 0.2s',
           }}
         >
           {copiedField === fieldKey
-            ? <Check size={14} color="rgba(34,197,94,0.8)" />
+            ? <Check size={14} color="rgba(212,175,55,0.8)" />
             : <Copy size={14} color="rgba(255,255,255,0.25)" />
           }
         </div>
@@ -1860,19 +1860,19 @@ const PaymentSheet = memo(function PaymentSheet({
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 8,
-                      background: copiedField === 'all' ? 'rgba(34,197,94,0.15)' : 'transparent',
-                      border: `1px solid ${copiedField === 'all' ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      background: copiedField === 'all' ? 'rgba(212,175,55,0.15)' : 'transparent',
+                      border: `1px solid ${copiedField === 'all' ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
                       transition: 'all 0.2s',
                     }}
                   >
                     {copiedField === 'all'
-                      ? <Check size={14} color="rgba(34,197,94,0.8)" />
+                      ? <Check size={14} color="rgba(212,175,55,0.8)" />
                       : <Copy size={14} color="rgba(255,255,255,0.3)" />
                     }
                     <span style={{
                       fontSize: 12,
                       fontWeight: 600,
-                      color: copiedField === 'all' ? 'rgba(34,197,94,0.8)' : 'rgba(255,255,255,0.35)',
+                      color: copiedField === 'all' ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
                     }}>
                       Скопировать все реквизиты
                     </span>
@@ -3956,10 +3956,10 @@ export function OrderDetailPageV8() {
             >
               <div style={{
                 width: 48, height: 48, borderRadius: 12, margin: '0 auto 16px',
-                background: 'rgba(34,197,94,0.1)',
+                background: 'rgba(212,175,55,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <CheckCheck size={24} color="rgba(34,197,94,0.8)" />
+                <CheckCheck size={24} color="rgba(212,175,55,0.8)" />
               </div>
               <h3 style={{ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.9)', margin: '0 0 8px' }}>
                 Принять работу?
@@ -3986,9 +3986,9 @@ export function OrderDetailPageV8() {
                   onClick={handleConfirmAcceptWork}
                   style={{
                     flex: 1, height: 44, borderRadius: 12, border: 'none',
-                    background: 'linear-gradient(135deg, rgba(34,197,94,0.8), rgba(22,163,74,0.9))',
-                    boxShadow: '0 4px 12px -2px rgba(34,197,94,0.25)',
-                    color: '#fff',
+                    background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+                    boxShadow: '0 4px 12px -2px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
+                    color: 'var(--text-on-gold)',
                     fontSize: 14, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
