@@ -75,13 +75,13 @@ export function RequirementsStep({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
-          padding: '12px 14px',
+          padding: '10px 14px',
           borderRadius: 12,
-          background: 'var(--gold-glass-subtle)',
-          border: '1px solid var(--gold-glass-medium)',
-          fontSize: 13,
+          background: 'rgba(212, 175, 55, 0.04)',
+          border: '1px solid rgba(212, 175, 55, 0.08)',
+          fontSize: 12,
           lineHeight: 1.5,
-          color: 'var(--text-secondary)',
+          color: 'var(--text-muted)',
         }}
       >
         {service
@@ -172,10 +172,10 @@ const inputStyle: React.CSSProperties = {
   padding: 0,
 }
 
-const cardBorder = 'var(--border-strong)'
-const cardBg = 'var(--border-subtle)'
-const goldSoft = 'var(--gold-glass-medium)'
-const goldBorder = 'var(--gold-glass-strong)'
+const cardBorder = 'rgba(255, 255, 255, 0.06)'
+const cardBg = 'rgba(14, 13, 12, 0.88)'
+const goldSoft = 'rgba(212, 175, 55, 0.06)'
+const goldBorder = 'rgba(212, 175, 55, 0.20)'
 
 /* ─────────────────────────────────────────────────────────────────────────
    FIELD CARD — Simple labeled input wrapper
@@ -211,41 +211,41 @@ function FieldCard({
         borderRadius: 14,
         border: `1px solid ${focused ? goldBorder : cardBorder}`,
         background: focused ? 'rgba(212, 175, 55, 0.03)' : cardBg,
-        padding: '14px',
+        padding: '12px 14px',
         opacity: disabled ? 0.6 : 1,
-        transition: 'border-color 0.2s ease, background 0.2s ease',
+        transition: 'border-color 0.25s ease, background 0.25s ease, box-shadow 0.3s ease',
         boxShadow: focused
-          ? 'inset 0 1px 0 rgba(212, 175, 55, 0.06), 0 0 16px -8px rgba(212, 175, 55, 0.08)'
+          ? 'inset 0 1px 0 rgba(212, 175, 55, 0.06), 0 0 20px -8px rgba(212, 175, 55, 0.10)'
           : 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
-      {/* Label row */}
+      {/* Label row — compact */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        marginBottom: 8,
+        gap: 6,
+        marginBottom: 6,
       }}>
         <Icon
-          size={15}
+          size={13}
           color={focused ? 'var(--gold-400)' : 'var(--text-muted)'}
           strokeWidth={2}
-          style={{ flexShrink: 0, transition: 'color 0.2s' }}
+          style={{ flexShrink: 0, transition: 'color 0.2s', opacity: focused ? 1 : 0.6 }}
         />
         <span style={{
-          fontSize: 12,
-          fontWeight: 700,
+          fontSize: 11,
+          fontWeight: 600,
           color: focused ? 'var(--gold-400)' : 'var(--text-muted)',
-          letterSpacing: '0.04em',
+          letterSpacing: '0.03em',
           transition: 'color 0.2s',
         }}>
           {label}{required && ' *'}
         </span>
         {hint && (
           <span style={{
-            fontSize: 11,
+            fontSize: 10,
             color: 'var(--text-muted)',
-            opacity: 0.6,
+            opacity: 0.5,
             marginLeft: 'auto',
           }}>
             {hint}
@@ -284,20 +284,21 @@ function RequirementsButton({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
-        borderRadius: 12,
+        borderRadius: 14,
         border: `1px solid ${hasContent ? goldBorder : cardBorder}`,
         background: hasContent ? goldSoft : cardBg,
         opacity: disabled ? 0.6 : 1,
         overflow: 'hidden',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
       <motion.button
         type="button"
-        whileTap={disabled ? undefined : { scale: 0.99 }}
+        whileTap={disabled ? undefined : { scale: 0.985 }}
         onClick={disabled ? undefined : onEdit}
         style={{
           width: '100%',
-          padding: '14px',
+          padding: '12px 14px',
           border: 'none',
           background: 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
@@ -308,16 +309,17 @@ function RequirementsButton({
         }}
       >
         <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
-          background: hasContent ? 'var(--gold-glass-medium)' : 'var(--border-default)',
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          background: hasContent ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)',
+          border: `1px solid ${hasContent ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.06)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <PenTool size={16} color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'} />
+          <PenTool size={15} color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'} style={{ opacity: hasContent ? 1 : 0.6 }} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -422,11 +424,12 @@ function AttachmentsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
       style={{
-        borderRadius: 12,
-        border: `1px ${isDragging ? 'solid' : 'dashed'} ${isDragging ? goldBorder : cardBorder}`,
+        borderRadius: 14,
+        border: `1px solid ${isDragging ? goldBorder : cardBorder}`,
         background: isDragging ? goldSoft : cardBg,
         opacity: disabled ? 0.6 : 1,
         transition: 'all 0.2s ease',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
       {/* Drop zone / Upload button */}
@@ -436,7 +439,7 @@ function AttachmentsCard({
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         style={{
-          padding: '14px',
+          padding: '12px 14px',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
@@ -452,18 +455,19 @@ function AttachmentsCard({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            background: files.length > 0 ? 'var(--gold-glass-medium)' : 'var(--border-default)',
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: files.length > 0 ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)',
+            border: `1px solid ${files.length > 0 ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.06)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
             {files.length > 0
-              ? <Paperclip size={16} color="var(--gold-400)" />
-              : <FileUp size={16} color="var(--text-muted)" />}
+              ? <Paperclip size={15} color="var(--gold-400)" />
+              : <FileUp size={15} color="var(--text-muted)" style={{ opacity: 0.6 }} />}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -555,8 +559,9 @@ function FileRow({
       alignItems: 'center',
       gap: 8,
       padding: '8px 10px',
-      borderRadius: 8,
-      background: 'var(--border-subtle)',
+      borderRadius: 10,
+      background: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(255, 255, 255, 0.04)',
     }}>
       <span style={{
         padding: '4px 8px',
@@ -898,21 +903,22 @@ function ToolbarBtn({
 
 function Pill({ label, tone }: { label: string; tone: 'good' | 'muted' | 'accent' }) {
   const colors = tone === 'good'
-    ? { bg: 'rgba(34, 197, 94, 0.10)', border: 'rgba(34, 197, 94, 0.18)', text: 'var(--success-text)' }
+    ? { bg: 'rgba(212, 175, 55, 0.08)', border: 'rgba(212, 175, 55, 0.15)', text: 'rgba(212, 175, 55, 0.8)' }
     : tone === 'accent'
       ? { bg: goldSoft, border: goldBorder, text: 'var(--gold-400)' }
-      : { bg: 'var(--bg-glass)', border: cardBorder, text: 'var(--text-muted)' }
+      : { bg: 'rgba(255, 255, 255, 0.03)', border: 'rgba(255, 255, 255, 0.06)', text: 'var(--text-muted)' }
 
   return (
     <span style={{
       display: 'inline-flex',
-      padding: '5px 8px',
-      borderRadius: 999,
+      padding: '4px 8px',
+      borderRadius: 8,
       background: colors.bg,
       border: `1px solid ${colors.border}`,
       color: colors.text,
-      fontSize: 11,
-      fontWeight: 700,
+      fontSize: 10,
+      fontWeight: 600,
+      letterSpacing: '0.04em',
       lineHeight: 1,
     }}>
       {label}
