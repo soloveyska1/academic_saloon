@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   BookOpen,
-  ChevronRight,
   ClipboardPaste,
   FileText,
   FileUp,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
+import { PremiumInput, PremiumInputGroup, PremiumInputDivider } from '../ui/PremiumInput'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REQUIREMENTS STEP — v3 «Чистая форма»
@@ -81,32 +81,41 @@ export function RequirementsStep({
     return POPULAR_SUBJECTS.slice(0, 8)
   }, [subject])
 
+  const reqPreview = requirements.trim()
+    ? `${requirements.trim().split('\n').filter(Boolean).length} пунктов`
+    : undefined
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* ─── Предмет ──────────────────────────────────────────── */}
-      <FieldCard
-        label="Предмет"
-        required={!isExpress}
-        hint={isExpress ? 'необязательно' : undefined}
-        icon={BookOpen}
-        disabled={disabled}
-        delay={0.03}
+      {/* ─── Subject + Topic — Premium grouped inputs ─────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
       >
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => onSubjectChange(e.target.value)}
-          placeholder="Например: Микроэкономика"
-          disabled={disabled}
-          enterKeyHint="next"
-          autoCapitalize="sentences"
-          style={inputStyle}
-        />
-      </FieldCard>
+        <PremiumInputGroup>
+          <PremiumInput
+            label={isExpress ? 'Предмет' : 'Предмет *'}
+            value={subject}
+            onChange={onSubjectChange}
+            placeholder="Микроэкономика, Python, маркетинг..."
+            disabled={disabled}
+            icon={<BookOpen size={16} />}
+          />
+          <PremiumInputDivider />
+          <PremiumInput
+            label="Тема работы"
+            value={topic}
+            onChange={onTopicChange}
+            placeholder="Анализ рентабельности предприятия"
+            disabled={disabled}
+            icon={<FileText size={16} />}
+          />
+        </PremiumInputGroup>
+      </motion.div>
 
       {/* Quick subject suggestions */}
-      {suggestions.length > 0 && !disabled && (
+      {suggestions.length > 0 && !disabled && !subject.trim() && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -115,7 +124,6 @@ export function RequirementsStep({
             display: 'flex',
             flexWrap: 'wrap',
             gap: 6,
-            marginTop: -4,
           }}
         >
           {suggestions.map((s) => (
@@ -144,81 +152,38 @@ export function RequirementsStep({
         </motion.div>
       )}
 
-      {/* ─── Тема ─────────────────────────────────────────────── */}
-      <FieldCard
-        label="Тема работы"
-        hint="необязательно"
-        icon={FileText}
-        disabled={disabled}
-        delay={0.06}
+      {/* ─── Requirements + Files — Premium grouped ───────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
       >
-        <input
-          type="text"
-          value={topic}
-          onChange={(e) => onTopicChange(e.target.value)}
-          placeholder="Например: Анализ рентабельности предприятия"
-          disabled={disabled}
-          enterKeyHint="done"
-          autoCapitalize="sentences"
-          style={inputStyle}
-        />
-      </FieldCard>
-
-      {/* ─── Требования + Файлы (secondary section) ───────────── */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        marginTop: 4,
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '0 4px',
-        }}>
-          <div style={{
-            flex: 1,
-            height: 1,
-            background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.08), transparent)',
-          }} />
-          <span style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'rgba(212, 175, 55, 0.35)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase' as const,
-            flexShrink: 0,
-          }}>
-            дополнительно
-          </span>
-          <div style={{
-            flex: 1,
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08))',
-          }} />
-        </div>
-
-        <RequirementsButton
-          value={requirements}
-          onEdit={() => setShowEditor(true)}
-          onClear={() => onRequirementsChange('')}
-          disabled={disabled}
-        />
-
-        <AttachmentsCard
-          files={files}
-          onAdd={onFilesAdd}
-          onRemove={onFileRemove}
-          disabled={disabled}
-        />
-      </div>
+        <PremiumInputGroup groupLabel="Дополнительно">
+          <PremiumInput
+            label="Требования"
+            value=""
+            onChange={() => {}}
+            asTrigger
+            onClick={() => setShowEditor(true)}
+            displayValue={reqPreview}
+            placeholder="Объём, оформление, пожелания"
+            icon={<PenTool size={16} />}
+          />
+          <PremiumInputDivider />
+          <AttachmentsCard
+            files={files}
+            onAdd={onFilesAdd}
+            onRemove={onFileRemove}
+            disabled={disabled}
+          />
+        </PremiumInputGroup>
+      </motion.div>
 
       {/* ─── Reassurance ──────────────────────────────────────── */}
       <div style={{
         fontSize: 11,
         color: 'var(--text-muted)',
-        opacity: 0.45,
+        opacity: 0.4,
         textAlign: 'center',
         padding: '4px 0',
         letterSpacing: '0.01em',
@@ -243,296 +208,11 @@ export function RequirementsStep({
    SHARED STYLES
    ───────────────────────────────────────────────────────────────────────── */
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  fontSize: 16,
-  lineHeight: 1.4,
-  fontWeight: 600,
-  fontFamily: "'Manrope', sans-serif",
-  color: 'var(--text-primary)',
-  background: 'transparent',
-  border: 'none',
-  outline: 'none',
-  padding: 0,
-  margin: 0,
-  WebkitAppearance: 'none',
-  boxShadow: 'none', // kills iOS inner shadow on inputs
-}
-
 const goldBorder = 'rgba(212, 175, 55, 0.22)'
 const goldSoft = 'rgba(212, 175, 55, 0.06)'
 const cardBorder = 'rgba(255, 255, 255, 0.06)'
 
-/* ─────────────────────────────────────────────────────────────────────────
-   FIELD CARD — Premium glass input wrapper with gold accents
-   ───────────────────────────────────────────────────────────────────────── */
-
-function FieldCard({
-  label,
-  hint,
-  icon: Icon,
-  required,
-  disabled,
-  delay = 0,
-  children,
-}: {
-  label: string
-  hint?: string
-  icon: typeof BookOpen
-  required?: boolean
-  disabled?: boolean
-  delay?: number
-  children: React.ReactNode
-}) {
-  const [focused, setFocused] = useState(false)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      onFocusCapture={(e) => {
-        setFocused(true)
-        setTimeout(() => {
-          (e.target as HTMLElement)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
-        }, 150)
-      }}
-      onBlurCapture={() => setFocused(false)}
-      style={{
-        borderRadius: 16,
-        border: `1.5px solid ${focused ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
-        background: focused
-          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
-          : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
-        backdropFilter: 'blur(20px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
-        padding: '14px 16px',
-        opacity: disabled ? 0.5 : 1,
-        transition: 'border-color 0.3s ease, background 0.3s ease, box-shadow 0.4s ease',
-        boxShadow: focused
-          ? [
-              '0 0 24px -6px rgba(212, 175, 55, 0.12)',
-              'inset 0 1px 0 rgba(255, 248, 214, 0.06)',
-              'inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
-            ].join(', ')
-          : [
-              'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-              'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
-              '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
-            ].join(', '),
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Top accent line — visible on focus */}
-      {focused && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: '15%',
-            right: '15%',
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.30), transparent)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* Label row */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 8,
-      }}>
-        <div style={{
-          width: 22,
-          height: 22,
-          borderRadius: 7,
-          background: focused ? 'rgba(212, 175, 55, 0.10)' : 'rgba(212, 175, 55, 0.04)',
-          border: `1px solid ${focused ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'all 0.25s ease',
-        }}>
-          <Icon
-            size={11}
-            color={focused ? 'var(--gold-400)' : 'var(--text-muted)'}
-            strokeWidth={2}
-            style={{ transition: 'color 0.2s', opacity: focused ? 1 : 0.5 }}
-          />
-        </div>
-        <span style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: focused ? 'var(--gold-400)' : 'rgba(255, 255, 255, 0.4)',
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase' as const,
-          transition: 'color 0.2s',
-        }}>
-          {label}{required && ' *'}
-        </span>
-        {hint && (
-          <span style={{
-            fontSize: 10,
-            color: 'var(--text-muted)',
-            opacity: 0.4,
-            marginLeft: 'auto',
-            letterSpacing: '0.02em',
-          }}>
-            {hint}
-          </span>
-        )}
-      </div>
-
-      {/* Input */}
-      {children}
-    </motion.div>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   REQUIREMENTS BUTTON — Tap to open editor
-   ───────────────────────────────────────────────────────────────────────── */
-
-function RequirementsButton({
-  value,
-  onEdit,
-  onClear,
-  disabled,
-}: {
-  value: string
-  onEdit: () => void
-  onClear: () => void
-  disabled?: boolean
-}) {
-  const hasContent = value.trim().length > 0
-  const preview = value.trim().split('\n').slice(0, 2).join(' · ')
-  const lineCount = value.trim() ? value.trim().split('\n').filter(Boolean).length : 0
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15 }}
-      style={{
-        borderRadius: 16,
-        border: `1.5px solid ${hasContent ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
-        background: hasContent
-          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
-          : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
-        backdropFilter: 'blur(20px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
-        opacity: disabled ? 0.5 : 1,
-        overflow: 'hidden',
-        boxShadow: [
-          'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-          'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
-          '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
-        ].join(', '),
-      }}
-    >
-      <motion.button
-        type="button"
-        whileTap={disabled ? undefined : { scale: 0.98 }}
-        onClick={disabled ? undefined : onEdit}
-        style={{
-          width: '100%',
-          padding: '14px 16px',
-          border: 'none',
-          background: 'transparent',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          textAlign: 'left',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-        }}
-      >
-        <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          background: hasContent
-            ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 70%)'
-            : 'rgba(212, 175, 55, 0.04)',
-          border: `1px solid ${hasContent ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
-          boxShadow: hasContent ? '0 0 12px -4px rgba(212, 175, 55, 0.15)' : 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'all 0.3s ease',
-        }}>
-          <PenTool
-            size={16}
-            color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'}
-            strokeWidth={1.5}
-            style={{
-              opacity: hasContent ? 1 : 0.5,
-              filter: hasContent ? 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.3))' : 'none',
-              transition: 'all 0.3s',
-            }}
-          />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text-main)',
-            marginBottom: hasContent ? 3 : 0,
-          }}>
-            {hasContent ? 'Требования добавлены' : 'Добавить требования'}
-          </div>
-          {hasContent ? (
-            <div style={{
-              fontSize: 12,
-              color: 'var(--text-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {lineCount} пункт. · {preview}
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Объём, оформление, пожелания
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {hasContent && !disabled && (
-            <motion.div
-              whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.stopPropagation(); onClear() }}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.18)',
-
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <Trash2 size={12} color="var(--error-text)" />
-            </motion.div>
-          )}
-          <ChevronRight size={16} color="var(--text-muted)" style={{ opacity: 0.5 }} />
-        </div>
-      </motion.button>
-    </motion.div>
-  )
-}
+/* RequirementsButton removed — replaced by PremiumInput asTrigger */
 
 /* ─────────────────────────────────────────────────────────────────────────
    ATTACHMENTS CARD
