@@ -1208,7 +1208,7 @@ const StickyActionBar = memo(function StickyActionBar({
     },
     revision_in_progress: {
       showAmount: false,
-      buttonText: `На доработке · правка ${(order.revision_count || 0)}/3`,
+      buttonText: `На доработке · правка #${(order.revision_count || 0)}`,
       buttonIcon: Edit3,
       buttonColor: '#E8D5A3',
       buttonBg: 'rgba(212,175,55,0.08)',
@@ -1239,7 +1239,6 @@ const StickyActionBar = memo(function StickyActionBar({
   const ButtonIcon = config.buttonIcon
 
   const revisionCount = order.revision_count || 0
-  const freeRevisionsLeft = Math.max(0, 3 - revisionCount)
 
   // Don't show for cancelled/rejected and statuses without real CTA
   if (['cancelled', 'work'].includes(variant)) return null
@@ -1267,10 +1266,7 @@ const StickyActionBar = memo(function StickyActionBar({
             }}>
               <Edit3 size={12} color="rgba(212,175,55,0.5)" />
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-                {freeRevisionsLeft > 0
-                  ? `Использовано ${revisionCount} правок`
-                  : 'Бесплатные правки исчерпаны'
-                }
+                {`Использовано правок: ${revisionCount}`}
               </span>
             </div>
           )}
@@ -2398,8 +2394,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
   useModalRegistration(isOpen, 'revision-request-sheet')
 
   const revisionCount = order.revision_count || 0
-  const freeLeft = Math.max(0, 3 - revisionCount)
-  const isPaid = revisionCount >= 3
+  const isPaid = false // Unlimited revisions policy — no paid revisions
 
   useEffect(() => {
     if (isOpen) {
@@ -2466,7 +2461,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                   Запрос правок
                 </h2>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0' }}>
-                  {isPaid ? 'Платная правка' : `${freeLeft} бесплатных осталось`}
+                  {revisionCount > 0 ? `Правка #${revisionCount + 1}` : 'Безлимитные правки'}
                 </p>
               </div>
               <motion.button
@@ -3304,7 +3299,7 @@ export function OrderDetailPageV8() {
       showToast({
         type: 'success',
         title: result.is_paid ? 'Платная правка отправлена' : 'Правки отправлены',
-        message: `Правка ${result.revision_count}/3`,
+        message: `Правка #${result.revision_count}`,
       })
       loadOrder()
     } else {

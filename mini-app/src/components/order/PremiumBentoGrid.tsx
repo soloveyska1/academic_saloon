@@ -1,49 +1,12 @@
 import { motion } from 'framer-motion'
 import {
-  Shield, RefreshCw, Sparkles, Gift, CheckCircle2, AlertCircle, Percent
+  Shield, RefreshCw, Gift, Percent
 } from 'lucide-react'
 import { Order } from '../../types'
 
 interface PremiumBentoGridProps {
   order: Order
   cashbackPercent?: number
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  REVISION TOKEN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-function RevisionToken({ used, index }: { used: boolean; index: number }) {
-  return (
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: index * 0.1, type: 'spring' }}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        background: used
-          ? 'rgba(107, 114, 128, 0.2)'
-          : 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.1))',
-        border: used
-          ? '2px solid rgba(107, 114, 128, 0.3)'
-          : '2px solid rgba(34, 197, 94, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: used
-          ? 'none'
-          : '0 0 15px -3px rgba(34, 197, 94, 0.4)',
-      }}
-    >
-      {used ? (
-        <CheckCircle2 size={16} color="#6b7280" />
-      ) : (
-        <Sparkles size={14} color="var(--success-text)" />
-      )}
-    </motion.div>
-  )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -78,8 +41,7 @@ function DecorativeCorner({ position, color = '#D4AF37' }: {
 export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGridProps) {
   const finalPrice = order.final_price || order.price || 0
   const revisionCount = (order as any).revision_count || 0
-  // Unlimited revisions policy (legacy maxFreeRevisions = 3 removed)
-  const unlimitedRevisions = true
+  // Unlimited revisions policy
 
   // Calculate cashback
   const cashbackAmount = Math.floor(finalPrice * (cashbackPercent / 100))
@@ -162,14 +124,14 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           WebkitTextFillColor: 'transparent',
           marginBottom: 4,
         }}>
-          30 дней
+          Полная
         </div>
         <div style={{
           fontSize: 12,
           color: 'var(--text-muted)',
           lineHeight: 1.4,
         }}>
-          бесплатных правок
+          защита и возврат
         </div>
       </motion.div>
 
@@ -219,31 +181,21 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         </div>
 
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 8,
+          fontSize: 22,
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, #8b5cf6, #a78bfa)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: 4,
         }}>
-          {Array.from({ length: maxFreeRevisions }).map((_, i) => (
-            <RevisionToken key={i} used={i < revisionCount} index={i} />
-          ))}
+          ∞
         </div>
-
         <div style={{
           fontSize: 12,
-          color: revisionCount >= maxFreeRevisions ? 'var(--warning-text)' : 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
+          color: 'var(--text-muted)',
+          lineHeight: 1.4,
         }}>
-          {revisionCount >= maxFreeRevisions ? (
-            <>
-              <AlertCircle size={12} />
-              Следующая платная
-            </>
-          ) : (
-            <>Осталось: {maxFreeRevisions - revisionCount}</>
-          )}
+          {revisionCount > 0 ? `Использовано: ${revisionCount}` : 'Безлимитные правки'}
         </div>
       </motion.div>
 
