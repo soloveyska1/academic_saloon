@@ -97,7 +97,6 @@ export function OtherComposer({
   disabled = false,
 }: OtherComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [interacted, setInteracted] = useState(false)
 
@@ -125,17 +124,6 @@ export function OtherComposer({
       e.target.value = ''
     },
     [disabled, handleIncomingFiles],
-  )
-
-  const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      onDescriptionChange(e.target.value)
-      if (!interacted) setInteracted(true)
-      const el = e.target
-      el.style.height = 'auto'
-      el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.4)}px`
-    },
-    [onDescriptionChange, interacted],
   )
 
   return (
