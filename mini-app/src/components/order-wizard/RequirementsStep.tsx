@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
+import { PremiumInput, PremiumInputGroup, PremiumInputDivider } from '../ui/PremiumInput'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REQUIREMENTS STEP — v3 «Чистая форма»
@@ -81,32 +82,41 @@ export function RequirementsStep({
     return POPULAR_SUBJECTS.slice(0, 8)
   }, [subject])
 
+  const reqPreview = requirements.trim()
+    ? `${requirements.trim().split('\n').filter(Boolean).length} пунктов`
+    : undefined
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* ─── Предмет ──────────────────────────────────────────── */}
-      <FieldCard
-        label="Предмет"
-        required={!isExpress}
-        hint={isExpress ? 'необязательно' : undefined}
-        icon={BookOpen}
-        disabled={disabled}
-        delay={0.03}
+      {/* ─── Subject + Topic — Premium grouped inputs ─────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
       >
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => onSubjectChange(e.target.value)}
-          placeholder="Например: Микроэкономика"
-          disabled={disabled}
-          enterKeyHint="next"
-          autoCapitalize="sentences"
-          style={inputStyle}
-        />
-      </FieldCard>
+        <PremiumInputGroup>
+          <PremiumInput
+            label={isExpress ? 'Предмет' : 'Предмет *'}
+            value={subject}
+            onChange={onSubjectChange}
+            placeholder="Микроэкономика, Python, маркетинг..."
+            disabled={disabled}
+            icon={<BookOpen size={16} />}
+          />
+          <PremiumInputDivider />
+          <PremiumInput
+            label="Тема работы"
+            value={topic}
+            onChange={onTopicChange}
+            placeholder="Анализ рентабельности предприятия"
+            disabled={disabled}
+            icon={<FileText size={16} />}
+          />
+        </PremiumInputGroup>
+      </motion.div>
 
       {/* Quick subject suggestions */}
-      {suggestions.length > 0 && !disabled && (
+      {suggestions.length > 0 && !disabled && !subject.trim() && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -115,7 +125,6 @@ export function RequirementsStep({
             display: 'flex',
             flexWrap: 'wrap',
             gap: 6,
-            marginTop: -4,
           }}
         >
           {suggestions.map((s) => (
@@ -144,81 +153,38 @@ export function RequirementsStep({
         </motion.div>
       )}
 
-      {/* ─── Тема ─────────────────────────────────────────────── */}
-      <FieldCard
-        label="Тема работы"
-        hint="необязательно"
-        icon={FileText}
-        disabled={disabled}
-        delay={0.06}
+      {/* ─── Requirements + Files — Premium grouped ───────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
       >
-        <input
-          type="text"
-          value={topic}
-          onChange={(e) => onTopicChange(e.target.value)}
-          placeholder="Например: Анализ рентабельности предприятия"
-          disabled={disabled}
-          enterKeyHint="done"
-          autoCapitalize="sentences"
-          style={inputStyle}
-        />
-      </FieldCard>
-
-      {/* ─── Требования + Файлы (secondary section) ───────────── */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        marginTop: 4,
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '0 4px',
-        }}>
-          <div style={{
-            flex: 1,
-            height: 1,
-            background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.08), transparent)',
-          }} />
-          <span style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'rgba(212, 175, 55, 0.35)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase' as const,
-            flexShrink: 0,
-          }}>
-            дополнительно
-          </span>
-          <div style={{
-            flex: 1,
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08))',
-          }} />
-        </div>
-
-        <RequirementsButton
-          value={requirements}
-          onEdit={() => setShowEditor(true)}
-          onClear={() => onRequirementsChange('')}
-          disabled={disabled}
-        />
-
-        <AttachmentsCard
-          files={files}
-          onAdd={onFilesAdd}
-          onRemove={onFileRemove}
-          disabled={disabled}
-        />
-      </div>
+        <PremiumInputGroup groupLabel="Дополнительно">
+          <PremiumInput
+            label="Требования"
+            value=""
+            onChange={() => {}}
+            asTrigger
+            onClick={() => setShowEditor(true)}
+            displayValue={reqPreview}
+            placeholder="Объём, оформление, пожелания"
+            icon={<PenTool size={16} />}
+          />
+          <PremiumInputDivider />
+          <AttachmentsCard
+            files={files}
+            onAdd={onFilesAdd}
+            onRemove={onFileRemove}
+            disabled={disabled}
+          />
+        </PremiumInputGroup>
+      </motion.div>
 
       {/* ─── Reassurance ──────────────────────────────────────── */}
       <div style={{
         fontSize: 11,
         color: 'var(--text-muted)',
-        opacity: 0.45,
+        opacity: 0.4,
         textAlign: 'center',
         padding: '4px 0',
         letterSpacing: '0.01em',
