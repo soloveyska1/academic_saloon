@@ -122,19 +122,20 @@ export function RequirementsStep({
             <motion.button
               key={s}
               type="button"
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.93 }}
               onClick={() => onSubjectChange(s)}
               style={{
-                padding: '5px 10px',
-                borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                color: 'var(--text-muted)',
+                padding: '6px 12px',
+                borderRadius: 10,
+                background: 'rgba(212, 175, 55, 0.04)',
+                border: '1px solid rgba(212, 175, 55, 0.08)',
+                color: 'rgba(212, 175, 55, 0.6)',
                 fontSize: 11,
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
+                letterSpacing: '0.01em',
               }}
             >
               {s}
@@ -171,15 +172,31 @@ export function RequirementsStep({
         marginTop: 4,
       }}>
         <div style={{
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'var(--text-muted)',
-          opacity: 0.5,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase' as const,
-          paddingLeft: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '0 4px',
         }}>
-          Дополнительно
+          <div style={{
+            flex: 1,
+            height: 1,
+            background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.08), transparent)',
+          }} />
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'rgba(212, 175, 55, 0.35)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
+            flexShrink: 0,
+          }}>
+            дополнительно
+          </span>
+          <div style={{
+            flex: 1,
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08))',
+          }} />
         </div>
 
         <RequirementsButton
@@ -228,24 +245,21 @@ export function RequirementsStep({
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  fontSize: 16, // Must be ≥16px to prevent iOS Safari auto-zoom on focus
+  fontSize: 16,
   lineHeight: 1.4,
   fontWeight: 600,
   fontFamily: "'Manrope', sans-serif",
-  color: 'var(--text-main)',
+  color: 'var(--text-primary)',
   background: 'transparent',
   border: 'none',
   outline: 'none',
   padding: 0,
 }
 
-const cardBorder = 'rgba(255, 255, 255, 0.06)'
-const cardBg = 'rgba(14, 13, 12, 0.88)'
-const goldSoft = 'rgba(212, 175, 55, 0.06)'
-const goldBorder = 'rgba(212, 175, 55, 0.20)'
+const goldBorder = 'rgba(212, 175, 55, 0.22)'
 
 /* ─────────────────────────────────────────────────────────────────────────
-   FIELD CARD — Simple labeled input wrapper
+   FIELD CARD — Premium glass input wrapper with gold accents
    ───────────────────────────────────────────────────────────────────────── */
 
 function FieldCard({
@@ -274,42 +288,86 @@ function FieldCard({
       transition={{ delay }}
       onFocusCapture={(e) => {
         setFocused(true)
-        // Scroll input into center of viewport (avoids keyboard hiding it)
         setTimeout(() => {
           (e.target as HTMLElement)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
         }, 150)
       }}
       onBlurCapture={() => setFocused(false)}
       style={{
-        borderRadius: 14,
-        border: `1px solid ${focused ? goldBorder : cardBorder}`,
-        background: focused ? 'rgba(212, 175, 55, 0.03)' : cardBg,
-        padding: '12px 14px',
-        opacity: disabled ? 0.6 : 1,
-        transition: 'border-color 0.25s ease, background 0.25s ease, box-shadow 0.3s ease',
+        borderRadius: 16,
+        border: `1.5px solid ${focused ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
+        background: focused
+          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
+          : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
+        backdropFilter: 'blur(20px) saturate(130%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
+        padding: '14px 16px',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'border-color 0.3s ease, background 0.3s ease, box-shadow 0.4s ease',
         boxShadow: focused
-          ? 'inset 0 1px 0 rgba(212, 175, 55, 0.06), 0 0 20px -8px rgba(212, 175, 55, 0.10)'
-          : 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          ? [
+              '0 0 24px -6px rgba(212, 175, 55, 0.12)',
+              'inset 0 1px 0 rgba(255, 248, 214, 0.06)',
+              'inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
+            ].join(', ')
+          : [
+              'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+              'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
+              '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
+            ].join(', '),
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {/* Label row — compact */}
+      {/* Top accent line — visible on focus */}
+      {focused && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.30), transparent)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      {/* Label row */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        marginBottom: 6,
+        marginBottom: 8,
       }}>
-        <Icon
-          size={13}
-          color={focused ? 'var(--gold-400)' : 'var(--text-muted)'}
-          strokeWidth={2}
-          style={{ flexShrink: 0, transition: 'color 0.2s', opacity: focused ? 1 : 0.6 }}
-        />
+        <div style={{
+          width: 22,
+          height: 22,
+          borderRadius: 7,
+          background: focused ? 'rgba(212, 175, 55, 0.10)' : 'rgba(212, 175, 55, 0.04)',
+          border: `1px solid ${focused ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.25s ease',
+        }}>
+          <Icon
+            size={11}
+            color={focused ? 'var(--gold-400)' : 'var(--text-muted)'}
+            strokeWidth={2}
+            style={{ transition: 'color 0.2s', opacity: focused ? 1 : 0.5 }}
+          />
+        </div>
         <span style={{
           fontSize: 11,
           fontWeight: 600,
-          color: focused ? 'var(--gold-400)' : 'var(--text-muted)',
-          letterSpacing: '0.03em',
+          color: focused ? 'var(--gold-400)' : 'rgba(255, 255, 255, 0.4)',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase' as const,
           transition: 'color 0.2s',
         }}>
           {label}{required && ' *'}
@@ -318,8 +376,9 @@ function FieldCard({
           <span style={{
             fontSize: 10,
             color: 'var(--text-muted)',
-            opacity: 0.5,
+            opacity: 0.4,
             marginLeft: 'auto',
+            letterSpacing: '0.02em',
           }}>
             {hint}
           </span>
@@ -357,42 +416,63 @@ function RequirementsButton({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
-        borderRadius: 14,
-        border: `1px solid ${hasContent ? goldBorder : cardBorder}`,
-        background: hasContent ? goldSoft : cardBg,
-        opacity: disabled ? 0.6 : 1,
+        borderRadius: 16,
+        border: `1.5px solid ${hasContent ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
+        background: hasContent
+          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
+          : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
+        backdropFilter: 'blur(20px) saturate(130%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
+        opacity: disabled ? 0.5 : 1,
         overflow: 'hidden',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+        boxShadow: [
+          'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+          'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
+          '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
+        ].join(', '),
       }}
     >
       <motion.button
         type="button"
-        whileTap={disabled ? undefined : { scale: 0.985 }}
+        whileTap={disabled ? undefined : { scale: 0.98 }}
         onClick={disabled ? undefined : onEdit}
         style={{
           width: '100%',
-          padding: '12px 14px',
+          padding: '14px 16px',
           border: 'none',
           background: 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           textAlign: 'left',
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 14,
         }}
       >
         <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
-          background: hasContent ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)',
-          border: `1px solid ${hasContent ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.06)'}`,
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          background: hasContent
+            ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 70%)'
+            : 'rgba(212, 175, 55, 0.04)',
+          border: `1px solid ${hasContent ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
+          boxShadow: hasContent ? '0 0 12px -4px rgba(212, 175, 55, 0.15)' : 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
+          transition: 'all 0.3s ease',
         }}>
-          <PenTool size={15} color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'} style={{ opacity: hasContent ? 1 : 0.6 }} />
+          <PenTool
+            size={16}
+            color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'}
+            strokeWidth={1.5}
+            style={{
+              opacity: hasContent ? 1 : 0.5,
+              filter: hasContent ? 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.3))' : 'none',
+              transition: 'all 0.3s',
+            }}
+          />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -497,12 +577,22 @@ function AttachmentsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
       style={{
-        borderRadius: 14,
-        border: `1px solid ${isDragging ? goldBorder : cardBorder}`,
-        background: isDragging ? goldSoft : cardBg,
-        opacity: disabled ? 0.6 : 1,
-        transition: 'all 0.2s ease',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+        borderRadius: 16,
+        border: `1.5px solid ${isDragging ? goldBorder : files.length > 0 ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
+        background: isDragging
+          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
+          : files.length > 0
+            ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.04), rgba(14, 13, 12, 0.92) 40%)'
+            : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
+        backdropFilter: 'blur(20px) saturate(130%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'all 0.3s ease',
+        boxShadow: [
+          'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+          'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
+          '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
+        ].join(', '),
       }}
     >
       {/* Drop zone / Upload button */}
@@ -512,7 +602,7 @@ function AttachmentsCard({
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         style={{
-          padding: '12px 14px',
+          padding: '14px 16px',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
@@ -528,19 +618,23 @@ function AttachmentsCard({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            background: files.length > 0 ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)',
-            border: `1px solid ${files.length > 0 ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.06)'}`,
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            background: files.length > 0
+              ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 70%)'
+              : 'rgba(212, 175, 55, 0.04)',
+            border: `1px solid ${files.length > 0 ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
+            boxShadow: files.length > 0 ? '0 0 12px -4px rgba(212, 175, 55, 0.15)' : 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            transition: 'all 0.3s ease',
           }}>
             {files.length > 0
-              ? <Paperclip size={15} color="var(--gold-400)" />
-              : <FileUp size={15} color="var(--text-muted)" style={{ opacity: 0.6 }} />}
+              ? <Paperclip size={16} color="var(--gold-400)" style={{ filter: 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.3))' }} />
+              : <FileUp size={16} color="var(--text-muted)" style={{ opacity: 0.5 }} />}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
