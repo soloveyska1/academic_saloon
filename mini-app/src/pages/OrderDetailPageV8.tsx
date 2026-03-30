@@ -13,7 +13,7 @@
  * - TrustSection: чипы гарантий с expand-деталями
  * - VerificationPendingBanner: анимированный баннер проверки
  * - FilesSection: список файлов с download
- * - SupportCard: карточка поддержки (Семён)
+ * - SupportCard: карточка поддержки (@academicsaloon)
  * - GuaranteesRow: grid гарантий (возврат, правки, сроки)
  * - OrderTimeline: визуальная история заказа
  *

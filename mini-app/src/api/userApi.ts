@@ -195,7 +195,7 @@ export async function fetchConfig(): Promise<PublicConfig> {
   } catch {
     return {
       bot_username: 'Kladovaya_GIPSR_bot',
-      support_username: 'Thisissaymoon',
+      support_username: 'academicsaloon',
       offer_url: DEFAULT_OFFER_URL,
       privacy_policy_url: DEFAULT_PRIVACY_POLICY_URL,
       executor_info_url: DEFAULT_EXECUTOR_INFO_URL,

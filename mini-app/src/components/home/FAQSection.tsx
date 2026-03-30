@@ -181,7 +181,7 @@ export const FAQSection = memo(function FAQSection() {
         }}
       >
         <a
-          href="https://t.me/Thisissaymoon"
+          href="https://t.me/academicsaloon"
           target="_blank"
           rel="noopener noreferrer"
           style={{
