@@ -181,15 +181,15 @@ export function RequirementsStep({
                     style={{
                       padding: '10px 16px',
                       borderRadius: 12,
-                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03))',
-                      border: '1px solid rgba(212, 175, 55, 0.15)',
-                      color: 'var(--gold-400)',
+                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.10), rgba(212, 175, 55, 0.04))',
+                      border: '1px solid rgba(212, 175, 55, 0.22)',
+                      color: '#D4AF37',
                       fontSize: 14,
                       fontWeight: 600,
                       cursor: 'pointer',
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
-                      boxShadow: '0 2px 8px -4px rgba(212, 175, 55, 0.15)',
+                      boxShadow: '0 2px 10px -3px rgba(212, 175, 55, 0.20)',
                     }}
                   >
                     {s}
@@ -355,7 +355,7 @@ export function RequirementsStep({
         justifyContent: 'center',
         gap: 6,
         fontSize: 12,
-        color: 'rgba(212, 175, 55, 0.4)',
+        color: 'rgba(212, 175, 55, 0.55)',
         textAlign: 'center',
         padding: '4px 0',
       }}>
@@ -375,23 +375,25 @@ function GroupCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       borderRadius: 18,
-      background: 'linear-gradient(160deg, rgba(212, 175, 55, 0.03) 0%, rgba(14, 13, 12, 0.92) 25%)',
-      border: '1px solid rgba(212, 175, 55, 0.08)',
+      background: 'linear-gradient(155deg, rgba(212, 175, 55, 0.07) 0%, rgba(20, 18, 14, 0.95) 30%)',
+      border: '1.5px solid rgba(212, 175, 55, 0.14)',
       overflow: 'hidden',
       boxShadow: [
-        'inset 0 1px 0 rgba(255, 248, 214, 0.04)',
-        '0 4px 24px -8px rgba(0, 0, 0, 0.3)',
+        'inset 0 1px 0 rgba(255, 248, 214, 0.08)',
+        'inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
+        '0 6px 28px -6px rgba(0, 0, 0, 0.4)',
+        '0 2px 12px -4px rgba(212, 175, 55, 0.06)',
       ].join(', '),
       position: 'relative',
     }}>
-      {/* Top gold reflection */}
+      {/* Top gold reflection — brighter */}
       <div style={{
         position: 'absolute',
         top: 0,
-        left: '15%',
-        right: '15%',
+        left: '10%',
+        right: '10%',
         height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.12), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.25), rgba(255, 248, 214, 0.15), rgba(212, 175, 55, 0.25), transparent)',
         pointerEvents: 'none',
       }} />
       {children}
@@ -409,12 +411,12 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
     }}>
       <div style={{
         flex: 1, height: 1,
-        background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.06), transparent)',
+        background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.12), transparent)',
       }} />
       <span style={{
         fontSize: 11,
         fontWeight: 600,
-        color: 'rgba(212, 175, 55, 0.35)',
+        color: 'rgba(212, 175, 55, 0.50)',
         letterSpacing: '0.06em',
         textTransform: 'uppercase' as const,
         flexShrink: 0,
@@ -423,14 +425,14 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
       </span>
       <div style={{
         flex: 1, height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.06))',
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.12))',
       }} />
     </div>
   )
 }
 
 function Hairline() {
-  return <div style={{ height: 1, background: 'rgba(212, 175, 55, 0.04)', margin: '0 16px' }} />
+  return <div style={{ height: 1, background: 'rgba(212, 175, 55, 0.08)', margin: '0 16px' }} />
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -479,15 +481,16 @@ function BriefingRow({
       >
         {/* Icon with gold glow when filled */}
         <div style={{
-          width: 28,
-          height: 28,
-          borderRadius: 9,
+          width: 30,
+          height: 30,
+          borderRadius: 10,
           background: filled
-            ? 'rgba(212, 175, 55, 0.08)'
-            : 'transparent',
+            ? 'rgba(212, 175, 55, 0.12)'
+            : 'rgba(255, 255, 255, 0.03)',
           border: filled
-            ? '1px solid rgba(212, 175, 55, 0.12)'
-            : '1px solid transparent',
+            ? '1px solid rgba(212, 175, 55, 0.20)'
+            : '1px solid rgba(255, 255, 255, 0.05)',
+          boxShadow: filled ? '0 0 12px -3px rgba(212, 175, 55, 0.20)' : 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -520,13 +523,12 @@ function BriefingRow({
           {filled && value && !expanded && (
             <div style={{
               fontSize: 13,
-              fontWeight: 500,
-              color: 'var(--gold-400)',
+              fontWeight: 600,
+              color: '#D4AF37',
               marginTop: 2,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              opacity: 0.7,
             }}>
               {value}
             </div>
@@ -585,15 +587,15 @@ function ActionChip({ icon, label, onClick }: { icon: React.ReactNode; label: st
         gap: 7,
         padding: '10px 16px',
         borderRadius: 12,
-        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03))',
-        border: '1px solid rgba(212, 175, 55, 0.15)',
-        color: 'var(--gold-400)',
+        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.10), rgba(212, 175, 55, 0.04))',
+        border: '1px solid rgba(212, 175, 55, 0.22)',
+        color: '#D4AF37',
         fontSize: 13,
         fontWeight: 600,
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
-        boxShadow: '0 2px 8px -4px rgba(212, 175, 55, 0.12)',
+        boxShadow: '0 2px 10px -3px rgba(212, 175, 55, 0.18)',
       }}
     >
       {icon}
