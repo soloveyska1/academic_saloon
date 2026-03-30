@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   ArrowLeft,
   BookOpen,
+  Camera,
+  Check,
   ClipboardPaste,
   FileText,
   FileUp,
@@ -15,16 +17,17 @@ import {
 } from 'lucide-react'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
-import { PremiumInput, PremiumInputGroup, PremiumInputDivider } from '../ui/PremiumInput'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   REQUIREMENTS STEP — v3 «Чистая форма»
+   REQUIREMENTS STEP — v5 «Concierge Briefing»
 
-   Принципы:
-   - Каждая секция — отдельная карточка с чётким лейблом
-   - Без вложенных "inner surface" — один уровень глубины
-   - Инпуты читабельные, крупные, с фокусным accent-бордером
-   - Файлы и требования — кнопки-действия, не сложные карточки
+   Architecture:
+   - iOS Settings-style grouped list (ONE surface, NO child borders)
+   - Conversational labels ("Какой предмет?" not "Предмет *")
+   - Each row: label left, value right, chevron for triggers
+   - Inline requirements textarea (NO fullscreen modal)
+   - Large, visible subject suggestion chips
+   - Service-type adaptive copy
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
@@ -51,12 +54,38 @@ interface RequirementsStepProps {
   disabled?: boolean
 }
 
-/* ── Popular subjects for quick tap suggestions ──────────────────────── */
+/* ── Service-type adaptive copy ──────────────────────────────────────── */
+
+const SUBJECT_PLACEHOLDERS: Record<string, string> = {
+  diploma: 'Экономика предприятия, информатика...',
+  masters: 'Финансовый менеджмент, педагогика...',
+  coursework: 'Макроэкономика, гражданское право...',
+  essay: 'Философия, культурология, политология...',
+  control: 'Математика, статистика, бухучёт...',
+  practice: 'Менеджмент, бухучёт, юриспруденция...',
+}
+
+const TOPIC_CONFIG: Record<string, { label: string; placeholder: string }> = {
+  diploma: { label: 'Тема ВКР', placeholder: 'Если утверждена — напиши как есть' },
+  masters: { label: 'Тема диссертации', placeholder: 'Точная формулировка или направление' },
+  coursework: { label: 'О чём курсовая?', placeholder: 'Тема или хотя бы направление' },
+  essay: { label: 'На какую тему?', placeholder: 'Можно примерно — поможем сформулировать' },
+  presentation: { label: 'Тема выступления', placeholder: 'О чём презентация?' },
+  practice: { label: 'Где проходил практику?', placeholder: 'Название организации' },
+  control: { label: 'Какие задания?', placeholder: 'Тема, номер варианта' },
+}
+
 const POPULAR_SUBJECTS = [
   'Экономика', 'Менеджмент', 'Маркетинг', 'Юриспруденция',
   'Психология', 'Информатика', 'Финансы', 'Педагогика',
   'История', 'Математика', 'Социология', 'Бухучёт',
 ]
+
+const SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 export function RequirementsStep({
   serviceTypeId,
@@ -71,686 +100,430 @@ export function RequirementsStep({
   onFileRemove,
   disabled = false,
 }: RequirementsStepProps) {
-  const [showEditor, setShowEditor] = useState(false)
+  const [expandedSection, setExpandedSection] = useState<string | null>('subject')
+  const [showReqEditor, setShowReqEditor] = useState(false)
   const service = SERVICE_TYPES.find(item => item.id === serviceTypeId)
   const isExpress = service?.category === 'express'
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [fileNotice, setFileNotice] = useState<string | null>(null)
 
-  // Filter suggestions: hide already-typed subject, show max 6
+  const topicConfig = TOPIC_CONFIG[serviceTypeId || ''] || {
+    label: 'О чём работа?',
+    placeholder: 'Если тема уже есть — напиши сюда',
+  }
+  const subjectPlaceholder = SUBJECT_PLACEHOLDERS[serviceTypeId || ''] || 'Микроэкономика, Python, маркетинг...'
+
   const suggestions = useMemo(() => {
     if (subject.trim().length > 0) return []
-    return POPULAR_SUBJECTS.slice(0, 8)
+    return POPULAR_SUBJECTS
   }, [subject])
 
-  const reqPreview = requirements.trim()
-    ? `${requirements.trim().split('\n').filter(Boolean).length} пунктов`
-    : undefined
+  const reqLineCount = requirements.trim() ? requirements.trim().split('\n').filter(Boolean).length : 0
+
+  const fileTotalSize = useMemo(() => files.reduce((s, f) => s + f.size, 0), [files])
+
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled || !e.target.files) return
+    const incoming = Array.from(e.target.files)
+    const validation = validateIncomingFiles(incoming, files)
+    if (validation.accepted.length > 0) onFilesAdd(validation.accepted)
+    setFileNotice(buildFileNotice(validation))
+    e.target.value = ''
+  }, [disabled, files, onFilesAdd])
+
+  // Auto-expand next empty section after subject is filled
+  useEffect(() => {
+    if (subject.trim() && expandedSection === 'subject') {
+      setExpandedSection('topic')
+    }
+  }, [subject, expandedSection])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ─── Subject + Topic — Premium grouped inputs ─────────── */}
+      {/* ═══ GROUP 1: Subject + Topic ═══ */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={SPRING}
       >
-        <PremiumInputGroup>
-          <PremiumInput
-            label={isExpress ? 'Предмет' : 'Предмет *'}
+        <GroupCard>
+          {/* ── Subject row ── */}
+          <BriefingRow
+            label={isExpress ? 'Какой предмет?' : 'Какой предмет? *'}
             value={subject}
-            onChange={onSubjectChange}
-            placeholder="Микроэкономика, Python, маркетинг..."
-            disabled={disabled}
             icon={<BookOpen size={16} />}
-          />
-          <PremiumInputDivider />
-          <PremiumInput
-            label="Тема работы"
+            expanded={expandedSection === 'subject'}
+            onToggle={() => setExpandedSection(expandedSection === 'subject' ? null : 'subject')}
+            filled={!!subject.trim()}
+          >
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => onSubjectChange(e.target.value)}
+              placeholder={subjectPlaceholder}
+              disabled={disabled}
+              autoCapitalize="sentences"
+              enterKeyHint="next"
+              style={inputStyle}
+            />
+            {/* Subject suggestions */}
+            {suggestions.length > 0 && !disabled && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 12,
+              }}>
+                {suggestions.map((s) => (
+                  <motion.button
+                    key={s}
+                    type="button"
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => {
+                      onSubjectChange(s)
+                      triggerHaptic()
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 12,
+                      background: 'rgba(212, 175, 55, 0.06)',
+                      border: '1px solid rgba(212, 175, 55, 0.12)',
+                      color: 'rgba(212, 175, 55, 0.75)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    {s}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </BriefingRow>
+
+          <Hairline />
+
+          {/* ── Topic row ── */}
+          <BriefingRow
+            label={topicConfig.label}
             value={topic}
-            onChange={onTopicChange}
-            placeholder="Анализ рентабельности предприятия"
-            disabled={disabled}
             icon={<FileText size={16} />}
-          />
-        </PremiumInputGroup>
+            expanded={expandedSection === 'topic'}
+            onToggle={() => setExpandedSection(expandedSection === 'topic' ? null : 'topic')}
+            filled={!!topic.trim()}
+            optional
+          >
+            <textarea
+              value={topic}
+              onChange={(e) => onTopicChange(e.target.value)}
+              placeholder={topicConfig.placeholder}
+              disabled={disabled}
+              rows={2}
+              autoCapitalize="sentences"
+              style={{ ...inputStyle, resize: 'none', minHeight: 48 }}
+            />
+            {!topic.trim() && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                marginTop: 8, fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
+              }}>
+                <Sparkles size={11} color="rgba(212, 175, 55, 0.4)" />
+                Если темы нет — поможем сформулировать
+              </div>
+            )}
+          </BriefingRow>
+        </GroupCard>
       </motion.div>
 
-      {/* Quick subject suggestions */}
-      {suggestions.length > 0 && !disabled && !subject.trim() && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 6,
-          }}
-        >
-          {suggestions.map((s) => (
-            <motion.button
-              key={s}
-              type="button"
-              whileTap={{ scale: 0.93 }}
-              onClick={() => onSubjectChange(s)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 10,
-                background: 'rgba(212, 175, 55, 0.04)',
-                border: '1px solid rgba(212, 175, 55, 0.08)',
-                color: 'rgba(212, 175, 55, 0.6)',
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer',
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-                letterSpacing: '0.01em',
-              }}
-            >
-              {s}
-            </motion.button>
-          ))}
-        </motion.div>
-      )}
-
-      {/* ─── Requirements + Files — Premium grouped ───────────── */}
+      {/* ═══ GROUP 2: Requirements + Files ═══ */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
+        transition={{ ...SPRING, delay: 0.06 }}
       >
-        <PremiumInputGroup groupLabel="Дополнительно">
-          <PremiumInput
-            label="Требования"
-            value=""
-            onChange={() => {}}
-            asTrigger
-            onClick={() => setShowEditor(true)}
-            displayValue={reqPreview}
-            placeholder="Объём, оформление, пожелания"
+        <GroupLabel>Если есть подробности</GroupLabel>
+        <GroupCard>
+          {/* ── Requirements row ── */}
+          <BriefingRow
+            label="Есть пожелания?"
+            value={reqLineCount > 0 ? `${reqLineCount} ${reqLineCount === 1 ? 'пункт' : 'пунктов'}` : ''}
             icon={<PenTool size={16} />}
-          />
-          <PremiumInputDivider />
-          <AttachmentsCard
-            files={files}
-            onAdd={onFilesAdd}
-            onRemove={onFileRemove}
-            disabled={disabled}
-          />
-        </PremiumInputGroup>
+            expanded={expandedSection === 'requirements'}
+            onToggle={() => setExpandedSection(expandedSection === 'requirements' ? null : 'requirements')}
+            filled={reqLineCount > 0}
+            optional
+          >
+            <textarea
+              value={requirements}
+              onChange={(e) => onRequirementsChange(e.target.value)}
+              placeholder={
+                REQUIREMENTS_TEMPLATES[serviceTypeId || ''] ||
+                'Объём, оформление, особые условия...'
+              }
+              disabled={disabled}
+              rows={4}
+              autoCapitalize="sentences"
+              style={{ ...inputStyle, resize: 'none', minHeight: 80, lineHeight: 1.6 }}
+            />
+          </BriefingRow>
+
+          <Hairline />
+
+          {/* ── Files row ── */}
+          <BriefingRow
+            label="Прикрепи файлы"
+            value={files.length > 0 ? `${files.length} · ${formatFileSize(fileTotalSize)}` : ''}
+            icon={<Paperclip size={16} />}
+            expanded={expandedSection === 'files'}
+            onToggle={() => setExpandedSection(expandedSection === 'files' ? null : 'files')}
+            filled={files.length > 0}
+            optional
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ACCEPTED_EXTENSIONS.join(',')}
+              onChange={handleFileInput}
+              style={{ display: 'none' }}
+              disabled={disabled}
+            />
+
+            {/* Upload buttons */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: files.length > 0 ? 12 : 0 }}>
+              <ActionChip
+                icon={<FileUp size={14} />}
+                label="Выбрать файлы"
+                onClick={() => fileInputRef.current?.click()}
+              />
+              <ActionChip
+                icon={<Camera size={14} />}
+                label="Фото задания"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'image/*'
+                    fileInputRef.current.setAttribute('capture', 'environment')
+                    fileInputRef.current.click()
+                    // Reset accept after click
+                    setTimeout(() => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.accept = ACCEPTED_EXTENSIONS.join(',')
+                        fileInputRef.current.removeAttribute('capture')
+                      }
+                    }, 1000)
+                  }
+                }}
+              />
+            </div>
+
+            {/* File list */}
+            {files.map((file, i) => (
+              <FileRow
+                key={`${file.name}:${file.size}`}
+                file={file}
+                onRemove={() => onFileRemove(i)}
+                disabled={disabled}
+              />
+            ))}
+
+            {/* Notice */}
+            {fileNotice && (
+              <div style={{
+                marginTop: 8, padding: '6px 8px', borderRadius: 8,
+                background: 'rgba(212, 175, 55, 0.04)',
+                fontSize: 11, color: 'rgba(212, 175, 55, 0.6)', lineHeight: 1.4,
+                display: 'flex', alignItems: 'flex-start', gap: 6,
+              }}>
+                <AlertTriangle size={11} style={{ flexShrink: 0, marginTop: 1 }} />
+                {fileNotice}
+              </div>
+            )}
+
+            {files.length === 0 && (
+              <div style={{
+                fontSize: 11, color: 'var(--text-muted)', opacity: 0.45, marginTop: 6,
+              }}>
+                Методичка, задание, примеры — до 50 МБ
+              </div>
+            )}
+          </BriefingRow>
+        </GroupCard>
       </motion.div>
 
-      {/* ─── Reassurance ──────────────────────────────────────── */}
+      {/* ═══ Reassurance ═══ */}
       <div style={{
-        fontSize: 11,
+        fontSize: 12,
         color: 'var(--text-muted)',
-        opacity: 0.4,
+        opacity: 0.45,
         textAlign: 'center',
-        padding: '4px 0',
-        letterSpacing: '0.01em',
+        padding: '2px 0',
       }}>
-        Всё можно уточнить в чате после оформления
+        Не переживай — всё можно уточнить в чате с менеджером
       </div>
-
-      {/* Модальный редактор требований */}
-      <RequirementsEditorModal
-        isOpen={showEditor}
-        onClose={() => setShowEditor(false)}
-        value={requirements}
-        onChange={onRequirementsChange}
-        serviceTypeId={serviceTypeId}
-        serviceName={service?.label}
-      />
     </div>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SHARED STYLES
-   ───────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   GROUP CARD — Single rounded surface, children have ZERO chrome
+   iOS Settings-style: one border, one background, hairline dividers
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-const goldBorder = 'rgba(212, 175, 55, 0.22)'
-const goldSoft = 'rgba(212, 175, 55, 0.06)'
-const cardBorder = 'rgba(255, 255, 255, 0.06)'
-
-/* RequirementsButton removed — replaced by PremiumInput asTrigger */
-
-/* ─────────────────────────────────────────────────────────────────────────
-   ATTACHMENTS CARD
-   ───────────────────────────────────────────────────────────────────────── */
-
-function AttachmentsCard({
-  files,
-  onAdd,
-  onRemove,
-  disabled,
-}: {
-  files: File[]
-  onAdd: (files: File[]) => void
-  onRemove: (index: number) => void
-  disabled?: boolean
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
-
-  const totalSize = useMemo(
-    () => files.reduce((sum, f) => sum + f.size, 0),
-    [files]
+function GroupCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      borderRadius: 16,
+      background: 'rgba(255, 255, 255, 0.04)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      overflow: 'hidden',
+    }}>
+      {children}
+    </div>
   )
+}
 
-  const handleIncomingFiles = useCallback((incoming: File[]) => {
-    const validation = validateIncomingFiles(incoming, files)
-    if (validation.accepted.length > 0) onAdd(validation.accepted)
-    setNotice(buildFileNotice(validation))
-  }, [files, onAdd])
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 13,
+      fontWeight: 500,
+      color: 'var(--text-muted)',
+      opacity: 0.6,
+      padding: '0 4px 8px',
+    }}>
+      {children}
+    </div>
+  )
+}
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    if (!disabled) handleIncomingFiles(Array.from(e.dataTransfer.files))
-  }, [disabled, handleIncomingFiles])
+function Hairline() {
+  return <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 16px' }} />
+}
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) return
-    handleIncomingFiles(e.target.files ? Array.from(e.target.files) : [])
-    e.target.value = ''
-  }, [disabled, handleIncomingFiles])
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRIEFING ROW — Collapsible row with label/value/chevron
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-  const hasFiles = files.length > 0
-
+function BriefingRow({
+  label,
+  value,
+  icon,
+  expanded,
+  onToggle,
+  filled,
+  optional,
+  children,
+}: {
+  label: string
+  value: string
+  icon: React.ReactNode
+  expanded: boolean
+  onToggle: () => void
+  filled: boolean
+  optional?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div>
-      {/* Upload zone — matches PremiumInput visual style */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => !disabled && inputRef.current?.click()}
+      {/* Header — always visible, tappable */}
+      <motion.button
+        type="button"
+        onClick={onToggle}
+        whileTap={{ scale: 0.99 }}
         style={{
-          position: 'relative',
-          minHeight: 56,
-          borderRadius: 12,
-          background: isDragging
-            ? 'rgba(212, 175, 55, 0.04)'
-            : hasFiles
-              ? 'rgba(212, 175, 55, 0.03)'
-              : 'rgba(0, 0, 0, 0.15)',
-          border: hasFiles || isDragging
-            ? '1px solid rgba(212, 175, 55, 0.12)'
-            : '1px solid rgba(255, 255, 255, 0.03)',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.5 : 1,
-          transition: 'background 0.3s',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Bottom accent line when has files */}
-        {hasFiles && (
-          <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 2,
-            background: 'linear-gradient(90deg, transparent 0%, var(--gold-400) 20%, rgba(255,248,214,0.6) 50%, var(--gold-400) 80%, transparent 100%)',
-            borderRadius: '0 0 12px 12px',
-          }} />
-        )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ACCEPTED_EXTENSIONS.join(',')}
-          onChange={handleInputChange}
-          style={{ display: 'none' }}
-          disabled={disabled}
-        />
-
-        <div style={{
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          padding: '0 16px',
-          minHeight: 56,
+          padding: '14px 16px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
+        }}
+      >
+        {/* Icon */}
+        <div style={{
+          color: filled ? 'var(--gold-400)' : 'var(--text-muted)',
+          opacity: filled ? 1 : 0.4,
+          transition: 'color 0.2s, opacity 0.2s',
+          flexShrink: 0,
+          display: 'flex',
         }}>
-          <motion.div
-            animate={{
-              color: hasFiles ? 'var(--gold-400)' : 'var(--text-muted)',
-            }}
-            style={{
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              width: 20,
-              height: 20,
-              opacity: hasFiles ? 1 : 0.5,
-            }}
-          >
-            {hasFiles ? <Paperclip size={16} /> : <FileUp size={16} />}
-          </motion.div>
+          {filled ? <Check size={16} strokeWidth={2.5} /> : icon}
+        </div>
 
-          <div style={{ flex: 1, padding: '8px 0' }}>
-            <div style={{
-              fontSize: hasFiles ? 14 : 14,
-              fontWeight: hasFiles ? 600 : 500,
-              color: hasFiles ? 'var(--text-primary)' : 'rgba(255, 255, 255, 0.4)',
-              fontFamily: "'Manrope', sans-serif",
-            }}>
-              {hasFiles
-                ? `${files.length} ${pluralizeFiles(files.length)} · ${formatFileSize(totalSize)}`
-                : 'Файлы'}
-            </div>
-            {!hasFiles && (
-              <div style={{
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                opacity: 0.5,
-                marginTop: 1,
-              }}>
-                PDF, DOCX, JPG, ZIP — до 50 МБ
-              </div>
-            )}
-          </div>
-
-          {hasFiles && (
-            <span style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'rgba(212, 175, 55, 0.6)',
-              letterSpacing: '0.02em',
-            }}>
-              + ещё
+        {/* Label */}
+        <span style={{
+          flex: 1,
+          fontSize: 15,
+          fontWeight: filled ? 600 : 500,
+          color: filled ? 'var(--text-primary)' : 'var(--text-secondary)',
+          transition: 'color 0.2s',
+        }}>
+          {filled && value ? value : label}
+          {optional && !filled && (
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', opacity: 0.4, marginLeft: 6 }}>
+              необязательно
             </span>
           )}
-        </div>
-      </div>
+        </span>
 
-      {/* Notice */}
-      {notice && (
-        <div style={{
-          margin: '8px 16px 0',
-          padding: '8px 10px',
-          borderRadius: 8,
-          background: 'rgba(212, 175, 55, 0.04)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 6,
-        }}>
-          <AlertTriangle size={12} color="rgba(212, 175, 55, 0.6)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(212, 175, 55, 0.55)' }}>{notice}</span>
-        </div>
-      )}
-
-      {/* File list */}
-      {hasFiles && (
-        <div style={{
-          padding: '8px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}>
-          {files.map((file, i) => (
-            <FileRow
-              key={`${file.name}:${file.size}:${file.lastModified}`}
-              file={file}
-              onRemove={() => onRemove(i)}
-              disabled={disabled}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   FILE ROW
-   ───────────────────────────────────────────────────────────────────────── */
-
-function FileRow({
-  file,
-  onRemove,
-  disabled,
-}: {
-  file: File
-  onRemove: () => void
-  disabled?: boolean
-}) {
-  const ext = getFileExtension(file.name)
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      padding: '6px 4px',
-    }}>
-      <span style={{
-        padding: '3px 6px',
-        borderRadius: 4,
-        background: 'rgba(212, 175, 55, 0.06)',
-        color: 'rgba(212, 175, 55, 0.7)',
-        fontSize: 9,
-        fontWeight: 700,
-        letterSpacing: '0.05em',
-        textTransform: 'uppercase',
-        flexShrink: 0,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>
-        {ext || '?'}
-      </span>
-
-      <div style={{
-        flex: 1,
-        minWidth: 0,
-        fontSize: 13,
-        fontWeight: 500,
-        color: 'var(--text-secondary)',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      }}>
-        {file.name}
-      </div>
-
-      <span style={{
-        fontSize: 11,
-        color: 'var(--text-muted)',
-        opacity: 0.5,
-        flexShrink: 0,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>
-        {formatFileSize(file.size)}
-      </span>
-
-      {!disabled && (
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.9 }}
-          onClick={onRemove}
-          style={{
-            width: 22,
-            height: 22,
+        {/* Filled badge or chevron */}
+        {filled && !expanded ? (
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'rgba(212, 175, 55, 0.6)',
+            padding: '3px 8px',
             borderRadius: 6,
-            border: 'none',
-            background: 'rgba(255, 255, 255, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-        >
-          <X size={10} color="var(--text-muted)" />
-        </motion.button>
-      )}
+            background: 'rgba(212, 175, 55, 0.06)',
+          }}>
+            ✓
+          </div>
+        ) : (
+          <motion.div
+            animate={{ rotate: expanded ? 90 : 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ color: 'var(--text-muted)', opacity: 0.3, flexShrink: 0 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </motion.div>
+        )}
+      </motion.button>
+
+      {/* Expandable content */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '0 16px 16px' }}>
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   REQUIREMENTS EDITOR MODAL — Full-screen editor
-   ───────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACTION CHIP — Upload button
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-function RequirementsEditorModal({
-  isOpen,
-  onClose,
-  value,
-  onChange,
-  serviceTypeId,
-  serviceName,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  value: string
-  onChange: (val: string) => void
-  serviceTypeId: string | null
-  serviceName?: string
-}) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [localValue, setLocalValue] = useState(value)
-  const [showTemplates, setShowTemplates] = useState(false)
-  useModalRegistration(isOpen, 'requirements-editor-modal')
-
-  useEffect(() => {
-    if (isOpen) {
-      setLocalValue(value)
-      setTimeout(() => textareaRef.current?.focus(), 100)
-    }
-  }, [isOpen, value])
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleResize = () => {
-      textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-    window.visualViewport?.addEventListener('resize', handleResize)
-    return () => window.visualViewport?.removeEventListener('resize', handleResize)
-  }, [isOpen])
-
-  const handleSave = useCallback(() => {
-    onChange(localValue)
-    onClose()
-  }, [localValue, onChange, onClose])
-
-  const handlePaste = useCallback(async () => {
-    try {
-      const text = await navigator.clipboard.readText()
-      setLocalValue(prev => prev ? `${prev}\n${text}` : text)
-    } catch { /* Clipboard unavailable in Telegram */ }
-  }, [])
-
-  const handleTemplateInsert = useCallback((key: string) => {
-    const template = REQUIREMENTS_TEMPLATES[key] || REQUIREMENTS_TEMPLATES.default
-    setLocalValue(prev => prev ? `${prev}\n\n${template}` : template)
-    setShowTemplates(false)
-  }, [])
-
-  const primaryKey = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId] ? serviceTypeId : 'default'
-  const placeholder = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
-    ? REQUIREMENTS_TEMPLATES[serviceTypeId]
-    : `Объём, уникальность, оформление, пожелания...`
-
-  const charCount = localValue.trim().length
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'var(--bg-main)',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {/* Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '14px 16px',
-            paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
-            borderBottom: '1px solid rgba(212, 175, 55, 0.06)',
-            background: 'linear-gradient(180deg, rgba(212, 175, 55, 0.03), transparent)',
-          }}>
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.9 }}
-              onClick={handleSave}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <ArrowLeft size={18} color="var(--text-secondary)" />
-            </motion.button>
-
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-                Требования
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', opacity: 0.7 }}>
-                {serviceName || 'Опишите детали'}
-              </div>
-            </div>
-
-            <Pill
-              tone={charCount > 40 ? 'good' : charCount > 0 ? 'accent' : 'muted'}
-              label={`${charCount} симв.`}
-            />
-          </div>
-
-          {/* Toolbar */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 16px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.03)',
-          }}>
-            <ToolbarBtn icon={ClipboardPaste} label="Вставить" onClick={handlePaste} />
-            <ToolbarBtn
-              icon={Sparkles}
-              label="Шаблон"
-              onClick={() => setShowTemplates(p => !p)}
-              active={showTemplates}
-            />
-            <div style={{ flex: 1 }} />
-            <ToolbarBtn icon={Trash2} label="Очистить" onClick={() => setLocalValue('')} danger />
-          </div>
-
-          {/* Templates dropdown */}
-          <AnimatePresence>
-            {showTemplates && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                style={{ overflow: 'hidden', borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}
-              >
-                <div style={{ padding: '10px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {Object.keys(REQUIREMENTS_TEMPLATES).map((key) => (
-                    <motion.button
-                      key={key}
-                      type="button"
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => handleTemplateInsert(key)}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: key === primaryKey ? 'var(--gold-400)' : 'var(--text-secondary)',
-                        background: key === primaryKey ? goldSoft : 'var(--bg-glass)',
-                        border: `1px solid ${key === primaryKey ? goldBorder : cardBorder}`,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {getTemplateLabel(key)}
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Textarea */}
-          <div style={{
-            flex: 1,
-            padding: 16,
-            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            overflow: 'auto',
-            WebkitOverflowScrolling: 'touch',
-          }}>
-            <textarea
-              ref={textareaRef}
-              value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              placeholder={placeholder}
-              style={{
-                width: '100%',
-                minHeight: '60vh',
-                fontSize: 16,
-                fontFamily: "'Manrope', sans-serif",
-                color: 'var(--text-primary)',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                lineHeight: 1.7,
-                padding: 0,
-              }}
-              autoCapitalize="sentences"
-              autoCorrect="on"
-              spellCheck
-            />
-          </div>
-
-          {/* Save button */}
-          <div style={{
-            padding: '12px 16px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid rgba(212, 175, 55, 0.06)',
-            background: 'linear-gradient(180deg, transparent, rgba(212, 175, 55, 0.02))',
-          }}>
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.97 }}
-              onClick={handleSave}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 14,
-                border: 'none',
-                background: 'var(--gold-metallic)',
-                color: 'var(--text-on-gold)',
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px -4px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-              }}
-            >
-              Сохранить
-            </motion.button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   SMALL COMPONENTS
-   ───────────────────────────────────────────────────────────────────────── */
-
-function ToolbarBtn({
-  icon: Icon,
-  label,
-  onClick,
-  active,
-  danger,
-}: {
-  icon: typeof FileText
-  label: string
-  onClick: () => void
-  active?: boolean
-  danger?: boolean
-}) {
+function ActionChip({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
     <motion.button
       type="button"
@@ -759,61 +532,108 @@ function ToolbarBtn({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 5,
-        padding: '7px 12px',
+        gap: 6,
+        padding: '8px 14px',
+        borderRadius: 10,
+        background: 'rgba(212, 175, 55, 0.06)',
+        border: '1px solid rgba(212, 175, 55, 0.12)',
+        color: 'rgba(212, 175, 55, 0.75)',
         fontSize: 12,
         fontWeight: 600,
-        color: danger ? 'var(--error-text)' : active ? 'var(--gold-400)' : 'var(--text-muted)',
-        background: active ? 'rgba(212, 175, 55, 0.06)' : 'rgba(255, 255, 255, 0.03)',
-        border: `1px solid ${active ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.06)'}`,
-        borderRadius: 10,
         cursor: 'pointer',
-        boxShadow: active ? '0 0 8px -3px rgba(212, 175, 55, 0.15)' : 'none',
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
       }}
     >
-      <Icon size={13} />
+      {icon}
       {label}
     </motion.button>
   )
 }
 
-function Pill({ label, tone }: { label: string; tone: 'good' | 'muted' | 'accent' }) {
-  const colors = tone === 'good'
-    ? { bg: 'rgba(212, 175, 55, 0.08)', border: 'rgba(212, 175, 55, 0.15)', text: 'rgba(212, 175, 55, 0.8)' }
-    : tone === 'accent'
-      ? { bg: goldSoft, border: goldBorder, text: 'var(--gold-400)' }
-      : { bg: 'rgba(255, 255, 255, 0.03)', border: 'rgba(255, 255, 255, 0.06)', text: 'var(--text-muted)' }
+/* ═══════════════════════════════════════════════════════════════════════════
+   FILE ROW — Compact, minimal
+   ═══════════════════════════════════════════════════════════════════════════ */
 
+function FileRow({ file, onRemove, disabled }: { file: File; onRemove: () => void; disabled?: boolean }) {
+  const ext = getFileExtension(file.name)
   return (
-    <span style={{
-      display: 'inline-flex',
-      padding: '4px 8px',
-      borderRadius: 8,
-      background: colors.bg,
-      border: `1px solid ${colors.border}`,
-      color: colors.text,
-      fontSize: 10,
-      fontWeight: 600,
-      letterSpacing: '0.04em',
-      lineHeight: 1,
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0',
     }}>
-      {label}
-    </span>
+      <span style={{
+        padding: '2px 6px', borderRadius: 4,
+        background: 'rgba(212, 175, 55, 0.06)',
+        color: 'rgba(212, 175, 55, 0.65)',
+        fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+        fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
+      }}>
+        {ext || '?'}
+      </span>
+      <span style={{
+        flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {file.name}
+      </span>
+      <span style={{
+        fontSize: 11, color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0,
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>
+        {formatFileSize(file.size)}
+      </span>
+      {!disabled && (
+        <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={onRemove}
+          style={{
+            width: 22, height: 22, borderRadius: 6, border: 'none',
+            background: 'rgba(255, 255, 255, 0.04)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', flexShrink: 0,
+          }}>
+          <X size={10} color="var(--text-muted)" />
+        </motion.button>
+      )}
+    </div>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   UTILITY FUNCTIONS
-   ───────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHARED
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-function getFileExtension(filename: string) {
-  const dot = filename.lastIndexOf('.')
-  return dot === -1 ? '' : filename.slice(dot + 1).toUpperCase()
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  fontSize: 16,
+  lineHeight: 1.5,
+  fontWeight: 500,
+  fontFamily: "'Manrope', sans-serif",
+  color: 'var(--text-primary)',
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  padding: 0,
+  margin: 0,
+  WebkitAppearance: 'none',
+  boxShadow: 'none',
 }
 
-function getFileExtensionWithDot(filename: string) {
-  const dot = filename.lastIndexOf('.')
-  return dot === -1 ? '' : filename.slice(dot).toLowerCase()
+function triggerHaptic() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tg = (window as any).Telegram?.WebApp?.HapticFeedback
+    if (tg?.selectionChanged) tg.selectionChanged()
+    else tg?.impactOccurred?.('light')
+  } catch { /* noop */ }
+}
+
+function getFileExtension(name: string) {
+  const dot = name.lastIndexOf('.')
+  return dot === -1 ? '' : name.slice(dot + 1).toUpperCase()
+}
+
+function getFileExtensionWithDot(name: string) {
+  const dot = name.lastIndexOf('.')
+  return dot === -1 ? '' : name.slice(dot).toLowerCase()
 }
 
 function formatFileSize(size: number) {
@@ -831,7 +651,6 @@ function validateIncomingFiles(incoming: File[], existing: File[]) {
   incoming.forEach(file => {
     const sig = `${file.name}:${file.size}:${file.lastModified}`
     const ext = getFileExtensionWithDot(file.name)
-
     if (known.has(sig) || accepted.some(a => `${a.name}:${a.size}:${a.lastModified}` === sig)) {
       duplicates.push(file.name); return
     }
@@ -849,23 +668,9 @@ function validateIncomingFiles(incoming: File[], existing: File[]) {
 
 function buildFileNotice(v: ReturnType<typeof validateIncomingFiles>) {
   const p: string[] = []
-  if (v.accepted.length > 0) p.push(`Добавили ${v.accepted.length} ${pluralizeFiles(v.accepted.length)}.`)
-  if (v.duplicates.length > 0) p.push(`Повторы пропустили: ${v.duplicates.join(', ')}.`)
-  if (v.blocked.length > 0) p.push(`Неподдерживаемый тип: ${v.blocked.join(', ')}.`)
-  if (v.oversized.length > 0) p.push(`Слишком большие (лимит 50 МБ): ${v.oversized.join(', ')}.`)
+  if (v.accepted.length > 0) p.push(`Принято: ${v.accepted.length} ${v.accepted.length === 1 ? 'файл' : 'файлов'}.`)
+  if (v.duplicates.length > 0) p.push(`Уже прикреплён: ${v.duplicates.join(', ')}.`)
+  if (v.blocked.length > 0) p.push(`Формат не поддерживаем: ${v.blocked.join(', ')}.`)
+  if (v.oversized.length > 0) p.push(`Слишком большой (макс. 50 МБ): ${v.oversized.join(', ')}.`)
   return p.length > 0 ? p.join(' ') : null
-}
-
-function pluralizeFiles(count: number): string {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  if (mod100 >= 11 && mod100 <= 19) return 'файлов'
-  if (mod10 === 1) return 'файл'
-  if (mod10 >= 2 && mod10 <= 4) return 'файла'
-  return 'файлов'
-}
-
-function getTemplateLabel(key: string) {
-  if (key === 'default') return 'Общий'
-  return SERVICE_TYPES.find(s => s.id === key)?.label || key
 }

@@ -173,7 +173,7 @@ export const REQUIREMENTS_TEMPLATES: Record<string, string> = {
 
 export const WIZARD_STEPS = [
   { num: 1, title: 'Услуга', subtitle: 'Что нужно сделать?' },
-  { num: 2, title: 'Детали', subtitle: 'Предмет и требования' },
+  { num: 2, title: 'Расскажи о задаче', subtitle: 'Чем точнее — тем точнее оценка' },
   { num: 3, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
 ]
 
