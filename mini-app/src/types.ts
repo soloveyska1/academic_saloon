@@ -93,7 +93,7 @@ export interface Order {
   progress?: number
   bonus_used?: number
   payment_scheme?: 'full' | 'half' | null
-  revision_count?: number  // Number of revision rounds (3 free included)
+  revision_count?: number  // Number of revision rounds (unlimited)
   paused_from_status?: OrderStatus | null
   pause_started_at?: string | null
   pause_until?: string | null

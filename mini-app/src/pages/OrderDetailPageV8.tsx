@@ -109,9 +109,9 @@ import {
 const DS = {
   colors: {
     // Gold
-    gold: 'var(--gold-400)',
-    goldLight: 'var(--gold-150)',
-    goldDark: 'var(--gold-500)',
+    gold: '#D4AF37',
+    goldLight: '#f0d35c',
+    goldDark: '#b48e26',
     // Semantic
     success: 'var(--success-text)',
     warning: 'var(--warning-text)',
@@ -510,7 +510,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const paidAmount = Math.max(order.paid_amount || 0, 0)
   const remainingAmount = Math.max(totalPrice - paidAmount, 0)
   const displayPrice = remainingAmount > 0 && remainingAmount !== totalPrice ? remainingAmount : totalPrice
-  const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'ОСТАЛОСЬ К ОПЛАТЕ' : 'СТОИМОСТЬ'
+  const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'ОСТАЛОСЬ К ОПЛАТЕ' : 'ВАША ЦЕНА'
   const hasPaymentRecorded = paidAmount > 0
   const hasPartialPayment = hasPaymentRecorded && remainingAmount > 0
   const isFullyPaid = hasPaymentRecorded && remainingAmount <= 0
@@ -902,41 +902,71 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           </motion.div>
         )}
 
-        {/* ─── Row 4: Countdown timer ─── */}
+        {/* ─── Row 4: Countdown timer — premium urgency ─── */}
         {isAwaitingPayment && countdown && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            style={{ marginTop: 12 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              marginTop: 16,
+              padding: '12px 14px',
+              borderRadius: 12,
+              background: paymentExpired
+                ? 'rgba(239,68,68,0.06)'
+                : 'linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02))',
+              border: `1px solid ${paymentExpired ? 'rgba(239,68,68,0.15)' : 'rgba(212,175,55,0.10)'}`,
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock size={14} color={urgencyColor} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
-                {paymentExpired ? 'Срок оплаты истёк' : 'Время на оплату'}
+              <motion.div
+                animate={!paymentExpired ? {
+                  scale: [1, 1.15, 1],
+                  opacity: [0.7, 1, 0.7],
+                } : undefined}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Clock size={14} color={urgencyColor} />
+              </motion.div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.40)' }}>
+                {paymentExpired ? 'Срок оплаты истёк' : 'Осталось на оплату'}
               </span>
               {!paymentExpired && (
-                <span
+                <motion.span
+                  animate={{
+                    textShadow: [
+                      '0 0 0 rgba(212,175,55,0)',
+                      '0 0 8px rgba(212,175,55,0.35)',
+                      '0 0 0 rgba(212,175,55,0)',
+                    ],
+                  }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
                   style={{
-                    fontSize: 13,
-                    fontWeight: 600,
+                    fontSize: 15,
+                    fontWeight: 700,
                     fontFamily: "'JetBrains Mono', monospace",
-                    color: 'rgba(212,175,55,0.7)',
+                    color: '#E8D5A3',
                     marginLeft: 'auto',
+                    letterSpacing: '-0.02em',
                   }}
                 >
                   {countdown.formatted}
-                </span>
+                </motion.span>
               )}
             </div>
-            {/* Subtle progress line */}
+            {/* Progress bar — 4px tall with glow */}
             {!paymentExpired && (
-              <div style={{ marginTop: 8, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.04)' }}>
+              <div style={{ marginTop: 10, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${countdown.progress}%` }}
-                  transition={{ duration: 0.5 }}
-                  style={{ height: '100%', borderRadius: 1, background: urgencyColor }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 2,
+                    background: `linear-gradient(90deg, ${urgencyColor}, ${urgencyColor}cc)`,
+                    boxShadow: `0 0 8px ${urgencyColor}40`,
+                  }}
                 />
               </div>
             )}
@@ -966,37 +996,37 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             )}
 
             {/* Stage rail */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, minWidth: 132 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 148 }}>
               <span
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.28)',
+                  color: 'rgba(212,175,55,0.50)',
                 }}
               >
-                Этап: {STAGE_RAIL[currentStageIndex]}
+                {STAGE_RAIL[currentStageIndex]}
               </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 3, width: '100%' }}>
                 {STAGE_RAIL.map((stage, index) => {
                   const isCompleted = index < currentStageIndex
                   const isCurrent = index === currentStageIndex
                   return (
                     <motion.div
                       key={stage}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.32 + index * 0.04, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0, scaleX: 0.5 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ delay: 0.32 + index * 0.05, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       style={{
-                        height: isCurrent ? 8 : 6,
-                        borderRadius: 999,
+                        height: 6,
+                        borderRadius: 3,
                         background: isCompleted
-                          ? 'linear-gradient(90deg, rgba(212,175,55,0.55), rgba(212,175,55,0.35))'
+                          ? 'linear-gradient(90deg, rgba(212,175,55,0.60), rgba(212,175,55,0.40))'
                           : isCurrent
-                            ? 'linear-gradient(90deg, rgba(232,213,163,0.95), rgba(212,175,55,0.8))'
+                            ? 'linear-gradient(90deg, #E8D5A3, rgba(212,175,55,0.85))'
                             : 'rgba(255,255,255,0.08)',
-                        boxShadow: isCurrent ? '0 0 0 1px rgba(212,175,55,0.12)' : 'none',
+                        boxShadow: isCurrent ? '0 0 6px rgba(212,175,55,0.25), 0 0 0 1px rgba(212,175,55,0.15)' : 'none',
                       }}
                     />
                   )
@@ -1007,44 +1037,35 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         )}
       </motion.div>
 
-      {/* ═══ Trust signals (outside the card, with breathing room) ═══ */}
+      {/* ═══ Trust signals — single inline strip, premium feel ═══ */}
       {isAwaitingPayment && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          style={{ marginTop: 16, padding: '0 4px' }}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            marginTop: 20,
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}
         >
           {[
-            { icon: ShieldCheck, text: 'Полный возврат до начала работы' },
-            { icon: RotateCcw, text: '3 бесплатных круга правок' },
-            { icon: CalendarCheck, text: 'Гарантия соблюдения сроков' },
+            { icon: ShieldCheck, text: 'Возврат' },
+            { icon: RotateCcw, text: 'Безлимит правок' },
+            { icon: CalendarCheck, text: 'Точно в срок' },
           ].map((g, i) => (
             <div
               key={i}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                padding: '14px 0',
-                borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                gap: 6,
               }}
             >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'rgba(212,175,55,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <g.icon size={15} color="rgba(212,175,55,0.45)" />
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>
+              <g.icon size={13} color="rgba(212,175,55,0.55)" />
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.40)', letterSpacing: '0.01em' }}>
                 {g.text}
               </span>
             </div>
@@ -1187,7 +1208,7 @@ const StickyActionBar = memo(function StickyActionBar({
     },
     revision_in_progress: {
       showAmount: false,
-      buttonText: `На доработке · правка ${(order.revision_count || 0)}/3`,
+      buttonText: `На доработке · правка #${(order.revision_count || 0)}`,
       buttonIcon: Edit3,
       buttonColor: '#E8D5A3',
       buttonBg: 'rgba(212,175,55,0.08)',
@@ -1218,7 +1239,6 @@ const StickyActionBar = memo(function StickyActionBar({
   const ButtonIcon = config.buttonIcon
 
   const revisionCount = order.revision_count || 0
-  const freeRevisionsLeft = Math.max(0, 3 - revisionCount)
 
   // Don't show for cancelled/rejected and statuses without real CTA
   if (['cancelled', 'work'].includes(variant)) return null
@@ -1246,10 +1266,7 @@ const StickyActionBar = memo(function StickyActionBar({
             }}>
               <Edit3 size={12} color="rgba(212,175,55,0.5)" />
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-                {freeRevisionsLeft > 0
-                  ? `Использовано ${revisionCount}/3 бесплатных правок`
-                  : 'Бесплатные правки исчерпаны'
-                }
+                {`Использовано правок: ${revisionCount}`}
               </span>
             </div>
           )}
@@ -1317,8 +1334,8 @@ const StickyActionBar = memo(function StickyActionBar({
                   ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
                   : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
                 boxShadow: needsSecondPayment
-                  ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
-                  : '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                  ? '0 8px 28px -4px rgba(212,175,55,0.4), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                  : '0 8px 28px -4px rgba(212,175,55,0.4), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
                 color: 'var(--text-on-gold)',
                 fontSize: 15,
                 fontWeight: 700,
@@ -1367,27 +1384,36 @@ const StickyActionBar = memo(function StickyActionBar({
           </div>
         )}
 
-        {/* Right: Action Button */}
+        {/* Right: Action Button — THE MONEY BUTTON */}
         <motion.button
           whileTap={config.disabled ? undefined : { scale: 0.97 }}
           onClick={config.onClick}
           disabled={config.disabled}
-          className="flex items-center justify-center gap-2 py-4 px-5 rounded-2xl text-[15px] font-bold min-h-[52px]"
+          className="flex items-center justify-center gap-2 rounded-2xl text-[15px] font-bold"
           style={{
             flex: config.showAmount ? '1 1 auto' : '1 1 100%',
-            background: config.buttonBg,
+            height: variant === 'payment' ? 56 : 52,
+            padding: variant === 'payment' ? '0 24px' : '0 20px',
+            background: variant === 'payment'
+              ? 'linear-gradient(135deg, #f5e27a 0%, #D4AF37 40%, #b48e26 100%)'
+              : config.buttonBg,
             border: variant === 'work' ? `1px solid ${DS.colors.borderLight}`
               : variant === 'verification' || variant === 'revision_in_progress' ? '1px solid rgba(212,175,55,0.12)'
               : 'none',
             color: config.buttonColor,
             cursor: config.disabled ? 'default' : 'pointer',
             opacity: config.disabled && variant !== 'verification' && variant !== 'revision_in_progress' ? 0.6 : 1,
-            boxShadow: ['payment', 'completed'].includes(variant)
-              ? '0 4px 16px -2px rgba(212,175,55,0.3), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
-              : 'none',
+            boxShadow: variant === 'payment'
+              ? '0 6px 24px -4px rgba(212,175,55,0.50), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1)'
+              : ['completed'].includes(variant)
+                ? '0 8px 28px -4px rgba(212,175,55,0.4), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)'
+                : 'none',
+            fontSize: variant === 'payment' ? 16 : 15,
+            fontWeight: 700,
+            letterSpacing: variant === 'payment' ? '-0.01em' : undefined,
           }}
         >
-          <ButtonIcon size={20} />
+          <ButtonIcon size={variant === 'payment' ? 22 : 20} />
           {config.buttonText}
         </motion.button>
       </div>
@@ -1918,7 +1944,7 @@ const PaymentSheet = memo(function PaymentSheet({
                     ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
                     : 'rgba(255,255,255,0.05)',
                   boxShadow: (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo)
-                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    ? '0 8px 28px -4px rgba(212,175,55,0.4), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
                     : 'none',
                 }}
               >
@@ -2368,8 +2394,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
   useModalRegistration(isOpen, 'revision-request-sheet')
 
   const revisionCount = order.revision_count || 0
-  const freeLeft = Math.max(0, 3 - revisionCount)
-  const isPaid = revisionCount >= 3
+  const isPaid = false // Unlimited revisions policy — no paid revisions
 
   useEffect(() => {
     if (isOpen) {
@@ -2436,7 +2461,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                   Запрос правок
                 </h2>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0' }}>
-                  {isPaid ? 'Платная правка' : `${freeLeft} бесплатных осталось`}
+                  {revisionCount > 0 ? `Правка #${revisionCount + 1}` : 'Безлимитные правки'}
                 </p>
               </div>
               <motion.button
@@ -2546,7 +2571,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                     ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
                     : 'rgba(255,255,255,0.04)',
                   boxShadow: message.trim()
-                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    ? '0 8px 28px -4px rgba(212,175,55,0.4), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
                     : 'none',
                   opacity: isSubmitting ? 0.7 : 1,
                 }}
@@ -3274,7 +3299,7 @@ export function OrderDetailPageV8() {
       showToast({
         type: 'success',
         title: result.is_paid ? 'Платная правка отправлена' : 'Правки отправлены',
-        message: `Правка ${result.revision_count}/3`,
+        message: `Правка #${result.revision_count}`,
       })
       loadOrder()
     } else {
