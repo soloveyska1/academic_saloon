@@ -104,11 +104,13 @@ export function PremiumInput({
         width: '100%',
         minHeight: 56,
         borderRadius: 12,
-        // Stripe-style filled surface — NO border, just subtle bg shift
+        // Recessed surface — darker than parent, gold tint on focus
         background: focused
-          ? 'rgba(255, 255, 255, 0.07)'
-          : 'rgba(255, 255, 255, 0.035)',
-        border: 'none',
+          ? 'rgba(212, 175, 55, 0.04)'
+          : 'rgba(0, 0, 0, 0.15)',
+        border: focused
+          ? '1px solid rgba(212, 175, 55, 0.12)'
+          : '1px solid rgba(255, 255, 255, 0.03)',
         outline: 'none',
         cursor: asTrigger ? 'pointer' : undefined,
         textAlign: 'left' as const,
@@ -349,9 +351,12 @@ export function PremiumTextarea({
         width: '100%',
         borderRadius: 12,
         background: focused
-          ? 'rgba(255, 255, 255, 0.07)'
-          : 'rgba(255, 255, 255, 0.035)',
-        transition: 'background 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          ? 'rgba(212, 175, 55, 0.04)'
+          : 'rgba(0, 0, 0, 0.15)',
+        border: focused
+          ? '1px solid rgba(212, 175, 55, 0.12)'
+          : '1px solid rgba(255, 255, 255, 0.03)',
+        transition: 'background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease',
         overflow: 'hidden',
       }}
     >
@@ -496,7 +501,8 @@ export function PremiumInputGroup({ children, groupLabel }: PremiumInputGroupPro
           overflow: 'hidden',
           // Barely-there container — Stripe uses almost invisible grouping
           // No border at all — just the faintest surface tint to unify children
-          background: 'rgba(255, 255, 255, 0.015)',
+          background: 'rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.03)',
         }}
       >
         {children}
