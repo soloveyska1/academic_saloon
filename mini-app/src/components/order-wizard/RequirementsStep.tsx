@@ -179,16 +179,17 @@ export function RequirementsStep({
                       advanceToTopic()
                     }}
                     style={{
-                      padding: '8px 14px',
+                      padding: '10px 16px',
                       borderRadius: 12,
-                      background: 'rgba(212, 175, 55, 0.06)',
-                      border: '1px solid rgba(212, 175, 55, 0.12)',
-                      color: 'rgba(212, 175, 55, 0.75)',
-                      fontSize: 13,
+                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03))',
+                      border: '1px solid rgba(212, 175, 55, 0.15)',
+                      color: 'var(--gold-400)',
+                      fontSize: 14,
                       fontWeight: 600,
                       cursor: 'pointer',
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
+                      boxShadow: '0 2px 8px -4px rgba(212, 175, 55, 0.15)',
                     }}
                   >
                     {s}
@@ -349,13 +350,17 @@ export function RequirementsStep({
 
       {/* ═══ Reassurance ═══ */}
       <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
         fontSize: 12,
-        color: 'var(--text-muted)',
-        opacity: 0.45,
+        color: 'rgba(212, 175, 55, 0.4)',
         textAlign: 'center',
-        padding: '2px 0',
+        padding: '4px 0',
       }}>
-        Не переживай — всё можно уточнить в чате с менеджером
+        <Sparkles size={11} style={{ opacity: 0.6 }} />
+        <span>Всё можно уточнить в чате с менеджером</span>
       </div>
     </div>
   )
@@ -369,11 +374,26 @@ export function RequirementsStep({
 function GroupCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      borderRadius: 16,
-      background: 'rgba(255, 255, 255, 0.04)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
+      borderRadius: 18,
+      background: 'linear-gradient(160deg, rgba(212, 175, 55, 0.03) 0%, rgba(14, 13, 12, 0.92) 25%)',
+      border: '1px solid rgba(212, 175, 55, 0.08)',
       overflow: 'hidden',
+      boxShadow: [
+        'inset 0 1px 0 rgba(255, 248, 214, 0.04)',
+        '0 4px 24px -8px rgba(0, 0, 0, 0.3)',
+      ].join(', '),
+      position: 'relative',
     }}>
+      {/* Top gold reflection */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: '15%',
+        right: '15%',
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.12), transparent)',
+        pointerEvents: 'none',
+      }} />
       {children}
     </div>
   )
@@ -382,19 +402,35 @@ function GroupCard({ children }: { children: React.ReactNode }) {
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontSize: 13,
-      fontWeight: 500,
-      color: 'var(--text-muted)',
-      opacity: 0.6,
-      padding: '0 4px 8px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '4px 4px 10px',
     }}>
-      {children}
+      <div style={{
+        flex: 1, height: 1,
+        background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.06), transparent)',
+      }} />
+      <span style={{
+        fontSize: 11,
+        fontWeight: 600,
+        color: 'rgba(212, 175, 55, 0.35)',
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase' as const,
+        flexShrink: 0,
+      }}>
+        {children}
+      </span>
+      <div style={{
+        flex: 1, height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.06))',
+      }} />
     </div>
   )
 }
 
 function Hairline() {
-  return <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 16px' }} />
+  return <div style={{ height: 1, background: 'rgba(212, 175, 55, 0.04)', margin: '0 16px' }} />
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -441,69 +477,76 @@ function BriefingRow({
           touchAction: 'manipulation',
         }}
       >
-        {/* Icon */}
+        {/* Icon with gold glow when filled */}
         <div style={{
-          color: filled ? 'var(--gold-400)' : 'var(--text-muted)',
-          opacity: filled ? 1 : 0.4,
-          transition: 'color 0.2s, opacity 0.2s',
-          flexShrink: 0,
+          width: 28,
+          height: 28,
+          borderRadius: 9,
+          background: filled
+            ? 'rgba(212, 175, 55, 0.08)'
+            : 'transparent',
+          border: filled
+            ? '1px solid rgba(212, 175, 55, 0.12)'
+            : '1px solid transparent',
           display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.3s ease',
+          color: filled ? 'var(--gold-400)' : 'var(--text-muted)',
         }}>
-          {filled ? <Check size={16} strokeWidth={2.5} /> : icon}
+          {filled
+            ? <Check size={14} strokeWidth={2.5} style={{ filter: 'drop-shadow(0 0 3px rgba(212,175,55,0.3))' }} />
+            : <div style={{ opacity: 0.4 }}>{icon}</div>
+          }
         </div>
 
         {/* Label + Value */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{
             fontSize: 15,
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
+            fontWeight: filled ? 600 : 500,
+            color: filled ? 'var(--text-primary)' : 'var(--text-secondary)',
+            letterSpacing: '-0.01em',
+            transition: 'color 0.2s',
           }}>
             {label}
           </span>
           {optional && !filled && (
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', opacity: 0.4, marginLeft: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.35, marginLeft: 8 }}>
               необязательно
             </span>
           )}
           {filled && value && !expanded && (
             <div style={{
               fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
+              fontWeight: 500,
+              color: 'var(--gold-400)',
               marginTop: 2,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              opacity: 0.7,
             }}>
               {value}
             </div>
           )}
         </div>
 
-        {/* Filled badge or chevron */}
-        {filled && !expanded ? (
-          <div style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'rgba(212, 175, 55, 0.6)',
-            padding: '3px 8px',
-            borderRadius: 6,
-            background: 'rgba(212, 175, 55, 0.06)',
-          }}>
-            ✓
-          </div>
-        ) : (
-          <motion.div
-            animate={{ rotate: expanded ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ color: 'var(--text-muted)', opacity: 0.3, flexShrink: 0 }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </motion.div>
-        )}
+        {/* Chevron — rotates on expand */}
+        <motion.div
+          animate={{ rotate: expanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            color: filled ? 'var(--gold-400)' : 'var(--text-muted)',
+            opacity: filled ? 0.5 : 0.25,
+            flexShrink: 0,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </motion.div>
       </motion.button>
 
       {/* Expandable content */}
@@ -534,22 +577,23 @@ function ActionChip({ icon, label, onClick }: { icon: React.ReactNode; label: st
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.93 }}
       onClick={onClick}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '8px 14px',
-        borderRadius: 10,
-        background: 'rgba(212, 175, 55, 0.06)',
-        border: '1px solid rgba(212, 175, 55, 0.12)',
-        color: 'rgba(212, 175, 55, 0.75)',
-        fontSize: 12,
+        gap: 7,
+        padding: '10px 16px',
+        borderRadius: 12,
+        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03))',
+        border: '1px solid rgba(212, 175, 55, 0.15)',
+        color: 'var(--gold-400)',
+        fontSize: 13,
         fontWeight: 600,
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
+        boxShadow: '0 2px 8px -4px rgba(212, 175, 55, 0.12)',
       }}
     >
       {icon}
