@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   BookOpen,
-  ChevronRight,
   ClipboardPaste,
   FileText,
   FileUp,
