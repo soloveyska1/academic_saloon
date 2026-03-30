@@ -876,7 +876,8 @@ function RequirementsEditorModal({
             gap: 12,
             padding: '14px 16px',
             paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
-            borderBottom: '1px solid var(--surface-hover)',
+            borderBottom: '1px solid rgba(212, 175, 55, 0.06)',
+            background: 'linear-gradient(180deg, rgba(212, 175, 55, 0.03), transparent)',
           }}>
             <motion.button
               type="button"
@@ -886,8 +887,9 @@ function RequirementsEditorModal({
                 width: 38,
                 height: 38,
                 borderRadius: 12,
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-strong)',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -898,10 +900,10 @@ function RequirementsEditorModal({
             </motion.button>
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 Требования
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', opacity: 0.7 }}>
                 {serviceName || 'Опишите детали'}
               </div>
             </div>
@@ -918,7 +920,7 @@ function RequirementsEditorModal({
             alignItems: 'center',
             gap: 8,
             padding: '10px 16px',
-            borderBottom: '1px solid var(--bg-glass)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.03)',
           }}>
             <ToolbarBtn icon={ClipboardPaste} label="Вставить" onClick={handlePaste} />
             <ToolbarBtn
@@ -982,9 +984,9 @@ function RequirementsEditorModal({
               style={{
                 width: '100%',
                 minHeight: '60vh',
-                fontSize: 15,
+                fontSize: 16,
                 fontFamily: "'Manrope', sans-serif",
-                color: 'var(--text-main)',
+                color: 'var(--text-primary)',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
@@ -1001,22 +1003,24 @@ function RequirementsEditorModal({
           {/* Save button */}
           <div style={{
             padding: '12px 16px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid var(--surface-hover)',
+            borderTop: '1px solid rgba(212, 175, 55, 0.06)',
+            background: 'linear-gradient(180deg, transparent, rgba(212, 175, 55, 0.02))',
           }}>
             <motion.button
               type="button"
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
               onClick={handleSave}
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: 12,
+                borderRadius: 14,
                 border: 'none',
                 background: 'var(--gold-metallic)',
                 color: 'var(--text-on-gold)',
                 fontSize: 15,
                 fontWeight: 700,
                 cursor: 'pointer',
+                boxShadow: '0 4px 16px -4px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
               }}
             >
               Сохранить
@@ -1054,14 +1058,15 @@ function ToolbarBtn({
         display: 'flex',
         alignItems: 'center',
         gap: 5,
-        padding: '7px 11px',
+        padding: '7px 12px',
         fontSize: 12,
         fontWeight: 600,
-        color: danger ? 'var(--error-text)' : active ? 'var(--gold-400)' : 'var(--text-secondary)',
-        background: active ? goldSoft : 'var(--bg-glass)',
-        border: `1px solid ${active ? goldBorder : cardBorder}`,
-        borderRadius: 8,
+        color: danger ? 'var(--error-text)' : active ? 'var(--gold-400)' : 'var(--text-muted)',
+        background: active ? 'rgba(212, 175, 55, 0.06)' : 'rgba(255, 255, 255, 0.03)',
+        border: `1px solid ${active ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.06)'}`,
+        borderRadius: 10,
         cursor: 'pointer',
+        boxShadow: active ? '0 0 8px -3px rgba(212, 175, 55, 0.15)' : 'none',
       }}
     >
       <Icon size={13} />
