@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     LOG_CHANNEL_ID: int = -1003300275622
     ORDERS_CHANNEL_ID: int = -1003331104298  # Канал для Live-карточек заказов
     ADMIN_GROUP_ID: int = -1003352978651  # Супергруппа с Forum Topics для тикетов
-    SUPPORT_USERNAME: str = "Thisissaymoon"
+    SUPPORT_USERNAME: str = "academicsaloon"
     OFFER_URL: str = CANONICAL_OFFER_URL  # Публичная оферта
     PRIVACY_POLICY_URL: str = CANONICAL_PRIVACY_POLICY_URL  # Политика обработки ПД
     EXECUTOR_INFO_URL: str = CANONICAL_EXECUTOR_INFO_URL  # Сведения об исполнителе
