@@ -2,9 +2,11 @@ import { useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle,
+  BookOpen,
   Paperclip,
   X,
 } from 'lucide-react'
+import { PremiumInput, PremiumTextarea, PremiumInputGroup, PremiumInputDivider } from '../ui/PremiumInput'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    OTHER COMPOSER — Guided free-text composer for custom requests
@@ -198,98 +200,49 @@ export function OtherComposer({
         })}
       </div>
 
-      {/* ─── Subject Field ─── */}
+      {/* ─── Subject + Description — Premium grouped inputs ─── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          borderRadius: 12,
-          border: '1px solid var(--border-strong)',
-          background: 'var(--border-subtle)',
-          padding: '10px 14px',
-        }}
       >
-        <label
-          style={{
-            display: 'block',
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            marginBottom: 8,
-            letterSpacing: '0.03em',
-          }}
-        >
-          Предмет
-        </label>
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => {
-            onSubjectChange(e.target.value)
-            if (!interacted) setInteracted(true)
-          }}
-          placeholder="Например: математика, английский, информатика..."
-          disabled={disabled}
-          style={{
-            width: '100%',
-            fontSize: 16,
-            lineHeight: 1.4,
-            fontWeight: 600,
-            fontFamily: "'Manrope', sans-serif",
-            color: 'var(--text-main)',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            padding: 0,
-          }}
-        />
+        <PremiumInputGroup>
+          <PremiumInput
+            label="Предмет"
+            value={subject}
+            onChange={(val) => {
+              onSubjectChange(val)
+              if (!interacted) setInteracted(true)
+            }}
+            placeholder="математика, английский, информатика..."
+            disabled={disabled}
+            icon={<BookOpen size={16} />}
+          />
+          <PremiumInputDivider />
+          <PremiumTextarea
+            label="Описание задачи"
+            value={description}
+            onChange={(val) => {
+              onDescriptionChange(val)
+              if (!interacted) setInteracted(true)
+            }}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={4}
+            minHeight={100}
+          />
+        </PremiumInputGroup>
       </motion.div>
 
-      {/* ─── Main Composer ─── */}
+      {/* ─── Files & Toolbar ─── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         style={{
           borderRadius: 12,
-          border: '1px solid var(--border-strong)',
-          background: 'var(--border-subtle)',
           overflow: 'hidden',
         }}
       >
-        {/* Textarea */}
-        <div style={{ padding: '14px 14px 0' }}>
-          <textarea
-            ref={textareaRef}
-            value={description}
-            onChange={handleTextChange}
-            onFocus={() => {
-              if (!interacted) setInteracted(true)
-            }}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={4}
-            style={{
-              width: '100%',
-              minHeight: 100,
-              maxHeight: '40vh',
-              fontSize: 16,
-              lineHeight: 1.55,
-              fontWeight: 600,
-              fontFamily: "'Manrope', sans-serif",
-              color: 'var(--text-main)',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              padding: 0,
-            }}
-            autoCapitalize="sentences"
-            autoCorrect="on"
-            spellCheck
-          />
-        </div>
-
         {/* Attached files as chips */}
         {files.length > 0 && (
           <div
@@ -353,7 +306,6 @@ export function OtherComposer({
             alignItems: 'center',
             gap: 8,
             padding: '10px 12px',
-            borderTop: '1px solid var(--surface-hover)',
           }}
         >
           <input
