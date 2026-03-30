@@ -1,21 +1,17 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle,
-  ArrowLeft,
   BookOpen,
   Camera,
   Check,
-  ClipboardPaste,
   FileText,
   FileUp,
   Paperclip,
   PenTool,
   Sparkles,
-  Trash2,
   X,
 } from 'lucide-react'
-import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -101,7 +97,6 @@ export function RequirementsStep({
   disabled = false,
 }: RequirementsStepProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('subject')
-  const [showReqEditor, setShowReqEditor] = useState(false)
   const service = SERVICE_TYPES.find(item => item.id === serviceTypeId)
   const isExpress = service?.category === 'express'
   const fileInputRef = useRef<HTMLInputElement>(null)
