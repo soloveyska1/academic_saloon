@@ -225,6 +225,12 @@ function DeadlineRow({
   const estimatedPrice = basePrice && basePrice > 0
     ? Math.round(basePrice * deadline.multiplierNum / 10) * 10
     : null
+  const baseEstimate = basePrice && basePrice > 0
+    ? Math.round(basePrice / 10) * 10
+    : null
+  const delta = estimatedPrice && baseEstimate && estimatedPrice > baseEstimate
+    ? estimatedPrice - baseEstimate
+    : null
   const savings = getSavings(deadline.multiplierNum)
   const priceColor = getPriceColor(deadline.multiplierNum, selected)
 
@@ -334,12 +340,33 @@ function DeadlineRow({
           }}>
             {estimatedPrice
               ? <>
-                  <span style={{ opacity: 0.5 }}>~</span>
-                  {estimatedPrice.toLocaleString('ru-RU')} ₽
+                  <span style={{ opacity: 0.4 }}>~</span>
+                  {estimatedPrice.toLocaleString('ru-RU')} <span style={{ fontSize: 11, opacity: 0.5 }}>₽</span>
                 </>
               : meta.surchargeLabel
             }
           </span>
+          {/* Delta from base — Deliveroo "+X" pattern */}
+          {estimatedPrice && delta ? (
+            <div style={{
+              fontSize: 10,
+              fontWeight: 500,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: 'rgba(255, 255, 255, 0.25)',
+              marginTop: 1,
+            }}>
+              +{delta.toLocaleString('ru-RU')} ₽
+            </div>
+          ) : estimatedPrice && !delta ? (
+            <div style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: 'rgba(212, 175, 55, 0.6)',
+              marginTop: 1,
+            }}>
+              мин. цена
+            </div>
+          ) : null}
         </div>
 
         {/* Radio — double-ring with gold glow */}
