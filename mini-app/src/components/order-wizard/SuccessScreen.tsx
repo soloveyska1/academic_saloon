@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, AlertCircle, ChevronRight, Clock } from 'lucide-react'
-import homeStyles from '../../pages/HomePage.module.css'
+// homeStyles removed — classes were undefined, causing unstyled CTA
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SUCCESS SCREEN — v2 «Receipt»
@@ -95,14 +95,11 @@ export function SuccessScreen({
           style={CENTER_STYLE}
         >
           <motion.section
-            className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
             style={{
               ...CARD_STYLE,
               border: '1px solid rgba(239, 68, 68, 0.18)',
             }}
           >
-            <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
-            <div className={homeStyles.primaryActionShine} aria-hidden="true" />
 
             <div style={{ position: 'relative', zIndex: 1 }}>
               {/* Error icon */}
@@ -143,12 +140,26 @@ export function SuccessScreen({
                   transition={{ ...stagger(3) }}
                   whileTap={{ scale: 0.975 }}
                   onClick={() => navigate('/')}
-                  className={homeStyles.heroPrimaryButton}
+                  style={{
+                    width: '100%',
+                    height: 56,
+                    borderRadius: 16,
+                    background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    boxShadow: '0 8px 32px -8px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    color: '#121212',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    fontFamily: "'Manrope', sans-serif",
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
                 >
                   <span>Вернуться на главную</span>
-                  <div className={homeStyles.primaryActionArrow}>
-                    <ChevronRight size={18} color="#121212" strokeWidth={2.6} />
-                  </div>
+                  <ChevronRight size={18} strokeWidth={2.6} />
                 </motion.button>
               </div>
             </div>
@@ -181,14 +192,11 @@ export function SuccessScreen({
         style={CENTER_STYLE}
       >
         <motion.section
-          className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
           style={{
             ...CARD_STYLE,
             border: '1px solid rgba(212, 175, 55, 0.14)',
           }}
         >
-          <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
-          <div className={homeStyles.primaryActionShine} aria-hidden="true" />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
             {/* ─── Gold check stamp ─── */}
@@ -198,7 +206,7 @@ export function SuccessScreen({
               transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.15 }}
               style={goldCircleStyle}
             >
-              <Check size={18} color="#121212" strokeWidth={2.8} />
+              <Check size={24} color="#121212" strokeWidth={2.8} />
             </motion.div>
 
             {/* ─── Order number = HERO ─── */}
@@ -209,7 +217,7 @@ export function SuccessScreen({
                 transition={{ duration: 0.55, ease: EASE_OUT, delay: 0.2 }}
                 style={ORDER_NUMBER_STYLE}
               >
-                #{result.id}
+                Заказ #{result.id}
               </motion.div>
             )}
 
@@ -220,7 +228,7 @@ export function SuccessScreen({
               transition={{ duration: 0.4, ...stagger(2) }}
               style={STATUS_LABEL}
             >
-              {isManual ? 'Заявка на оценке' : 'Заказ оформлен'}
+              {isManual ? 'Принято!' : 'Готово!'}
             </motion.div>
 
             {/* ─── Context subtitle ─── */}
@@ -231,8 +239,8 @@ export function SuccessScreen({
               style={SUBTITLE_STYLE}
             >
               {isManual
-                ? 'Менеджер проверит детали и рассчитает стоимость.'
-                : 'Осталось только оплатить — и автор приступит к работе.'}
+                ? 'Менеджер уже изучает вашу заявку. Пришлём точную стоимость в Telegram.'
+                : 'Мы уже подобрали автора. После оплаты он сразу приступит к работе.'}
             </motion.p>
 
             {/* ─── Receipt card ─── */}
@@ -371,7 +379,24 @@ export function SuccessScreen({
                     navigate(result.id ? `/order/${result.id}` : '/orders')
                   }
                 }}
-                className={homeStyles.heroPrimaryButton}
+                style={{
+                  width: '100%',
+                  height: 56,
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  boxShadow: '0 8px 32px -8px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  color: '#121212',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  fontFamily: "'Manrope', sans-serif",
+                  letterSpacing: '0.02em',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
               >
                 <span>
                   {isManual
@@ -380,9 +405,7 @@ export function SuccessScreen({
                       ? `Оплатить ${finalEstimate.toLocaleString('ru-RU')} ₽`
                       : 'Перейти к оплате'}
                 </span>
-                <div className={homeStyles.primaryActionArrow}>
-                  <ChevronRight size={18} color="#121212" strokeWidth={2.6} />
-                </div>
+                <ChevronRight size={18} strokeWidth={2.6} />
               </motion.button>
 
               {/* Hairline divider */}
@@ -445,15 +468,15 @@ const CARD_STYLE: React.CSSProperties = {
 
 // ─── Gold check (36px) ───
 const goldCircleStyle: React.CSSProperties = {
-  width: 36,
-  height: 36,
+  width: 48,
+  height: 48,
   borderRadius: '50%',
   background: 'linear-gradient(135deg, #d4af37, #b38728)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  margin: '0 auto 20px',
-  boxShadow: '0 0 24px -4px rgba(212, 175, 55, 0.5)',
+  margin: '0 auto 16px',
+  boxShadow: '0 0 32px -4px rgba(212, 175, 55, 0.5), 0 0 64px -8px rgba(212, 175, 55, 0.2)',
 }
 
 // ─── Error circle (36px) ───
@@ -471,25 +494,22 @@ const errorCircleStyle: React.CSSProperties = {
 
 // ─── Order number hero ───
 const ORDER_NUMBER_STYLE: React.CSSProperties = {
-  fontFamily: "'Manrope', sans-serif",
-  fontSize: 56,
-  fontWeight: 700,
-  letterSpacing: '-0.03em',
-  lineHeight: 1,
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 14,
+  fontWeight: 500,
+  color: 'rgba(255, 255, 255, 0.35)',
   textAlign: 'center',
-  color: 'var(--gold-200, #FFF8D6)',
   marginBottom: 4,
 }
 
-// ─── Status label ───
+// ─── Status label — NOW the hero ───
 const STATUS_LABEL: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 600,
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: 'rgba(212, 175, 55, 0.7)',
+  fontSize: 28,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  color: 'rgba(255, 255, 255, 0.95)',
   textAlign: 'center',
-  marginBottom: 16,
+  marginBottom: 4,
 }
 
 // ─── Subtitle ───
@@ -504,11 +524,12 @@ const SUBTITLE_STYLE: React.CSSProperties = {
 
 // ─── Receipt card ───
 const RECEIPT_CARD: React.CSSProperties = {
-  padding: 16,
-  borderRadius: 12,
-  background: 'rgba(255, 255, 255, 0.04)',
-  border: '1px solid rgba(255, 255, 255, 0.06)',
+  padding: 20,
+  borderRadius: 16,
+  background: 'linear-gradient(145deg, rgba(212, 175, 55, 0.05), rgba(14, 13, 12, 0.88) 35%)',
+  border: '1px solid rgba(212, 175, 55, 0.12)',
   marginBottom: 16,
+  boxShadow: 'inset 0 1px 0 rgba(255, 248, 214, 0.04)',
 }
 
 const RECEIPT_ROW: React.CSSProperties = {
@@ -553,9 +574,8 @@ const RECEIPT_DIVIDER: React.CSSProperties = {
 
 const RECEIPT_TOTAL_DIVIDER: React.CSSProperties = {
   height: 1,
-  background: 'rgba(255, 255, 255, 0.08)',
-  margin: '8px 0',
-  borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+  background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.18), transparent)',
+  margin: '12px 0',
 }
 
 const RECEIPT_TOTAL_LABEL: React.CSSProperties = {
@@ -646,14 +666,15 @@ const REASSURANCE_STYLE: React.CSSProperties = {
 const SECONDARY_BUTTON: React.CSSProperties = {
   minHeight: 48,
   padding: '0 18px',
-  borderRadius: 12,
-  border: 'none',
-  background: 'transparent',
-  color: 'rgba(212, 212, 216, 0.45)',
-  fontSize: 13,
+  borderRadius: 14,
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  background: 'rgba(255, 255, 255, 0.04)',
+  color: 'rgba(255, 255, 255, 0.55)',
+  fontSize: 14,
   fontWeight: 600,
   fontFamily: "'Manrope', sans-serif",
   cursor: 'pointer',
+  width: '100%',
 }
 
 const HELP_TEXT_STYLE: React.CSSProperties = {
