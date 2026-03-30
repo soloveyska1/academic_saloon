@@ -256,41 +256,44 @@ function AttachmentsCard({
     e.target.value = ''
   }, [disabled, handleIncomingFiles])
 
+  const hasFiles = files.length > 0
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      style={{
-        borderRadius: 16,
-        border: `1.5px solid ${isDragging ? goldBorder : files.length > 0 ? goldBorder : 'rgba(212, 175, 55, 0.08)'}`,
-        background: isDragging
-          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.06), rgba(14, 13, 12, 0.92) 40%)'
-          : files.length > 0
-            ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.04), rgba(14, 13, 12, 0.92) 40%)'
-            : 'linear-gradient(145deg, rgba(212, 175, 55, 0.02), rgba(14, 13, 12, 0.90) 30%)',
-        backdropFilter: 'blur(20px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(130%)',
-        opacity: disabled ? 0.5 : 1,
-        transition: 'all 0.3s ease',
-        boxShadow: [
-          'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-          'inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
-          '0 2px 8px -4px rgba(0, 0, 0, 0.3)',
-        ].join(', '),
-      }}
-    >
-      {/* Drop zone / Upload button */}
-      <motion.div
+    <div>
+      {/* Upload zone — matches PremiumInput visual style */}
+      <div
         onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         style={{
-          padding: '14px 16px',
+          position: 'relative',
+          minHeight: 56,
+          borderRadius: 12,
+          background: isDragging
+            ? 'rgba(255, 255, 255, 0.07)'
+            : hasFiles
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(255, 255, 255, 0.035)',
           cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          transition: 'background 0.3s',
+          overflow: 'hidden',
         }}
       >
+        {/* Bottom accent line when has files */}
+        {hasFiles && (
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: 'linear-gradient(90deg, transparent 0%, var(--gold-400) 20%, rgba(255,248,214,0.6) 50%, var(--gold-400) 80%, transparent 100%)',
+            borderRadius: '0 0 12px 12px',
+          }} />
+        )}
+
         <input
           ref={inputRef}
           type="file"
@@ -301,80 +304,88 @@ function AttachmentsCard({
           disabled={disabled}
         />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 38,
-            height: 38,
-            borderRadius: 12,
-            background: files.length > 0
-              ? 'radial-gradient(circle at center, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 70%)'
-              : 'rgba(212, 175, 55, 0.04)',
-            border: `1px solid ${files.length > 0 ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.06)'}`,
-            boxShadow: files.length > 0 ? '0 0 12px -4px rgba(212, 175, 55, 0.15)' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'all 0.3s ease',
-          }}>
-            {files.length > 0
-              ? <Paperclip size={16} color="var(--gold-400)" style={{ filter: 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.3))' }} />
-              : <FileUp size={16} color="var(--text-muted)" style={{ opacity: 0.5 }} />}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '0 16px',
+          minHeight: 56,
+        }}>
+          <motion.div
+            animate={{
+              color: hasFiles ? 'var(--gold-400)' : 'var(--text-muted)',
+            }}
+            style={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              width: 20,
+              height: 20,
+              opacity: hasFiles ? 1 : 0.5,
+            }}
+          >
+            {hasFiles ? <Paperclip size={16} /> : <FileUp size={16} />}
+          </motion.div>
+
+          <div style={{ flex: 1, padding: '8px 0' }}>
+            <div style={{
+              fontSize: hasFiles ? 14 : 14,
+              fontWeight: hasFiles ? 600 : 500,
+              color: hasFiles ? 'var(--text-primary)' : 'rgba(255, 255, 255, 0.4)',
+              fontFamily: "'Manrope', sans-serif",
+            }}>
+              {hasFiles
+                ? `${files.length} ${pluralizeFiles(files.length)} · ${formatFileSize(totalSize)}`
+                : 'Файлы'}
+            </div>
+            {!hasFiles && (
+              <div style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                opacity: 0.5,
+                marginTop: 1,
+              }}>
+                PDF, DOCX, JPG, ZIP — до 50 МБ
+              </div>
+            )}
           </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>
-              {files.length > 0 ? `${files.length} ${pluralizeFiles(files.length)}` : 'Прикрепить файлы'}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {files.length > 0
-                ? `${formatFileSize(totalSize)} · Нажмите чтобы добавить ещё`
-                : 'Прикрепите задание — оценка будет точнее'}
-            </div>
-          </div>
-
-          {files.length > 0 && (
-            <Pill tone="accent" label={`${files.length}`} />
+          {hasFiles && (
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'rgba(212, 175, 55, 0.6)',
+              letterSpacing: '0.02em',
+            }}>
+              + ещё
+            </span>
           )}
         </div>
-
-        {/* File type chips */}
-        {files.length === 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-            <Pill tone="muted" label="PDF" />
-            <Pill tone="muted" label="DOCX" />
-            <Pill tone="muted" label="JPG" />
-            <Pill tone="muted" label="ZIP" />
-          </div>
-        )}
-      </motion.div>
+      </div>
 
       {/* Notice */}
       {notice && (
         <div style={{
-          margin: '0 14px 12px',
-          padding: '10px 12px',
+          margin: '8px 16px 0',
+          padding: '8px 10px',
           borderRadius: 8,
-          background: 'rgba(212, 175, 55, 0.06)',
-          border: '1px solid rgba(212, 175, 55, 0.12)',
-
+          background: 'rgba(212, 175, 55, 0.04)',
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 8,
+          gap: 6,
         }}>
-          <AlertTriangle size={14} color="rgba(212, 175, 55, 0.7)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 12, lineHeight: 1.5, color: 'rgba(212, 175, 55, 0.65)' }}>{notice}</span>
+          <AlertTriangle size={12} color="rgba(212, 175, 55, 0.6)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(212, 175, 55, 0.55)' }}>{notice}</span>
         </div>
       )}
 
       {/* File list */}
-      {files.length > 0 && (
+      {hasFiles && (
         <div style={{
-          borderTop: '1px solid var(--surface-hover)',
-          padding: '10px 14px',
+          padding: '8px 12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 4,
         }}>
           {files.map((file, i) => (
             <FileRow
@@ -386,7 +397,7 @@ function AttachmentsCard({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }
 
@@ -410,40 +421,45 @@ function FileRow({
       display: 'flex',
       alignItems: 'center',
       gap: 8,
-      padding: '8px 10px',
-      borderRadius: 10,
-      background: 'rgba(255, 255, 255, 0.03)',
-      border: '1px solid rgba(255, 255, 255, 0.04)',
+      padding: '6px 4px',
     }}>
       <span style={{
-        padding: '4px 8px',
+        padding: '3px 6px',
         borderRadius: 4,
-        background: goldSoft,
-        color: 'var(--gold-400)',
-        fontSize: 10,
+        background: 'rgba(212, 175, 55, 0.06)',
+        color: 'rgba(212, 175, 55, 0.7)',
+        fontSize: 9,
         fontWeight: 700,
         letterSpacing: '0.05em',
         textTransform: 'uppercase',
         flexShrink: 0,
+        fontFamily: "'JetBrains Mono', monospace",
       }}>
         {ext || '?'}
       </span>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: 'var(--text-main)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {file.name}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-          {formatFileSize(file.size)}
-        </div>
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+        fontSize: 13,
+        fontWeight: 500,
+        color: 'var(--text-secondary)',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {file.name}
       </div>
+
+      <span style={{
+        fontSize: 11,
+        color: 'var(--text-muted)',
+        opacity: 0.5,
+        flexShrink: 0,
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>
+        {formatFileSize(file.size)}
+      </span>
 
       {!disabled && (
         <motion.button
@@ -451,11 +467,11 @@ function FileRow({
           whileTap={{ scale: 0.9 }}
           onClick={onRemove}
           style={{
-            width: 26,
-            height: 26,
-            borderRadius: 8,
-            border: '1px solid rgba(239, 68, 68, 0.15)',
-            background: 'rgba(239, 68, 68, 0.08)',
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            border: 'none',
+            background: 'rgba(255, 255, 255, 0.04)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -463,7 +479,7 @@ function FileRow({
             flexShrink: 0,
           }}
         >
-          <X size={12} color="var(--error-text)" />
+          <X size={10} color="var(--text-muted)" />
         </motion.button>
       )}
     </div>
