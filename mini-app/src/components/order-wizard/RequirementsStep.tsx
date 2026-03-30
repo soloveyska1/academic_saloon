@@ -271,10 +271,13 @@ function AttachmentsCard({
           minHeight: 56,
           borderRadius: 12,
           background: isDragging
-            ? 'rgba(255, 255, 255, 0.07)'
+            ? 'rgba(212, 175, 55, 0.04)'
             : hasFiles
-              ? 'rgba(255, 255, 255, 0.05)'
-              : 'rgba(255, 255, 255, 0.035)',
+              ? 'rgba(212, 175, 55, 0.03)'
+              : 'rgba(0, 0, 0, 0.15)',
+          border: hasFiles || isDragging
+            ? '1px solid rgba(212, 175, 55, 0.12)'
+            : '1px solid rgba(255, 255, 255, 0.03)',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           transition: 'background 0.3s',
