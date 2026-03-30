@@ -1,4 +1,4 @@
-export const SUPPORT_TELEGRAM_USERNAME = 'Thisissaymoon'
+export const SUPPORT_TELEGRAM_USERNAME = 'academicsaloon'
 export const SUPPORT_TELEGRAM_URL = `https://t.me/${SUPPORT_TELEGRAM_USERNAME}`
 
 export function buildReferralLink(botUsername: string | null | undefined, telegramId: number | null | undefined): string {
