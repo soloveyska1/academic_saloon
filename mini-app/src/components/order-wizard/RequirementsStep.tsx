@@ -254,6 +254,9 @@ const inputStyle: React.CSSProperties = {
   border: 'none',
   outline: 'none',
   padding: 0,
+  margin: 0,
+  WebkitAppearance: 'none',
+  boxShadow: 'none', // kills iOS inner shadow on inputs
 }
 
 const goldBorder = 'rgba(212, 175, 55, 0.22)'
@@ -848,7 +851,7 @@ function RequirementsEditorModal({
   const primaryKey = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId] ? serviceTypeId : 'default'
   const placeholder = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
     ? REQUIREMENTS_TEMPLATES[serviceTypeId]
-    : `Опишите ожидания:\n\n• объём или количество слайдов\n• требования к уникальности\n• оформление по ГОСТ или методичке\n• особые пожелания`
+    : `Объём, уникальность, оформление, пожелания...`
 
   const charCount = localValue.trim().length
 
