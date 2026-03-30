@@ -78,7 +78,8 @@ function DecorativeCorner({ position, color = '#D4AF37' }: {
 export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGridProps) {
   const finalPrice = order.final_price || order.price || 0
   const revisionCount = (order as any).revision_count || 0
-  const maxFreeRevisions = 3
+  // Unlimited revisions policy (legacy maxFreeRevisions = 3 removed)
+  const unlimitedRevisions = true
 
   // Calculate cashback
   const cashbackAmount = Math.floor(finalPrice * (cashbackPercent / 100))

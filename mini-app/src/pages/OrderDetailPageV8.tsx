@@ -996,37 +996,37 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             )}
 
             {/* Stage rail */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, minWidth: 132 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 148 }}>
               <span
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.28)',
+                  color: 'rgba(212,175,55,0.50)',
                 }}
               >
-                Этап: {STAGE_RAIL[currentStageIndex]}
+                {STAGE_RAIL[currentStageIndex]}
               </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 3, width: '100%' }}>
                 {STAGE_RAIL.map((stage, index) => {
                   const isCompleted = index < currentStageIndex
                   const isCurrent = index === currentStageIndex
                   return (
                     <motion.div
                       key={stage}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.32 + index * 0.04, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0, scaleX: 0.5 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ delay: 0.32 + index * 0.05, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       style={{
-                        height: isCurrent ? 8 : 6,
-                        borderRadius: 999,
+                        height: 6,
+                        borderRadius: 3,
                         background: isCompleted
-                          ? 'linear-gradient(90deg, rgba(212,175,55,0.55), rgba(212,175,55,0.35))'
+                          ? 'linear-gradient(90deg, rgba(212,175,55,0.60), rgba(212,175,55,0.40))'
                           : isCurrent
-                            ? 'linear-gradient(90deg, rgba(232,213,163,0.95), rgba(212,175,55,0.8))'
+                            ? 'linear-gradient(90deg, #E8D5A3, rgba(212,175,55,0.85))'
                             : 'rgba(255,255,255,0.08)',
-                        boxShadow: isCurrent ? '0 0 0 1px rgba(212,175,55,0.12)' : 'none',
+                        boxShadow: isCurrent ? '0 0 6px rgba(212,175,55,0.25), 0 0 0 1px rgba(212,175,55,0.15)' : 'none',
                       }}
                     />
                   )
