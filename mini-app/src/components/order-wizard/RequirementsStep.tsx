@@ -257,6 +257,8 @@ const inputStyle: React.CSSProperties = {
 }
 
 const goldBorder = 'rgba(212, 175, 55, 0.22)'
+const goldSoft = 'rgba(212, 175, 55, 0.06)'
+const cardBorder = 'rgba(255, 255, 255, 0.06)'
 
 /* ─────────────────────────────────────────────────────────────────────────
    FIELD CARD — Premium glass input wrapper with gold accents
