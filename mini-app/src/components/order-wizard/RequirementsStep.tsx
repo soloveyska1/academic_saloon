@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle,
@@ -126,12 +126,10 @@ export function RequirementsStep({
     e.target.value = ''
   }, [disabled, files, onFilesAdd])
 
-  // Auto-expand next empty section after subject is filled
-  useEffect(() => {
-    if (subject.trim() && expandedSection === 'subject') {
-      setExpandedSection('topic')
-    }
-  }, [subject, expandedSection])
+  // Auto-advance: when subject chip is tapped, move to topic after a beat
+  const advanceToTopic = useCallback(() => {
+    setTimeout(() => setExpandedSection('topic'), 300)
+  }, [])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -178,6 +176,7 @@ export function RequirementsStep({
                     onClick={() => {
                       onSubjectChange(s)
                       triggerHaptic()
+                      advanceToTopic()
                     }}
                     style={{
                       padding: '8px 14px',
@@ -453,21 +452,34 @@ function BriefingRow({
           {filled ? <Check size={16} strokeWidth={2.5} /> : icon}
         </div>
 
-        {/* Label */}
-        <span style={{
-          flex: 1,
-          fontSize: 15,
-          fontWeight: filled ? 600 : 500,
-          color: filled ? 'var(--text-primary)' : 'var(--text-secondary)',
-          transition: 'color 0.2s',
-        }}>
-          {filled && value ? value : label}
+        {/* Label + Value */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            fontSize: 15,
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+          }}>
+            {label}
+          </span>
           {optional && !filled && (
             <span style={{ fontSize: 12, color: 'var(--text-muted)', opacity: 0.4, marginLeft: 6 }}>
               необязательно
             </span>
           )}
-        </span>
+          {filled && value && !expanded && (
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginTop: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {value}
+            </div>
+          )}
+        </div>
 
         {/* Filled badge or chevron */}
         {filled && !expanded ? (
