@@ -192,14 +192,11 @@ export function SuccessScreen({
         style={CENTER_STYLE}
       >
         <motion.section
-          className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
           style={{
             ...CARD_STYLE,
             border: '1px solid rgba(212, 175, 55, 0.14)',
           }}
         >
-          <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
-          <div className={homeStyles.primaryActionShine} aria-hidden="true" />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
             {/* ─── Gold check stamp ─── */}
