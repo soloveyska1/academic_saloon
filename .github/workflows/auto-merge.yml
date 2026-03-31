@@ -124,9 +124,11 @@ jobs:
       - name: Trigger deploy workflow
         if: success()
         run: |
-          gh workflow run deploy.yml --ref main
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy.yml/dispatches \
+            -d '{"ref":"main"}'
 
       - name: Send merge notification via SSH
         if: success()
