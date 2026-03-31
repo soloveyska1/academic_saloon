@@ -52,12 +52,16 @@ export interface BalanceUpdateMessage extends WSMessage {
 
 export interface NotificationMessage extends WSMessage {
   type: 'notification'
-  notification_type: 'info' | 'success' | 'warning' | 'error'
+  notification_type: string
   title: string
   message: string
   // Smart notification fields from server
   icon?: string
   color?: string
+  action?: string
+  celebration?: boolean
+  confetti?: boolean
+  data?: Record<string, unknown>
 }
 
 export interface FileDeliveryMessage extends WSMessage {

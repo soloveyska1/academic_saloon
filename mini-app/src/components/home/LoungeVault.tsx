@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Copy, Crown, QrCode, Send, Award, Flame, Users, Star, Zap, Lock, Tag, GraduationCap, CheckCircle, ChevronDown, UserPlus } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
 import { formatMoney } from '../../lib/utils'
-import type { Order } from '../../types'
+import type { Order, UserAchievement as ApiAchievement } from '../../types'
 
 /* ─── Rarity System ─── */
 type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
@@ -32,6 +32,7 @@ interface LoungeVaultProps {
   referralCode: string
   referralsCount: number
   referralEarnings: number
+  achievements?: ApiAchievement[]
   ordersCount: number
   totalSpent: number
   dailyStreak: number
@@ -49,12 +50,27 @@ interface Achievement {
   label: string
   description: string
   unlocked: boolean
+  unlockedAt?: string | null
+  rewardAmount?: number
   progress?: number
   hint?: string
   current?: number
   target?: number
   rarity: Rarity
   percentOwners: number
+}
+
+const SERVER_ICON_MAP: Record<string, typeof Award> = {
+  award: Award,
+  crown: Crown,
+  flame: Flame,
+  users: Users,
+  'user-plus': UserPlus,
+  star: Star,
+  zap: Zap,
+  tag: Tag,
+  'graduation-cap': GraduationCap,
+  'check-circle': CheckCircle,
 }
 
 function useAchievements(
@@ -553,6 +569,9 @@ const AchievementDetailModal = memo(function AchievementDetailModal({
   const r = RARITY[achievement.rarity]
   const Icon = achievement.icon
   const unlocked = achievement.unlocked
+  const unlockedAt = achievement.unlockedAt
+    ? new Date(achievement.unlockedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+    : null
 
   return (
     <AnimatePresence>
@@ -641,6 +660,21 @@ const AchievementDetailModal = memo(function AchievementDetailModal({
             <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>
               {achievement.description}
             </div>
+
+            {unlocked && (achievement.rewardAmount || unlockedAt) && (
+              <div style={{ display: 'grid', gap: 4, marginTop: 2 }}>
+                {achievement.rewardAmount ? (
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#D4AF37' }}>
+                    Награда: +{achievement.rewardAmount} ₽
+                  </div>
+                ) : null}
+                {unlockedAt ? (
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
+                    Открыто {unlockedAt}
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Progress for locked */}
             {!unlocked && achievement.progress !== undefined && achievement.progress > 0 && (
@@ -891,6 +925,7 @@ export const LoungeVault = memo(function LoungeVault({
   referralCode,
   referralsCount,
   referralEarnings,
+  achievements: apiAchievements,
   ordersCount,
   totalSpent,
   dailyStreak,
@@ -900,7 +935,30 @@ export const LoungeVault = memo(function LoungeVault({
   onShowQR,
   onTelegramShare,
 }: LoungeVaultProps) {
-  const achievements = useAchievements(ordersCount, totalSpent, referralsCount, dailyStreak, rank.is_max, orders)
+  const fallbackAchievements = useAchievements(ordersCount, totalSpent, referralsCount, dailyStreak, rank.is_max, orders)
+  const achievements = useMemo<Achievement[]>(() => {
+    if (!apiAchievements || apiAchievements.length === 0) {
+      return fallbackAchievements
+    }
+
+    return [...apiAchievements]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((achievement) => ({
+        id: achievement.key,
+        icon: SERVER_ICON_MAP[achievement.icon] || Award,
+        label: achievement.title,
+        description: achievement.description,
+        unlocked: achievement.unlocked,
+        unlockedAt: achievement.unlocked_at,
+        rewardAmount: achievement.reward_amount,
+        progress: achievement.progress,
+        hint: achievement.hint ?? undefined,
+        current: achievement.current,
+        target: achievement.target,
+        rarity: achievement.rarity,
+        percentOwners: achievement.owners_percent,
+      }))
+  }, [apiAchievements, fallbackAchievements])
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const overallProgress = unlockedCount / achievements.length
   const [selectedBadge, setSelectedBadge] = useState<Achievement | null>(null)

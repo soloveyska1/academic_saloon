@@ -283,6 +283,12 @@ BALANCE_NOTIFICATIONS = {
             "message": "+{amount}₽ зачислено в серию дня",
         },
     },
+    "achievement": {
+        "positive": {
+            "title": "Награда за достижение",
+            "message": "+{amount}₽ зачислено на бонусный баланс",
+        },
+    },
     "streak_freeze": {
         "negative": {
             "title": "Защита серии активирована",
@@ -463,6 +469,7 @@ async def send_custom_notification(
     color: str = "#d4af37",
     action: str = None,
     celebration: bool = False,
+    confetti: bool = False,
     data: Dict[str, Any] = None
 ) -> bool:
     """
@@ -480,6 +487,7 @@ async def send_custom_notification(
             "color": color,
             "action": action,
             "celebration": celebration,
+            "confetti": confetti,
             "data": data or {},
         }
 

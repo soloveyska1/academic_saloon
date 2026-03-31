@@ -15,6 +15,7 @@ from database.models.promocodes import PromoCode, PromoCodeUsage
 from database.models.transactions import BalanceTransaction
 from database.models.levels import RankLevel, LoyaltyLevel
 from database.models.payment_logs import PaymentLog
+from database.models.achievements import UserAchievement
 
 config = context.config
 

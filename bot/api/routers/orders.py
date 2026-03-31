@@ -1208,6 +1208,17 @@ async def submit_order_review(
         await bot.send_message(chat_id=REVIEWS_CHANNEL_ID, text=review_text)
         order.review_submitted = True
         await session.commit()
+
+        try:
+            from bot.services.achievements import sync_user_achievements
+            await sync_user_achievements(
+                session=session,
+                telegram_id=tg_user.id,
+                bot=bot,
+                notify=True,
+            )
+        except Exception as exc:
+            logger.warning(f"[Achievements] Failed to sync review achievements for {tg_user.id}: {exc}")
     except Exception as e:
         logger.error(f"Review Error: {e}")
         return SubmitReviewResponse(success=False, message="Ошибка публикации")

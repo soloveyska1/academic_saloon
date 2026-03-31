@@ -539,6 +539,7 @@ export function HomePage({ user, onRefresh }: Props) {
               referralCode={user.referral_code}
               referralsCount={user.referrals_count}
               referralEarnings={user.referral_earnings}
+              achievements={user.achievements}
               ordersCount={user.orders_count}
               totalSpent={user.total_spent}
               dailyStreak={user.daily_bonus_streak || 0}

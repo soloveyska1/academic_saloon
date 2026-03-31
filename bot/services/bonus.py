@@ -34,6 +34,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "streak_freeze": "Защита серии",
     "coupon": "Купон",
     "order_refund": "Возврат бонусов",
+    "achievement": "Награда за достижение",
 }
 
 
@@ -50,6 +51,7 @@ class BonusReason(str, Enum):
     STREAK_FREEZE = "streak_freeze"          # Покупка защиты серии
     COUPON = "coupon"                        # Промокод
     ORDER_REFUND = "order_refund"            # Возврат бонусов при отмене заказа
+    ACHIEVEMENT = "achievement"              # Награда за достижение
 
 
 # Настройки бонусов
@@ -145,6 +147,7 @@ class BonusService:
         description: str | None = None,
         bot: Bot | None = None,
         auto_commit: bool = True,
+        send_ws_notification: bool = True,
     ) -> float:
         """
         Начисляет бонусы пользователю
@@ -194,17 +197,18 @@ class BonusService:
         )
 
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
-        try:
-            from bot.services.realtime_notifications import send_balance_notification
-            await send_balance_notification(
-                telegram_id=user_id,
-                change=float(amount),
-                new_balance=float(user.balance),
-                reason=reason_text,
-                reason_key=reason.value,
-            )
-        except Exception as e:
-            logger.warning(f"[WS] Failed to send balance notification: {e}")
+        if send_ws_notification:
+            try:
+                from bot.services.realtime_notifications import send_balance_notification
+                await send_balance_notification(
+                    telegram_id=user_id,
+                    change=float(amount),
+                    new_balance=float(user.balance),
+                    reason=reason_text,
+                    reason_key=reason.value,
+                )
+            except Exception as e:
+                logger.warning(f"[WS] Failed to send balance notification: {e}")
 
         return user.balance
 
@@ -300,7 +304,7 @@ class BonusService:
         Returns:
             Сумма начисленных бонусов
         """
-        return await BonusService.add_bonus(
+        awarded = await BonusService.add_bonus(
             session=session,
             user_id=user_id,
             amount=BONUS_FOR_ORDER,
@@ -308,6 +312,17 @@ class BonusService:
             description=f"Бонус за новый заказ (+{BONUS_FOR_ORDER}₽)",
             bot=bot,
         )
+        try:
+            from bot.services.achievements import sync_user_achievements
+            await sync_user_achievements(
+                session=session,
+                telegram_id=user_id,
+                bot=bot,
+                notify=True,
+            )
+        except Exception as exc:
+            logger.warning(f"[Achievements] Failed to sync after order bonus for {user_id}: {exc}")
+        return awarded
 
     @staticmethod
     async def process_referral_bonus(
@@ -439,6 +454,17 @@ class BonusService:
             description=f"Кэшбэк {cashback_percent}% за заказ #{order_id}",
             bot=bot,
         )
+
+        try:
+            from bot.services.achievements import sync_user_achievements
+            await sync_user_achievements(
+                session=session,
+                telegram_id=user_id,
+                bot=bot,
+                notify=True,
+            )
+        except Exception as exc:
+            logger.warning(f"[Achievements] Failed to sync after cashback for {user_id}: {exc}")
 
         logger.info(
             f"[Cashback] User {user_id} received {cashback_amount:.0f}₽ "
