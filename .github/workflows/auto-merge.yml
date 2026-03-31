@@ -121,6 +121,13 @@ jobs:
           git merge "origin/$BRANCH" --no-ff -m "Auto-merge: $BRANCH -> main"
           git push origin main
 
+      - name: Trigger deploy workflow
+        if: success()
+        run: |
+          gh workflow run deploy.yml --ref main
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+
       - name: Send merge notification via SSH
         if: success()
         continue-on-error: true
