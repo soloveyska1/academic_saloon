@@ -8,6 +8,12 @@ on:
       - '**.md'
       - 'LICENSE'
       - '.gitignore'
+  workflow_run:
+    workflows: ["Auto-Merge Claude Branches"]
+    types:
+      - completed
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -24,6 +30,9 @@ env:
 
 jobs:
   detect-changes:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
