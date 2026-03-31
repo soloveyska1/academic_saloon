@@ -22,6 +22,7 @@ export interface UserData {
   referral_percent: number  // Current tier bonus %
   referral_next_percent?: number | null  // Next tier %
   referral_refs_to_next: number  // Refs needed for next tier
+  achievements: UserAchievement[]
   orders: Order[]
   // Legacy fields kept for API compatibility
   daily_luck_available?: boolean
@@ -38,6 +39,25 @@ export interface Transaction {
   reason: string
   description?: string | null
   created_at: string
+}
+
+export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary'
+
+export interface UserAchievement {
+  key: string
+  title: string
+  description: string
+  icon: string
+  rarity: AchievementRarity
+  reward_amount: number
+  unlocked: boolean
+  unlocked_at?: string | null
+  progress: number
+  current: number
+  target: number
+  hint?: string | null
+  owners_percent: number
+  sort_order: number
 }
 
 export interface RankInfo {

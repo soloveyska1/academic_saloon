@@ -21,6 +21,7 @@ from bot.api.dependencies import (
 )
 from bot.services.order_pause_events import sync_orders_pause_state
 from bot.services.qr_generator import generate_premium_qr_card, generate_simple_qr
+from bot.services.achievements import sync_user_achievements
 # Rate limiting done via nginx — slowapi crashes behind reverse proxy
 # from bot.api.rate_limit import limiter
 
@@ -112,6 +113,12 @@ async def get_user_profile(
     referral_code = f"REF{user.telegram_id}"
     ref_tier = get_referral_tier_info(user.referrals_count or 0)
 
+    achievements = await sync_user_achievements(
+        session=session,
+        telegram_id=user.telegram_id,
+        notify=False,
+    )
+
     # Recent balance transactions
     tx_result = await session.execute(
         select(BalanceTransaction)
@@ -164,6 +171,7 @@ async def get_user_profile(
             )
             for tx in transactions
         ],
+        achievements=achievements,
         orders=[order_to_response(o) for o in orders]
     )
 

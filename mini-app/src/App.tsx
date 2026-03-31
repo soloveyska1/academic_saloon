@@ -217,6 +217,16 @@ function NotificationHandler({ notification, onDismiss }: NotificationHandlerPro
       if (orderId) {
         navigate(`/order/${orderId}`)
       }
+      return
+    }
+
+    if (action === 'view_profile') {
+      navigate('/profile')
+      return
+    }
+
+    if (action === 'view_club') {
+      navigate('/club')
     }
   }, [navigate])
 
@@ -378,6 +388,10 @@ function AppContent() {
       message: msg.message,
       icon: msg.icon || 'bell',
       color: msg.color || '#d4af37',
+      action: msg.action,
+      celebration: msg.celebration,
+      confetti: msg.confetti,
+      data: msg.data,
     }
 
     setNotification(smartData)

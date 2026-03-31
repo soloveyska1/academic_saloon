@@ -24,6 +24,7 @@ from core.media_cache import send_cached_photo
 from bot.handlers.channel_cards import send_payment_notification
 from bot.states.chat import ChatStates
 from bot.handlers.order_chat import get_exit_chat_keyboard
+from bot.services.achievements import sync_user_achievements
 
 logger = logging.getLogger(__name__)
 
@@ -288,6 +289,17 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         )
         session.add(user)
         await session.commit()
+
+        if referrer_id:
+            try:
+                await sync_user_achievements(
+                    session=session,
+                    telegram_id=referrer_id,
+                    bot=bot,
+                    notify=True,
+                )
+            except Exception as exc:
+                logger.warning(f"[Achievements] Failed to sync referral achievements for {referrer_id}: {exc}")
 
         # Логируем нового пользователя
         event = LogEvent.USER_START_REF if deep_link else LogEvent.USER_START

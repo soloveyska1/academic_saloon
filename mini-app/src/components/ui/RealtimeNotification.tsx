@@ -4,7 +4,8 @@ import {
   Bell, Package, Wallet, CheckCircle, AlertTriangle,
   Info, X, Sparkles, Clock, TrendingUp, TrendingDown,
   Play, Edit, Eye, RefreshCw, Trophy, XCircle, Calculator,
-  Zap, Target, Gift, Star, Award, Percent, ArrowUpRight
+  Zap, Target, Gift, Star, Award, Percent, ArrowUpRight,
+  Crown, Users, UserPlus, Tag, Flame, GraduationCap, MessageCircle, Download
 } from 'lucide-react'
 import { useTelegram } from '../../hooks/useUserData'
 import { Confetti, useConfetti } from './Confetti'
@@ -67,6 +68,14 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   'star': Star,
   'award': Award,
   'percent': Percent,
+  'crown': Crown,
+  'users': Users,
+  'user-plus': UserPlus,
+  'tag': Tag,
+  'flame': Flame,
+  'graduation-cap': GraduationCap,
+  'message-circle': MessageCircle,
+  'download': Download,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

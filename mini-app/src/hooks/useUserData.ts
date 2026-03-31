@@ -96,13 +96,26 @@ export function useUserData() {
 
   const userData = useMemo(() => {
     if (!rawUserData) return null
-    if (!admin.simulateNewUser) return rawUserData
+    const achievements = rawUserData.achievements ?? []
+    if (!admin.simulateNewUser) {
+      return {
+        ...rawUserData,
+        achievements,
+      }
+    }
 
     return {
       ...rawUserData,
       balance: 0,
       bonus_balance: 0,
       transactions: [],
+      achievements: achievements.map(achievement => ({
+        ...achievement,
+        unlocked: false,
+        unlocked_at: null,
+        progress: 0,
+        current: 0,
+      })),
       orders_count: 0,
       total_spent: 0,
       referrals_count: 0,

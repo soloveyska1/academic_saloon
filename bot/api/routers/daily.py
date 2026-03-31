@@ -355,6 +355,16 @@ async def claim_daily_bonus(
         logger.error(f"[DailyBonus] Error: {e}")
         raise HTTPException(500, "Ошибка начисления бонуса")
 
+    try:
+        from bot.services.achievements import sync_user_achievements
+        await sync_user_achievements(
+            session=session,
+            telegram_id=tg_user.id,
+            notify=True,
+        )
+    except Exception as exc:
+        logger.warning(f"[Achievements] Failed to sync daily achievements for {tg_user.id}: {exc}")
+
     # Next claim at midnight
     next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 

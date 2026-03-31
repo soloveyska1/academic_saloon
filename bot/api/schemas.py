@@ -55,6 +55,25 @@ class BalanceTransactionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AchievementResponse(BaseModel):
+    """Achievement card state for Mini App."""
+
+    key: str
+    title: str
+    description: str
+    icon: str
+    rarity: str
+    reward_amount: int = 0
+    unlocked: bool = False
+    unlocked_at: Optional[str] = None
+    progress: float = 0
+    current: int = 0
+    target: int = 0
+    hint: Optional[str] = None
+    owners_percent: int = 0
+    sort_order: int = 0
+
+
 class OrderResponse(BaseModel):
     """Order data for Mini App"""
     id: int
@@ -122,6 +141,7 @@ class UserResponse(BaseModel):
     loyalty: LoyaltyInfo
     bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов
     transactions: List[BalanceTransactionResponse]
+    achievements: List[AchievementResponse] = Field(default_factory=list)
     orders: List[OrderResponse]
 
     model_config = ConfigDict(from_attributes=True)
