@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from enum import Enum
 from zoneinfo import ZoneInfo
 

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from database.db import get_session
 from database.models.users import User
 from bot.api.auth import TelegramUser, get_current_user
@@ -170,7 +171,7 @@ async def get_daily_bonus_info(
         hours = int(remaining.total_seconds() // 3600)
         minutes = int((remaining.total_seconds() % 3600) // 60)
         cooldown_text = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
-        
+
         return DailyBonusInfoResponse(
             can_claim=False,
             streak=current_streak,
@@ -206,7 +207,7 @@ async def get_daily_bonus_info(
     current_day_index = (next_streak - 1) % 7
     base_bonus = DAILY_BONUS_AMOUNTS[current_day_index]
     next_bonus = _calculate_bonus_amount(base_bonus, is_vip)
-    
+
     return DailyBonusInfoResponse(
         can_claim=True,
         streak=current_streak,
@@ -273,7 +274,7 @@ async def claim_daily_bonus(
     current_streak = user.daily_bonus_streak
     freeze_count = user.streak_freeze_count or 0
     freeze_used = False
-    
+
     if last_claim_date:
         yesterday_msk = today_msk - timedelta(days=1)
         if last_claim_date == yesterday_msk:
@@ -482,8 +483,6 @@ async def buy_streak_freeze(
 # ═══════════════════════════════════════════════════════════════════════════
 #  ADMIN: Reset Daily Bonus for Testing
 # ═══════════════════════════════════════════════════════════════════════════
-
-from core.config import settings
 
 def _require_admin(tg_user: TelegramUser) -> None:
     """Check if user is admin"""

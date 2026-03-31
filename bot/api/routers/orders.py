@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request, Query
 from fastapi.responses import JSONResponse
@@ -479,7 +478,7 @@ async def create_order(
         )
     except Exception as price_error:
         logger.error(f"Price calc error: {price_error}")
-        return OrderCreateResponse(success=False, order_id=0, message=f"Ошибка расчёта цены", price=None, is_manual_required=False)
+        return OrderCreateResponse(success=False, order_id=0, message="Ошибка расчёта цены", price=None, is_manual_required=False)
 
     # Handle promo code if provided (atomic check and reserve)
     from bot.services.promo_service import PromoService
@@ -507,7 +506,7 @@ async def create_order(
             promo_failure_reason = message
             logger.warning(f"[API /orders/create] ❌ Promo code {code} invalid: {message}")
     else:
-        logger.info(f"[API /orders/create] 🎟️ No promo_code received in request")
+        logger.info("[API /orders/create] 🎟️ No promo_code received in request")
 
     # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
@@ -1024,11 +1023,13 @@ async def get_payment_info(
     await sync_order_pause_state(session, order, notify_user=True)
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
     card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
-    
+
     phone_raw = settings.PAYMENT_PHONE.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-    if phone_raw.startswith("8"): phone_raw = "+7" + phone_raw[1:]
-    elif not phone_raw.startswith("+"): phone_raw = "+7" + phone_raw
-    
+    if phone_raw.startswith("8"):
+        phone_raw = "+7" + phone_raw[1:]
+    elif not phone_raw.startswith("+"):
+        phone_raw = "+7" + phone_raw
+
     phone_formatted = f"{phone_raw[:2]} ({phone_raw[2:5]}) {phone_raw[5:8]}-{phone_raw[8:10]}-{phone_raw[10:12]}" if len(phone_raw) >= 12 else phone_raw
 
     # Safe conversion with null checks
@@ -1249,7 +1250,7 @@ async def request_revision(
     order.status = OrderStatus.REVISION.value
     order.revision_count = (order.revision_count or 0) + 1
     is_paid = order.revision_count > 3
-    
+
     msg = OrderMessage(
         order_id=order_id, sender_type=MessageSender.CLIENT.value, sender_id=tg_user.id,
         message_text=f"📝 <b>Запрос на правки</b>\n\n{data.message}" if data.message else "📝 <b>Запрос на правки</b>",
@@ -1348,7 +1349,7 @@ async def confirm_work_completion(
     except Exception as e:
         logger.warning(f"[Completion] Failed to send WS notification for order #{order.id}: {e}")
 
-    return ConfirmWorkResponse(success=True, message=f"Спасибо! Заказ завершён.")
+    return ConfirmWorkResponse(success=True, message="Спасибо! Заказ завершён.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

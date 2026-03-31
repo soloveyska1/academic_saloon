@@ -14,8 +14,6 @@ from sqlalchemy import select
 from database.models.users import User
 from database.models.orders import Order, OrderStatus, ConversationType
 from bot.keyboards.inline import get_pinned_message_keyboard, get_persistent_menu
-from bot.keyboards.terms import get_terms_short_keyboard
-from bot.texts.terms import TERMS_SHORT
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.utils.formatting import format_price
 from core.config import settings
