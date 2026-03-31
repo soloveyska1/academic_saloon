@@ -874,7 +874,7 @@ alembic history
 | Mini App | Opens via Telegram WebApp |
 | API Docs | https://academic-saloon.duckdns.org/api/docs |
 | API ReDoc | https://academic-saloon.duckdns.org/api/redoc |
-| Support | @Thisissaymoon |
+| Support | @academicsaloon |
 | Terms | https://telegra.ph/Publichnaya-oferta-servisa-Akademicheskij-Salon-03-26 |
 
 ### 12.3 Useful Commands
@@ -907,7 +907,7 @@ docker stats
 |----------|---------|
 | Repository | GitHub (private) |
 | Production Bot | @Kladovaya_GIPSR_bot |
-| Admin Support | @Thisissaymoon |
+| Admin Support | @academicsaloon |
 | Domain | academic-saloon.duckdns.org |
 | Frontend Hosting | Vercel |
 | SSL | Let's Encrypt (auto-renew) |

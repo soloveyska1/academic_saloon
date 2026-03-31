@@ -31,6 +31,39 @@ textarea,
   -webkit-touch-callout: none;
 }
 
+/* Kill all browser chrome on inputs/textareas — we style them ourselves */
+input,
+textarea {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Premium Input placeholder — matches dark luxury theme */
+.premium-input-field::placeholder {
+  color: rgba(255, 255, 255, 0.22);
+  font-weight: 400;
+  opacity: 1; /* Firefox fix */
+}
+
+/* WebKit autofill override — prevent blue/white autofill bg */
+.premium-input-field:-webkit-autofill,
+.premium-input-field:-webkit-autofill:hover,
+.premium-input-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-main, #F5F5F5);
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 20, 20, 1) inset;
+  transition: background-color 5000s ease-in-out 0s;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+}
+
 /* Prevent text selection on buttons for cleaner tap experience */
 button,
 [role="button"] {

@@ -26,6 +26,7 @@ import {
   DRAFT_KEY,
 } from '../components/order-wizard'
 import { FastComposer } from '../components/order-wizard/FastComposer'
+import { AuroraBackground } from '../components/order-wizard/AuroraBackground'
 import { PhotoTaskComposer } from '../components/order-wizard/PhotoTaskComposer'
 import { OtherComposer } from '../components/order-wizard/OtherComposer'
 // homeStyles moved to SuccessScreen component
@@ -49,9 +50,24 @@ const slideVariants = prefersReducedMotion
       exit: () => ({ opacity: 0 }),
     }
   : {
-      enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-      center: { x: 0, opacity: 1 },
-      exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
+      enter: (dir: number) => ({
+        x: dir > 0 ? 60 : -60,
+        opacity: 0,
+        scale: 0.97,
+        filter: 'blur(4px)',
+      }),
+      center: {
+        x: 0,
+        opacity: 1,
+        scale: 1,
+        filter: 'blur(0px)',
+      },
+      exit: (dir: number) => ({
+        x: dir < 0 ? 60 : -60,
+        opacity: 0,
+        scale: 0.97,
+        filter: 'blur(4px)',
+      }),
     }
 
 const FAST_STEPS_GENERIC = [
@@ -204,7 +220,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [otherDescription, setOtherDescription] = useState('')
 
   // Drafts per service type
-  const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
+  const { drafts, saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
     serviceTypeId,
     currentData: { topic, requirements, subject },
   })
@@ -348,7 +364,33 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
 
   const goNext = useCallback(() => {
+    // Choreographed step transition: haptic + rising whoosh
     haptic('medium')
+    setTimeout(() => {
+      try {
+        const tg = (window as any).Telegram // eslint-disable-line @typescript-eslint/no-explicit-any
+        tg?.WebApp?.HapticFeedback?.impactOccurred?.('soft')
+      } catch { /* noop */ }
+    }, 50)
+    // Rising sine sweep (step_forward sound)
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (AudioCtx) {
+        const ctx = new AudioCtx()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(400, ctx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.12)
+        gain.gain.setValueAtTime(0.04, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.18)
+        setTimeout(() => ctx.close().catch(() => {}), 250)
+      }
+    } catch { /* audio optional */ }
     setDirection(1)
     setStep((s) => Math.min(s + 1, totalSteps))
   }, [haptic, totalSteps])
@@ -623,7 +665,11 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       background: 'var(--bg-main)',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
     }}>
+      {/* Aurora ambient background */}
+      <AuroraBackground />
+
       {/* Scrollable Content */}
       <div
         ref={scrollContainerRef}
@@ -669,7 +715,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               <div style={{ fontSize: 14, fontWeight: 600, color: '#d4af37', marginBottom: 2 }}>
                 Ваш первый заказ
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Выберите тип работы и заполните детали
               </div>
             </div>
@@ -687,27 +733,27 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               gap: 12,
               padding: '12px 16px',
               marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
-              border: '1px solid rgba(34,197,94,0.3)',
-              borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.03))',
+              border: '1px solid rgba(212,175,55,0.18)',
+              borderRadius: 14,
             }}
           >
             <div style={{
               width: 36,
               height: 36,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #d4af37, #b38728)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Check size={20} color="#050505" />
+              <Check size={20} color="#0A0A0A" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', marginBottom: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold-400)', marginBottom: 2 }}>
                 Повторный заказ
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Данные предзаполнены из прошлого заказа
               </div>
             </div>
@@ -763,7 +809,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 background: 'rgba(12, 12, 10, 0.6)',
                 backdropFilter: 'blur(16px) saturate(120%)',
                 WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-                border: '1px solid rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(212, 175, 55, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -789,7 +835,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                       borderRadius: 3,
                       background: s <= step
                         ? 'var(--gold-400)'
-                        : 'rgba(255, 255, 255, 0.06)',
+                        : 'rgba(212, 175, 55, 0.06)',
                       transition: 'width 0.3s ease, background 0.3s ease',
                     }}
                   />
@@ -836,8 +882,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 onClick={() => switchMode('full')}
                 style={{
                   padding: '8px 12px',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(212, 175, 55, 0.04)',
+                  border: '1px solid rgba(212, 175, 55, 0.10)',
                   borderRadius: 8,
                   color: 'var(--text-secondary)',
                   fontSize: 12,
@@ -863,7 +909,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               {isFastMode && preselectedType === 'photo_task' ? (
                 <PhotoTaskComposer
@@ -904,6 +950,19 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                     selected={serviceTypeId}
                     onSelect={handleServiceTypeSelect}
                     onUrgentRequest={(serviceId) => switchMode('fast', serviceId)}
+                    isFirstOrder={!user?.orders_count}
+                    draftInfo={(() => {
+                      if (serviceTypeId) return null
+                      const entries = Object.entries(drafts).filter(([, d]) => d && d.timestamp > Date.now() - 86400000)
+                      if (entries.length === 0) return null
+                      const [draftId, draft] = entries.sort((a, b) => b[1].timestamp - a[1].timestamp)[0]
+                      const svc = SERVICE_TYPES.find(s => s.id === draftId)
+                      if (!svc) return null
+                      const mins = Math.round((Date.now() - draft.timestamp) / 60000)
+                      const timeAgo = mins < 60 ? `${mins} мин назад` : mins < 1440 ? `${Math.round(mins / 60)} ч назад` : 'вчера'
+                      return { serviceTypeId: draftId, serviceLabel: svc.label, timeAgo }
+                    })()}
+                    onContinueDraft={(id) => { handleServiceTypeSelect(id); }}
                   />
                 </div>
               )}
@@ -918,7 +977,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               <RequirementsStep
                 serviceTypeId={serviceTypeId}
@@ -944,7 +1003,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             >
               <DeadlineStep
                 selected={deadline}

@@ -13,6 +13,17 @@ interface NavItem {
   label: string
 }
 
+const navItems: NavItem[] = [
+  { id: 'home', icon: Home, label: 'Главная', path: '/' },
+  { id: 'orders', icon: List, label: 'Заказы', path: '/orders' },
+  { id: 'club', icon: Crown, label: 'Бонусы', path: '/club' },
+  { id: 'profile', icon: User, label: 'Профиль', path: '/profile' },
+]
+
+const springNav  = { type: 'spring' as const, damping: 22, stiffness: 260 }
+const springPill = { type: 'spring' as const, damping: 22, stiffness: 280 }
+const springIcon = { type: 'spring' as const, damping: 24, stiffness: 350 }
+
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,66 +57,35 @@ export const Navigation = () => {
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
-
     const updateKeyboardState = () => {
       const baselineHeight = Math.max(initialViewportHeight.current, window.innerHeight)
-      const currentHeight = viewport.height
-      setIsKeyboardOpen(baselineHeight - currentHeight > 160)
+      setIsKeyboardOpen(baselineHeight - viewport.height > 160)
     }
-
     updateKeyboardState()
     viewport.addEventListener('resize', updateKeyboardState)
-
-    return () => {
-      viewport.removeEventListener('resize', updateKeyboardState)
-    }
+    return () => viewport.removeEventListener('resize', updateKeyboardState)
   }, [])
 
   useEffect(() => {
     const container = getScrollContainer()
-
     const handleScroll = () => {
-      if (shouldHideNav) {
-        setIsVisible(false)
-        return
-      }
-
+      if (shouldHideNav) { setIsVisible(false); return }
       const latest = container ? container.scrollTop : window.scrollY
       const diff = latest - lastScrollY.current
-      const isScrollingDown = diff > 10
-      const isScrollingUp = diff < -10
-      const isAtTop = latest < 50
-
-      if (isAtTop) {
-        setIsVisible(true)
-      } else if (isScrollingDown) {
-        setIsVisible(false)
-      } else if (isScrollingUp) {
-        setIsVisible(true)
-      }
+      if (latest < 50) setIsVisible(true)
+      else if (diff > 10) setIsVisible(false)
+      else if (diff < -10) setIsVisible(true)
       lastScrollY.current = latest
     }
-
     const target = container || window
     target.addEventListener('scroll', handleScroll, { passive: true })
     return () => target.removeEventListener('scroll', handleScroll)
   }, [shouldHideNav, getScrollContainer])
 
   useEffect(() => {
-    if (shouldHideNav) {
-      setIsVisible(false)
-    } else {
-      setIsVisible(true)
-    }
+    setIsVisible(!shouldHideNav)
     lastScrollY.current = 0
   }, [location.pathname, shouldHideNav])
-
-  const navItems: NavItem[] = [
-    { id: 'home', icon: Home, label: 'Главная', path: '/' },
-    { id: 'orders', icon: List, label: 'Заказы', path: '/orders' },
-    { id: 'club', icon: Crown, label: 'Бонусы', path: '/club' },
-    { id: 'profile', icon: User, label: 'Профиль', path: '/profile' }
-  ]
 
   if (shouldHideNav && !isVisible) return null
 
@@ -116,11 +96,9 @@ export const Navigation = () => {
           initial={false}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 22,
-            stiffness: 280,
-          }}
+          transition={springNav}
+          role="navigation"
+          aria-label="Основная навигация"
           style={{
             position: 'fixed',
             bottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
@@ -132,20 +110,41 @@ export const Navigation = () => {
             pointerEvents: 'none',
           }}
         >
-          <div style={{
-            width: 'min(92%, 360px)',
-            height: 52,
-            borderRadius: 9999,
-            background: 'rgba(12, 12, 12, 0.92)',
-            backdropFilter: 'blur(16px) saturate(120%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 8px 32px -12px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04)',
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            pointerEvents: 'auto',
-          }}>
+          {/* ── Capsule ───────────────────────────────────────────── */}
+          <div
+            role="tablist"
+            style={{
+              position: 'relative',
+              width: 'min(92%, 360px)',
+              height: 64,
+              borderRadius: 9999,
+              background: 'linear-gradient(180deg, rgba(22, 20, 16, 0.95), rgba(10, 10, 10, 0.98))',
+              backdropFilter: 'blur(24px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(150%)',
+              border: '1px solid rgba(212, 175, 55, 0.12)',
+              boxShadow: [
+                '0 8px 32px rgba(0, 0, 0, 0.5)',
+                '0 2px 12px rgba(212, 175, 55, 0.06)',
+                'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              ].join(', '),
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              pointerEvents: 'auto',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Top gold reflection line */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '10%',
+              right: '10%',
+              height: 1,
+              background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.35) 30%, rgba(255,248,214,0.25) 50%, rgba(212,175,55,0.35) 70%, transparent 100%)',
+              pointerEvents: 'none',
+            }} />
+
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
@@ -154,7 +153,9 @@ export const Navigation = () => {
                 <motion.button
                   key={item.id}
                   type="button"
+                  role="tab"
                   aria-label={item.label}
+                  aria-selected={isActive}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => {
                     haptic(isActive ? 'soft' : 'light')
@@ -164,15 +165,15 @@ export const Navigation = () => {
                     }
                     navigate(item.path)
                   }}
-                  whileTap={{ scale: 0.92 }}
+                  whileTap={{ scale: 0.9 }}
                   style={{
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 2,
-                    height: 52,
+                    gap: 5,
+                    height: 64,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -181,71 +182,114 @@ export const Navigation = () => {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  {/* Active dot indicator above icon */}
-                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isActive && (
-                      <motion.div
-                        layoutId="navDot"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 380,
-                          damping: 24,
-                        }}
-                        style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          background: 'var(--gold-400, #C5A028)',
-                          boxShadow: '0 0 8px rgba(212,175,55,0.4)',
-                        }}
-                      />
-                    )}
-                  </div>
+                  {/* ═══ ACTIVE PILL — clearly visible gold backdrop ═══ */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="navPill"
+                      transition={springPill}
+                      style={{
+                        position: 'absolute',
+                        top: 5,
+                        bottom: 5,
+                        left: 6,
+                        right: 6,
+                        borderRadius: 22,
+                        background: 'radial-gradient(ellipse at 50% 30%, rgba(212, 175, 55, 0.22) 0%, rgba(212, 175, 55, 0.08) 100%)',
+                        border: '1px solid rgba(212, 175, 55, 0.18)',
+                        boxShadow: [
+                          '0 0 20px rgba(212, 175, 55, 0.12)',
+                          '0 0 40px rgba(212, 175, 55, 0.05)',
+                          'inset 0 1px 0 rgba(255, 248, 214, 0.12)',
+                        ].join(', '),
+                      }}
+                    />
+                  )}
 
-                  {/* Icon */}
+                  {/* ═══ ICON CONTAINER ═══ */}
                   <motion.div
-                    animate={{
-                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)',
-                    }}
-                    transition={{ duration: 0.2 }}
+                    animate={{ scale: isActive ? 1.15 : 1 }}
+                    transition={springIcon}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       position: 'relative',
+                      zIndex: 1,
+                      width: 36,
+                      height: 30,
                     }}
                   >
+                    {/* Radial gold glow behind active icon */}
+                    <AnimatePresence>
+                      {isActive && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.3 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.3 }}
+                          transition={{ duration: 0.35 }}
+                          style={{
+                            position: 'absolute',
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.30) 0%, rgba(212, 175, 55, 0.08) 50%, transparent 70%)',
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+
                     <Icon
-                      size={20}
-                      strokeWidth={isActive ? 2.0 : 1.6}
-                      color={isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.4)'}
+                      size={isActive ? 24 : 21}
+                      strokeWidth={isActive ? 2.4 : 1.5}
+                      color={isActive ? '#E8C547' : 'rgba(255, 255, 255, 0.35)'}
+                      style={{
+                        transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                        filter: isActive
+                          ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5)) drop-shadow(0 0 3px rgba(255, 248, 214, 0.3))'
+                          : 'none',
+                      }}
                     />
-                    {/* Gold notification dot — only when daily bonus is claimable */}
+
+                    {/* Bonus badge */}
                     {item.path === '/club' && !isActive && showBonusBadge && (
                       <div style={{
                         position: 'absolute',
-                        top: -2,
-                        right: -4,
-                        width: 6,
-                        height: 6,
+                        top: 0,
+                        right: 2,
+                        width: 8,
+                        height: 8,
                         borderRadius: '50%',
-                        background: '#D4AF37',
-                        boxShadow: '0 0 6px rgba(212,175,55,0.5)',
-                      }} />
+                        background: 'linear-gradient(135deg, #D4AF37, #FFF8D6)',
+                        boxShadow: '0 0 8px rgba(212, 175, 55, 0.7)',
+                        border: '1.5px solid rgba(10, 10, 10, 0.95)',
+                      }}>
+                        <motion.div
+                          animate={{ scale: [1, 2.2, 2.2], opacity: [0.8, 0, 0] }}
+                          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+                          style={{
+                            position: 'absolute',
+                            inset: -1,
+                            borderRadius: '50%',
+                            border: '1.5px solid rgba(212, 175, 55, 0.7)',
+                          }}
+                        />
+                      </div>
                     )}
                   </motion.div>
 
-                  {/* Label */}
+                  {/* ═══ LABEL ═══ */}
                   <span
                     style={{
                       fontSize: 10,
-                      fontWeight: isActive ? 700 : 600,
+                      fontWeight: isActive ? 700 : 500,
                       letterSpacing: '0.02em',
-                      color: isActive ? 'var(--gold-300, #D4AF37)' : 'rgba(255,255,255,0.35)',
                       whiteSpace: 'nowrap',
                       lineHeight: 1,
+                      position: 'relative',
+                      zIndex: 1,
+                      color: isActive ? '#E8C547' : 'rgba(255, 255, 255, 0.35)',
+                      textShadow: isActive ? '0 0 16px rgba(212, 175, 55, 0.45)' : 'none',
+                      transition: 'all 0.3s ease-out',
                     }}
                   >
                     {item.label}

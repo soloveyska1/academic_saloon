@@ -1,6 +1,6 @@
 /**
  * Design tokens for Order Wizard — aligned with global design system.
- * Uses the same values as homepage glass cards.
+ * v13: Premium visual refinements — depth, typography, temperature
  */
 
 // ─── Spacing Scale (8px rhythm) ─────────────────────────────────────────
@@ -18,7 +18,8 @@ export const SPACING = {
 export const RADIUS = {
   sm: 12,
   md: 16,
-  lg: 24,
+  lg: 18,
+  xl: 24,
   full: 9999,
 } as const
 
@@ -27,23 +28,30 @@ export const COLORS = {
   gold: {
     primary: '#d4af37',
     light: '#E8D5A3',
-    soft: 'rgba(201, 162, 39, 0.06)',
-    border: 'rgba(201, 162, 39, 0.08)',
-    borderStrong: 'rgba(201, 162, 39, 0.20)',
+    soft: 'rgba(212, 175, 55, 0.06)',
+    border: 'rgba(212, 175, 55, 0.08)',
+    borderStrong: 'rgba(212, 175, 55, 0.30)',
     gradient: 'linear-gradient(135deg, var(--gold-600), var(--gold-400))',
-    shadow: 'rgba(201, 162, 39, 0.12)',
-    badge: 'rgba(201, 162, 39, 0.75)',
+    shadow: '0 0 20px -5px rgba(212, 175, 55, 0.15)',
+    badge: 'rgba(212, 175, 55, 0.75)',
   },
   card: {
-    bg: 'rgba(12, 12, 10, 0.6)',
-    border: 'rgba(255, 255, 255, 0.04)',
-    borderFocused: 'rgba(201, 162, 39, 0.15)',
+    // Standard: cool undertone for subtle hierarchy
+    bg: 'rgba(13, 13, 16, 0.88)',
+    // Premium: warm undertone — feels closer, more valuable
+    bgPremium: 'linear-gradient(145deg, rgba(212, 175, 55, 0.05), rgba(18, 15, 10, 0.90) 40%)',
+    border: 'rgba(255, 255, 255, 0.06)',
+    borderPremium: 'rgba(212, 175, 55, 0.15)',
+    borderFocused: 'rgba(212, 175, 55, 0.15)',
+    // Inset top highlight (glass lit edge — Raycast/Vercel style)
+    insetHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+    insetHighlightSelected: 'inset 0 1px 0 rgba(212, 175, 55, 0.06)',
   },
   assist: {
     primary: 'var(--gold-400)',
-    bg: 'rgba(201, 162, 39, 0.03)',
-    border: 'rgba(201, 162, 39, 0.08)',
-    icon: 'rgba(201, 162, 39, 0.06)',
+    bg: 'rgba(212, 175, 55, 0.03)',
+    border: 'rgba(212, 175, 55, 0.08)',
+    icon: 'rgba(212, 175, 55, 0.06)',
     text: 'var(--text-secondary)',
   },
   status: {
@@ -75,16 +83,17 @@ export const FONT = {
 export const ICON_BOX = {
   xs: 24,
   sm: 28,
-  md: 36,
-  lg: 38,
+  md: 40,
+  lg: 44,
   xl: 48,
 } as const
 
 // ─── Animation ──────────────────────────────────────────────────────────
 export const TAP_SCALE = {
-  card: 0.97,
+  card: 0.975,
   tile: 0.97,
 } as const
 
 // ─── Card Padding ───────────────────────────────────────────────────────
-export const CARD_PADDING = `${SPACING.xl}px`
+export const CARD_PADDING = `14px 18px`
+export const CARD_PADDING_PREMIUM = `20px 20px`

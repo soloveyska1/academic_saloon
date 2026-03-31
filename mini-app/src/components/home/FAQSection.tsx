@@ -1,3 +1,4 @@
+// deploy-trigger
 import { memo, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, useReducedMotion, useInView } from 'framer-motion'
 import { HelpCircle, ChevronDown, MessageCircle } from 'lucide-react'
@@ -40,16 +41,8 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
   return (
     <div
       style={{
-        borderRadius: 'var(--radius-md)',
-        background: isOpen ? 'linear-gradient(135deg, rgba(22,18,10,0.95) 0%, #0E0D0C 100%)' : '#0E0D0C',
-        borderLeft: isOpen ? '2px solid var(--gold-400)' : '2px solid transparent',
-        border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(212,175,55,0.04)'}`,
-        boxShadow: isOpen ? '0 8px 32px -12px rgba(0,0,0,0.5), 0 1px 0 rgba(212,175,55,0.05) inset' : '0 2px 8px rgba(0,0,0,0.2)',
-        borderLeftWidth: 2,
-        borderLeftStyle: 'solid',
-        borderLeftColor: isOpen ? 'var(--gold-400)' : 'transparent',
         overflow: 'hidden',
-        transition: 'border-color 0.2s',
+        transition: 'all 0.2s',
       }}
     >
       <motion.button
@@ -61,7 +54,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
           alignItems: 'center',
           gap: 12,
           width: '100%',
-          padding: 18,
+          padding: '16px 2px',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -71,8 +64,7 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
       >
         <span style={{
           flex: 1,
-          fontFamily: 'var(--font-display)',
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: 700,
           color: isOpen ? 'var(--gold-400)' : 'var(--text-primary)',
           lineHeight: 1.4,
@@ -99,11 +91,11 @@ function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '0 16px 16px',
+              padding: '0 2px 8px',
               fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              lineHeight: 1.55,
+              fontWeight: 500,
+              color: 'var(--text-muted)',
+              lineHeight: 1.6,
             }}>
               {answer}
             </div>
@@ -154,7 +146,7 @@ export const FAQSection = memo(function FAQSection() {
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {FAQ_ITEMS.map((item, i) => (
           <motion.div
             key={i}
@@ -168,6 +160,12 @@ export const FAQSection = memo(function FAQSection() {
               isOpen={openIndex === i}
               onToggle={() => handleToggle(i)}
             />
+            {i < FAQ_ITEMS.length - 1 && (
+              <div style={{
+                height: 1,
+                background: 'linear-gradient(90deg, rgba(212,175,55,0.06) 0%, transparent 100%)',
+              }} />
+            )}
           </motion.div>
         ))}
       </div>
@@ -183,7 +181,7 @@ export const FAQSection = memo(function FAQSection() {
         }}
       >
         <a
-          href="https://t.me/Thisissaymoon"
+          href="https://t.me/academicsaloon"
           target="_blank"
           rel="noopener noreferrer"
           style={{

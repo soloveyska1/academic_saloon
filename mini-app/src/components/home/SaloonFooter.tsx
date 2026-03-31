@@ -204,7 +204,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
         style={{ marginTop: 16 }}
       >
         <a
-          href="https://t.me/Thisissaymoon"
+          href="https://t.me/academicsaloon"
           target="_blank"
           rel="noopener noreferrer"
           style={{

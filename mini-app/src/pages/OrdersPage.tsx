@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -82,7 +82,7 @@ const WORK_TYPE_ICONS: Record<string, LucideIcon> = {
 const STATUS_META: Record<string, StatusMeta> = {
   draft: {
     label: 'Черновик',
-    hint: 'Заявка сохранена и ждёт завершения оформления.',
+    hint: 'Заявка сохранена. Завершите оформление, чтобы мы начали.',
     color: '#a1a1aa',
     chipBg: 'rgba(161,161,170,0.10)',
     icon: FileText,
@@ -92,8 +92,8 @@ const STATUS_META: Record<string, StatusMeta> = {
     actionLabel: 'Продолжить',
   },
   pending: {
-    label: 'Оценка',
-    hint: 'Собираем вводные и готовим расчёт.',
+    label: 'На оценке',
+    hint: 'Изучаем задание и готовим стоимость.',
     color: '#fbbf24',
     chipBg: 'rgba(251,191,36,0.12)',
     icon: Clock3,
@@ -102,8 +102,8 @@ const STATUS_META: Record<string, StatusMeta> = {
     step: 1,
   },
   waiting_estimation: {
-    label: 'Оценка',
-    hint: 'Собираем вводные и готовим расчёт.',
+    label: 'На оценке',
+    hint: 'Изучаем задание и готовим стоимость.',
     color: '#fbbf24',
     chipBg: 'rgba(251,191,36,0.12)',
     icon: Clock3,
@@ -135,9 +135,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   verification_pending: {
     label: 'Проверяем оплату',
-    hint: 'Платёж получен, сейчас подтверждаем зачисление.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    hint: 'Платёж получен, подтверждаем зачисление.',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 4,
     needsAction: false,
@@ -145,9 +145,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   paid: {
     label: 'В работе',
-    hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    hint: 'Работаем над вашим заданием.',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -155,9 +155,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   paid_full: {
     label: 'В работе',
-    hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    hint: 'Работаем над вашим заданием.',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -165,9 +165,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   in_progress: {
     label: 'В работе',
-    hint: 'Уже работаем над задачей.',
-    color: '#60a5fa',
-    chipBg: 'rgba(96,165,250,0.12)',
+    hint: 'Работаем над вашим заданием.',
+    color: '#d4af37',
+    chipBg: 'rgba(212,175,55,0.10)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -175,18 +175,18 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   paused: {
     label: 'На паузе',
-    hint: 'Заморозка активна. Заказ можно возобновить раньше срока.',
+    hint: 'Заказ приостановлен. Можно возобновить в любой момент.',
     color: '#d4af37',
     chipBg: 'rgba(212,175,55,0.14)',
     icon: Clock3,
     priority: 5,
     needsAction: true,
     step: 3,
-    actionLabel: 'Открыть',
+    actionLabel: 'Возобновить',
   },
   review: {
-    label: 'Готов',
-    hint: 'Нужно открыть заказ и посмотреть готовый результат.',
+    label: 'Готов к проверке',
+    hint: 'Работа готова — откройте и проверьте результат.',
     color: '#4ade80',
     chipBg: 'rgba(74,222,128,0.12)',
     icon: CheckCircle2,
@@ -204,11 +204,11 @@ const STATUS_META: Record<string, StatusMeta> = {
     priority: 2,
     needsAction: true,
     step: 3,
-    actionLabel: 'Открыть',
+    actionLabel: 'Посмотреть',
   },
   completed: {
     label: 'Завершён',
-    hint: 'Заказ закрыт и доступен в истории.',
+    hint: 'Заказ выполнен. Материалы всегда доступны.',
     color: '#4ade80',
     chipBg: 'rgba(74,222,128,0.10)',
     icon: CheckCircle2,
@@ -217,8 +217,8 @@ const STATUS_META: Record<string, StatusMeta> = {
     step: 4,
   },
   cancelled: {
-    label: 'Закрыт',
-    hint: 'Заказ остановлен и перенесён в историю.',
+    label: 'Отменён',
+    hint: 'Заказ отменён.',
     color: '#71717a',
     chipBg: 'rgba(113,113,122,0.10)',
     icon: XCircle,
@@ -227,8 +227,8 @@ const STATUS_META: Record<string, StatusMeta> = {
     step: 0,
   },
   rejected: {
-    label: 'Закрыт',
-    hint: 'Заказ остановлен и перенесён в историю.',
+    label: 'Отклонён',
+    hint: 'К сожалению, заказ не удалось принять.',
     color: '#71717a',
     chipBg: 'rgba(113,113,122,0.10)',
     icon: XCircle,
@@ -268,7 +268,7 @@ function formatDeadline(deadline: string | null | undefined): string {
   const hours = getHoursUntilDeadline(deadline)
   const days = getDaysUntilDeadline(deadline)
   if (days === null) return 'Без срока'
-  if (hours !== null && hours <= 0) return 'Просрочен'
+  if (hours !== null && hours <= 0) return 'Срок истёк'
   if (hours !== null && hours <= 24) return `${hours} ч`
   if (days <= 7) return `${days} дн`
   const date = parseOrderDateSafe(deadline)
@@ -285,7 +285,7 @@ function getPauseHoursLeft(pauseUntil: string | null | undefined): number | null
 function formatRelevantTiming(order: Order): string {
   if (order.status === 'paused') {
     const pauseDate = parseOrderDateSafe(order.pause_until)
-    if (!pauseDate) return 'Пауза активна'
+    if (!pauseDate) return 'На паузе'
     return `Пауза до ${pauseDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`
   }
 
@@ -353,7 +353,7 @@ function getSectionedOrders(orders: Order[], filter: FilterType, query: string) 
   const closed = orders.filter(o => ['cancelled', 'rejected'].includes(o.status)).slice(0, 3)
 
   const sections = [
-    { key: 'action', title: 'Требуют внимания', orders: action },
+    { key: 'action', title: 'Ожидают вас', orders: action },
     { key: 'active', title: 'В работе', orders: active },
     { key: 'completed', title: 'Завершено', orders: completed },
     { key: 'closed', title: 'История', orders: closed },
@@ -364,7 +364,7 @@ function getSectionedOrders(orders: Order[], filter: FilterType, query: string) 
 
 function getFilterTitle(filter: FilterType): string {
   switch (filter) {
-    case 'action': return 'Требуют внимания'
+    case 'action': return 'Ожидают вас'
     case 'active': return 'В работе'
     case 'completed': return 'Завершённые'
     case 'archived': return 'Архив'
@@ -591,30 +591,31 @@ const OrderCard = memo(function OrderCard({
         boxShadow: 'var(--card-shadow)',
       }}
     >
-      {/* Action indicator — thin gold top line */}
-      {meta.needsAction && (
-        <div aria-hidden="true" style={{
-          position: 'absolute',
-          top: 0, left: 24, right: 24,
-          height: 1,
-          background: 'var(--gold-glass-medium)',
-        }} />
-      )}
+      {/* Left accent bar — color-coded by status */}
+      <div aria-hidden="true" style={{
+        position: 'absolute',
+        top: 10, bottom: 10, left: 0,
+        width: 3,
+        borderRadius: '0 3px 3px 0',
+        background: meta.color,
+        opacity: meta.needsAction ? 0.8 : 0.3,
+      }} />
 
-      {/* Progress bar — thin line at bottom */}
+      {/* Progress bar — visible line at bottom */}
       {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && (
         <div style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
-          height: 2,
+          height: 3,
           background: 'var(--border-subtle)',
         }}>
           <div style={{
             height: '100%',
             width: `${order.progress}%`,
             background: meta.color,
-            opacity: 0.45,
-            borderRadius: 1,
+            opacity: 0.7,
+            borderRadius: '0 2px 2px 0',
+            boxShadow: `0 0 6px ${meta.color}`,
           }} />
         </div>
       )}
@@ -661,10 +662,10 @@ const OrderCard = memo(function OrderCard({
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
           <div style={{
             fontSize: 16, fontWeight: 700,
-            color: 'var(--gold-200)',
+            color: amount > 0 ? 'var(--gold-200)' : 'var(--text-muted)',
             letterSpacing: '-0.01em',
           }}>
-            {formatMoney(amount)}
+            {amount > 0 ? formatMoney(amount) : 'Оценка'}
           </div>
         </div>
       </div>
@@ -716,9 +717,9 @@ const OrderCard = memo(function OrderCard({
         </span>
 
         <ChevronRight
-          size={14}
-          color="var(--text-muted)"
-          style={{ marginLeft: 'auto', flexShrink: 0 }}
+          size={16}
+          color="var(--text-secondary)"
+          style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6 }}
         />
       </div>
     </motion.button>
@@ -778,39 +779,40 @@ function EmptyState({
       </motion.div>
 
       <div style={{
-        fontSize: 18, fontWeight: 700,
+        fontSize: 20, fontWeight: 700,
         color: 'var(--text-primary)',
         marginBottom: 8,
       }}>
-        {hasSearch ? 'Ничего не нашли' : 'Пока нет заказов'}
+        {hasSearch ? 'Ничего не нашлось' : 'Здесь будут ваши заказы'}
       </div>
       <div style={{
-        fontSize: 13, lineHeight: 1.6,
+        fontSize: 14, lineHeight: 1.6,
         color: 'var(--text-secondary)',
-        marginBottom: 24,
-        maxWidth: 260,
-        margin: '0 auto 24px',
+        marginBottom: 28,
+        maxWidth: 280,
+        margin: '0 auto 28px',
       }}>
         {hasSearch
           ? 'Попробуйте изменить запрос или фильтр.'
-          : 'Когда создадите первый заказ, он появится здесь.'}
+          : 'Оформление за пару минут. Расчёт стоимости — бесплатно.'}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={onCreateOrder}
           style={{
-            height: 44, padding: '0 20px', borderRadius: 12,
+            height: 48, padding: '0 24px', borderRadius: 14,
             border: 'none',
             background: 'var(--gold-metallic)',
             color: 'var(--text-on-gold)',
-            fontSize: 14, fontWeight: 700,
+            fontSize: 15, fontWeight: 700,
             cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8,
           }}
         >
-          Создать заказ
+          Оформить заказ
         </motion.button>
         {hasSearch && (
           <motion.button
@@ -818,7 +820,7 @@ function EmptyState({
             whileTap={{ scale: 0.97 }}
             onClick={onReset}
             style={{
-              height: 44, padding: '0 20px', borderRadius: 12,
+              height: 48, padding: '0 20px', borderRadius: 14,
               border: '1px solid var(--border-strong)',
               background: 'transparent',
               color: 'var(--text-secondary)',
@@ -927,26 +929,29 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
   }, [normalizedOrders, searchQuery])
 
   const visibleOrders = filter === 'archived' ? archivedOrders : filteredOrders
-  const sections = getSectionedOrders(visibleOrders, filter, searchQuery)
+  const sections = useMemo(
+    () => getSectionedOrders(visibleOrders, filter, searchQuery),
+    [visibleOrders, filter, searchQuery],
+  )
 
-  const handleCreateOrder = () => { haptic('medium'); navigate('/create-order') }
-  const handleOpenOrder = (order: Order, path?: string) => {
+  const handleCreateOrder = useCallback(() => { haptic('medium'); navigate('/create-order') }, [haptic, navigate])
+  const handleOpenOrder = useCallback((order: Order, path?: string) => {
     if (!order?.id) return
     haptic('light')
     navigate(path || `/order/${order.id}`)
-  }
-  const handleBatchPay = () => {
+  }, [haptic, navigate])
+  const handleBatchPay = useCallback(() => {
     if (payableOrders.length < 2) return
     haptic('medium')
     navigate(`/batch-payment?orders=${payableOrders.map(o => o.id).join(',')}`)
-  }
-  const handleReset = () => { haptic('light'); setSearchQuery(''); setFilter('all') }
+  }, [haptic, navigate, payableOrders])
+  const handleReset = useCallback(() => { haptic('light'); setSearchQuery(''); setFilter('all') }, [haptic])
 
   const filterItems = [
     { key: 'all' as FilterType, label: 'Все', count: stats.all },
-    { key: 'action' as FilterType, label: 'Важное', count: stats.action },
+    { key: 'action' as FilterType, label: 'Ожидают вас', count: stats.action },
     { key: 'active' as FilterType, label: 'В работе', count: stats.active },
-    { key: 'completed' as FilterType, label: 'Готово', count: stats.completed },
+    { key: 'completed' as FilterType, label: 'Завершено', count: stats.completed },
     ...(stats.archived > 0 ? [{ key: 'archived' as FilterType, label: 'Архив', count: stats.archived }] : []),
   ]
 
@@ -985,6 +990,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
 
           <motion.button
             type="button"
+            aria-label="Оформить заказ"
             whileTap={{ scale: 0.92 }}
             onClick={handleCreateOrder}
             style={{
@@ -1016,7 +1022,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           >
             {stats.action > 0 && (
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold-200)' }}>
-                {stats.action} {pluralize(stats.action, ['ждёт', 'ждут', 'ждут'])} вас
+                {stats.action} к действию
               </span>
             )}
             {stats.action > 0 && stats.active > 0 && (
@@ -1109,7 +1115,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
                   key={order.id}
                   order={order}
                   index={i}
-                  onOpenOrder={(o) => handleOpenOrder(o)}
+                  onOpenOrder={handleOpenOrder}
                 />
               ))}
             </section>

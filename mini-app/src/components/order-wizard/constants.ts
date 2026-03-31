@@ -12,98 +12,98 @@ import { ServiceType, DeadlineOption } from './types'
 
 export const SERVICE_TYPES: ServiceType[] = [
   {
-    id: 'masters',
-    label: 'Магистерская диссертация',
-    description: 'Доведём до защиты. Научная новизна есть',
-    price: 'от 60 000 ₽',
-    priceNum: 60000,
-    icon: GraduationCap,
-    category: 'premium',
-    duration: '30-60 дней',
-    popular: false,
-  },
-  {
     id: 'diploma',
     label: 'Дипломная работа (ВКР)',
-    description: 'Ведём до оценки, а не просто до сдачи',
+    description: 'Сопровождение до оценки',
     price: 'от 40 000 ₽',
     priceNum: 40000,
     icon: GraduationCap,
     category: 'premium',
-    duration: '21-45 дней',
+    duration: 'от 21 дня',
     popular: true,
+  },
+  {
+    id: 'masters',
+    label: 'Магистерская диссертация',
+    description: 'До защиты с научной новизной',
+    price: 'от 60 000 ₽',
+    priceNum: 60000,
+    icon: GraduationCap,
+    category: 'premium',
+    duration: 'от 30 дней',
+    popular: false,
   },
   {
     id: 'coursework',
     label: 'Курсовая работа',
-    description: 'Под требования вашего ВУЗа и кафедры',
+    description: 'По требованиям ВУЗа и кафедры',
     price: 'от 14 000 ₽',
     priceNum: 14000,
     icon: BookOpen,
     category: 'standard',
-    duration: '7-14 дней',
+    duration: 'от 7 дней',
     popular: true,
   },
   {
     id: 'practice',
     label: 'Отчёт по практике',
-    description: 'Дневник + отчёт. Открыл и сдал',
+    description: 'Дневник + отчёт под ключ',
     price: 'от 8 000 ₽',
     priceNum: 8000,
     icon: Briefcase,
     category: 'standard',
-    duration: '5-10 дней',
-  },
-  {
-    id: 'essay',
-    label: 'Эссе',
-    description: 'Аргументированно и без воды',
-    price: 'от 2 500 ₽',
-    priceNum: 2500,
-    icon: PenTool,
-    category: 'express',
-    duration: '2-5 дней',
+    duration: 'от 5 дней',
   },
   {
     id: 'presentation',
     label: 'Презентация',
-    description: 'Слайды + речь. Готовы к выступлению',
+    description: 'Слайды + речь к выступлению',
     price: 'от 7 000 ₽',
     priceNum: 7000,
     icon: Presentation,
-    category: 'express',
-    duration: '2-4 дня',
+    category: 'standard',
+    duration: 'от 2 дней',
     popular: true,
   },
   {
-    id: 'control',
-    label: 'Контрольная работа',
-    description: 'Всё решено и оформлено по методичке',
+    id: 'essay',
+    label: 'Эссе',
+    description: 'Аргументированно и по делу',
     price: 'от 2 500 ₽',
     priceNum: 2500,
-    icon: ClipboardCheck,
+    icon: PenTool,
     category: 'express',
-    duration: '1-3 дня',
-  },
-  {
-    id: 'independent',
-    label: 'Самостоятельная работа',
-    description: 'По методичке вашего преподавателя',
-    price: 'от 2 500 ₽',
-    priceNum: 2500,
-    icon: Scroll,
-    category: 'express',
-    duration: '1-3 дня',
+    duration: 'от 2 дней',
   },
   {
     id: 'report',
     label: 'Реферат',
-    description: 'Оформлен по ГОСТу. Готов к сдаче',
+    description: 'По ГОСТу, с источниками',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: FileText,
     category: 'express',
-    duration: '2-5 дней',
+    duration: 'от 2 дней',
+  },
+  {
+    id: 'control',
+    label: 'Контрольная работа',
+    description: 'С ходом решения и оформлением',
+    price: 'от 2 500 ₽',
+    priceNum: 2500,
+    icon: ClipboardCheck,
+    category: 'express',
+    duration: 'от 1 дня',
+  },
+  {
+    id: 'independent',
+    label: 'Самостоятельная работа',
+    description: 'По методичке преподавателя',
+    price: 'от 2 500 ₽',
+    priceNum: 2500,
+    icon: Scroll,
+    category: 'express',
+    duration: 'от 1 дня',
   },
   {
     id: 'photo_task',
@@ -113,17 +113,17 @@ export const SERVICE_TYPES: ServiceType[] = [
     priceNum: 0,
     icon: Camera,
     category: 'express',
-    duration: '1-2 дня',
+    duration: 'от 1 дня',
   },
   {
     id: 'other',
     label: 'Другое',
-    description: 'Опишите задачу — подберём автора',
+    description: 'Опишите задачу — подберём формат',
     price: 'индивидуально',
     priceNum: 0,
     icon: HelpCircle,
     category: 'express',
-    duration: 'по договорённости',
+    duration: 'обсудим сроки',
   },
 ]
 
@@ -145,32 +145,26 @@ export const DEADLINES: DeadlineOption[] = [
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const REQUIREMENTS_TEMPLATES: Record<string, string> = {
-  diploma: `• Объём: ___ страниц
-• Уникальность: ___%
-• Оформление: ГОСТ / методичка ВУЗа
-• Структура: введение, 3 главы, заключение
-• Количество источников: ___
-• Особые требования:`,
+  diploma: `Объём — 60-80 страниц
+Уникальность — от 70%
+Оформление по ГОСТу
+Введение, 3 главы, заключение
+Источники — от 40`,
 
-  masters: `• Объём: ___ страниц
-• Уникальность: ___%
-• Научная новизна: требуется / не требуется
-• Практическая часть: есть / нет
-• Особые требования:`,
+  masters: `Объём — 80-100 страниц
+Уникальность — от 75%
+Научная новизна обязательна
+Практическая часть с расчётами`,
 
-  coursework: `• Объём: ___ страниц
-• Уникальность: ___%
-• Оформление: ГОСТ / методичка
-• Особые требования:`,
+  coursework: `Объём — 25-35 страниц
+Уникальность — от 60%
+Оформление по методичке`,
 
-  presentation: `• Количество слайдов: ___
-• Стиль: деловой / креативный / академический
-• Анимации: да / нет
-• Особые требования:`,
+  presentation: `15-20 слайдов
+Деловой стиль
+Речь к каждому слайду`,
 
-  default: `• Объём работы:
-• Требования к оформлению:
-• Дополнительные пожелания:`,
+  default: `Опишите ваши требования в свободной форме`,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -178,9 +172,9 @@ export const REQUIREMENTS_TEMPLATES: Record<string, string> = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const WIZARD_STEPS = [
-  { num: 1, title: 'Выберите услугу', subtitle: 'Что нужно сделать?' },
-  { num: 2, title: 'Контекст заказа', subtitle: 'Предмет, требования и файлы' },
-  { num: 3, title: 'Сроки', subtitle: 'Выберите комфортный темп' },
+  { num: 1, title: 'Услуга', subtitle: 'Что нужно сделать?' },
+  { num: 2, title: 'Расскажи о задаче', subtitle: 'Чем точнее — тем точнее оценка' },
+  { num: 3, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
 ]
 
 // Storage keys

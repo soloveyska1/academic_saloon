@@ -18,8 +18,8 @@ export const LEGAL_CONTACTS = {
   taxStatus: 'Плательщик налога на профессиональный доход',
   inn: '212885750445',
   email: 'saymurr@bk.ru',
-  telegramHandle: '@Thisissaymoon',
-  telegramUrl: 'https://t.me/Thisissaymoon',
+  telegramHandle: '@academicsaloon',
+  telegramUrl: 'https://t.me/academicsaloon',
   region: 'Ленинградская область, Российская Федерация',
   adultOnly: 'Сервис предназначен только для совершеннолетних пользователей (18+).',
   responseWindow:

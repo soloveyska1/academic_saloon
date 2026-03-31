@@ -331,8 +331,8 @@ export function PhotoTaskComposer({
             style={{
               padding: '8px 10px',
               borderRadius: 8,
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.18)',
+              background: 'rgba(212, 175, 55, 0.06)',
+              border: '1px solid rgba(212, 175, 55, 0.12)',
               display: 'flex',
               alignItems: 'flex-start',
               gap: 8,
