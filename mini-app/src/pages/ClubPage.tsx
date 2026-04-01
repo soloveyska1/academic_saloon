@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls, useMotionValue, type PanInfo } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
@@ -158,6 +158,21 @@ const ACHIEVEMENT_FILTERS: Array<{ key: AchievementFilter; label: string }> = [
   { key: 'locked', label: 'Закрытые' },
   { key: 'legendary', label: 'Легенды' },
 ]
+
+const ACHIEVEMENT_DETAIL_VARIANTS = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 36 : direction < 0 ? -36 : 0,
+    opacity: direction === 0 ? 1 : 0.45,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -36 : direction < 0 ? 36 : 0,
+    opacity: 0,
+  }),
+}
 
 function sortAchievements(items: UserAchievement[]): UserAchievement[] {
   return [...items].sort((a, b) => {
@@ -1646,19 +1661,38 @@ function AchievementCollection({
 
 function AchievementDetailModal({
   achievement,
+  previousAchievement,
+  nextAchievement,
+  currentIndex,
+  total,
+  navigationDirection,
   onClose,
   onShare,
   onAction,
+  onNavigate,
 }: {
   achievement: UserAchievement
+  previousAchievement: UserAchievement | null
+  nextAchievement: UserAchievement | null
+  currentIndex: number
+  total: number
+  navigationDirection: number
   onClose: () => void
   onShare: (achievement: UserAchievement) => void
   onAction: (achievement: UserAchievement) => void
+  onNavigate: (direction: -1 | 1) => void
 }) {
   const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
   const rarity = RARITY_META[achievement.rarity]
   const progress = Math.max(0, Math.min(100, Math.round(achievement.progress * 100)))
   const action = getAchievementActionMeta(achievement)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const dragControls = useDragControls()
+  const sheetY = useMotionValue(0)
+  const canGoPrevious = Boolean(previousAchievement)
+  const canGoNext = Boolean(nextAchievement)
+  const canNavigateBetweenAchievements = total > 1
+  const positionLabel = total > 0 ? `${currentIndex + 1} из ${total}` : null
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined
@@ -1673,6 +1707,37 @@ function AchievementDetailModal({
       body.style.touchAction = previousTouchAction
     }
   }, [])
+
+  useEffect(() => {
+    if (sheetRef.current) {
+      sheetRef.current.scrollTop = 0
+    }
+    sheetY.set(0)
+  }, [achievement.key, sheetY])
+
+  const handleSheetDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 120 || info.velocity.y > 900) {
+      onClose()
+    }
+  }, [onClose])
+
+  const handleSheetPanEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!canNavigateBetweenAchievements) return
+
+    const absX = Math.abs(info.offset.x)
+    const absY = Math.abs(info.offset.y)
+
+    if (absX < 70 || absX <= absY * 1.15) return
+
+    if (info.offset.x < 0 && canGoNext) {
+      onNavigate(1)
+      return
+    }
+
+    if (info.offset.x > 0 && canGoPrevious) {
+      onNavigate(-1)
+    }
+  }, [canGoNext, canGoPrevious, canNavigateBetweenAchievements, onNavigate])
 
   const modal = (
     <motion.div
@@ -1694,15 +1759,26 @@ function AchievementDetailModal({
       }}
     >
       <motion.div
+        ref={sheetRef}
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 28 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragDirectionLock
+        dragMomentum={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.22 }}
+        onDragEnd={handleSheetDragEnd}
+        onPanEnd={handleSheetPanEnd}
         onClick={(event) => event.stopPropagation()}
         className={homeStyles.voidGlass}
         role="dialog"
         aria-modal="true"
         style={{
+          y: sheetY,
           width: '100%',
           maxWidth: 460,
           maxHeight: 'calc(100vh - 32px)',
@@ -1714,248 +1790,358 @@ function AchievementDetailModal({
           overflowY: 'auto',
         }}
       >
+        <div
+          onPointerDown={(event) => dragControls.start(event)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+            paddingBottom: 14,
+            marginBottom: 14,
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            cursor: 'grab',
+          }}
+        >
           <div
             aria-hidden="true"
             style={{
-              position: 'absolute',
-              inset: '-20px auto auto -20px',
-              width: 160,
-              height: 160,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${rarity.glow}, transparent 70%)`,
-              pointerEvents: 'none',
+              width: 48,
+              height: 5,
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.18)',
             }}
           />
-
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, position: 'relative', zIndex: 1 }}>
-            <div
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
+            <motion.button
+              type="button"
+              whileTap={canGoPrevious ? { scale: 0.94 } : undefined}
+              disabled={!canGoPrevious}
+              onClick={() => canGoPrevious && onNavigate(-1)}
+              aria-label="Предыдущее достижение"
               style={{
-                width: 54,
-                height: 54,
-                borderRadius: 16,
-                background: 'rgba(0,0,0,0.26)',
-                border: `1px solid ${rarity.border}`,
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: canGoPrevious ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                color: canGoPrevious ? 'var(--gold-200)' : 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                cursor: canGoPrevious ? 'pointer' : 'default',
+                opacity: canGoPrevious ? 1 : 0.45,
                 flexShrink: 0,
-                boxShadow: `0 0 28px ${rarity.glow}`,
               }}
             >
-              <Icon size={22} color={achievement.unlocked ? rarity.tint : 'var(--text-muted)'} />
-            </div>
+              <ArrowLeft size={16} />
+            </motion.button>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                <span
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: 999,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase' as const,
-                    color: achievement.unlocked ? rarity.tint : 'var(--text-muted)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${achievement.unlocked ? rarity.border : 'rgba(255,255,255,0.05)'}`,
-                  }}
-                >
-                  {achievement.unlocked ? rarity.label : 'Не открыто'}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  Открыли {achievement.owners_percent.toFixed(1)}% пользователей
-                </span>
-              </div>
-
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
               <div
                 style={{
-                  fontSize: 20,
+                  fontSize: 10,
                   fontWeight: 700,
-                  color: 'var(--gold-200)',
-                  fontFamily: "'Manrope', sans-serif",
-                  marginBottom: 6,
-                  lineHeight: 1.15,
+                  color: 'var(--gold-400)',
+                  opacity: 0.72,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.08em',
+                  marginBottom: 4,
                 }}
               >
-                {achievement.title}
+                Достижение
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                {achievement.description}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {positionLabel || 'Карточка'}
               </div>
             </div>
-          </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: 10,
-              marginBottom: 16,
-              position: 'relative',
-              zIndex: 1,
-            }}
+            <motion.button
+              type="button"
+              whileTap={canGoNext ? { scale: 0.94 } : undefined}
+              disabled={!canGoNext}
+              onClick={() => canGoNext && onNavigate(1)}
+              aria-label="Следующее достижение"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: canGoNext ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                color: canGoNext ? 'var(--gold-200)' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: canGoNext ? 'pointer' : 'default',
+                opacity: canGoNext ? 1 : 0.45,
+                flexShrink: 0,
+              }}
+            >
+              <ArrowRight size={16} />
+            </motion.button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.45 }}>
+            {canNavigateBetweenAchievements
+              ? 'Тяните вниз за хэндл, чтобы закрыть, или свайпайте влево и вправо по карточке.'
+              : 'Тяните вниз за хэндл, чтобы закрыть карточку.'}
+          </div>
+        </div>
+
+        <AnimatePresence initial={false} custom={navigationDirection} mode="wait">
+          <motion.div
+            key={achievement.key}
+            custom={navigationDirection}
+            variants={ACHIEVEMENT_DETAIL_VARIANTS}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 360, damping: 34 }}
+            style={{ position: 'relative' }}
           >
-            {[
-              {
-                label: 'Награда',
-                value: achievement.reward_amount > 0 ? formatMoney(achievement.reward_amount) : 'Без бонуса',
-              },
-              {
-                label: 'Прогресс',
-                value: `${achievement.current}/${achievement.target}`,
-              },
-              {
-                label: 'Редкость',
-                value: rarity.label,
-              },
-            ].map((item) => (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: '-20px auto auto -20px',
+                width: 160,
+                height: 160,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${rarity.glow}, transparent 70%)`,
+                pointerEvents: 'none',
+              }}
+            />
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, position: 'relative', zIndex: 1 }}>
               <div
-                key={item.label}
                 style={{
-                  padding: '12px 10px',
-                  borderRadius: 14,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  width: 54,
+                  height: 54,
+                  borderRadius: 16,
+                  background: 'rgba(0,0,0,0.26)',
+                  border: `1px solid ${rarity.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: `0 0 28px ${rarity.glow}`,
                 }}
               >
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 7 }}>
-                  {item.label}
+                <Icon size={22} color={achievement.unlocked ? rarity.tint : 'var(--text-muted)'} />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <span
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase' as const,
+                      color: achievement.unlocked ? rarity.tint : 'var(--text-muted)',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${achievement.unlocked ? rarity.border : 'rgba(255,255,255,0.05)'}`,
+                    }}
+                  >
+                    {achievement.unlocked ? rarity.label : 'Не открыто'}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    Открыли {achievement.owners_percent.toFixed(1)}% пользователей
+                  </span>
                 </div>
+
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 20,
                     fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.35,
+                    color: 'var(--gold-200)',
+                    fontFamily: "'Manrope', sans-serif",
+                    marginBottom: 6,
+                    lineHeight: 1.15,
                   }}
                 >
-                  {item.value}
+                  {achievement.title}
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: 16,
-              background: 'rgba(255,255,255,0.025)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              marginBottom: 16,
-              position: 'relative',
-              zIndex: 1,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-200)' }}>
-                {achievement.unlocked ? 'Достижение получено' : 'Что осталось'}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--gold-400)' }}>
-                {progress}%
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  {achievement.description}
+                </div>
               </div>
             </div>
 
             <div
               style={{
-                width: '100%',
-                height: 7,
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.05)',
-                overflow: 'hidden',
-                marginBottom: 10,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 10,
+                marginBottom: 16,
+                position: 'relative',
+                zIndex: 1,
               }}
             >
+              {[
+                {
+                  label: 'Награда',
+                  value: achievement.reward_amount > 0 ? formatMoney(achievement.reward_amount) : 'Без бонуса',
+                },
+                {
+                  label: 'Прогресс',
+                  value: `${achievement.current}/${achievement.target}`,
+                },
+                {
+                  label: 'Редкость',
+                  value: rarity.label,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '12px 10px',
+                    borderRadius: 14,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 7 }}>
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                marginBottom: 16,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-200)' }}>
+                  {achievement.unlocked ? 'Достижение получено' : 'Что осталось'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--gold-400)' }}>
+                  {progress}%
+                </div>
+              </div>
+
               <div
                 style={{
-                  width: `${progress}%`,
-                  height: '100%',
+                  width: '100%',
+                  height: 7,
                   borderRadius: 999,
-                  background: achievement.unlocked
-                    ? 'linear-gradient(90deg, rgba(255,248,214,0.9), rgba(212,175,55,0.9))'
-                    : 'linear-gradient(90deg, rgba(212,175,55,0.45), rgba(212,175,55,0.9))',
+                  background: 'rgba(255,255,255,0.05)',
+                  overflow: 'hidden',
+                  marginBottom: 10,
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: `${progress}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background: achievement.unlocked
+                      ? 'linear-gradient(90deg, rgba(255,248,214,0.9), rgba(212,175,55,0.9))'
+                      : 'linear-gradient(90deg, rgba(212,175,55,0.45), rgba(212,175,55,0.9))',
+                  }}
+                />
+              </div>
+
+              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                {achievement.unlocked
+                  ? `Открыто ${formatAchievementDate(achievement.unlocked_at)}. ${rarity.description}`
+                  : achievement.hint || 'Продолжайте пользоваться приложением, чтобы выполнить условие.'}
+              </div>
             </div>
 
-            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              {achievement.unlocked
-                ? `Открыто ${formatAchievementDate(achievement.unlocked_at)}. ${rarity.description}`
-                : achievement.hint || 'Продолжайте пользоваться приложением, чтобы выполнить условие.'}
-            </div>
-          </div>
+            <div style={{ display: 'flex', gap: 10, position: 'relative', zIndex: 1 }}>
+              {achievement.unlocked && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onShare(achievement)}
+                  style={{
+                    flex: 1,
+                    minHeight: 48,
+                    borderRadius: 14,
+                    border: '1px solid var(--border-gold)',
+                    background: 'var(--gold-glass-medium)',
+                    color: 'var(--gold-200)',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Send size={16} />
+                  Поделиться
+                </motion.button>
+              )}
 
-          <div style={{ display: 'flex', gap: 10, position: 'relative', zIndex: 1 }}>
-            {achievement.unlocked && (
+              {!achievement.unlocked && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onAction(achievement)}
+                  style={{
+                    flex: 1,
+                    minHeight: 48,
+                    borderRadius: 14,
+                    border: '1px solid var(--border-gold)',
+                    background: 'var(--gold-glass-medium)',
+                    color: 'var(--gold-200)',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {action.label}
+                  <ArrowRight size={16} />
+                </motion.button>
+              )}
+
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.97 }}
-                onClick={() => onShare(achievement)}
+                onClick={onClose}
                 style={{
-                  flex: 1,
+                  flex: achievement.unlocked ? 0.8 : 0.9,
                   minHeight: 48,
                   borderRadius: 14,
-                  border: '1px solid var(--border-gold)',
-                  background: 'var(--gold-glass-medium)',
-                  color: 'var(--gold-200)',
+                  border: '1px solid var(--border-default)',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: 'var(--text-secondary)',
                   fontSize: 14,
                   fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
                   cursor: 'pointer',
                 }}
               >
-                <Send size={16} />
-                Поделиться
+                Закрыть
               </motion.button>
-            )}
-
-            {!achievement.unlocked && (
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={() => onAction(achievement)}
-                style={{
-                  flex: 1,
-                  minHeight: 48,
-                  borderRadius: 14,
-                  border: '1px solid var(--border-gold)',
-                  background: 'var(--gold-glass-medium)',
-                  color: 'var(--gold-200)',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  cursor: 'pointer',
-                }}
-              >
-                {action.label}
-                <ArrowRight size={16} />
-              </motion.button>
-            )}
-
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.97 }}
-              onClick={onClose}
-              style={{
-                flex: achievement.unlocked ? 0.8 : 0.9,
-                minHeight: 48,
-                borderRadius: 14,
-                border: '1px solid var(--border-default)',
-                background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-secondary)',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Закрыть
-            </motion.button>
-          </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   )
@@ -2328,8 +2514,18 @@ function ClubPage({ user }: ClubPageProps) {
   const { showToast } = useToast()
   const [activeFilter, setActiveFilter] = useState<AchievementFilter>('all')
   const [selectedAchievement, setSelectedAchievement] = useState<UserAchievement | null>(null)
+  const [achievementNavigationDirection, setAchievementNavigationDirection] = useState(0)
   const [shareAchievement, setShareAchievement] = useState<UserAchievement | null>(null)
   const achievements = useMemo(() => sortAchievements(user?.achievements || []), [user?.achievements])
+  const selectedAchievementIndex = useMemo(
+    () => (selectedAchievement ? achievements.findIndex((item) => item.key === selectedAchievement.key) : -1),
+    [achievements, selectedAchievement]
+  )
+  const previousAchievement = selectedAchievementIndex > 0 ? achievements[selectedAchievementIndex - 1] : null
+  const nextAchievement =
+    selectedAchievementIndex >= 0 && selectedAchievementIndex < achievements.length - 1
+      ? achievements[selectedAchievementIndex + 1]
+      : null
   const referralInviteLink = useMemo(
     () => (user ? buildReferralLink(botUsername, user.telegram_id) : ''),
     [botUsername, user]
@@ -2349,13 +2545,29 @@ function ClubPage({ user }: ClubPageProps) {
 
   const handleAchievementSelect = useCallback((achievement: UserAchievement) => {
     haptic('light')
+    setAchievementNavigationDirection(0)
     setSelectedAchievement(achievement)
   }, [haptic])
 
   const handleAchievementClose = useCallback(() => {
     haptic('light')
+    setAchievementNavigationDirection(0)
     setSelectedAchievement(null)
   }, [haptic])
+
+  const handleAchievementNavigate = useCallback((direction: -1 | 1) => {
+    if (!selectedAchievement) return
+
+    const currentIndex = achievements.findIndex((item) => item.key === selectedAchievement.key)
+    if (currentIndex === -1) return
+
+    const nextIndex = currentIndex + direction
+    if (nextIndex < 0 || nextIndex >= achievements.length) return
+
+    haptic('light')
+    setAchievementNavigationDirection(direction)
+    setSelectedAchievement(achievements[nextIndex])
+  }, [achievements, haptic, selectedAchievement])
 
   const handleAchievementShare = useCallback((achievement: UserAchievement) => {
     haptic('medium')
@@ -2537,11 +2749,16 @@ function ClubPage({ user }: ClubPageProps) {
       <AnimatePresence>
         {selectedAchievement && (
           <AchievementDetailModal
-            key={selectedAchievement.key}
             achievement={selectedAchievement}
+            previousAchievement={previousAchievement}
+            nextAchievement={nextAchievement}
+            currentIndex={selectedAchievementIndex}
+            total={achievements.length}
+            navigationDirection={achievementNavigationDirection}
             onClose={handleAchievementClose}
             onShare={handleAchievementShare}
             onAction={handleAchievementAction}
+            onNavigate={handleAchievementNavigate}
           />
         )}
       </AnimatePresence>
