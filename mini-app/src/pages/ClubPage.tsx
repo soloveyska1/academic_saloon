@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
+  ArrowRight,
   Award,
   BadgePercent,
   CheckCircle,
+  Clock3,
   ChevronDown,
   ChevronUp,
+  Compass,
   Copy,
   Crown,
   Flame,
@@ -73,6 +76,7 @@ function pluralizeRu(value: number, one: string, few: string, many: string): str
 }
 
 type AchievementFilter = 'all' | 'unlocked' | 'progress' | 'locked' | 'legendary'
+type AchievementActionKind = 'create_order' | 'open_orders' | 'open_home' | 'share_referral'
 
 const RARITY_WEIGHT: Record<AchievementRarity, number> = {
   common: 0,
@@ -176,6 +180,88 @@ function sortAchievements(items: UserAchievement[]): UserAchievement[] {
 
     return a.sort_order - b.sort_order
   })
+}
+
+function openTelegramShare(link: string, text: string): boolean {
+  if (!link) return false
+
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
+  const tg = window.Telegram?.WebApp
+
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(shareUrl)
+    return true
+  }
+
+  window.open(shareUrl, '_blank', 'noopener,noreferrer')
+  return true
+}
+
+function getAchievementRemainingText(achievement: UserAchievement): string {
+  const remaining = Math.max(achievement.target - achievement.current, 0)
+
+  if (remaining <= 0) {
+    return 'Условие уже выполнено'
+  }
+
+  if (achievement.key.startsWith('spent_')) {
+    return `Осталось ${formatMoney(remaining)}`
+  }
+
+  if (achievement.key.startsWith('streak_')) {
+    return `Осталось ${remaining} ${pluralizeRu(remaining, 'день', 'дня', 'дней')}`
+  }
+
+  if (achievement.key.includes('referral')) {
+    return `Осталось ${remaining} ${pluralizeRu(remaining, 'реферал', 'реферала', 'рефералов')}`
+  }
+
+  if (
+    achievement.key.includes('order') ||
+    achievement.key === 'perfect_three'
+  ) {
+    return `Осталось ${remaining} ${pluralizeRu(remaining, 'заказ', 'заказа', 'заказов')}`
+  }
+
+  return remaining === 1
+    ? 'Остался 1 шаг'
+    : `Осталось ${remaining} ${pluralizeRu(remaining, 'шаг', 'шага', 'шагов')}`
+}
+
+function getAchievementActionMeta(achievement: UserAchievement): {
+  kind: AchievementActionKind
+  label: string
+  note: string
+} {
+  if (achievement.key.startsWith('referral') || achievement.key === 'first_referral') {
+    return {
+      kind: 'share_referral',
+      label: 'Поделиться ссылкой',
+      note: 'Откроется Telegram-share с вашей реферальной ссылкой.',
+    }
+  }
+
+  if (achievement.key.startsWith('streak_')) {
+    return {
+      kind: 'open_home',
+      label: 'На главную',
+      note: 'Ежедневный бонус и серия находятся на главном экране.',
+    }
+  }
+
+  if (achievement.key === 'review_first' || achievement.key.startsWith('perfect_')) {
+    return {
+      kind: 'open_orders',
+      label: 'Открыть заказы',
+      note: 'Завершённые работы, отзывы и статусы живут в списке заказов.',
+    }
+  }
+
+  return {
+    kind: 'create_order',
+    label: 'Создать заказ',
+    note: 'Новый заказ продвигает оплату, траты, промокоды и клубный ранг.',
+  }
 }
 
 // ─── Hero Card ──────────────────────────────────────────────────────────────
@@ -362,11 +448,7 @@ function ReferralBlock({ user }: { user: UserData }) {
   const handleShare = useCallback(() => {
     if (!inviteLink) return
     haptic('light')
-    const tg = window.Telegram?.WebApp
-    if (tg?.openTelegramLink) {
-      const encoded = encodeURIComponent(`${shareText}\n${inviteLink}`)
-      tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encoded}`)
-    }
+    openTelegramShare(inviteLink, shareText)
   }, [inviteLink, shareText, haptic])
 
   return (
@@ -930,6 +1012,396 @@ function RecentUnlocks({
   )
 }
 
+function AchievementMomentum({
+  achievements,
+  onSelect,
+  onAction,
+}: {
+  achievements: UserAchievement[]
+  onSelect: (achievement: UserAchievement) => void
+  onAction: (achievement: UserAchievement) => void
+}) {
+  const candidates = useMemo(() => {
+    return [...achievements]
+      .filter((achievement) => !achievement.unlocked)
+      .sort((a, b) => {
+        const aStarted = a.current > 0 ? 1 : 0
+        const bStarted = b.current > 0 ? 1 : 0
+        if (aStarted !== bStarted) return bStarted - aStarted
+        if (a.progress !== b.progress) return b.progress - a.progress
+        if (a.current !== b.current) return b.current - a.current
+        if (RARITY_WEIGHT[a.rarity] !== RARITY_WEIGHT[b.rarity]) {
+          return RARITY_WEIGHT[b.rarity] - RARITY_WEIGHT[a.rarity]
+        }
+        return a.sort_order - b.sort_order
+      })
+      .slice(0, 3)
+  }, [achievements])
+
+  if (candidates.length === 0) {
+    return null
+  }
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className={homeStyles.voidGlass}
+      style={{
+        padding: '18px 16px',
+        borderRadius: 12,
+        border: '1px solid var(--surface-hover)',
+        marginBottom: 16,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <Compass size={18} color="var(--gold-400)" />
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold-200)' }}>
+          На подходе
+        </div>
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
+        Ближайшие достижения с понятным следующим шагом. Это не просто прогресс-бар, а прямой маршрут к разблокировке.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {candidates.map((achievement) => {
+          const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
+          const rarity = RARITY_META[achievement.rarity]
+          const action = getAchievementActionMeta(achievement)
+          const progress = Math.max(0, Math.min(100, Math.round(achievement.progress * 100)))
+
+          return (
+            <div
+              key={achievement.key}
+              style={{
+                padding: '14px',
+                borderRadius: 16,
+                border: `1px solid ${rarity.border}`,
+                background: `linear-gradient(135deg, ${rarity.glow}, rgba(255,255,255,0.02))`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    background: 'rgba(0,0,0,0.24)',
+                    border: `1px solid ${rarity.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: `0 0 18px ${rarity.glow}`,
+                  }}
+                >
+                  <Icon size={18} color={rarity.tint} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 5 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: 'var(--gold-200)',
+                        fontFamily: "'Manrope', sans-serif",
+                      }}
+                    >
+                      {achievement.title}
+                    </div>
+                    <span
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: rarity.tint,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${rarity.border}`,
+                        textTransform: 'uppercase' as const,
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {rarity.label}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 8 }}>
+                    {achievement.description}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--gold-400)' }}>
+                      {getAchievementRemainingText(achievement)}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {achievement.current}/{achievement.target}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 6,
+                      borderRadius: 999,
+                      background: 'rgba(255,255,255,0.05)',
+                      overflow: 'hidden',
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${progress}%`,
+                        height: '100%',
+                        borderRadius: 999,
+                        background: 'linear-gradient(90deg, rgba(212,175,55,0.45), rgba(255,248,214,0.92))',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                    {achievement.hint || action.note}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onSelect(achievement)}
+                  style={{
+                    flex: 0.9,
+                    minHeight: 44,
+                    borderRadius: 12,
+                    border: '1px solid var(--border-default)',
+                    background: 'rgba(255,255,255,0.04)',
+                    color: 'var(--text-secondary)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Подробно
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onAction(achievement)}
+                  style={{
+                    flex: 1.2,
+                    minHeight: 44,
+                    borderRadius: 12,
+                    border: '1px solid var(--border-gold)',
+                    background: 'var(--gold-glass-medium)',
+                    color: 'var(--gold-200)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {action.label}
+                  <ArrowRight size={14} />
+                </motion.button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </motion.section>
+  )
+}
+
+function AchievementTimeline({
+  achievements,
+  onSelect,
+}: {
+  achievements: UserAchievement[]
+  onSelect: (achievement: UserAchievement) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const unlocked = useMemo(() => {
+    return [...achievements]
+      .filter((achievement) => achievement.unlocked)
+      .sort((a, b) => new Date(b.unlocked_at || 0).getTime() - new Date(a.unlocked_at || 0).getTime())
+  }, [achievements])
+
+  if (unlocked.length === 0) {
+    return null
+  }
+
+  const visible = expanded ? unlocked : unlocked.slice(0, 5)
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className={homeStyles.voidGlass}
+      style={{
+        padding: '18px 16px',
+        borderRadius: 12,
+        border: '1px solid var(--surface-hover)',
+        marginBottom: 24,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <Clock3 size={18} color="var(--gold-400)" />
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold-200)' }}>
+          Хронология клуба
+        </div>
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
+        История всех разблокировок по порядку. Полезно видеть, как рос профиль, а не только текущее состояние бейджей.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {visible.map((achievement, index) => {
+          const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
+          const rarity = RARITY_META[achievement.rarity]
+          const isLast = index === visible.length - 1
+
+          return (
+            <motion.button
+              key={achievement.key}
+              type="button"
+              whileTap={{ scale: 0.985 }}
+              onClick={() => onSelect(achievement)}
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                gap: 12,
+                padding: '10px 2px',
+                background: 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                style={{
+                  width: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    background: rarity.tint,
+                    boxShadow: `0 0 12px ${rarity.glow}`,
+                    marginTop: 6,
+                  }}
+                />
+                {!isLast && (
+                  <span
+                    style={{
+                      width: 1,
+                      flex: 1,
+                      marginTop: 6,
+                      background: 'linear-gradient(180deg, rgba(212,175,55,0.35), rgba(255,255,255,0.04))',
+                    }}
+                  />
+                )}
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '12px 12px 12px 0',
+                  borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      background: 'rgba(0,0,0,0.22)',
+                      border: `1px solid ${rarity.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon size={17} color={rarity.tint} />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          color: 'var(--text-primary)',
+                          fontFamily: "'Manrope', sans-serif",
+                        }}
+                      >
+                        {achievement.title}
+                      </div>
+                      <div style={{ fontSize: 10, color: rarity.tint, flexShrink: 0 }}>
+                        {rarity.label}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: 6 }}>
+                      {achievement.description}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {formatAchievementDate(achievement.unlocked_at)}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--gold-400)' }}>
+                        +{formatMoney(achievement.reward_amount)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {unlocked.length > 5 && (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setExpanded((current) => !current)}
+          style={{
+            width: '100%',
+            padding: '10px 0 2px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--gold-400)',
+            opacity: 0.72,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          {expanded ? 'Свернуть историю' : `Показать всю историю (${unlocked.length})`}
+        </motion.button>
+      )}
+    </motion.section>
+  )
+}
+
 function matchesAchievementFilter(achievement: UserAchievement, filter: AchievementFilter): boolean {
   switch (filter) {
     case 'unlocked':
@@ -1175,14 +1647,17 @@ function AchievementDetailModal({
   achievement,
   onClose,
   onShare,
+  onAction,
 }: {
   achievement: UserAchievement
   onClose: () => void
   onShare: (achievement: UserAchievement) => void
+  onAction: (achievement: UserAchievement) => void
 }) {
   const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
   const rarity = RARITY_META[achievement.rarity]
   const progress = Math.max(0, Math.min(100, Math.round(achievement.progress * 100)))
+  const action = getAchievementActionMeta(achievement)
 
   return (
     <AnimatePresence>
@@ -1418,12 +1893,38 @@ function AchievementDetailModal({
               </motion.button>
             )}
 
+            {!achievement.unlocked && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onAction(achievement)}
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  borderRadius: 14,
+                  border: '1px solid var(--border-gold)',
+                  background: 'var(--gold-glass-medium)',
+                  color: 'var(--gold-200)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                }}
+              >
+                {action.label}
+                <ArrowRight size={16} />
+              </motion.button>
+            )}
+
             <motion.button
               type="button"
               whileTap={{ scale: 0.97 }}
               onClick={onClose}
               style={{
-                flex: achievement.unlocked ? 0.8 : 1,
+                flex: achievement.unlocked ? 0.8 : 0.9,
                 minHeight: 48,
                 borderRadius: 14,
                 border: '1px solid var(--border-default)',
@@ -1801,13 +2302,22 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 function ClubPage({ user }: ClubPageProps) {
+  const navigate = useNavigate()
   const handleBack = useSafeBackNavigation('/')
-  const { haptic } = useTelegram()
+  const { botUsername, haptic } = useTelegram()
   const { showToast } = useToast()
   const [activeFilter, setActiveFilter] = useState<AchievementFilter>('all')
   const [selectedAchievement, setSelectedAchievement] = useState<UserAchievement | null>(null)
   const [shareAchievement, setShareAchievement] = useState<UserAchievement | null>(null)
   const achievements = useMemo(() => sortAchievements(user?.achievements || []), [user?.achievements])
+  const referralInviteLink = useMemo(
+    () => (user ? buildReferralLink(botUsername, user.telegram_id) : ''),
+    [botUsername, user]
+  )
+  const referralShareText = useMemo(
+    () => buildReferralShareText(user?.referral_code || ''),
+    [user?.referral_code]
+  )
   const shareStats = useMemo(() => {
     if (!user) return undefined
     return {
@@ -1835,6 +2345,48 @@ function ClubPage({ user }: ClubPageProps) {
   const handleShareClose = useCallback(() => {
     setShareAchievement(null)
   }, [])
+
+  const handleAchievementAction = useCallback((achievement: UserAchievement) => {
+    const action = getAchievementActionMeta(achievement)
+    haptic('light')
+    setSelectedAchievement(null)
+
+    if (action.kind === 'share_referral') {
+      if (!referralInviteLink) {
+        showToast({
+          type: 'error',
+          title: 'Ссылка пока недоступна',
+          message: 'Не удалось собрать реферальную ссылку. Попробуйте чуть позже.',
+        })
+        return
+      }
+
+      openTelegramShare(referralInviteLink, referralShareText)
+      showToast({
+        type: 'success',
+        title: 'Открыли Telegram-share',
+        message: 'Остаётся отправить ссылку другу.',
+      })
+      return
+    }
+
+    if (action.kind === 'open_home') {
+      showToast({
+        type: 'info',
+        title: 'Ежедневный бонус',
+        message: 'На главной откройте карточку daily-бонуса, чтобы продолжить серию.',
+      })
+      navigate('/')
+      return
+    }
+
+    if (action.kind === 'open_orders') {
+      navigate('/orders')
+      return
+    }
+
+    navigate('/create-order')
+  }, [haptic, navigate, referralInviteLink, referralShareText, showToast])
 
   const handleShareComplete = useCallback(() => {
     setShareAchievement(null)
@@ -1944,6 +2496,11 @@ function ClubPage({ user }: ClubPageProps) {
 
         <HeroCard user={user} />
         <AchievementOverview achievements={achievements} onSelect={handleAchievementSelect} />
+        <AchievementMomentum
+          achievements={achievements}
+          onSelect={handleAchievementSelect}
+          onAction={handleAchievementAction}
+        />
         <RecentUnlocks achievements={achievements} onSelect={handleAchievementSelect} />
         <AchievementCollection
           achievements={achievements}
@@ -1951,6 +2508,7 @@ function ClubPage({ user }: ClubPageProps) {
           onFilterChange={setActiveFilter}
           onSelect={handleAchievementSelect}
         />
+        <AchievementTimeline achievements={achievements} onSelect={handleAchievementSelect} />
         <ReferralBlock user={user} />
         <TransactionHistory transactions={user.transactions || []} />
         <HowItWorks userCashback={user.rank.cashback || 0} />
@@ -1961,6 +2519,7 @@ function ClubPage({ user }: ClubPageProps) {
           achievement={selectedAchievement}
           onClose={handleAchievementClose}
           onShare={handleAchievementShare}
+          onAction={handleAchievementAction}
         />
       )}
 
