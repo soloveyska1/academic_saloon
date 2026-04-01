@@ -1,5 +1,6 @@
 import { memo, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
 import { X, Share2 } from 'lucide-react'
 import { haptic } from '../../utils/animation'
 import {
@@ -32,6 +33,20 @@ export const AchievementShareCard = memo(function AchievementShareCard({
     if (!canvas) return
     renderShareCard(canvas, { achievement, userName, stats })
   }, [achievement, userName, stats])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const { body } = document
+    const previousOverflow = body.style.overflow
+    const previousTouchAction = body.style.touchAction
+    body.style.overflow = 'hidden'
+    body.style.touchAction = 'none'
+
+    return () => {
+      body.style.overflow = previousOverflow
+      body.style.touchAction = previousTouchAction
+    }
+  }, [])
 
   const handleShare = useCallback(async () => {
     haptic('medium')
@@ -78,43 +93,44 @@ export const AchievementShareCard = memo(function AchievementShareCard({
     }
   }, [achievement, onShare])
 
-  return (
-    <AnimatePresence>
+  const overlay = (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.82)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        padding: 24,
+      }}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        onClick={onClose}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
         style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(0,0,0,0.82)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          padding: 24,
+          gap: 16,
+          maxWidth: 400,
+          width: '100%',
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 16,
-            maxWidth: 400,
-            width: '100%',
-          }}
-        >
           {/* Canvas card */}
           <canvas
             ref={canvasRef}
@@ -188,8 +204,10 @@ export const AchievementShareCard = memo(function AchievementShareCard({
               <X size={20} strokeWidth={1.8} />
             </motion.button>
           </div>
-        </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(overlay, document.body)
 })

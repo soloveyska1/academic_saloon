@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -1659,43 +1660,60 @@ function AchievementDetailModal({
   const progress = Math.max(0, Math.min(100, Math.round(achievement.progress * 100)))
   const action = getAchievementActionMeta(achievement)
 
-  return (
-    <AnimatePresence>
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const { body } = document
+    const previousOverflow = body.style.overflow
+    const previousTouchAction = body.style.touchAction
+    body.style.overflow = 'hidden'
+    body.style.touchAction = 'none'
+
+    return () => {
+      body.style.overflow = previousOverflow
+      body.style.touchAction = previousTouchAction
+    }
+  }, [])
+
+  const modal = (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9000,
+        background: 'rgba(0,0,0,0.78)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        padding: 16,
+      }}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 28 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        onClick={(event) => event.stopPropagation()}
+        className={homeStyles.voidGlass}
+        role="dialog"
+        aria-modal="true"
         style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 9000,
-          background: 'rgba(0,0,0,0.78)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          padding: 16,
+          width: '100%',
+          maxWidth: 460,
+          maxHeight: 'calc(100vh - 32px)',
+          borderRadius: 24,
+          border: `1px solid ${rarity.border}`,
+          padding: '22px 18px 18px',
+          position: 'relative',
+          overflowX: 'hidden',
+          overflowY: 'auto',
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 28 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-          onClick={(event) => event.stopPropagation()}
-          className={homeStyles.voidGlass}
-          style={{
-            width: '100%',
-            maxWidth: 460,
-            borderRadius: 24,
-            border: `1px solid ${rarity.border}`,
-            padding: '22px 18px 18px',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
           <div
             aria-hidden="true"
             style={{
@@ -1938,10 +1956,12 @@ function AchievementDetailModal({
               Закрыть
             </motion.button>
           </div>
-        </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(modal, document.body)
 }
 
 // ─── Transaction History ────────────────────────────────────────────────────
@@ -2514,28 +2534,34 @@ function ClubPage({ user }: ClubPageProps) {
         <HowItWorks userCashback={user.rank.cashback || 0} />
       </div>
 
-      {selectedAchievement && (
-        <AchievementDetailModal
-          achievement={selectedAchievement}
-          onClose={handleAchievementClose}
-          onShare={handleAchievementShare}
-          onAction={handleAchievementAction}
-        />
-      )}
+      <AnimatePresence>
+        {selectedAchievement && (
+          <AchievementDetailModal
+            key={selectedAchievement.key}
+            achievement={selectedAchievement}
+            onClose={handleAchievementClose}
+            onShare={handleAchievementShare}
+            onAction={handleAchievementAction}
+          />
+        )}
+      </AnimatePresence>
 
-      {shareAchievement && (
-        <AchievementShareCard
-          achievement={{
-            title: shareAchievement.title,
-            description: shareAchievement.description,
-            icon: ACHIEVEMENT_EMOJI_MAP[shareAchievement.icon] || '🏆',
-          }}
-          userName={user.fullname || user.username || 'Клиент клуба'}
-          stats={shareStats}
-          onShare={handleShareComplete}
-          onClose={handleShareClose}
-        />
-      )}
+      <AnimatePresence>
+        {shareAchievement && (
+          <AchievementShareCard
+            key={shareAchievement.key}
+            achievement={{
+              title: shareAchievement.title,
+              description: shareAchievement.description,
+              icon: ACHIEVEMENT_EMOJI_MAP[shareAchievement.icon] || '🏆',
+            }}
+            userName={user.fullname || user.username || 'Клиент клуба'}
+            stats={shareStats}
+            onShare={handleShareComplete}
+            onClose={handleShareClose}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
