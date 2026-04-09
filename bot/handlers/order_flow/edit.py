@@ -12,7 +12,6 @@ from database.models.orders import (
     LEGACY_WAITING_PAYMENT_STATUSES,
     Order,
     OrderStatus,
-    WORK_TYPE_LABELS,
     WorkType,
     is_waiting_payment_status,
 )
@@ -588,8 +587,6 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
 
     # Get data from state (saved when creating DRAFT)
     data = await state.get_data()
-    attachments = data.get("attachments", [])
-
     try:
         apply_order_status_transition(order, OrderStatus.WAITING_ESTIMATION.value)
     except OrderStatusTransitionError as exc:

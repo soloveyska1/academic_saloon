@@ -1,16 +1,15 @@
 """
 Order Flow Panic Mode - urgent orders "FIRE!" flow.
 """
-import logging
 
 from aiogram import F, Bot
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
+from database.models.orders import Order, WorkType, OrderStatus
 from bot.states.order import OrderState, PanicState
 from bot.keyboards.orders import (
     get_panic_urgency_keyboard,

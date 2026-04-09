@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models.levels import RankLevel, LoyaltyLevel
 from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS, canonicalize_order_status

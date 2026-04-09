@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean, Index, JSON
+from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, func, Boolean, Index, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
 from datetime import datetime

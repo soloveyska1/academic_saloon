@@ -8,3 +8,9 @@ ignore = ["E501"]  # Line length handled by formatter
 
 [tool.ruff.lint.isort]
 known-first-party = ["bot", "core", "database"]
+
+[tool.ruff.lint.per-file-ignores]
+"bot/api/websocket.py" = ["E402"]
+"bot/handlers/admin.py" = ["E402"]
+"bot/handlers/my_orders.py" = ["E402"]
+"tests/test_bonus_transactions.py" = ["E402"]

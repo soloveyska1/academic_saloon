@@ -1,7 +1,6 @@
 """
 Order Flow Append Files - add files to existing orders.
 """
-import logging
 
 from aiogram import F, Bot
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton

@@ -1,16 +1,16 @@
 import logging
-import html
+import re
+from datetime import datetime, timedelta
 from typing import List
-from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, desc, func, text, and_, case
+from sqlalchemy import select, desc, func, text, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, canonicalize_order_status
+from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, canonicalize_order_status
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
@@ -35,8 +35,6 @@ router = APIRouter(tags=["Admin"])
 def is_admin(user_id: int) -> bool:
     """Check if user is in admin list"""
     return user_id in settings.ADMIN_IDS
-
-import re
 
 # Dangerous SQL keywords to block
 BLOCKED_SQL_KEYWORDS = [
@@ -81,7 +79,7 @@ def validate_sql_query(query: str) -> tuple[bool, str]:
     system_tables = ['PG_SHADOW', 'PG_AUTHID', 'PG_ROLES', 'PG_USER', 'PG_STAT_ACTIVITY']
     for tbl in system_tables:
         if tbl in normalized:
-            return False, f"Доступ к системным таблицам запрещён"
+            return False, "Доступ к системным таблицам запрещён"
 
     # Only allow access to known application tables
     allowed_tables = {
@@ -454,11 +452,11 @@ async def get_all_orders_admin(
 ):
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
-        
+
     result = await session.execute(select(Order).order_by(desc(Order.created_at)).limit(100))
     orders = result.scalars().all()
-    
-    # We need to map Order to OrderResponse manually or use helper? 
+
+    # We need to map Order to OrderResponse manually or use helper?
     # Logic in routes.py returned `orders` list of Order objects, so Pydantic validation handles it?
     # Or did logic use `order_to_response`?
     # Route defined response_model=List[OrderResponse].
@@ -479,7 +477,7 @@ async def update_order_status_admin(
 ):
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
-        
+
     order = await session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail='Order not found')
@@ -514,7 +512,7 @@ async def update_order_price_admin(
 ):
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
-        
+
     order = await session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail='Order not found')
@@ -532,15 +530,15 @@ async def update_order_price_admin(
             apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
         except OrderStatusTransitionError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        
+
     await session.commit()
-    
+
     try:
         from bot.services.unified_hub import update_topic_name
         await update_topic_name(bot, session, order)
     except Exception:
         pass
-    
+
     return {'success': True}
 
 @router.post('/admin/orders/{order_id}/message')
@@ -553,16 +551,16 @@ async def send_order_message_admin(
 ):
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
-        
+
     order = await session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail='Order not found')
-        
+
     try:
         await bot.send_message(order.user_id, data.text)
     except Exception as e:
         logger.error(f"Failed to send message to user {order.user_id}: {e}")
-        
+
     return {'success': True}
 
 @router.post('/admin/orders/{order_id}/progress')

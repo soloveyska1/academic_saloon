@@ -6,7 +6,6 @@
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -144,13 +143,13 @@ def build_timeline(order: Order) -> str:
     for idx, (emoji, label, _) in enumerate(stages):
         if idx < current_stage_idx:
             # Пройденный этап
-            timeline_parts.append(f"✅")
+            timeline_parts.append("✅")
         elif idx == current_stage_idx:
             # Текущий этап
-            timeline_parts.append(f"🔵")
+            timeline_parts.append("🔵")
         else:
             # Будущий этап
-            timeline_parts.append(f"⚪")
+            timeline_parts.append("⚪")
 
     timeline_visual = " → ".join(timeline_parts)
 

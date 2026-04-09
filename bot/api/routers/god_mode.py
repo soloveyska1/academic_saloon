@@ -1091,10 +1091,10 @@ async def get_dashboard(
         select(func.count(User.id)).where(User.created_at >= week_start)
     )
     banned_users = await session.scalar(
-        select(func.count(User.id)).where(User.is_banned == True)
+        select(func.count(User.id)).where(User.is_banned)
     )
     watched_users = await session.scalar(
-        select(func.count(User.id)).where(User.is_watched == True)
+        select(func.count(User.id)).where(User.is_watched)
     )
 
     # Total bonus balance across all users
@@ -1107,7 +1107,7 @@ async def get_dashboard(
         select(func.count(PromoCode.id))
     ) or 0
     active_promos = await session.scalar(
-        select(func.count(PromoCode.id)).where(PromoCode.is_active == True)
+        select(func.count(PromoCode.id)).where(PromoCode.is_active)
     ) or 0
     total_promo_uses = await session.scalar(
         select(func.count(PromoCodeUsage.id))
@@ -1124,7 +1124,7 @@ async def get_dashboard(
             )
             .select_from(PromoCodeUsage)
             .join(Order, Order.id == PromoCodeUsage.order_id)
-            .where(PromoCodeUsage.is_active == True)
+            .where(PromoCodeUsage.is_active)
         ) or 0.0
     except Exception:
         total_discount_given = await session.scalar(
@@ -1142,7 +1142,7 @@ async def get_dashboard(
         popular_promos_result = await session.execute(
             select(PromoCode.code, func.count(PromoCodeUsage.id).label('usage_count'))
             .join(PromoCodeUsage, PromoCodeUsage.promocode_id == PromoCode.id)
-            .where(PromoCodeUsage.is_active == True)
+            .where(PromoCodeUsage.is_active)
             .group_by(PromoCode.code)
             .order_by(desc('usage_count'))
             .limit(3)
@@ -1164,7 +1164,7 @@ async def get_dashboard(
     five_min_ago = now - timedelta(minutes=5)
     online_users = await session.scalar(
         select(func.count(UserActivity.id)).where(
-            and_(UserActivity.is_online == True, UserActivity.last_activity_at >= five_min_ago)
+            and_(UserActivity.is_online, UserActivity.last_activity_at >= five_min_ago)
         )
     ) or 0
 
@@ -2072,9 +2072,9 @@ async def get_users(
 
     # Apply filters
     if filter_type == "banned":
-        query = query.where(User.is_banned == True)
+        query = query.where(User.is_banned)
     elif filter_type == "watched":
-        query = query.where(User.is_watched == True)
+        query = query.where(User.is_watched)
     elif filter_type == "with_balance":
         query = query.where(User.balance > 0)
 
@@ -2333,8 +2333,8 @@ async def ban_user(
         else:
             await bot.send_message(
                 user_id,
-                f"✅ <b>Ваш аккаунт разблокирован!</b>\n\n"
-                f"Добро пожаловать обратно!",
+                "✅ <b>Ваш аккаунт разблокирован!</b>\n\n"
+                "Добро пожаловать обратно!",
             )
     except Exception:
         pass
@@ -2402,7 +2402,7 @@ async def update_user_notes(
     await log_admin_action(
         session, tg_user, AdminActionType.USER_NOTE_UPDATE,
         target_type="user", target_id=user_id,
-        details=f"Notes updated",
+        details="Notes updated",
         old_value={"notes": old_notes},
         new_value={"notes": user.admin_notes},
         request=request,
@@ -2450,7 +2450,7 @@ async def get_promos(
                 select(func.count(PromoCodeUsage.id)).where(
                     and_(
                         PromoCodeUsage.promocode_id == p.id,
-                        PromoCodeUsage.is_active == True
+                        PromoCodeUsage.is_active
                     )
                 )
             ) or 0
@@ -2474,7 +2474,7 @@ async def get_promos(
                 .where(
                     and_(
                         PromoCodeUsage.promocode_id == p.id,
-                        PromoCodeUsage.is_active == True
+                        PromoCodeUsage.is_active
                     )
                 )
             ) or 0.0
@@ -2874,7 +2874,7 @@ async def send_broadcast(
     target = data.target
 
     # Get target users
-    query = select(User.telegram_id).where(User.is_banned == False)
+    query = select(User.telegram_id).where(~User.is_banned)
 
     if target == "active":
         week_ago = datetime.now(MSK_TZ) - timedelta(days=7)

@@ -531,7 +531,7 @@ async def enter_promo_callback(callback: CallbackQuery, state: FSMContext):
 
     await state.update_data(promo_order_id=order_id)
     await state.set_state(OrderState.waiting_for_promo)
-    
+
     await callback.message.answer(
         "🎟 **Введите промокод:**\n\n"
         "Отправьте код в чат, и я пересчитаю стоимость заказа."
@@ -544,7 +544,7 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
     code = message.text.strip().upper() if message.text else ""
     data = await state.get_data()
     order_id = data.get("promo_order_id")
-    
+
     if not order_id:
         await message.answer("❌ Ошибка контекста. Попробуйте снова.")
         await state.clear()
@@ -610,14 +610,14 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
 
     # Success!
     await state.clear()
-    
+
     await message.answer(f"✅ **{result_msg}**")
-    
+
     # Re-show payment info
     price = int(order.price)
     discounted_price = int(order.final_price)
     advance = discounted_price // 2
-    
+
     text = f'''<b>Оплата заказа #{order.id}</b>
 
 Цена со скидкой: <b><s>{format_price(price, False)}</s> → {format_price(discounted_price)}</b>
@@ -645,7 +645,7 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
             callback_data=f"order_detail:{order_id}"
         )],
     ]
-    
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    
+
     await message.answer(text, reply_markup=keyboard)

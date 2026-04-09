@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import html
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy import select
@@ -13,7 +12,7 @@ from aiogram.types import BufferedInputFile
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderMessage, MessageSender, Conversation, ConversationType, OrderStatus
+from database.models.orders import Order, OrderMessage, MessageSender, ConversationType, OrderStatus
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
@@ -253,11 +252,15 @@ async def upload_chat_file(
 
     filename = file.filename or "file"
     content_type = file.content_type or ""
-    
-    if content_type.startswith("image/"): file_type = "photo"
-    elif content_type.startswith("audio/") or filename.endswith((".ogg", ".mp3", ".wav")): file_type = "voice" if "ogg" in filename.lower() else "audio"
-    elif content_type.startswith("video/"): file_type = "video"
-    else: file_type = "document"
+
+    if content_type.startswith("image/"):
+        file_type = "photo"
+    elif content_type.startswith("audio/") or filename.endswith((".ogg", ".mp3", ".wav")):
+        file_type = "voice" if "ogg" in filename.lower() else "audio"
+    elif content_type.startswith("video/"):
+        file_type = "video"
+    else:
+        file_type = "document"
 
     file_url = None
     folder_url = None
@@ -309,12 +312,31 @@ async def upload_chat_file(
                 else ""
             )
             caption = f"📎 <b>Файл от клиента</b>\n👤 {user_name}{revision_label}\n📁 {html.escape(filename)}"
-            if file_url: caption += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
-            
+            if file_url:
+                caption += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
+
             input_file = BufferedInputFile(content, filename=filename)
-            if file_type == "photo": await bot.send_photo(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, photo=input_file, caption=caption)
-            elif file_type == "video": await bot.send_video(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, video=input_file, caption=caption)
-            else: await bot.send_document(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, document=input_file, caption=caption)
+            if file_type == "photo":
+                await bot.send_photo(
+                    settings.ADMIN_GROUP_ID,
+                    message_thread_id=topic_id,
+                    photo=input_file,
+                    caption=caption,
+                )
+            elif file_type == "video":
+                await bot.send_video(
+                    settings.ADMIN_GROUP_ID,
+                    message_thread_id=topic_id,
+                    video=input_file,
+                    caption=caption,
+                )
+            else:
+                await bot.send_document(
+                    settings.ADMIN_GROUP_ID,
+                    message_thread_id=topic_id,
+                    document=input_file,
+                    caption=caption,
+                )
     except Exception as e:
         logger.error(f"File Forward Error: {e}")
 
@@ -330,7 +352,7 @@ async def upload_voice_message(
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
         raise HTTPException(status_code=404, detail="Order not found")
-        
+
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
     revision_round = await _bind_client_revision_round(
@@ -396,8 +418,9 @@ async def upload_voice_message(
                 else ""
             )
             caption = f"🎤 <b>Голосовое от клиента</b>\n👤 {user_name}{revision_label}"
-            if file_url: caption += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
-            
+            if file_url:
+                caption += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
+
             input_file = BufferedInputFile(content, filename=filename)
             await bot.send_voice(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, voice=input_file, caption=caption)
     except Exception as e:
@@ -470,13 +493,15 @@ async def get_support_messages(
     chat_messages = []
     for msg in messages:
         sender_name = "Вы"
-        if msg.sender_type == MessageSender.ADMIN.value: sender_name = "Поддержка"
-        elif msg.sender_type == MessageSender.CLIENT.value: sender_name = user.fullname or "Вы"
+        if msg.sender_type == MessageSender.ADMIN.value:
+            sender_name = "Поддержка"
+        elif msg.sender_type == MessageSender.CLIENT.value:
+            sender_name = user.fullname or "Вы"
 
         if msg.sender_type == MessageSender.ADMIN.value and not msg.is_read:
             msg.is_read = True
             session.add(msg)
-        
+
         chat_messages.append(ChatMessage(
             id=msg.id, sender_type=msg.sender_type, sender_name=sender_name,
             message_text=msg.message_text, file_type=msg.file_type, file_name=msg.file_name,

@@ -39,10 +39,9 @@ from database.models.orders import (
     canonicalize_order_status,
     is_waiting_payment_status,
 )
-from bot.services.logger import BotLogger, LogEvent
+from bot.services.logger import BotLogger
 from bot.services.bonus import BonusService, BonusReason
 from bot.services.order_delivery_service import send_order_delivery_batch
-from bot.services.yandex_disk import yandex_disk_service
 from core.config import settings
 from core.saloon_status import (
     saloon_manager,
@@ -52,7 +51,7 @@ from bot.states.admin import AdminStates
 from bot.states.order import OrderState
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
-from bot.utils.formatting import format_price, parse_callback_data, parse_callback_int
+from bot.utils.formatting import format_price, parse_callback_int
 from bot.handlers.start import process_start
 from bot.services.live_cards import update_card_status
 from bot.services.payment_accounting import (
@@ -64,15 +63,12 @@ from bot.services.order_progress import (
     build_progress_bar,
     get_progress_keyboard,
     update_order_progress,
-    sync_progress_with_status,
 )
 from bot.services.order_message_formatter import (
     build_client_price_ready_text,
-    build_issue_keyboard,
-    build_order_keyboard,
     build_payment_keyboard,
 )
-from bot.services.order_lifecycle import can_deliver_order, sync_order_delivery_review
+from bot.services.order_lifecycle import can_deliver_order
 from bot.services.order_status_service import (
     OrderStatusDispatchOptions,
     OrderStatusTransitionError,
@@ -1481,7 +1477,7 @@ async def open_order_topic_from_log(callback: CallbackQuery, session: AsyncSessi
         # Формируем ссылку на топик
         topic_link = f"https://t.me/c/{str(settings.ADMIN_GROUP_ID)[4:]}/{topic_id}"
 
-        await callback.answer(f"✅ Топик открыт", show_alert=False)
+        await callback.answer("✅ Топик открыт", show_alert=False)
 
         # Отправляем сообщение со ссылкой
         await bot.send_message(
@@ -1588,7 +1584,7 @@ async def ask_pin_chat_id(callback: CallbackQuery, state: FSMContext):
     await state.clear()
 
     # Предпросмотр сообщения
-    status = await saloon_manager.get_status()
+    await saloon_manager.get_status()
     preview = generate_status_message()
 
     text = f"""📌  <b>Отправить закреп</b>
@@ -1644,7 +1640,7 @@ async def ask_pin_manual(callback: CallbackQuery, state: FSMContext):
 async def _send_pin_message(callback: CallbackQuery, bot: Bot, chat_id: int):
     """Вспомогательная функция отправки закрепа"""
     try:
-        status = await saloon_manager.get_status()
+        await saloon_manager.get_status()
         text = generate_status_message()
 
         # Отправляем сообщение
@@ -1691,7 +1687,7 @@ async def send_pin_message_manual(message: Message, state: FSMContext, bot: Bot)
     try:
         chat_id = int(message.text.strip())
 
-        status = await saloon_manager.get_status()
+        await saloon_manager.get_status()
         text = generate_status_message()
 
         # Отправляем сообщение
@@ -2329,7 +2325,6 @@ async def bonus_profile_callback(callback: CallbackQuery, session: AsyncSession,
     await callback.answer("⏳")
 
     # Имитируем команду /user
-    from aiogram.types import Message as FakeMessage
 
     # Просто покажем сообщение с предложением
     await callback.message.answer(f"👤 Профиль: <code>/user {user_id}</code>")
@@ -3359,7 +3354,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     user = user_result.scalar_one_or_none()
 
     if not user:
-        await callback.answer(f"Пользователь не найден", show_alert=True)
+        await callback.answer("Пользователь не найден", show_alert=True)
         return
 
     await callback.answer("✅ Цена подтверждена!")
@@ -3696,7 +3691,6 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
         return
 
     # Списываем бонусы с баланса клиента только при первой успешной оплате
-    bonus_deducted = 0
     if payment_update.is_first_successful_payment and order.bonus_used > 0:
         success, _ = await BonusService.deduct_bonus(
             session=session,
@@ -3707,9 +3701,6 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
             bot=bot,
             user=user,
         )
-        if success:
-            bonus_deducted = order.bonus_used
-
     # Обновляем статус заказа и статистику оплаты
     try:
         status_change = apply_payment_update_to_order(order, payment_update)
@@ -3728,7 +3719,7 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
             session=session,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"✅ Оплата подтверждена (чек)",
+            extra_text="✅ Оплата подтверждена (чек)",
         )
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
@@ -4122,9 +4113,9 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         )
         if success:
             bonus_deducted = order.bonus_used
-            logger.info(f"[/paid] Бонусы списаны успешно")
+            logger.info("[/paid] Бонусы списаны успешно")
         else:
-            logger.warning(f"[/paid] Не удалось списать бонусы")
+            logger.warning("[/paid] Не удалось списать бонусы")
 
     # Обновляем статус заказа и статистику оплаты
     try:
@@ -4134,7 +4125,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         return
     apply_payment_update_to_user(user, payment_update)
 
-    logger.info(f"[/paid] Коммитим изменения в БД")
+    logger.info("[/paid] Коммитим изменения в БД")
     await session.commit()
     logger.info(f"[/paid] Заказ #{order_id} переведён в статус {order.status}")
 
@@ -4191,7 +4182,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     try:
         await bot.send_message(order.user_id, client_text)
-        logger.info(f"[/paid] Уведомление клиенту отправлено")
+        logger.info("[/paid] Уведомление клиенту отправлено")
     except Exception as e:
         logger.warning(f"[/paid] Не удалось отправить уведомление клиенту: {e}")
 
@@ -4209,7 +4200,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         response += f"👥 Реферальный бонус: +{referral_bonus:.0f}₽"
 
     await message.answer(response)
-    logger.info(f"[/paid] Команда выполнена успешно")
+    logger.info("[/paid] Команда выполнена успешно")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -4278,8 +4269,6 @@ async def cmd_offer(message: Message, command: CommandObject, session: AsyncSess
     await session.commit()
 
     # Формируем сообщение для клиента
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
-
     comment_line = f"\n💬 <b>Комментарий:</b> {admin_comment}" if admin_comment else ""
 
     client_text = f"""🪙 <b>Цена вопроса</b>
@@ -4588,7 +4577,7 @@ async def format_admin_dialogs_list(
     """Форматирует список диалогов для админки"""
     from sqlalchemy import func as sql_func
 
-    query = select(Conversation).where(Conversation.is_active == True)
+    query = select(Conversation).where(Conversation.is_active)
 
     if filter_type == "unread":
         query = query.where(Conversation.unread_count > 0)
@@ -4618,7 +4607,7 @@ async def format_admin_dialogs_list(
 
     # Счётчик непрочитанных
     unread_query = select(sql_func.sum(Conversation.unread_count)).where(
-        Conversation.is_active == True,
+        Conversation.is_active,
         Conversation.unread_count > 0
     )
     total_unread = (await session.execute(unread_query)).scalar() or 0
@@ -4972,7 +4961,7 @@ async def admin_dialog_send_file(message: Message, state: FSMContext, bot: Bot, 
         return
 
     try:
-        msg_text = f"📎 <b>Файл от поддержки</b>"
+        msg_text = "📎 <b>Файл от поддержки</b>"
         if caption:
             msg_text += f"\n\n{caption}"
 
@@ -5088,7 +5077,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "🎤 Голосовое"
         elif message.photo:
-            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = "📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_photo(
                 chat_id=user_id,
                 photo=message.photo[-1].file_id,
@@ -5097,7 +5086,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "📷 Фото"
         elif message.video:
-            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = "📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_video(
                 chat_id=user_id,
                 video=message.video.file_id,
@@ -5106,7 +5095,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "🎬 Видео"
         else:
-            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = "📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_document(
                 chat_id=user_id,
                 document=message.document.file_id,
@@ -5895,7 +5884,7 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
             session=session,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"✅ Оплата подтверждена админом",
+            extra_text="✅ Оплата подтверждена админом",
         )
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
@@ -6048,7 +6037,7 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
             session=session,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"❌ Оплата не найдена",
+            extra_text="❌ Оплата не найдена",
         )
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")

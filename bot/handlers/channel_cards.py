@@ -17,26 +17,22 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardBut
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, Conversation, ConversationType
+from database.models.orders import Order, OrderStatus, ConversationType
 from database.models.users import User
 from bot.services.live_cards import (
     update_card_status,
     send_or_update_card,
-    get_card_link,
-    ORDERS_CHANNEL_ID,
 )
 from bot.services.order_progress import (
-    get_progress_keyboard,
     update_order_progress,
     build_progress_bar,
 )
 from bot.services.unified_hub import (
     update_topic_name,
-    close_order_topic,
     reopen_order_topic,
 )
 from core.config import settings
-from bot.handlers.order_chat import get_or_create_topic, format_order_info
+from bot.handlers.order_chat import get_or_create_topic
 from bot.services.order_message_formatter import (
     build_client_price_ready_text,
     build_payment_keyboard as build_order_payment_keyboard,
@@ -1460,10 +1456,7 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
         )
 
         # Формируем ссылку на топик
-        group_id = str(settings.ADMIN_GROUP_ID).replace("-100", "")
-        topic_link = f"https://t.me/c/{group_id}/{topic_id}"
-
-        await callback.answer(f"💬 Топик готов!", show_alert=True)
+        await callback.answer("💬 Топик готов!", show_alert=True)
 
         # Отправляем/обновляем карточку в топике
         await send_or_update_card(

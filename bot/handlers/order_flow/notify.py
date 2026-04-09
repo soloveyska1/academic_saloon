@@ -2,7 +2,6 @@
 Order Flow Notify - admin notification handlers.
 """
 import asyncio
-import logging
 
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton

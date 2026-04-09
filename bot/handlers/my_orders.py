@@ -30,11 +30,10 @@ REFERRAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "ref.jpg"
 from database.models.users import User
 from database.models.orders import (
     Order, OrderStatus,
-    canonicalize_order_status, get_status_meta, get_active_statuses, get_history_statuses,
+    canonicalize_order_status, get_active_statuses, get_history_statuses,
 )
 from bot.services.bonus import BonusService, BonusReason
 from bot.keyboards.profile import (
-    get_profile_dashboard_keyboard,
     get_gamified_profile_keyboard,
     get_muse_profile_keyboard,
     get_orders_list_keyboard,
@@ -43,7 +42,6 @@ from bot.keyboards.profile import (
     get_empty_orders_keyboard,
     get_balance_keyboard,
     get_referral_keyboard,
-    get_back_to_profile_keyboard,
     get_gang_keyboard,
     get_daily_luck_result_keyboard,
     get_muse_luck_result_keyboard,
@@ -681,7 +679,7 @@ def build_order_detail_caption(order: Order) -> str:
     # ═══ СРОКИ ═══
     if order.deadline:
         lines.append("")
-        lines.append(f"<b>🗓 Сроки</b>")
+        lines.append("<b>🗓 Сроки</b>")
         lines.append(f"Дедлайн: {order.deadline}")
 
     # ═══ ДЕТАЛИ ЗАДАЧИ ═══
@@ -692,7 +690,7 @@ def build_order_detail_caption(order: Order) -> str:
     has_details = work_type or (order.subject and order.subject.strip())
     if has_details:
         lines.append("")
-        lines.append(f"<b>💼 Детали задачи</b>")
+        lines.append("<b>💼 Детали задачи</b>")
         if work_type:
             lines.append(f"• {work_type}")
         if order.subject and order.subject.strip():
@@ -700,7 +698,7 @@ def build_order_detail_caption(order: Order) -> str:
 
     # ═══ ОПЛАТА ═══
     lines.append("")
-    lines.append(f"<b>💳 Оплата</b>")
+    lines.append("<b>💳 Оплата</b>")
 
     if order.price > 0:
         lines.append(f"Стоимость: {format_price(order.price, False)} ₽")
@@ -726,7 +724,7 @@ def build_order_detail_caption(order: Order) -> str:
     # ═══ ФАЙЛЫ ═══
     if order.files_url:
         lines.append("")
-        lines.append(f"<b>📎 Файлы</b>")
+        lines.append("<b>📎 Файлы</b>")
         lines.append(f"<a href='{order.files_url}'>Открыть файлы заказа</a>")
 
     return "\n".join(lines)
@@ -1066,7 +1064,7 @@ def build_referral_caption(ref_link: str, count: int, earnings: float, current_p
     lines = [
         "<b>Внутренний круг</b>",
         "",
-        f"<b>Другу:</b> Скидка <b>5%</b> на первый заказ",
+        "<b>Другу:</b> Скидка <b>5%</b> на первый заказ",
         f"<b>Тебе:</b> <b>{pct}%</b> с каждого заказа друга",
         "",
         "1–2 друзей — 5% | 3–5 — 7% | 6+ — 10%",

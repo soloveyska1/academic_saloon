@@ -5,14 +5,12 @@ import os
 import random
 import re
 import secrets
-import shutil
 import sqlite3
 import time
 import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlparse
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import urllib.request
@@ -64,7 +62,7 @@ def vk_notify(message: str) -> None:
             })
             url = f"https://api.vk.com/method/messages.send?{params}"
             req = urllib.request.Request(url, method="GET")
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10):
                 pass
         except Exception:
             pass  # Fire and forget — don't break order flow

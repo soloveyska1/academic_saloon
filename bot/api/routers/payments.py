@@ -7,8 +7,6 @@ YooKassa payment endpoints.
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import ipaddress
 import json
 import logging
@@ -259,7 +257,6 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
     payment_id = payment_obj["id"]
     metadata = payment_obj.get("metadata", {})
     order_id = metadata.get("order_id")
-    user_id = metadata.get("user_id")
     amount_value = float(payment_obj.get("amount", {}).get("value", 0))
 
     if not order_id:

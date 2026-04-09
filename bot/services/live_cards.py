@@ -32,7 +32,6 @@ from database.models.orders import (
 from bot.services.order_message_formatter import (
     build_price_breakdown_lines,
     format_deadline_label,
-    format_money,
     format_plain_text,
     get_order_work_label,
 )
@@ -362,15 +361,12 @@ def get_card_keyboard(
         order: Объект заказа
         stage_name: Название стадии
     """
-    bot_username = settings.BOT_USERNAME or "academic_saloon_bot"
     buttons = []
 
     # Получаем данные для расчётов
-    payment_scheme = getattr(order, 'payment_scheme', None)
     paid_amount = _to_decimal(getattr(order, 'paid_amount', 0))
     final_price = _to_decimal(getattr(order, 'final_price', 0))
     is_half_paid = 0 < paid_amount < final_price
-    is_fully_paid = paid_amount >= final_price
 
     if stage_name == "new":
         # ═══ НОВЫЙ ЗАКАЗ ═══
