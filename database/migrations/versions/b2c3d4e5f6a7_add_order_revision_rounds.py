@@ -173,18 +173,33 @@ def upgrade() -> None:
         for index, row in enumerate(messages, start=0):
             round_number = start_round_number + index
             comment = row.message_text.split("\n\n", 1)[1].strip() if "\n\n" in (row.message_text or "") else None
-            insert_result = bind.execute(
-                order_revision_rounds.insert().values(
-                    order_id=order_id,
-                    round_number=round_number,
-                    status="fulfilled",
-                    initial_comment=comment,
-                    requested_at=row.created_at,
-                    last_client_activity_at=row.created_at,
-                    requested_by_user_id=row.sender_id,
-                )
-            )
-            round_id = insert_result.inserted_primary_key[0]
+            insert_values = {
+                "order_id": order_id,
+                "round_number": round_number,
+                "status": "fulfilled",
+                "initial_comment": comment,
+                "requested_at": row.created_at,
+                "last_client_activity_at": row.created_at,
+                "requested_by_user_id": row.sender_id,
+            }
+            insert_stmt = order_revision_rounds.insert().values(**insert_values)
+            if bind.dialect.name == "postgresql":
+                round_id = bind.execute(
+                    insert_stmt.returning(order_revision_rounds.c.id)
+                ).scalar_one()
+            else:
+                insert_result = bind.execute(insert_stmt)
+                round_id = insert_result.inserted_primary_key[0]
+                if round_id is None:
+                    round_id = bind.execute(
+                        sa.select(order_revision_rounds.c.id)
+                        .where(
+                            order_revision_rounds.c.order_id == order_id,
+                            order_revision_rounds.c.round_number == round_number,
+                        )
+                        .order_by(order_revision_rounds.c.id.desc())
+                        .limit(1)
+                    ).scalar_one()
             bind.execute(
                 order_messages.update()
                 .where(order_messages.c.id == row.id)
