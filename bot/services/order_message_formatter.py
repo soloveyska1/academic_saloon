@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from collections.abc import Iterable
+from contextlib import suppress
+from datetime import datetime
 from html import escape
-from typing import Iterable
+from zoneinfo import ZoneInfo
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+from bot.services.payment_accounting import (
+    get_order_remaining_amount,
+    get_requested_payment_amount,
+    get_requested_payment_label,
+    is_followup_payment,
+)
 from bot.utils.formatting import format_price
 from core.config import settings
 from database.models.orders import (
@@ -15,6 +23,8 @@ from database.models.orders import (
     WorkType,
     get_status_meta,
 )
+
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 
 DEADLINE_LABELS = {
@@ -64,6 +74,25 @@ def format_deadline_for_admin(deadline: str | None) -> str:
     if label == "Срок уточняется":
         return label
     return f"до {label}"
+
+
+def format_admin_datetime(value: datetime | None, fallback: str = "—") -> str:
+    if value is None:
+        return fallback
+    if value.tzinfo is None:
+        return value.strftime("%d.%m.%Y %H:%M")
+    return value.astimezone(MSK_TZ).strftime("%d.%m.%Y %H:%M")
+
+
+def format_compact_text(value: str | None, fallback: str = "—", limit: int = 180) -> str:
+    if not value:
+        return fallback
+    normalized = " ".join(str(value).split())
+    if not normalized:
+        return fallback
+    if len(normalized) > limit:
+        normalized = f"{normalized[: limit - 1].rstrip()}…"
+    return escape(normalized)
 
 
 def get_work_label(work_type: str | None) -> str:
@@ -288,6 +317,10 @@ def build_admin_topic_header_text(
     client_name: str,
     client_username: str | None,
     user_id: int,
+    activity_snapshot_lines: Iterable[str] | None = None,
+    latest_delivery: dict[str, object] | None = None,
+    draft_delivery: dict[str, object] | None = None,
+    operational_lines: Iterable[str] | None = None,
 ) -> str:
     lines = [
         "<b>Диалог с клиентом</b>",
@@ -298,28 +331,167 @@ def build_admin_topic_header_text(
     ]
 
     if order:
+        paid_amount = float(order.paid_amount or 0)
+        final_price = float(order.final_price or 0)
+        remaining = max(final_price - paid_amount, 0)
+        requested_payment_amount = float(get_requested_payment_amount(order, getattr(order, "payment_scheme", None)) or 0)
+        requested_payment_label = get_requested_payment_label(order, getattr(order, "payment_scheme", None))
+        requested_payment_text = {
+            "Доплата": "доплату",
+            "Оплата": "оплату",
+            "Аванс": "аванс",
+        }.get(requested_payment_label, requested_payment_label.lower())
+        subject_or_topic = order.subject or getattr(order, "topic", None)
         lines.extend(
             [
                 "",
                 f"Заказ: <code>#{order.id}</code>",
                 f"Формат: {format_plain_text(get_order_work_label(order))}",
-                f"Тема: {format_plain_text(order.subject, 'Не указана')}",
+                f"Тема: {format_plain_text(subject_or_topic, 'Не указана')}",
                 f"Срок: {format_deadline_for_admin(order.deadline)}",
                 f"Статус: {format_plain_text(get_status_label(order.status))}",
-                (
-                    f"Стоимость: {format_money(order.final_price)}"
-                    if (order.price or 0) > 0
-                    else "Стоимость: ещё не назначена"
-                ),
             ]
         )
+        if (order.price or 0) > 0:
+            lines.extend(
+                [
+                    f"Итого: {format_money(order.final_price)}",
+                    f"Оплачено: {format_money(paid_amount)}",
+                ]
+            )
+            if remaining > 0:
+                lines.append(f"Осталось: {format_money(remaining)}")
+        else:
+            lines.append("Стоимость: ещё не назначена")
+
+        if final_price > 0:
+            if remaining <= 0:
+                payment_state = "Платёж: оплачен полностью"
+            elif getattr(order, "status", None) == OrderStatus.VERIFICATION_PENDING.value:
+                payment_state = f"Платёж: на проверке ({requested_payment_text} {format_money(requested_payment_amount)})"
+            else:
+                payment_state = f"Платёж: ждём {requested_payment_text} {format_money(requested_payment_amount)}"
+            lines.append(payment_state)
+
+        lines.extend(
+            [
+                f"Кругов правок: {int(order.revision_count or 0)}",
+                f"Папка: {'подключена' if order.files_url else 'ещё не создана'}",
+            ]
+        )
+        if latest_delivery:
+            latest_version = latest_delivery.get("version_number")
+            latest_sent_at = latest_delivery.get("sent_at")
+            latest_comment = str(latest_delivery.get("manager_comment") or "").strip()
+            latest_files = int(latest_delivery.get("file_count") or 0)
+            version_label = f"Версия {latest_version}" if latest_version else "Последняя версия"
+            lines.append(
+                f"{version_label}: {format_admin_datetime(datetime.fromisoformat(str(latest_sent_at))) if latest_sent_at else format_admin_datetime(order.delivered_at)}"
+            )
+            if latest_files > 0:
+                lines.append(f"Выдано файлов: {latest_files}")
+            if latest_comment:
+                lines.append(f"Комментарий к версии: {format_compact_text(latest_comment, limit=160)}")
+        else:
+            lines.append(f"Последняя выдача: {format_admin_datetime(order.delivered_at)}")
+
+        if draft_delivery:
+            draft_files = int(draft_delivery.get("file_count") or 0)
+            draft_comment = str(draft_delivery.get("manager_comment") or "").strip()
+            draft_created_at = draft_delivery.get("created_at")
+            draft_summary = f"Черновик выдачи: {draft_files} файл(ов)"
+            if draft_created_at:
+                with suppress(ValueError, TypeError):
+                    draft_summary = f"{draft_summary} · {format_admin_datetime(datetime.fromisoformat(str(draft_created_at)))}"
+            lines.append(draft_summary)
+            if draft_comment:
+                lines.append(f"Черновой комментарий: {format_compact_text(draft_comment, limit=160)}")
+
+        if order.admin_notes:
+            lines.append(f"Заметка: {format_compact_text(order.admin_notes, limit=160)}")
+        if operational_lines:
+            lines.append("Операционно:")
+            for item in operational_lines:
+                lines.append(f"• {format_plain_text(str(item))}")
+        if activity_snapshot_lines:
+            lines.append("Последние события:")
+            for item in activity_snapshot_lines:
+                lines.append(f"• {format_plain_text(str(item))}")
 
     lines.extend(
         [
             "",
             "━━━━━━━━━━━━━━━━━━━━",
-            "<i>Сообщения в этом топике уходят клиенту.</i>",
+            "<i>Текстовые сообщения в этом топике уходят клиенту.</i>",
+            "<i>Файлы, фото и голосовые попадают в черновик выдачи и отправляются только через <code>/deliver</code>.</i>",
             "<i>Сообщение с точки <code>.</code> остаётся внутренним комментарием.</i>",
+            "<i>Быстрые команды: /summary /history /note /folder /deliver /pay /paid /review /done /card /price</i>",
         ]
     )
     return join_lines(lines)
+
+
+def build_admin_topic_header_keyboard(
+    order: Order | None,
+    *,
+    has_delivery_draft: bool = False,
+    latest_delivery_url: str | None = None,
+) -> InlineKeyboardMarkup | None:
+    if not order:
+        return None
+
+    delivery_button = InlineKeyboardButton(
+        text="📦 Отправить версию" if has_delivery_draft else "📎 Сначала файлы",
+        callback_data=f"topic_action:deliver:{order.id}" if has_delivery_draft else f"topic_action:delivery_help:{order.id}",
+    )
+
+    rows = [
+        [
+            InlineKeyboardButton(text="📊 Сводка", callback_data=f"topic_action:summary:{order.id}"),
+            InlineKeyboardButton(text="🕘 История", callback_data=f"topic_action:history:{order.id}"),
+            InlineKeyboardButton(text="📝 Заметка", callback_data=f"topic_action:note:{order.id}"),
+        ],
+        [
+            InlineKeyboardButton(text="📋 Карточка", callback_data=f"topic_action:card:{order.id}"),
+            delivery_button,
+            InlineKeyboardButton(text="↩️ На проверку", callback_data=f"topic_action:review:{order.id}"),
+        ],
+        [
+            InlineKeyboardButton(text="✅ Закрыть", callback_data=f"topic_action:complete:{order.id}"),
+        ],
+    ]
+
+    if has_delivery_draft:
+        rows.append(
+            [
+                InlineKeyboardButton(text="🧹 Очистить черновик", callback_data=f"topic_action:clear_delivery:{order.id}"),
+            ]
+        )
+
+    remaining_amount = get_order_remaining_amount(order)
+    if remaining_amount > 0 and (order.price or 0) > 0:
+        if getattr(order, "status", None) == OrderStatus.VERIFICATION_PENDING.value:
+            rows.append(
+                [
+                    InlineKeyboardButton(text="✅ Подтвердить оплату", callback_data=f"topic_action:paid:{order.id}"),
+                ]
+            )
+        else:
+            invoice_text = "💰 Доплата" if is_followup_payment(order) else "💳 Счёт"
+            confirm_text = "✅ Доплата" if is_followup_payment(order) else "✅ Оплачено"
+            rows.append(
+                [
+                    InlineKeyboardButton(text=invoice_text, callback_data=f"topic_action:invoice:{order.id}"),
+                    InlineKeyboardButton(text=confirm_text, callback_data=f"topic_action:paid:{order.id}"),
+                ]
+            )
+
+    file_links: list[InlineKeyboardButton] = []
+    if latest_delivery_url:
+        file_links.append(InlineKeyboardButton(text="📂 Последняя версия", url=latest_delivery_url))
+    if order.files_url:
+        file_links.append(InlineKeyboardButton(text="🗂 Папка заказа", url=order.files_url))
+    if file_links:
+        rows.append(file_links)
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)

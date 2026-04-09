@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import html
 import logging
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request, Query
@@ -12,7 +13,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS, OrderMessage, MessageSender, ConversationType
+from database.models.orders import (
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    ConversationType,
+    MessageSender,
+    Order,
+    OrderMessage,
+    OrderStatus,
+    WORK_TYPE_LABELS,
+    WorkType,
+    canonicalize_order_status,
+)
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
@@ -23,6 +34,7 @@ from bot.api.schemas import (
     ConfirmWorkResponse,
     PauseOrderRequest, PauseOrderResponse,
     BatchPaymentInfoRequest, BatchPaymentInfoResponse, BatchOrderItem,
+    BatchProcessedOrderItem, BatchFailedOrderItem,
     BatchPaymentConfirmRequest, BatchPaymentConfirmResponse
 )
 from bot.api.dependencies import (
@@ -52,14 +64,42 @@ from bot.services.order_pause_events import (
     sync_order_pause_state,
     sync_orders_pause_state,
 )
-from bot.services.order_lifecycle import (
-    can_complete_order,
-    get_order_cashback_base,
+from bot.services.order_lifecycle import can_complete_order
+from bot.services.order_delivery_service import (
+    get_delivery_history,
+    get_latest_sent_delivery_batch,
+    send_order_delivery_batch,
+    serialize_delivery_batch,
+)
+from bot.services.order_revision_round_service import (
+    bind_order_to_revision_round,
+    get_current_revision_round,
+    get_revision_round_history,
+    serialize_revision_round,
+)
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Orders"])
+
+PAYMENT_METHOD_LABELS = {
+    "card": "Карта",
+    "sbp": "СБП",
+    "transfer": "Перевод",
+}
+
+PAYMENT_CONFIRM_ALLOWED_STATUSES = {
+    OrderStatus.WAITING_PAYMENT.value,
+    OrderStatus.PAID.value,
+    OrderStatus.IN_PROGRESS.value,
+    OrderStatus.REVIEW.value,
+}
 
 # Allowed file extensions for upload (whitelist)
 ALLOWED_EXTENSIONS = {
@@ -108,6 +148,10 @@ def is_followup_payment(order: Order) -> bool:
     return Decimal(str(order.paid_amount or 0)) > 0 and get_order_remaining_amount(order) > 0
 
 
+def get_payment_phase(order: Order) -> str:
+    return "final" if is_followup_payment(order) else "initial"
+
+
 def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
     """Calculate amount requested right now for first or final payment."""
     remaining = get_order_remaining_amount(order)
@@ -121,6 +165,113 @@ def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
     if payment_scheme == "half":
         return final_price / Decimal("2")
     return final_price
+
+
+def can_accept_payment_status(status: str) -> bool:
+    return status in PAYMENT_CONFIRM_ALLOWED_STATUSES
+
+
+def get_batch_payment_order_item(order: Order) -> BatchOrderItem | None:
+    if not order.final_price or order.final_price <= 0:
+        return None
+
+    canonical_status = canonicalize_order_status(order.status) or order.status
+    if not can_accept_payment_status(canonical_status):
+        return None
+
+    remaining_amount = get_order_remaining_amount(order)
+    if remaining_amount <= 0:
+        return None
+
+    return BatchOrderItem(
+        id=order.id,
+        work_type_label=order.work_type_label,
+        subject=order.subject,
+        topic=order.topic,
+        status=canonical_status,
+        payment_phase=get_payment_phase(order),
+        payment_scheme=order.payment_scheme,
+        final_price=round(float(order.final_price), 2),
+        remaining=round(float(remaining_amount), 2),
+        amount_for_half=round(float(get_requested_payment_amount(order, "half")), 2),
+        amount_for_full=round(float(get_requested_payment_amount(order, "full")), 2),
+    )
+
+
+def get_batch_processed_order_item(
+    order: Order,
+    *,
+    amount_to_pay: Decimal,
+    payment_phase: str,
+) -> BatchProcessedOrderItem:
+    return BatchProcessedOrderItem(
+        id=order.id,
+        work_type_label=order.work_type_label,
+        subject=order.subject,
+        topic=order.topic,
+        amount_to_pay=round(float(amount_to_pay), 2),
+        payment_phase=payment_phase,
+        status=canonicalize_order_status(order.status) or order.status,
+    )
+
+
+def get_payment_method_label(payment_method: str) -> str:
+    return PAYMENT_METHOD_LABELS.get(payment_method, payment_method)
+
+
+def build_payment_card_extra_text(
+    *,
+    payment_method: str,
+    payment_scheme: str,
+    payment_phase: str,
+    amount_to_pay: Decimal | float,
+    related_order_ids: list[int] | None = None,
+) -> str:
+    method_text = get_payment_method_label(payment_method)
+    if related_order_ids:
+        scheme_text = "100%" if payment_scheme == "full" else "50% аванс"
+        return (
+            f"💳 Batch-оплата: {scheme_text} ({method_text})\n"
+            f"📦 В общей заявке: {len(related_order_ids)} заказ(ов)\n"
+            f"💰 Сумма по заказу: {format_price(amount_to_pay)}"
+        )
+
+    if payment_phase == "final":
+        scheme_text = "доплата"
+    else:
+        scheme_text = "100%" if payment_scheme == "full" else "50% аванс"
+
+    return (
+        f"💳 Ожидает проверки: {scheme_text} ({method_text})\n"
+        f"💰 Сумма: {format_price(amount_to_pay)}"
+    )
+
+
+async def sync_order_chat_conversation(
+    *,
+    session: AsyncSession,
+    bot,
+    user_id: int,
+    order_id: int,
+    preview_text: str,
+) -> int | None:
+    from bot.handlers.order_chat import get_or_create_topic, update_conversation
+
+    conv, topic_id = await get_or_create_topic(
+        bot=bot,
+        session=session,
+        user_id=user_id,
+        order_id=order_id,
+        conv_type=ConversationType.ORDER_CHAT.value,
+    )
+    await update_conversation(
+        session,
+        conv,
+        last_message=preview_text,
+        sender=MessageSender.CLIENT.value,
+        increment_unread=True,
+    )
+    return topic_id
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -192,7 +343,6 @@ async def get_batch_payment_info(
         select(Order).where(
             Order.id.in_(data.order_ids),
             Order.user_id == tg_user.id,
-            Order.status.in_(['confirmed', 'waiting_payment'])
         )
     )
     orders = result.scalars().all()
@@ -203,24 +353,18 @@ async def get_batch_payment_info(
             content={"success": False, "message": "Не найдено заказов для оплаты"}
         )
 
-    order_items = []
-    total_amount = 0.0
+    order_items: list[BatchOrderItem] = []
+    total_amount_half = 0.0
+    total_amount_full = 0.0
+    order_index = {order_id: index for index, order_id in enumerate(data.order_ids)}
 
-    for order in orders:
-        if not order.final_price or order.final_price <= 0:
+    for order in sorted(orders, key=lambda current: order_index.get(current.id, len(order_index))):
+        item = get_batch_payment_order_item(order)
+        if not item:
             continue
-        remaining = float(order.final_price - (order.paid_amount or 0))
-        if remaining <= 0:
-            continue
-        work_label = WORK_TYPE_LABELS.get(order.work_type, order.work_type)
-        order_items.append(BatchOrderItem(
-            id=order.id,
-            work_type_label=work_label,
-            subject=order.subject,
-            final_price=round(float(order.final_price), 2),
-            remaining=round(remaining, 2)
-        ))
-        total_amount += remaining
+        order_items.append(item)
+        total_amount_half += item.amount_for_half
+        total_amount_full += item.amount_for_full
 
     if not order_items:
         return JSONResponse(
@@ -239,7 +383,9 @@ async def get_batch_payment_info(
 
     return BatchPaymentInfoResponse(
         orders=order_items,
-        total_amount=round(total_amount, 2),
+        total_amount=round(total_amount_full, 2),
+        total_amount_half=round(total_amount_half, 2),
+        total_amount_full=round(total_amount_full, 2),
         orders_count=len(order_items),
         card_number=card_formatted,
         card_holder=settings.PAYMENT_NAME.upper(),
@@ -270,8 +416,7 @@ async def confirm_batch_payment(
         select(Order).where(
             Order.id.in_(data.order_ids),
             Order.user_id == tg_user.id,
-            Order.status.in_(['confirmed', 'waiting_payment'])
-        )
+        ).with_for_update()
     )
     orders = result.scalars().all()
 
@@ -281,55 +426,183 @@ async def confirm_batch_payment(
             content={"success": False, "message": "Не найдено заказов для оплаты"}
         )
 
-    processed_orders = []
-    failed_orders = []
-    total_amount = 0.0
+    prepared_orders: list[tuple[Order, object, Decimal, str]] = []
+    failed_orders: list[int] = []
+    failed_order_details: list[BatchFailedOrderItem] = []
+    order_index = {order_id: index for index, order_id in enumerate(data.order_ids)}
+    found_order_ids = {order.id for order in orders}
 
-    for order in orders:
+    for missing_order_id in data.order_ids:
+        if missing_order_id in found_order_ids:
+            continue
+        failed_orders.append(missing_order_id)
+        failed_order_details.append(BatchFailedOrderItem(id=missing_order_id, reason="Заказ не найден"))
+
+    for order in sorted(orders, key=lambda current: order_index.get(current.id, len(order_index))):
+        canonical_status = canonicalize_order_status(order.status) or order.status
+        if order.status == OrderStatus.VERIFICATION_PENDING.value:
+            failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="Оплата уже на проверке"))
+            continue
+        if canonical_status in {OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value}:
+            failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="Заказ больше не принимает оплату"))
+            continue
+        if not can_accept_payment_status(canonical_status):
+            failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="Сейчас этот заказ нельзя оплатить"))
+            continue
         if not order.final_price or order.final_price <= 0:
             failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="У заказа ещё нет цены"))
             continue
-        remaining = float(order.final_price - (order.paid_amount or 0))
-        if remaining <= 0:
+        amount_to_pay = get_requested_payment_amount(order, data.payment_scheme)
+        if amount_to_pay <= 0:
             failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="Заказ уже полностью оплачен"))
             continue
-        amount_to_pay = remaining / 2 if data.payment_scheme == 'half' else remaining
-        order.status = OrderStatus.VERIFICATION_PENDING.value
+        payment_phase = get_payment_phase(order)
+        try:
+            change = apply_order_status_transition(order, OrderStatus.VERIFICATION_PENDING.value)
+        except OrderStatusTransitionError as exc:
+            failed_orders.append(order.id)
+            failed_order_details.append(BatchFailedOrderItem(id=order.id, reason=str(exc)))
+            continue
         order.payment_method = data.payment_method
-        order.payment_scheme = data.payment_scheme
-        processed_orders.append(order)
-        total_amount += amount_to_pay
+        if payment_phase == "initial":
+            order.payment_scheme = data.payment_scheme
+        elif order.payment_scheme not in {"half", "full"}:
+            order.payment_scheme = "half"
+        prepared_orders.append((order, change, amount_to_pay, payment_phase))
 
-    await session.commit()
+    processed_orders: list[BatchProcessedOrderItem] = []
+    total_amount = Decimal("0")
 
-    for order in processed_orders:
-        try:
-            from bot.services.realtime_notifications import send_order_status_notification
-            await send_order_status_notification(
-                telegram_id=tg_user.id, order_id=order.id, new_status=order.status,
-                extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme, "is_batch": True}
-            )
-        except Exception as e:
-            logger.warning(f"[Batch] Failed to send WS notification for order #{order.id}: {e}")
-
-    if processed_orders:
-        try:
-            bot = get_bot()
-            from bot.services.live_cards import send_or_update_card
-            scheme_text = "100%" if data.payment_scheme == 'full' else "50% аванс"
-            method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
-            order_ids_str = ", ".join([f"#{o.id}" for o in processed_orders])
-            for order in processed_orders:
-                await send_or_update_card(
-                    bot=bot, order=order, session=session, client_username=user.username, client_name=user.fullname,
-                    extra_text=f"💳 Batch-оплата: {scheme_text} ({method_text})\n🔗 Заказы: {order_ids_str}"
+    if prepared_orders:
+        bot = get_bot()
+        related_order_ids = [order.id for order, _change, _amount, _phase in prepared_orders]
+        planned_total_amount = sum(amount for _order, _change, amount, _phase in prepared_orders)
+        for order, change, amount_to_pay, payment_phase in prepared_orders:
+            try:
+                await finalize_order_status_change(
+                    session,
+                    bot,
+                    order,
+                    change,
+                    dispatch=OrderStatusDispatchOptions(
+                        update_live_card=True,
+                        client_username=user.username,
+                        client_name=user.fullname,
+                        notification_extra_data={
+                            "payment_method": data.payment_method,
+                            "payment_scheme": order.payment_scheme or data.payment_scheme,
+                            "payment_phase": payment_phase,
+                            "amount_to_pay": round(float(amount_to_pay), 2),
+                            "is_batch": True,
+                            "batch_orders_count": len(related_order_ids),
+                            "batch_total_amount": round(float(planned_total_amount), 2),
+                            "batch_order_ids": related_order_ids,
+                        },
+                        card_extra_text=build_payment_card_extra_text(
+                            payment_method=data.payment_method,
+                            payment_scheme=order.payment_scheme or data.payment_scheme,
+                            payment_phase=payment_phase,
+                            amount_to_pay=amount_to_pay,
+                            related_order_ids=related_order_ids,
+                        ),
+                    ),
                 )
-            await bot.send_message(
-                chat_id=user.telegram_id,
-                text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказы: <code>{order_ids_str}</code>\nСумма: <b>{format_price(total_amount)}</b>\nСпособ: {method_text}\n\nМенеджер проверит поступление и подтвердит все заказы."
+            except Exception as exc:
+                logger.warning(f"[Batch] Failed to finalize payment for order #{order.id}: {exc}")
+                failed_orders.append(order.id)
+                failed_order_details.append(BatchFailedOrderItem(id=order.id, reason="Не удалось отправить заказ на проверку"))
+                continue
+
+            total_amount += amount_to_pay
+            processed_orders.append(
+                get_batch_processed_order_item(
+                    order,
+                    amount_to_pay=amount_to_pay,
+                    payment_phase=payment_phase,
+                )
             )
-        except Exception as e:
-            logger.error(f"Batch payment notification error: {e}")
+
+        if processed_orders:
+            try:
+                from bot.api.websocket import notify_admin_batch_payment_pending
+                await notify_admin_batch_payment_pending(
+                    user_fullname=user.fullname,
+                    user_username=user.username,
+                    payment_method=data.payment_method,
+                    payment_scheme=data.payment_scheme,
+                    processed_orders=[item.model_dump() for item in processed_orders],
+                    total_amount=float(total_amount),
+                )
+            except Exception as e:
+                logger.warning(f"[Batch] Failed to notify admins about batch payment: {e}")
+
+            try:
+                from bot.services.admin_payment_notifications import (
+                    send_admin_batch_payment_pending_summary,
+                    send_admin_payment_pending_alert,
+                )
+
+                await send_admin_batch_payment_pending_summary(
+                    bot=bot,
+                    user=user,
+                    processed_orders=[item.model_dump() for item in processed_orders],
+                    total_amount=float(total_amount),
+                    payment_method=data.payment_method,
+                    payment_scheme=data.payment_scheme,
+                )
+            except Exception as e:
+                logger.warning(f"[Batch] Failed to send admin batch summary for payment: {e}")
+
+            try:
+                processed_by_id = {item.id: item for item in processed_orders}
+                for order, _change, amount_to_pay, payment_phase in prepared_orders:
+                    item = processed_by_id.get(order.id)
+                    if not item:
+                        continue
+                    try:
+                        await send_admin_payment_pending_alert(
+                            bot=bot,
+                            session=session,
+                            order=order,
+                            user=user,
+                            amount=float(amount_to_pay),
+                            payment_method=data.payment_method,
+                            payment_phase=payment_phase,
+                            batch_orders_count=len(related_order_ids),
+                            batch_total_amount=float(planned_total_amount),
+                            batch_order_ids=related_order_ids,
+                        )
+                    except Exception as e:
+                        logger.warning(f"[Batch] Failed to send admin bot alert for order #{order.id}: {e}")
+            except Exception as e:
+                logger.warning(f"[Batch] Failed to build admin bot alerts for batch payment: {e}")
+
+            try:
+                order_ids_str = ", ".join(f"#{item.id}" for item in processed_orders)
+                failed_note = ""
+                if failed_order_details:
+                    failed_note = (
+                        "\n\nНе удалось включить:\n"
+                        + "\n".join(f"• #{item.id} — {item.reason}" for item in failed_order_details[:5])
+                    )
+                await bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=(
+                        "✅ <b>Заявка на оплату принята!</b>\n\n"
+                        f"Заказы: <code>{order_ids_str}</code>\n"
+                        f"Сумма: <b>{format_price(total_amount)}</b>\n"
+                        f"Способ: {get_payment_method_label(data.payment_method)}\n\n"
+                        "Менеджер проверит поступление и подтвердит все заказы."
+                        f"{failed_note}"
+                    ),
+                )
+            except Exception as e:
+                logger.error(f"Batch payment notification error: {e}")
 
     if not processed_orders:
         return BatchPaymentConfirmResponse(
@@ -337,15 +610,22 @@ async def confirm_batch_payment(
             message="Не удалось обработать ни один заказ",
             processed_count=0,
             total_amount=0,
-            failed_orders=[o.id for o in orders]
+            failed_orders=failed_orders or [o.id for o in orders],
+            failed_order_details=failed_order_details,
+            payment_method=data.payment_method,
+            payment_scheme=data.payment_scheme,
         )
 
     return BatchPaymentConfirmResponse(
         success=True,
         message=f"Заявка на оплату {len(processed_orders)} заказов отправлена на проверку",
         processed_count=len(processed_orders),
-        total_amount=round(total_amount, 2),
-        failed_orders=failed_orders
+        total_amount=round(float(total_amount), 2),
+        failed_orders=failed_orders,
+        processed_orders=processed_orders,
+        failed_order_details=failed_order_details,
+        payment_method=data.payment_method,
+        payment_scheme=data.payment_scheme,
     )
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -374,7 +654,17 @@ async def get_order_detail(
         )
 
     await sync_order_pause_state(session, order, notify_user=True)
-    return order_to_response(order)
+    latest_delivery = await get_latest_sent_delivery_batch(session, order.id)
+    delivery_history = await get_delivery_history(session, order.id)
+    current_revision_round = await get_current_revision_round(session, order.id)
+    revision_history = await get_revision_round_history(session, order.id)
+    return order_to_response(
+        order,
+        latest_delivery=serialize_delivery_batch(latest_delivery) if latest_delivery else None,
+        delivery_history=[serialize_delivery_batch(batch) for batch in delivery_history],
+        current_revision_round=serialize_revision_round(current_revision_round) if current_revision_round else None,
+        revision_history=[serialize_revision_round(round_) for round_ in revision_history],
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  PROMO CODE
@@ -733,6 +1023,9 @@ async def upload_order_files(
             content={"success": False, "message": "Not your order"}
         )
 
+    owner_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+    order_owner = owner_result.scalar_one_or_none() or user
+
     if not yandex_disk_service.is_available:
         return FileUploadResponse(success=False, message="Файловое хранилище временно недоступно")
 
@@ -777,13 +1070,68 @@ async def upload_order_files(
             oversized_files=oversized_files,
         )
 
-    result = await yandex_disk_service.upload_multiple_files(
-        files=file_data,
-        order_id=order.id,
-        client_name=user.fullname or f"User_{user.telegram_id}",
-        work_type=order.work_type,
-        telegram_id=user.telegram_id,
-    )
+    uploader_is_admin = is_admin and order.user_id != tg_user.id
+    upload_kwargs = {
+        "files": file_data,
+        "order_id": order.id,
+        "client_name": order_owner.fullname or f"User_{order.user_id}",
+        "work_type": order.work_type,
+        "telegram_id": order_owner.telegram_id,
+        "client_username": order_owner.username,
+        "order_meta": yandex_disk_service.build_order_meta(order),
+    }
+
+    if uploader_is_admin:
+        result = None
+    else:
+        result = await yandex_disk_service.upload_multiple_files(**upload_kwargs)
+
+    if uploader_is_admin:
+        try:
+            delivery_result = await send_order_delivery_batch(
+                session,
+                get_bot(),
+                order,
+                user=order_owner,
+                source="api_admin_upload",
+                sent_by_admin_id=tg_user.id,
+                binary_files=file_data,
+            )
+        except ValueError as exc:
+            return FileUploadResponse(
+                success=False,
+                message=f"Ошибка загрузки: {exc}",
+                uploaded_count=0,
+                blocked_files=blocked_files,
+                oversized_files=oversized_files,
+            )
+
+        uploaded_count = int(delivery_result.batch.file_count or len(file_data))
+        rejected_count = len(blocked_files) + len(oversized_files)
+        storage_failed_count = max(len(file_data) - uploaded_count, 0)
+        review_reopened = delivery_result.review_status_changed
+        response_files_url = delivery_result.batch.files_url or order.files_url
+        message = f"✅ Версия {delivery_result.batch.version_number} отправлена клиенту"
+        issue_notes = []
+        if blocked_files:
+            issue_notes.append(f"пропущены неподдерживаемые файлы ({len(blocked_files)})")
+        if oversized_files:
+            issue_notes.append(f"пропущены файлы больше 50 МБ ({len(oversized_files)})")
+        if storage_failed_count > 0:
+            issue_notes.append(f"не загрузились {storage_failed_count} файл(ов)")
+        if review_reopened:
+            message += " и заказ возвращён на проверку"
+        if issue_notes:
+            message = f"{message}; {', '.join(issue_notes)}"
+
+        return FileUploadResponse(
+            success=True,
+            message=message,
+            files_url=response_files_url,
+            uploaded_count=uploaded_count,
+            blocked_files=blocked_files,
+            oversized_files=oversized_files,
+        )
 
     if result.success:
         if result.folder_url:
@@ -791,37 +1139,30 @@ async def upload_order_files(
             await session.commit()
 
         uploaded_count = result.uploaded_count or len(file_data)
+        review_reopened = False
 
         try:
             bot = get_bot()
             from bot.services.live_cards import send_or_update_card
+            card_prefix = "📤 Выгружено итоговых файлов" if uploader_is_admin else "📎"
             await send_or_update_card(
                 bot=bot,
                 order=order,
                 session=session,
-                client_username=user.username,
-                client_name=user.fullname,
-                extra_text=f"📎 {uploaded_count} файл(ов) загружено",
+                client_username=order_owner.username,
+                client_name=order_owner.fullname,
+                extra_text=f"{card_prefix}: {uploaded_count}",
             )
         except Exception as e:
             logger.warning(f"[Files] Failed to update live card for order #{order.id}: {e}")
 
-        # Notify client about file delivery via WebSocket
-        try:
-            from bot.api.websocket import notify_file_delivery
-            await notify_file_delivery(
-                telegram_id=order.user_id,
-                order_id=order.id,
-                file_count=uploaded_count,
-                files_url=result.folder_url
-            )
-        except Exception as e:
-            logger.warning(f"[Files] Failed to send WS file delivery notification for order #{order.id}: {e}")
-
         rejected_count = len(blocked_files) + len(oversized_files)
         storage_failed_count = max(len(file_data) - uploaded_count, 0)
 
-        message = f"✅ Загружено {uploaded_count} из {len(files)} файл(ов)"
+        if uploader_is_admin:
+            message = f"✅ Загружено {uploaded_count} из {len(files)} файл(ов) в раздел готовой работы"
+        else:
+            message = f"✅ Загружено {uploaded_count} из {len(files)} файл(ов)"
         issue_notes = []
         if blocked_files:
             issue_notes.append(f"пропущены неподдерживаемые файлы ({len(blocked_files)})")
@@ -833,6 +1174,10 @@ async def upload_order_files(
             issue_notes.append("ссылка на папку обновится в заказе с небольшой задержкой")
         elif rejected_count == 0 and uploaded_count == len(file_data):
             message = f"✅ Загружено {uploaded_count} файл(ов)"
+            if uploader_is_admin and review_reopened:
+                message += " в раздел готовой работы и заказ возвращён клиенту на проверку"
+            elif uploader_is_admin:
+                message += " в раздел готовой работы"
 
         if issue_notes:
             message = f"{message}; {', '.join(issue_notes)}"
@@ -881,13 +1226,7 @@ async def confirm_payment(
             content={"success": False, "message": "Order not found"}
         )
 
-    allowed_statuses = {
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
-        OrderStatus.PAID.value,
-        OrderStatus.IN_PROGRESS.value,
-        OrderStatus.REVIEW.value,
-    }
+    canonical_status = canonicalize_order_status(order.status) or order.status
 
     # Idempotency: if already in verification_pending, return success without re-processing
     if order.status == OrderStatus.VERIFICATION_PENDING.value:
@@ -900,13 +1239,13 @@ async def confirm_payment(
             amount_to_pay=float(idempotent_amount),
         )
 
-    if order.status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value]:
+    if canonical_status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value]:
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": "Order cannot accept payment"}
         )
 
-    if order.status not in allowed_statuses:
+    if not can_accept_payment_status(canonical_status):
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": "Order cannot accept payment right now"}
@@ -919,7 +1258,7 @@ async def confirm_payment(
         )
 
     requested_scheme = "half" if data.payment_scheme == "half" else "full"
-    payment_phase = "final" if is_followup_payment(order) else "initial"
+    payment_phase = get_payment_phase(order)
     amount_to_pay = get_requested_payment_amount(order, requested_scheme)
     if amount_to_pay <= 0:
         return JSONResponse(
@@ -927,26 +1266,43 @@ async def confirm_payment(
             content={"success": False, "message": "Order is already fully paid"}
         )
 
-    order.status = OrderStatus.VERIFICATION_PENDING.value
+    try:
+        change = apply_order_status_transition(order, OrderStatus.VERIFICATION_PENDING.value)
+    except OrderStatusTransitionError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(exc)}
+        )
     order.payment_method = data.payment_method
     if payment_phase == "initial":
         order.payment_scheme = requested_scheme
     elif order.payment_scheme not in {"half", "full"}:
         order.payment_scheme = "half"
-    await session.commit()
 
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=tg_user.id, order_id=order_id, new_status=order.status,
-            extra_data={
+    bot = get_bot()
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=user.username if user else tg_user.username,
+            client_name=user.fullname if user else tg_user.first_name,
+            notification_extra_data={
                 "payment_method": data.payment_method,
                 "payment_scheme": order.payment_scheme,
                 "payment_phase": payment_phase,
-            }
-        )
-    except Exception as e:
-        logger.warning(f"[Payment] Failed to send WS notification for order #{order_id}: {e}")
+                "amount_to_pay": round(float(amount_to_pay), 2),
+            },
+            card_extra_text=build_payment_card_extra_text(
+                payment_method=data.payment_method,
+                payment_scheme=order.payment_scheme or requested_scheme,
+                payment_phase=payment_phase,
+                amount_to_pay=amount_to_pay,
+            ),
+        ),
+    )
 
     # Notify admins about pending payment
     try:
@@ -954,15 +1310,16 @@ async def confirm_payment(
         await notify_admin_payment_pending(
             order_id=order.id,
             user_fullname=user.fullname if user else "Unknown",
-            amount=amount_to_pay,
+            amount=float(amount_to_pay),
             payment_method=data.payment_method,
             payment_phase=payment_phase,
+            work_type_label=order.work_type_label,
+            subject=order.subject,
         )
     except Exception as e:
         logger.warning(f"[Payment] Failed to notify admins about pending payment for order #{order.id}: {e}")
 
     try:
-        bot = get_bot()
         from bot.services.admin_payment_notifications import send_admin_payment_pending_alert
         await send_admin_payment_pending_alert(
             bot=bot,
@@ -977,19 +1334,8 @@ async def confirm_payment(
         logger.warning(f"[Payment] Failed to send bot admin alert for order #{order.id}: {e}")
 
     try:
-        bot = get_bot()
-        from bot.services.live_cards import send_or_update_card
-        if payment_phase == "final":
-            scheme_text = "доплата"
-        else:
-            scheme_text = "100%" if requested_scheme == 'full' else "50% аванс"
-        method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
-        await send_or_update_card(
-            bot=bot, order=order, session=session, client_username=user.username, client_name=user.fullname,
-            extra_text=f"💳 Ожидает проверки: {scheme_text} ({method_text})\n💰 Сумма: {format_price(amount_to_pay)}"
-        )
         await bot.send_message(
-            chat_id=user.telegram_id,
+            chat_id=tg_user.id,
             text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказ <code>#{order.id}</code>\nСумма: <b>{format_price(amount_to_pay)}</b>\n\nМенеджер проверит поступление и подтвердит."
         )
     except Exception as e:
@@ -997,14 +1343,17 @@ async def confirm_payment(
 
     try:
         await log_mini_app_event(
-            bot=get_bot(), event=MiniAppEvent.ORDER_VIEW, user_id=user.telegram_id, username=user.username,
+            bot=bot, event=MiniAppEvent.ORDER_VIEW, user_id=tg_user.id, username=user.username if user else tg_user.username,
             order_id=order.id, details=f"Подтвердил оплату: {format_price(amount_to_pay)}"
         )
     except Exception as e:
         logger.warning(f"[Payment] Failed to log mini app event for order #{order.id}: {e}")
 
     return PaymentConfirmResponse(
-        success=True, message="Заявка на оплату отправлена на проверку", new_status=order.status, amount_to_pay=amount_to_pay
+        success=True,
+        message="Заявка на оплату отправлена на проверку",
+        new_status=order.status,
+        amount_to_pay=float(amount_to_pay),
     )
 
 @router.get("/orders/{order_id}/payment-info", response_model=PaymentInfoResponse)
@@ -1103,7 +1452,13 @@ async def pause_client_order(
         )
 
     old_status = order.status
-    pause_until = pause_order(order, data.reason)
+    try:
+        pause_until = pause_order(order, data.reason)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(exc)}
+        )
     await session.commit()
     await notify_pause_state_change(session, order, user, event="paused", old_status=old_status)
 
@@ -1155,7 +1510,13 @@ async def resume_client_order(
         )
 
     old_status = order.status
-    resumed_status = resume_order(order)
+    try:
+        resumed_status = resume_order(order)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(exc)}
+        )
     await session.commit()
     await notify_pause_state_change(session, order, user, event="resumed", old_status=old_status)
 
@@ -1202,7 +1563,15 @@ async def submit_order_review(
 
     stars = "⭐" * data.rating + "☆" * (5 - data.rating)
     work_label = order.work_type_label or order.work_type
-    review_text = f"💬 <b>Новый отзыв</b>\n\n{stars}\n\n📚 <b>Тип работы:</b> {work_label}\n📝 <b>Предмет:</b> {order.subject or 'Не указан'}\n\n<i>\"{data.text}\"</i>\n\n━━━━━━━━━━━━━━━\n<i>Отзыв проверен • Academic Saloon</i>"
+    review_text = (
+        "💬 <b>Новый отзыв</b>\n\n"
+        f"{stars}\n\n"
+        f"📚 <b>Тип работы:</b> {html.escape(work_label)}\n"
+        f"📝 <b>Предмет:</b> {html.escape(order.subject or 'Не указан')}\n\n"
+        f"<i>\"{html.escape(data.text)}\"</i>\n\n"
+        "━━━━━━━━━━━━━━━\n"
+        "<i>Отзыв проверен • Academic Saloon</i>"
+    )
 
     try:
         bot = get_bot()
@@ -1234,54 +1603,138 @@ async def request_revision(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    order = await session.get(Order, order_id)
+    order_result = await session.execute(
+        select(Order).where(Order.id == order_id).with_for_update()
+    )
+    order = order_result.scalar_one_or_none()
     if not order or order.user_id != tg_user.id:
         return JSONResponse(
             status_code=404,
             content={"success": False, "message": "Order not found"}
         )
 
-    if order.status != OrderStatus.REVIEW.value:
+    if order.status not in {OrderStatus.REVIEW.value, OrderStatus.REVISION.value}:
         return JSONResponse(
             status_code=400,
-            content={"success": False, "message": "Order must be in review"}
+            content={"success": False, "message": "Order must be in review or revision"}
         )
 
-    order.status = OrderStatus.REVISION.value
-    order.revision_count = (order.revision_count or 0) + 1
-    is_paid = order.revision_count > 3
+    revision_comment = data.message
+    revision_binding = await bind_order_to_revision_round(
+        session,
+        order,
+        requested_by_user_id=tg_user.id,
+        initial_comment=revision_comment,
+        create_if_missing=True,
+    )
+    if revision_binding is None:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Failed to open revision round"},
+        )
+    revision_round = revision_binding.revision_round
+    revision_created = revision_binding.created
+    if revision_created:
+        order.revision_count = max(int(order.revision_count or 0), int(revision_round.round_number or 0))
+
+    change = None
+    if order.status == OrderStatus.REVIEW.value:
+        try:
+            change = apply_order_status_transition(order, OrderStatus.REVISION.value)
+        except OrderStatusTransitionError as exc:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": str(exc)}
+            )
 
     msg = OrderMessage(
         order_id=order_id, sender_type=MessageSender.CLIENT.value, sender_id=tg_user.id,
-        message_text=f"📝 <b>Запрос на правки</b>\n\n{data.message}" if data.message else "📝 <b>Запрос на правки</b>",
+        message_text=f"📝 <b>Запрос на правки</b>\n\n{revision_comment}",
+        revision_round_id=revision_round.id,
         is_read=False,
     )
     session.add(msg)
-    await session.commit()
 
-    # Notify admin... (simplified for brevity, assume similar logic to create_order notification)
-    try:
-        from bot.handlers.order_chat import get_or_create_topic
-        from bot.services.live_cards import send_or_update_card
-        bot = get_bot()
-        # Get user info for card update
-        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
-        user = user_result.scalar_one_or_none()
-        conv, topic_id = await get_or_create_topic(bot, session, tg_user.id, order_id)
-        if topic_id:
-            paid_text = "💰 <b>ПЛАТНАЯ ПРАВКА</b>\n" if is_paid else ""
-            await bot.send_message(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, text=f"✏️ <b>ЗАПРОС НА ПРАВКИ</b>\n{paid_text}Комментарий: {data.message}")
-        await send_or_update_card(
-            bot=bot,
-            order=order,
-            session=session,
-            client_username=user.username if user else None,
-            client_name=user.fullname if user else None
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    bot = get_bot()
+    if change is not None:
+        await finalize_order_status_change(
+            session,
+            bot,
+            order,
+            change,
+            dispatch=OrderStatusDispatchOptions(
+                update_live_card=True,
+                client_username=user.username if user else tg_user.username,
+                client_name=user.fullname if user else tg_user.first_name,
+                notification_extra_data={
+                    "revision_count": order.revision_count,
+                    "revision_round_number": int(revision_round.round_number or order.revision_count or 0),
+                    "is_paid": False,
+                },
+                card_extra_text="✏️ Клиент запросил правки",
+            ),
         )
+    else:
+        await session.commit()
+
+    try:
+        topic_id = await sync_order_chat_conversation(
+            session=session,
+            bot=bot,
+            user_id=tg_user.id,
+            order_id=order_id,
+            preview_text="📝 Клиент дополнил правки" if not revision_created else "📝 Запрос на правки",
+        )
+        if topic_id:
+            await bot.send_message(
+                settings.ADMIN_GROUP_ID,
+                message_thread_id=topic_id,
+                text=(
+                    (
+                        f"✏️ <b>ПРАВКА #{int(revision_round.round_number or 0)}</b>\n"
+                        if not revision_created
+                        else f"✏️ <b>ЗАПРОС НА ПРАВКИ #{int(revision_round.round_number or 0)}</b>\n"
+                    )
+                    + f"Комментарий: {html.escape(revision_comment)}"
+                ),
+            )
     except Exception as e:
         logger.warning(f"[Revision] Failed to notify admin about revision for order #{order_id}: {e}")
 
-    return RevisionRequestResponse(success=True, message="Запрос отправлен", prefilled_text=f"Прошу внести правки:\n\n{data.message}", revision_count=order.revision_count, is_paid=is_paid)
+    try:
+        from bot.api.websocket import (
+            notify_revision_round_opened,
+            notify_revision_round_updated,
+        )
+
+        if revision_created:
+            await notify_revision_round_opened(
+                telegram_id=tg_user.id,
+                order_id=order.id,
+                revision_round_id=revision_round.id,
+                round_number=int(revision_round.round_number or 0),
+                initial_comment=revision_comment,
+            )
+        else:
+            await notify_revision_round_updated(
+                telegram_id=tg_user.id,
+                order_id=order.id,
+                revision_round_id=revision_round.id,
+                round_number=int(revision_round.round_number or 0),
+                latest_comment=revision_comment,
+            )
+    except Exception as exc:
+        logger.warning("[Revision] Failed to notify client about revision round event for order #%s: %s", order_id, exc)
+
+    return RevisionRequestResponse(
+        success=True,
+        message="Запрос отправлен",
+        prefilled_text=f"Прошу внести правки:\n\n{revision_comment}",
+        revision_count=order.revision_count,
+        is_paid=False,
+    )
 
 @router.post("/orders/{order_id}/confirm-completion", response_model=ConfirmWorkResponse)
 async def confirm_work_completion(
@@ -1302,52 +1755,30 @@ async def confirm_work_completion(
             content={"success": False, "message": "Order must be in review"}
         )
 
-    old_status = order.status
-    order.status = OrderStatus.COMPLETED.value
-    order.completed_at = datetime.now(timezone.utc)
-
-    await session.commit()
-
-    # Cashback
-    cashback = 0
     try:
-        from bot.services.bonus import BonusService
-        bot = get_bot()
-        cashback_base = get_order_cashback_base(order)
-        cashback = await BonusService.add_order_cashback(session, bot, order.user_id, order.id, cashback_base)
-    except Exception as e:
-        logger.warning(f"[Completion] Failed to process cashback for order #{order.id}: {e}")
+        change = apply_order_status_transition(order, OrderStatus.COMPLETED.value)
+    except OrderStatusTransitionError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(exc)}
+        )
 
-    # Notify Admin, update card, and close topic
-    try:
-        from bot.services.unified_hub import close_order_topic
-        from bot.services.live_cards import send_or_update_card
-        bot = get_bot()
-        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
-        user = user_result.scalar_one_or_none()
-        await send_or_update_card(
-            bot=bot,
-            order=order,
-            session=session,
+    bot = get_bot()
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            close_topic=True,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text="✅ Клиент подтвердил получение",
-        )
-        await close_order_topic(bot, session, order)
-    except Exception as e:
-        logger.warning(f"[Completion] Failed to sync admin surfaces for order #{order.id}: {e}")
-
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=tg_user.id,
-            order_id=order.id,
-            new_status=OrderStatus.COMPLETED.value,
-            old_status=old_status,
-            extra_data={"cashback": cashback} if cashback > 0 else None,
-        )
-    except Exception as e:
-        logger.warning(f"[Completion] Failed to send WS notification for order #{order.id}: {e}")
+            card_extra_text="✅ Клиент подтвердил получение",
+        ),
+    )
 
     return ConfirmWorkResponse(success=True, message="Спасибо! Заказ завершён.")
 
@@ -1409,9 +1840,8 @@ async def unarchive_order(
 CANCELABLE_STATUSES = {
     OrderStatus.DRAFT.value,
     OrderStatus.PENDING.value,
-    OrderStatus.WAITING_PAYMENT.value,
-    OrderStatus.CONFIRMED.value,
     OrderStatus.WAITING_ESTIMATION.value,
+    *LEGACY_WAITING_PAYMENT_STATUSES,
 }
 
 @router.post("/orders/{order_id}/cancel")
@@ -1434,36 +1864,28 @@ async def cancel_order(
             content={"success": False, "message": "Заказ в текущем статусе нельзя отменить"}
         )
 
-    old_status = order.status
-    order.status = OrderStatus.CANCELLED.value
-    await session.commit()
-
-    # Notify via WebSocket
     try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=tg_user.id,
-            order_id=order_id,
-            new_status=order.status,
+        change = apply_order_status_transition(order, OrderStatus.CANCELLED.value)
+    except OrderStatusTransitionError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(exc)}
         )
-    except Exception as e:
-        logger.warning(f"[Cancel] Failed to send WS notification for order #{order_id}: {e}")
 
-    # Notify admin
-    try:
-        bot = get_bot()
-        from bot.services.live_cards import send_or_update_card
-        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
-        user = user_result.scalar_one_or_none()
-        await send_or_update_card(
-            bot=bot,
-            order=order,
-            session=session,
+    bot = get_bot()
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"❌ Клиент отменил заказ (был: {old_status})",
-        )
-    except Exception as e:
-        logger.warning(f"[Cancel] Failed to notify admin about order #{order_id} cancellation: {e}")
+            card_extra_text=f"❌ Клиент отменил заказ (был: {change.old_status})",
+        ),
+    )
 
     return {"success": True, "message": "Заказ отменён"}

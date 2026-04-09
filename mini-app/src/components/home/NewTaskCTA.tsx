@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Zap } from 'lucide-react'
 import { GoldText, LiquidGoldButton } from '../ui/GoldText'
 import { Reveal } from '../ui/StaggerReveal'
+import { useReducedMotion } from '../../hooks/useDeviceCapability'
 
 interface NewTaskCTAProps {
   onClick: () => void
@@ -19,6 +20,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   variant = 'repeat-order',
   embedded = false,
 }: NewTaskCTAProps) {
+  const reduced = useReducedMotion()
+
   const handleClick = () => {
     haptic?.('heavy')
     onClick()
@@ -37,9 +40,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           style={{
             position: 'relative',
             width: '100%',
-            marginBottom: 24,
+            marginBottom: 16,
             overflow: 'hidden',
-            borderRadius: 12,
+            borderRadius: 14,
             background: 'linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%)',
             border: '1px solid rgba(212,175,55,0.15)',
             boxShadow: '0 4px 24px -8px rgba(0,0,0,0.6), 0 1px 0 rgba(212,175,55,0.04) inset',
@@ -73,7 +76,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             }}
           />
 
-          <div style={{ position: 'relative', zIndex: 1, padding: '40px 24px 32px' }}>
+          <div style={{ position: 'relative', zIndex: 1, padding: '34px 22px 26px' }}>
             {/* Eyebrow — small, quiet */}
             <div
               style={{
@@ -132,8 +135,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 fontWeight: 600,
                 lineHeight: 1.5,
                 color: 'var(--text-secondary)',
-                marginBottom: 24,
-                maxWidth: 300,
+                marginBottom: 20,
+                maxWidth: 292,
               }}
             >
               Курсовые, дипломные, научные работы.
@@ -143,16 +146,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             {/* CTA button */}
             <div style={{ position: 'relative' }}>
               {/* Breathing gold glow behind CTA */}
-              <motion.div
-                aria-hidden="true"
-                animate={{ opacity: [0, 0.12, 0], scale: [0.97, 1.02, 0.97] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute', inset: -6, borderRadius: 18,
-                  background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(191,149,63,0.15))',
-                  filter: 'blur(12px)', pointerEvents: 'none',
-                }}
-              />
+              {!reduced && (
+                <motion.div
+                  aria-hidden="true"
+                  animate={{ opacity: [0, 0.12, 0], scale: [0.97, 1.02, 0.97] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{
+                    position: 'absolute', inset: -6, borderRadius: 18,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(191,149,63,0.15))',
+                    filter: 'blur(12px)', pointerEvents: 'none',
+                  }}
+                />
+              )}
               <LiquidGoldButton onClick={handleClick} icon={<ArrowRight size={18} />}>
                 Узнать стоимость
               </LiquidGoldButton>
@@ -166,6 +171,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 color: 'rgba(212,175,55,0.50)',
                 fontWeight: 600,
                 textAlign: 'center',
+                lineHeight: 1.3,
               }}
             >
               Бесплатный расчёт за 2 минуты
@@ -252,12 +258,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       <motion.div
         whileTap={{ scale: 0.98 }}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            handleClick()
+          }
+        }}
         role="button"
         tabIndex={0}
         style={{
           position: 'relative',
           width: '100%',
-          borderRadius: 12,
+          borderRadius: 14,
           background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(16,14,10,0.98) 50%, rgba(12,11,9,1) 100%)',
           border: '1px solid rgba(212,175,55,0.18)',
           boxShadow: 'var(--card-shadow), inset 0 1px 0 rgba(212,175,55,0.06)',
@@ -298,10 +310,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         <div style={{
           position: 'relative',
           zIndex: 1,
-          padding: '20px 20px 16px',
+          padding: '18px 18px 14px',
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
+          gap: 14,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -358,7 +370,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             <div
               aria-hidden="true"
               style={{
-                margin: '0 20px',
+                margin: '0 18px',
                 height: 1,
                 background: 'linear-gradient(90deg, rgba(212,175,55,0.06), rgba(212,175,55,0.10), rgba(212,175,55,0.06))',
               }}
@@ -372,7 +384,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 alignItems: 'center',
                 gap: 10,
                 width: '100%',
-                padding: '12px 20px',
+                padding: '11px 18px',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',

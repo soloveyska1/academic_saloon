@@ -8,11 +8,14 @@ import {
 } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
+import { PremiumBackground } from '../components/ui/PremiumBackground'
 import {
   BatchPaymentInfo,
+  BatchPaymentConfirmResponse,
   fetchBatchPaymentInfo,
   confirmBatchPayment
 } from '../api/userApi'
+import ps from '../styles/PremiumPageSystem.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  BATCH PAYMENT PAGE — Pay All Orders at Once
@@ -25,6 +28,17 @@ function formatOrdersLabel(count: number) {
   if (mod10 === 1 && mod100 !== 11) return `${count} заказ`
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} заказа`
   return `${count} заказов`
+}
+
+function getAmountForScheme(
+  order: BatchPaymentInfo['orders'][number],
+  paymentScheme: 'full' | 'half',
+) {
+  return paymentScheme === 'half' ? order.amount_for_half : order.amount_for_full
+}
+
+function getPaymentPhaseLabel(paymentPhase: string) {
+  return paymentPhase === 'final' ? 'Доплата' : 'Новый платёж'
 }
 
 export function BatchPaymentPage() {
@@ -51,6 +65,7 @@ export function BatchPaymentPage() {
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitResult, setSubmitResult] = useState<BatchPaymentConfirmResponse | null>(null)
 
   // Load payment info
   useEffect(() => {
@@ -60,6 +75,7 @@ export function BatchPaymentPage() {
       setPaymentInfo(null)
       setSubmitError(null)
       setSuccess(false)
+      setSubmitResult(null)
 
       if (orderIds.length === 0) {
         setError('Не выбраны заказы для оплаты')
@@ -81,9 +97,7 @@ export function BatchPaymentPage() {
   }, [orderIds, orderIdsKey])
 
   const amountToPay = paymentInfo
-    ? paymentScheme === 'full'
-      ? paymentInfo.total_amount
-      : Math.ceil(paymentInfo.total_amount / 2)
+    ? paymentInfo.orders.reduce((sum, order) => sum + getAmountForScheme(order, paymentScheme), 0)
     : 0
 
   const copyToClipboard = useCallback(async (text: string, key: string) => {
@@ -120,12 +134,17 @@ export function BatchPaymentPage() {
 
       if (result.success) {
         hapticSuccess()
+        setSubmitResult(result)
         setSuccess(true)
         setTimeout(() => {
           navigate('/orders')
         }, 2500)
       } else {
-        setSubmitError(result.message)
+        const failedDetails = result.failed_order_details
+          .slice(0, 4)
+          .map(item => `#${item.id}: ${item.reason}`)
+          .join('\n')
+        setSubmitError(failedDetails ? `${result.message}\n${failedDetails}` : result.message)
         hapticError()
       }
     } catch (err) {
@@ -140,19 +159,25 @@ export function BatchPaymentPage() {
   // Loading state
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-main)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-        >
-          <Loader size={32} color="var(--gold-400)" />
-        </motion.div>
+      <div className="page-full-width saloon-page-shell saloon-page-shell--workflow">
+        <div className="page-background" aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+        </div>
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+          >
+            <Loader size={32} color="var(--gold-400)" />
+          </motion.div>
+        </div>
       </div>
     )
   }
@@ -160,36 +185,42 @@ export function BatchPaymentPage() {
   // Error state
   if (error) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-main)',
-        padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-      }}>
-        <AlertCircle size={48} color="var(--error-text)" />
-        <p style={{ fontSize: 16, color: 'var(--text-main)', textAlign: 'center' }}>
-          {error}
-        </p>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleBack}
-          style={{
-            padding: '12px 24px',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 12,
-            color: 'var(--text-main)',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Вернуться к заказам
-        </motion.button>
+      <div className="page-full-width saloon-page-shell saloon-page-shell--workflow">
+        <div className="page-background" aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+        </div>
+        <div style={{
+          minHeight: '100vh',
+          padding: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          <AlertCircle size={48} color="var(--error-text)" />
+          <p style={{ fontSize: 16, color: 'var(--text-main)', textAlign: 'center' }}>
+            {error}
+          </p>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleBack}
+            style={{
+              padding: '12px 24px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 12,
+              color: 'var(--text-main)',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Вернуться к заказам
+          </motion.button>
+        </div>
       </div>
     )
   }
@@ -197,14 +228,19 @@ export function BatchPaymentPage() {
   // Success Screen
   if (success) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-main)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}>
+      <div className="page-full-width saloon-page-shell saloon-page-shell--workflow">
+        <div className="page-background" aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+        </div>
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          position: 'relative',
+          zIndex: 1,
+        }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -277,70 +313,215 @@ export function BatchPaymentPage() {
             Мы проверим перевод и начнём работу по всем заказам.<br />
             Обычно это занимает 5-15 минут.
           </motion.p>
+
+          {submitResult && (
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}>
+              <div style={{
+                padding: '14px 16px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border-default)',
+              }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Передано на проверку
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
+                  {formatOrdersLabel(submitResult.processed_count)} · {submitResult.total_amount.toLocaleString('ru-RU')} ₽
+                </div>
+              </div>
+
+              {submitResult.processed_orders.map((order) => (
+                <div
+                  key={order.id}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--border-default)',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>
+                      #{order.id} · {order.work_type_label}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-300)', fontFamily: 'var(--font-mono)' }}>
+                      {order.amount_to_pay.toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {order.subject || order.topic || 'Без темы'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                    {getPaymentPhaseLabel(order.payment_phase)}
+                  </div>
+                </div>
+              ))}
+
+              {submitResult.failed_order_details.length > 0 && (
+                <div style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.25)',
+                  textAlign: 'left',
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--warning-text)', marginBottom: 8 }}>
+                    Не вошли в массовую оплату
+                  </div>
+                  {submitResult.failed_order_details.map((item) => (
+                    <div key={item.id} style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      #{item.id} · {item.reason}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{
+    <div className="page-full-width saloon-page-shell saloon-page-shell--workflow" style={{
       minHeight: '100vh',
-      background: 'var(--bg-main)',
       paddingBottom: 48,
     }}>
+      <div className="page-background" aria-hidden="true">
+        <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+      </div>
       {/* Header */}
       <div style={{
         position: 'sticky',
         top: 0,
         zIndex: 10,
-        background: 'var(--bg-main)',
-        borderBottom: '1px solid var(--border-subtle)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        background: 'color-mix(in srgb, var(--bg-void) 88%, transparent)',
+        borderBottom: '1px solid rgba(212, 175, 55, 0.08)',
         padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
       }}>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            haptic('light')
-            handleBack()
-          }}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-default)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <ChevronLeft size={20} color="var(--text-main)" />
-        </motion.button>
-        <div>
-          <h1 style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            margin: 0,
-          }}>
-            Оплата заказов
-          </h1>
-          <p style={{
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            margin: 0,
-          }}>
-            {paymentInfo ? formatOrdersLabel(paymentInfo.orders_count) : '0 заказов'}
-          </p>
+        <div style={{
+          width: 'min(100%, 980px)',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              haptic('light')
+              handleBack()
+            }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ChevronLeft size={20} color="var(--text-main)" />
+          </motion.button>
+          <div>
+            <h1 style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              margin: 0,
+            }}>
+              Оплата заказов
+            </h1>
+            <p style={{
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              margin: 0,
+            }}>
+              {paymentInfo ? formatOrdersLabel(paymentInfo.orders_count) : '0 заказов'}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '20px', position: 'relative', zIndex: 1 }}>
+        <div style={{ width: 'min(100%, 980px)', margin: '0 auto' }}>
+        <section className={`${ps.hero} ${ps.heroWorkflow}`} style={{ marginBottom: 20 }}>
+          <div className={ps.heroGrid}>
+            <div className={ps.heroCopy}>
+              <div className={ps.chipRow}>
+                <span className={`${ps.chip} ${ps.chipStrong}`}>{formatOrdersLabel(paymentInfo?.orders_count || 0)}</span>
+                <span className={ps.chip}>{paymentMethod === 'card' ? 'Карта' : 'СБП'}</span>
+                <span className={ps.chip}>{paymentScheme === 'full' ? 'Полная оплата' : '50 / 50'}</span>
+              </div>
+
+              <h1 className={ps.heroTitle} style={{ fontSize: 'clamp(30px, 5vw, 40px)' }}>
+                Оплата заказов
+              </h1>
+
+              <div className={ps.heroMetrics}>
+                <div className={`${ps.metric} ${ps.metricStrong}`}>
+                  <div className={ps.metricLabel}>К оплате</div>
+                  <div className={`${ps.metricValue} ${ps.metricValueAccent}`}>{amountToPay.toLocaleString('ru-RU')} ₽</div>
+                  <div className={ps.metricHint}>Текущий общий перевод</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Полная сумма</div>
+                  <div className={ps.metricValue}>{paymentInfo?.total_amount_full.toLocaleString('ru-RU')} ₽</div>
+                  <div className={ps.metricHint}>Если закрыть всё сразу</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Первый платёж</div>
+                  <div className={ps.metricValue}>{paymentInfo?.total_amount_half.toLocaleString('ru-RU')} ₽</div>
+                  <div className={ps.metricHint}>Если идти по схеме 50 / 50</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Позиции</div>
+                  <div className={ps.metricValue}>{paymentInfo?.orders_count || 0}</div>
+                  <div className={ps.metricHint}>В одном платёжном сценарии</div>
+                </div>
+              </div>
+            </div>
+
+            <div className={ps.heroAside}>
+              <div className={`${ps.surface} ${ps.surfaceUtility}`}>
+                <div className={ps.sectionHeading}>
+                  <div className={ps.sectionHeadingCopy}>
+                    <h2 className={ps.sectionTitle}>Состав оплаты</h2>
+                    <p className={ps.sectionSubtitle}>{formatOrdersLabel(paymentInfo?.orders_count || 0)}</p>
+                  </div>
+                </div>
+                <div className={ps.sectionStack}>
+                  {paymentInfo?.orders.slice(0, 3).map((order) => (
+                    <div key={order.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>#{order.id}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{order.work_type_label}</div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-200)' }}>
+                        {getAmountForScheme(order, paymentScheme).toLocaleString('ru-RU')} ₽
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
         {/* Invoice Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -472,9 +653,17 @@ export function BatchPaymentPage() {
                         fontSize: 11,
                         color: 'var(--text-muted)',
                         margin: 0,
+                        marginBottom: 4,
+                      }}>
+                        {order.subject || order.topic || 'Без темы'}
+                      </p>
+                      <p style={{
+                        fontSize: 11,
+                        color: 'var(--text-muted)',
+                        margin: 0,
                         fontFamily: 'var(--font-mono)',
                       }}>
-                        #{order.id}
+                        #{order.id} · {getPaymentPhaseLabel(order.payment_phase)}
                       </p>
                     </div>
                   </div>
@@ -484,7 +673,7 @@ export function BatchPaymentPage() {
                     color: 'var(--gold-300)',
                     fontFamily: 'var(--font-mono)',
                   }}>
-                    {order.remaining.toLocaleString('ru-RU')} ₽
+                    {getAmountForScheme(order, paymentScheme).toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
               ))}
@@ -864,6 +1053,7 @@ export function BatchPaymentPage() {
                   color: 'var(--error-text)',
                   margin: 0,
                   textAlign: 'center',
+                  whiteSpace: 'pre-line',
                 }}>
                   {submitError}
                 </p>
@@ -908,7 +1098,7 @@ export function BatchPaymentPage() {
               ) : (
                 <>
                   <Check size={20} />
-                  Я оплатил {amountToPay.toLocaleString('ru-RU')} ₽
+                  Я оплатил {amountToPay.toLocaleString('ru-RU')} ₽ · {paymentInfo ? formatOrdersLabel(paymentInfo.orders_count) : ''}
                 </>
               )}
             </motion.button>
@@ -926,6 +1116,7 @@ export function BatchPaymentPage() {
             </p>
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   )

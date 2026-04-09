@@ -1,16 +1,95 @@
-/* Premium Dark UI — "Quiet Luxury" */
-/* Principle: ONE star element (hero), everything else deliberately quiet. */
-/* Subtraction > Addition. Whitespace = confidence. */
-
 .container {
+  position: relative;
   width: 100%;
   max-width: 100%;
-  padding-left: var(--page-padding-x);
-  padding-right: var(--page-padding-x);
-  padding-top: var(--page-padding-top);
-  min-height: 100vh;
+  min-height: 100dvh;
+  padding-inline: clamp(16px, 4vw, 24px);
+  padding-top: max(var(--page-padding-top), env(safe-area-inset-top));
+  padding-bottom: calc(var(--page-padding-bottom) + env(safe-area-inset-bottom));
+  overflow-y: auto;
   overflow-x: clip;
-  animation: pageEnter 0.4s ease-out forwards;
+  animation: pageEnter 0.42s ease-out forwards;
+}
+
+.containerReducedMotion {
+  animation: none;
+}
+
+.backgroundLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.backdropOrb {
+  position: fixed;
+  top: -120px;
+  right: clamp(-110px, -8vw, -68px);
+  width: clamp(250px, 30vw, 360px);
+  height: clamp(250px, 30vw, 360px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 42%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(6px);
+}
+
+.pageContent,
+.loadingShell {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 940px);
+  margin: 0 auto;
+}
+
+.header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-top: 6px;
+}
+
+.loadingShell {
+  padding-bottom: 28px;
+}
+
+.section {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sectionHero {
+  margin-bottom: 18px;
+}
+
+.sectionCompact {
+  margin-bottom: 12px;
+}
+
+.sectionTight {
+  gap: 10px;
+}
+
+.featureBand,
+.supportBand,
+.utilityBand {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.featureBand > *,
+.supportBand > *,
+.utilityBand > * {
+  min-width: 0;
+}
+
+.supportBand {
+  margin-top: 2px;
 }
 
 @keyframes pageEnter {
@@ -25,105 +104,69 @@
   }
 }
 
-/* ==================== HEADER ==================== */
-.header {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 10px 0 0;
-}
-
-.avatarContainer {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Static gold ring — no spinning */
-.avatarContainer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: linear-gradient(145deg, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0.15) 100%);
-  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
-  z-index: 1;
-}
-
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-}
-
-.userInfo {
-  flex: 1;
-  margin-left: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.userName {
-  font-family: 'Manrope', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-/* ==================== SECTIONS ==================== */
-.sectionTitle {
-  font-family: 'Manrope', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 16px;
-  margin-left: 4px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sectionTitle::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--surface-hover), transparent);
-}
-
-/* ==================== NARROW SCREEN (320px) PROTECTION ==================== */
 @media (max-width: 340px) {
-  .header {
-    padding-left: 8px;
-    padding-right: 8px;
+  .container {
+    padding-inline: 14px;
   }
 }
 
-/* ==================== LIGHT MODE OVERRIDES ==================== */
+@media (min-width: 760px) {
+  .container {
+    padding-inline: clamp(22px, 3vw, 30px);
+  }
 
-:global([data-theme="light"]) .avatarContainer::before {
-  background: linear-gradient(145deg, rgba(158, 122, 26, 0.55) 0%, rgba(158, 122, 26, 0.18) 100%);
+  .header {
+    padding-top: 8px;
+  }
+
+  .featureBand,
+  .supportBand,
+  .utilityBand {
+    gap: 22px;
+  }
 }
 
-:global([data-theme="light"]) .sectionTitle {
-  color: rgba(120, 113, 108, 0.6);
+@media (min-width: 980px) {
+  .pageContent,
+  .loadingShell {
+    width: min(100%, 1080px);
+  }
+
+  .featureBand {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 24px;
+  }
+
+  .supportBand {
+    grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+    gap: 24px;
+  }
+
+  .utilityBand {
+    grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+    gap: 24px;
+  }
 }
 
-:global([data-theme="light"]) .sectionTitle::after {
-  background: linear-gradient(90deg, rgba(120, 85, 40, 0.08), transparent);
+@media (min-width: 1280px) {
+  .container {
+    padding-inline: clamp(28px, 3vw, 36px);
+  }
+
+  .pageContent,
+  .loadingShell {
+    width: min(100%, 1140px);
+  }
+
+  .featureBand,
+  .supportBand,
+  .utilityBand {
+    gap: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    animation: none;
+  }
 }

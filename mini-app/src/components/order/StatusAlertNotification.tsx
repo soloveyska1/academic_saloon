@@ -23,12 +23,6 @@ export const STATUS_ALERTS: Record<string, StatusAlert> = {
         icon: 'check',
         color: '#d4af37',
     },
-    confirmed: {
-        title: 'Расчёт готов',
-        message: 'Проверьте сумму и переходите к оплате',
-        icon: 'check',
-        color: '#d4af37',
-    },
     paid: {
         title: 'Оплата подтверждена',
         message: 'Заказ принят в работу. Дальше обновления придут автоматически.',

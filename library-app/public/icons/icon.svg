@@ -1,0 +1,63 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgNight" x1="72" y1="38" x2="444" y2="486" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A151B"/>
+      <stop offset="0.46" stop-color="#0B0A10"/>
+      <stop offset="1" stop-color="#040409"/>
+    </linearGradient>
+    <radialGradient id="bgWarm" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(258 124) rotate(90) scale(286)">
+      <stop stop-color="#49341B"/>
+      <stop offset="0.34" stop-color="#18131B"/>
+      <stop offset="1" stop-color="#07070B"/>
+    </radialGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 208) rotate(90) scale(188)">
+      <stop stop-color="#EFD7A3" stop-opacity="0.34"/>
+      <stop offset="0.48" stop-color="#EFD7A3" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#EFD7A3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="frameEdge" x1="64" y1="56" x2="438" y2="454" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6E0A3" stop-opacity="0.62"/>
+      <stop offset="0.54" stop-color="#C9983D" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#5C3E0B" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="crest" x1="144" y1="108" x2="374" y2="402" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF0C9"/>
+      <stop offset="0.2" stop-color="#F3D78F"/>
+      <stop offset="0.56" stop-color="#D3A647"/>
+      <stop offset="1" stop-color="#7A5312"/>
+    </linearGradient>
+    <linearGradient id="crestStroke" x1="228" y1="148" x2="392" y2="356" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBECC4"/>
+      <stop offset="0.54" stop-color="#D1A64A"/>
+      <stop offset="1" stop-color="#8D6218"/>
+    </linearGradient>
+    <filter id="drop" x="92" y="94" width="332" height="328" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="16"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0196078 0 0 0 0 0.0156863 0 0 0 0 0.0313726 0 0 0 0.5 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="128" fill="#05050A"/>
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgNight)"/>
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgWarm)"/>
+  <rect x="25" y="25" width="462" height="462" rx="111" stroke="#362713" stroke-opacity="0.4" stroke-width="2"/>
+  <rect x="54" y="54" width="404" height="404" rx="92" stroke="url(#frameEdge)" stroke-width="1.5"/>
+  <rect x="96" y="96" width="320" height="320" rx="82" fill="url(#coreGlow)"/>
+  <path d="M150 118C192 88 228 76 256 76C284 76 320 88 362 118" stroke="url(#frameEdge)" stroke-opacity="0.65" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M164 388H348" stroke="url(#frameEdge)" stroke-opacity="0.42" stroke-width="1.5" stroke-linecap="round"/>
+
+  <g filter="url(#drop)">
+    <path d="M124 368L192 142H236L302 368H263L247 316H179L161 368H124ZM187 284H239L213 193L187 284Z" fill="url(#crest)"/>
+    <path d="M390 188C366 164 338 152 307 152C252 152 219 194 219 256C219 318 252 360 307 360C338 360 366 348 390 324" stroke="url(#crestStroke)" stroke-width="28" stroke-linecap="round"/>
+  </g>
+
+  <path d="M176 138C203 121 229 112 256 112C283 112 309 121 336 138" stroke="#FFF4D1" stroke-opacity="0.18" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M136 160H178" stroke="#FFF4D1" stroke-opacity="0.22" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M334 356H382" stroke="#FFF4D1" stroke-opacity="0.18" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

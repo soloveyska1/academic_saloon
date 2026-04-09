@@ -29,7 +29,7 @@
  * @route /order-v8/:id
  */
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -37,6 +37,7 @@ import {
   MoreHorizontal,
   Copy,
   MessageCircle,
+  Paperclip,
   HelpCircle,
   Edit3,
   CheckCheck,
@@ -52,9 +53,12 @@ import {
   Eye,
   EyeOff,
   Check,
+  Mic,
+  MicOff,
   Smartphone,
   ShieldCheck,
   Timer,
+  StopCircle,
   Upload,
   FileImage,
   Trash2,
@@ -69,7 +73,7 @@ import {
   Globe,
   Snowflake,
 } from 'lucide-react'
-import { Order, OrderStatus, ChatMessage } from '../types'
+import { Order, OrderStatus, ChatMessage, OrderDeliveryBatch, OrderRevisionRound } from '../types'
 import {
   fetchOrderDetail,
   fetchPaymentInfo,
@@ -80,6 +84,7 @@ import {
   resumeOrder,
   confirmPayment,
   uploadChatFile,
+  uploadVoiceMessage,
   createOnlinePayment,
   cancelOrder,
   fetchOrderMessages,
@@ -93,14 +98,19 @@ import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useToast } from '../components/ui/Toast'
 import { SectionErrorBoundary } from '../components/ui/SectionErrorBoundary'
 import { ReviewSection } from '../components/order/ReviewSection'
+import { PremiumBackground } from '../components/ui/PremiumBackground'
 import {
+  canonicalizeOrderStatusAlias,
   formatOrderDeadlineRu,
   getOrderHeadlineSafe,
+  getOpenRevisionRound,
+  isAwaitingPaymentStatus,
   normalizeOrder,
   ORDER_WORK_TYPE_LABELS,
   parseOrderDateSafe,
 } from '../lib/orderView'
-// homeStyles removed — all styles inline for quiet luxury consistency
+import s from './OrderDetailPageV8.module.css'
+import ps from '../styles/PremiumPageSystem.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              DESIGN SYSTEM V8
@@ -183,7 +193,6 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   pending:              { label: 'На оценке',        color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 1 },
   waiting_estimation:   { label: 'На оценке',        color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 1 },
   waiting_payment:      { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
-  confirmed:            { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
   verification_pending: { label: 'Проверяем перевод', color: 'var(--gold-400)',       bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-subtle)', icon: Clock,        step: 2 },
   paid:                 { label: 'Аванс принят',     color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
   paid_full:            { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Package,     step: 3 },
@@ -210,6 +219,15 @@ const formatPrice = (amount: number | undefined | null): string => {
   return amount.toLocaleString('ru-RU')
 }
 
+const pluralizeRu = (value: number, forms: [string, string, string]): string => {
+  const abs = Math.abs(value) % 100
+  const last = abs % 10
+  if (abs > 10 && abs < 20) return forms[2]
+  if (last > 1 && last < 5) return forms[1]
+  if (last === 1) return forms[0]
+  return forms[2]
+}
+
 const getOrderTotalPrice = (order: Pick<Order, 'final_price' | 'price'> | null | undefined): number =>
   Math.max(order?.final_price || order?.price || 0, 0)
 
@@ -225,23 +243,25 @@ const hasSecondPaymentDue = (
 )
 
 const getClientVisibleStatus = (
-  order: Pick<Order, 'status' | 'final_price' | 'price' | 'paid_amount'> | null | undefined,
+  order: Pick<Order, 'status' | 'final_price' | 'price' | 'paid_amount' | 'current_revision_round'> | null | undefined,
 ): OrderStatus => {
   if (!order) return 'pending'
+  const status = (canonicalizeOrderStatusAlias(order.status) ?? order.status) as OrderStatus
+  if (getOpenRevisionRound(order)) return 'revision'
 
   const paidAmount = Math.max(order.paid_amount || 0, 0)
-  if (paidAmount <= 0) return order.status
+  if (paidAmount <= 0) return status
 
   const remainingAmount = getOrderRemainingAmount(order)
-  if (remainingAmount > 0 && ['waiting_payment', 'confirmed', 'verification_pending'].includes(order.status)) {
+  if (remainingAmount > 0 && ['waiting_payment', 'verification_pending'].includes(status)) {
     return 'paid'
   }
 
-  if (remainingAmount <= 0 && ['waiting_payment', 'confirmed', 'verification_pending', 'paid'].includes(order.status)) {
+  if (remainingAmount <= 0 && ['waiting_payment', 'verification_pending', 'paid'].includes(status)) {
     return 'paid_full'
   }
 
-  return order.status
+  return status
 }
 
 async function copyTextSafely(text: string): Promise<boolean> {
@@ -276,6 +296,68 @@ async function copyTextSafely(text: string): Promise<boolean> {
 }
 
 const normalizeOrderForView = (order: Order): Order => normalizeOrder(order)
+
+const getLatestDeliveryForView = (order: Order): OrderDeliveryBatch | null => {
+  if (order.latest_delivery) {
+    return order.latest_delivery
+  }
+  if (order.delivery_history && order.delivery_history.length > 0) {
+    return order.delivery_history[0]
+  }
+  if (!order.files_url && !order.delivered_at) {
+    return null
+  }
+  return {
+    id: 0,
+    status: 'sent',
+    version_number: null,
+    revision_count_snapshot: order.revision_count || 0,
+    manager_comment: null,
+    source: null,
+    files_url: order.files_url,
+    file_count: 0,
+    created_at: order.delivered_at || null,
+    sent_at: order.delivered_at || null,
+  }
+}
+
+const getOpenRevisionRoundForView = (order: Order | null | undefined): OrderRevisionRound | null =>
+  getOpenRevisionRound(order)
+
+const getRevisionHistoryForView = (order: Order | null | undefined): OrderRevisionRound[] => {
+  if (!order?.revision_history) return []
+  const currentRoundId = getOpenRevisionRoundForView(order)?.id
+  return order.revision_history.filter((round) => round.id !== currentRoundId)
+}
+
+const getDeliveryBatchByIdForView = (
+  order: Order | null | undefined,
+  deliveryBatchId: number | null | undefined,
+): OrderDeliveryBatch | null => {
+  if (!order || !deliveryBatchId) return null
+
+  const batches = [getLatestDeliveryForView(order), ...(order.delivery_history || [])]
+  return batches.find((batch) => batch?.id === deliveryBatchId) || null
+}
+
+const formatOrderDateTimeCompact = (value: string | null | undefined): string | null => {
+  if (!value) return null
+  const parsed = parseOrderDateSafe(value)
+  if (!parsed) return null
+
+  return parsed.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const getRevisionRoundLabel = (round: OrderRevisionRound | null | undefined): string =>
+  round?.round_number ? `Правка #${round.round_number}` : 'Правка'
+
+const getRevisionRoundActivityLabel = (round: OrderRevisionRound | null | undefined): string | null =>
+  formatOrderDateTimeCompact(round?.last_client_activity_at || round?.requested_at)
 
 function SectionFallbackCard({
   title,
@@ -403,44 +485,38 @@ const OrderAppBar = memo(function OrderAppBar({
 
   return (
     <>
-      {/* Main AppBar — minimal, just order number */}
-      <div
-        className="flex items-center gap-3 px-4 py-[14px] sticky top-0 z-[100] backdrop-blur-[16px]"
-        style={{
-          background: 'var(--bg-void)',
-          WebkitBackdropFilter: 'blur(16px)',
-        }}
-      >
-        {/* Back Button */}
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={onBack}
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
-          style={{ background: 'transparent', border: 'none' }}
-        >
-          <ArrowLeft size={20} color="rgba(255,255,255,0.5)" />
-        </motion.button>
+      <div className={s.appBarShell}>
+        <div className={s.appBarInner}>
+          {/* Back Button */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={onBack}
+            className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
+            style={{ background: 'transparent', border: 'none' }}
+          >
+            <ArrowLeft size={20} color="rgba(255,255,255,0.5)" />
+          </motion.button>
 
-        {/* Order number — subdued */}
-        <div className="flex-1 min-w-0">
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
-            Заказ #{order.id}
+          {/* Order number — subdued */}
+          <div className="flex-1 min-w-0">
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
+              Заказ #{order.id}
+            </div>
           </div>
-        </div>
 
-        {/* Menu Button */}
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={() => setMenuOpen(true)}
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
-          style={{ background: 'transparent', border: 'none' }}
-        >
-          <MoreHorizontal size={20} color="rgba(255,255,255,0.4)" />
-        </motion.button>
+          {/* Menu Button */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setMenuOpen(true)}
+            className="w-10 h-10 rounded-[12px] flex items-center justify-center cursor-pointer shrink-0"
+            style={{ background: 'transparent', border: 'none' }}
+          >
+            <MoreHorizontal size={20} color="rgba(255,255,255,0.4)" />
+          </motion.button>
+        </div>
       </div>
 
-      {/* Subtle spacing below AppBar */}
-      <div className="h-2" />
+      <div className={s.appBarSpacer} />
 
       {/* Menu Overlay */}
       <AnimatePresence>
@@ -497,7 +573,7 @@ interface HeroSummaryProps {
 
 const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryProps) {
   const visibleStatus = getClientVisibleStatus(order)
-  const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(visibleStatus)
+  const isAwaitingPayment = isAwaitingPaymentStatus(visibleStatus)
   const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
   const statusConfig = STATUS_CONFIG[visibleStatus] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
@@ -1114,7 +1190,7 @@ const StickyActionBar = memo(function StickyActionBar({
     if (['cancelled', 'rejected'].includes(visibleStatus)) return 'cancelled'
     if (visibleStatus === 'paused') return 'paused'
     if (needsSecondPayment && ['paid', 'in_progress'].includes(visibleStatus)) return 'payment'
-    if (['waiting_payment', 'confirmed'].includes(visibleStatus)) return 'payment'
+    if (isAwaitingPaymentStatus(visibleStatus)) return 'payment'
     if (visibleStatus === 'verification_pending') return 'verification'
     if (visibleStatus === 'revision') return 'revision_in_progress'
     if (['paid', 'paid_full', 'in_progress'].includes(visibleStatus)) return 'work'
@@ -1239,6 +1315,10 @@ const StickyActionBar = memo(function StickyActionBar({
   const ButtonIcon = config.buttonIcon
 
   const revisionCount = order.revision_count || 0
+  const latestDelivery = getLatestDeliveryForView(order)
+  const latestDeliveryUrl = latestDelivery?.files_url || order.files_url || null
+  const openRevisionRound = getOpenRevisionRoundForView(order)
+  const revisionActivityLabel = getRevisionRoundActivityLabel(openRevisionRound)
 
   // Don't show for cancelled/rejected and statuses without real CTA
   if (['cancelled', 'work'].includes(variant)) return null
@@ -1257,7 +1337,56 @@ const StickyActionBar = memo(function StickyActionBar({
           WebkitBackdropFilter: 'blur(12px)',
         }}
       >
-        <div className="max-w-[480px] mx-auto">
+        <div className={s.floatingBarInner}>
+          {latestDelivery && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '8px 10px',
+              borderRadius: 10,
+              marginBottom: 8,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#E8D5A3', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {latestDelivery.version_number ? `Версия ${latestDelivery.version_number}` : 'Последняя выдача'}
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                  {latestDelivery.sent_at || latestDelivery.created_at
+                    ? new Date(latestDelivery.sent_at || latestDelivery.created_at || '').toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Файлы уже доступны в заказе'}
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={onDownloadFiles}
+                disabled={!latestDeliveryUrl}
+                style={{
+                  height: 36,
+                  padding: '0 12px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(212,175,55,0.16)',
+                  background: 'rgba(212,175,55,0.08)',
+                  color: '#E8D5A3',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: latestDeliveryUrl ? 'pointer' : 'default',
+                  opacity: latestDeliveryUrl ? 1 : 0.45,
+                }}
+              >
+                Скачать версию
+              </motion.button>
+            </div>
+          )}
+
           {/* Revision counter */}
           {revisionCount > 0 && (
             <div style={{
@@ -1266,7 +1395,7 @@ const StickyActionBar = memo(function StickyActionBar({
             }}>
               <Edit3 size={12} color="rgba(212,175,55,0.5)" />
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-                {`Использовано правок: ${revisionCount}`}
+                {`Запросов на правки: ${revisionCount}`}
               </span>
             </div>
           )}
@@ -1313,7 +1442,7 @@ const StickyActionBar = memo(function StickyActionBar({
               }}
             >
               <Edit3 size={16} />
-              Правки
+              Запросить правки
             </motion.button>
 
             {/* Accept Work */}
@@ -1359,6 +1488,135 @@ const StickyActionBar = memo(function StickyActionBar({
     )
   }
 
+  if (variant === 'revision_in_progress') {
+    const revisionLabel = openRevisionRound ? getRevisionRoundLabel(openRevisionRound) : `Правка #${Math.max(1, revisionCount)}`
+
+    return (
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-[90] pt-3 px-4 backdrop-blur-[12px]"
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+          background: 'linear-gradient(180deg, transparent 0%, var(--bg-void) 20%, var(--bg-void) 100%)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className={s.floatingBarInner}>
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 8,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#E8D5A3', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {revisionLabel} активна
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.74)', marginTop: 4 }}>
+                  {revisionActivityLabel
+                    ? `Последняя активность ${revisionActivityLabel}`
+                    : 'Комментарий уже отправлен. Можно докинуть материалы в чат заказа.'}
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={onRequestRevision}
+                style={{
+                  padding: '9px 12px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(212,175,55,0.18)',
+                  background: 'rgba(212,175,55,0.08)',
+                  color: '#E8D5A3',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Комментарий
+              </motion.button>
+            </div>
+
+            {openRevisionRound?.initial_comment && (
+              <div
+                style={{
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  fontSize: 12,
+                  lineHeight: 1.55,
+                  color: 'rgba(255,255,255,0.56)',
+                }}
+              >
+                {openRevisionRound.initial_comment}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {latestDelivery?.version_number ? (
+                <span
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(212,175,55,0.08)',
+                    border: '1px solid rgba(212,175,55,0.12)',
+                    fontSize: 11,
+                    color: '#E8D5A3',
+                  }}
+                >
+                  После версии {latestDelivery.version_number}
+                </span>
+              ) : null}
+              <span
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.58)',
+                }}
+              >
+                Файлы и голосовые можно дослать в чате
+              </span>
+            </div>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={onContactManager}
+            style={{
+              width: '100%',
+              height: 54,
+              borderRadius: 14,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)',
+              color: '#121212',
+              boxShadow: '0 12px 32px -10px rgba(212,175,55,0.4)',
+              border: 'none',
+            }}
+          >
+            <MessageCircle size={18} />
+            <span style={{ fontSize: 15, fontWeight: 800 }}>
+              Открыть чат и дослать материалы
+            </span>
+          </motion.button>
+        </div>
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}
@@ -1371,7 +1629,7 @@ const StickyActionBar = memo(function StickyActionBar({
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      <div className="flex items-center justify-between gap-4 max-w-[480px] mx-auto">
+      <div className={s.floatingBarInner} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         {/* Left: Amount to pay */}
         {config.showAmount && todayAmount > 0 && (
           <div className="flex-none">
@@ -1398,11 +1656,11 @@ const StickyActionBar = memo(function StickyActionBar({
               ? 'linear-gradient(135deg, #f5e27a 0%, #D4AF37 40%, #b48e26 100%)'
               : config.buttonBg,
             border: variant === 'work' ? `1px solid ${DS.colors.borderLight}`
-              : variant === 'verification' || variant === 'revision_in_progress' ? '1px solid rgba(212,175,55,0.12)'
+              : variant === 'verification' ? '1px solid rgba(212,175,55,0.12)'
               : 'none',
             color: config.buttonColor,
             cursor: config.disabled ? 'default' : 'pointer',
-            opacity: config.disabled && variant !== 'verification' && variant !== 'revision_in_progress' ? 0.6 : 1,
+            opacity: config.disabled && variant !== 'verification' ? 0.6 : 1,
             boxShadow: variant === 'payment'
               ? '0 6px 24px -4px rgba(212,175,55,0.50), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1)'
               : ['completed'].includes(variant)
@@ -1468,6 +1726,17 @@ const PaymentSheet = memo(function PaymentSheet({
   const isSecondPayment = hasSecondPaymentDue(order)
   const todayAmount = isSecondPayment ? remainingAmount : paymentScheme === 'full' ? fullAmount : halfAmount
   const hasPaymentInfo = Boolean(paymentInfo)
+  const paymentMethodCaption = paymentMethod === 'online' ? 'Оплата онлайн' : paymentMethod === 'card' ? 'Реквизиты карты' : 'Реквизиты СБП'
+  const todayAmountLabel = isSecondPayment
+    ? 'К оплате сейчас'
+    : paymentScheme === 'half'
+      ? 'Аванс к оплате'
+      : 'К оплате сейчас'
+  const summaryBadge = isSecondPayment
+    ? 'Доплата'
+    : paymentScheme === 'half'
+      ? 'Аванс 50%'
+      : 'Полная сумма'
 
   // Card info from paymentInfo
   const cardNumber = paymentInfo?.card_number || '2200 0000 0000 0000'
@@ -1488,7 +1757,9 @@ const PaymentSheet = memo(function PaymentSheet({
 
   // Copy all for card
   const handleCopyAll = useCallback(async () => {
-    const allText = `Карта: ${cardNumber}\nПолучатель: ${cardHolder}\nСумма: ${todayAmount} ₽\nКомментарий: Заказ #${order.id}`
+    const allText = paymentMethod === 'sbp'
+      ? `Телефон: ${paymentInfo?.sbp_phone || '—'}\nБанк: ${paymentInfo?.sbp_bank || '—'}\nСумма: ${todayAmount} ₽\nКомментарий: Заказ #${order.id}`
+      : `Карта: ${cardNumber}\nПолучатель: ${cardHolder}\nСумма: ${todayAmount} ₽\nКомментарий: Заказ #${order.id}`
     const copied = await copyTextSafely(allText)
     if (!copied) {
       haptic?.('error')
@@ -1499,7 +1770,7 @@ const PaymentSheet = memo(function PaymentSheet({
     setCopiedField('all')
     showToast({ type: 'success', title: 'Все данные скопированы' })
     setTimeout(() => setCopiedField(null), 2000)
-  }, [cardNumber, cardHolder, todayAmount, order.id, haptic, showToast])
+  }, [cardNumber, cardHolder, todayAmount, order.id, paymentInfo?.sbp_bank, paymentInfo?.sbp_phone, paymentMethod, haptic, showToast])
 
   if (!isOpen) return null
 
@@ -1511,6 +1782,7 @@ const PaymentSheet = memo(function PaymentSheet({
     isVisible?: boolean
     onToggle?: () => void
     large?: boolean
+    last?: boolean
   }) => (
     <motion.button
       whileTap={{ scale: 0.98 }}
@@ -1524,7 +1796,7 @@ const PaymentSheet = memo(function PaymentSheet({
         padding: '14px 0',
         background: 'transparent',
         border: 'none',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: options?.last ? 'none' : '1px solid rgba(255,255,255,0.04)',
         cursor: 'pointer',
         textAlign: 'left' as const,
       }}
@@ -1606,7 +1878,7 @@ const PaymentSheet = memo(function PaymentSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[480px] max-h-[90vh] overflow-hidden flex flex-col"
+            className={s.sheetShell}
             style={{
               background: DS.colors.bgSurface,
               borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
@@ -1650,116 +1922,49 @@ const PaymentSheet = memo(function PaymentSheet({
             </div>
 
             {/* ─── Scrollable Content ─── */}
-            <div className="flex-1 overflow-y-auto" style={{ padding: '16px 20px' }}>
+            <div className={s.sheetScroll}>
 
-              {/* ═══ Payment scheme toggle ═══ */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
-                  Сумма оплаты
-                </div>
-
-                {isSecondPayment ? (
-                  <div style={{
-                    padding: '16px 18px',
-                    borderRadius: 12,
-                    background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-                    border: '1.5px solid rgba(212,175,55,0.28)',
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: 8 }}>
-                      Финальная доплата
-                    </div>
-                    <div style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      color: '#E8D5A3',
-                      marginBottom: 8,
-                    }}>
-                      {formatPrice(remainingAmount)} ₽
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', lineHeight: 1.5 }}>
-                      Аванс уже зафиксирован. Сейчас вносится только оставшаяся сумма.
+              <div className={s.sheetSection}>
+                <div className={s.sheetSummary}>
+                  <div>
+                    <div className={s.sheetCaption}>{todayAmountLabel}</div>
+                    <div className={s.sheetSummaryValue}>{formatPrice(todayAmount)} ₽</div>
+                    <div className={s.sheetSummaryText}>
+                      {isSecondPayment
+                        ? 'Аванс уже внесён. Сейчас оплачивается только остаток.'
+                        : paymentScheme === 'half'
+                          ? `Остаток ${formatPrice(remainingAfterHalf)} ₽ оплачивается позже.`
+                          : 'Сумма переводится одним платежом.'}
                     </div>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {/* Full */}
+                  <div className={s.sheetBadge}>{summaryBadge}</div>
+                </div>
+
+                {!isSecondPayment ? (
+                  <div className={s.sheetSegment}>
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setPaymentScheme('full')}
-                      style={{
-                        flex: 1,
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        cursor: 'pointer',
-                        textAlign: 'left' as const,
-                        background: paymentScheme === 'full'
-                          ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-                          : 'rgba(255,255,255,0.02)',
-                        border: paymentScheme === 'full'
-                          ? '1.5px solid rgba(212,175,55,0.4)'
-                          : '1.5px solid rgba(255,255,255,0.06)',
-                      }}
+                      className={`${s.sheetSegmentButton} ${paymentScheme === 'full' ? s.sheetSegmentButtonActive : ''}`}
                     >
-                      <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'full' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                        Полная
-                      </div>
-                      <div style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        color: paymentScheme === 'full' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
-                      }}>
-                        {formatPrice(fullAmount)} ₽
-                      </div>
+                      <div className={s.sheetSegmentLabel}>Полностью</div>
+                      <div className={s.sheetSegmentValue}>{formatPrice(fullAmount)} ₽</div>
                     </motion.button>
-
-                    {/* Half */}
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setPaymentScheme('half')}
-                      style={{
-                        flex: 1,
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        cursor: 'pointer',
-                        textAlign: 'left' as const,
-                        background: paymentScheme === 'half'
-                          ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-                          : 'rgba(255,255,255,0.02)',
-                        border: paymentScheme === 'half'
-                          ? '1.5px solid rgba(212,175,55,0.4)'
-                          : '1.5px solid rgba(255,255,255,0.06)',
-                      }}
+                      className={`${s.sheetSegmentButton} ${paymentScheme === 'half' ? s.sheetSegmentButtonActive : ''}`}
                     >
-                      <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'half' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                        50% аванс
-                      </div>
-                      <div style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        color: paymentScheme === 'half' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
-                      }}>
-                        {formatPrice(halfAmount)} ₽
-                      </div>
-                      {paymentScheme === 'half' && (
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
-                          + {formatPrice(remainingAfterHalf)} ₽ потом
-                        </div>
-                      )}
+                      <div className={s.sheetSegmentLabel}>50% аванс</div>
+                      <div className={s.sheetSegmentValue}>{formatPrice(halfAmount)} ₽</div>
                     </motion.button>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              {/* ═══ Payment method segmented control ═══ */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
-                  Способ оплаты
-                </div>
-
-                <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(255,255,255,0.03)' }}>
+              <div className={s.sheetSection}>
+                <div className={s.sheetCaption}>Способ оплаты</div>
+                <div className={s.sheetSegment}>
                   {(['online', 'card', 'sbp'] as PaymentMethod[]).map((method) => {
                     const isActive = paymentMethod === method
                     const label = method === 'online' ? 'Онлайн' : method === 'card' ? 'Карта' : 'СБП'
@@ -1769,18 +1974,15 @@ const PaymentSheet = memo(function PaymentSheet({
                         key={method}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setPaymentMethod(method)}
+                        className={`${s.sheetSegmentButton} ${isActive ? s.sheetSegmentButtonActive : ''}`}
                         style={{
-                          flex: 1,
-                          padding: '10px 8px',
-                          borderRadius: 8,
-                          cursor: 'pointer',
+                          paddingTop: 10,
+                          paddingBottom: 10,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 8,
-                          background: isActive ? 'rgba(212,175,55,0.1)' : 'transparent',
-                          border: isActive ? '1px solid rgba(212,175,55,0.2)' : '1px solid transparent',
-                          transition: 'all 0.2s',
+                          textAlign: 'center',
                         }}
                       >
                         <Icon size={14} color={isActive ? '#E8D5A3' : 'rgba(255,255,255,0.3)'} />
@@ -1797,20 +1999,14 @@ const PaymentSheet = memo(function PaymentSheet({
                 </div>
               </div>
 
-              {/* ═══ Payment details ═══ */}
-              <div style={{ marginBottom: 16 }}>
+              <div className={s.sheetSection}>
+                <div className={s.sheetCaption}>{paymentMethodCaption}</div>
                 {paymentMethod === 'online' ? (
-                  /* ── Online: minimal, just amount + security note ── */
-                  <div style={{
-                    padding: '20px',
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <div className={s.sheetPanel} style={{ padding: '18px 18px 17px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                       <ShieldCheck size={18} color="rgba(212,175,55,0.5)" />
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>
-                        Безопасная оплата через ЮKassa
+                        Оплата через ЮKassa
                       </span>
                     </div>
                     <div style={{
@@ -1819,91 +2015,73 @@ const PaymentSheet = memo(function PaymentSheet({
                       fontFamily: "'JetBrains Mono', monospace",
                       color: '#E8D5A3',
                       letterSpacing: '-0.02em',
-                      marginBottom: 8,
+                      marginBottom: 6,
                     }}>
                       {formatPrice(todayAmount)} ₽
                     </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
-                      Данные карты вводятся на стороне ЮKassa. Мы их не храним.
+                    <div className={s.sheetFootnote}>
+                      Откроется защищённая страница оплаты. Данные карты здесь не хранятся.
                     </div>
                   </div>
                 ) : paymentMethod === 'card' ? (
-                  /* ── Card: grouped fields ── */
-                  <div style={{
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    padding: '0 16px',
-                  }}>
-                    {renderField('Номер карты', cardNumber, 'card', {
-                      mono: true,
-                      large: true,
-                      toggleVisibility: true,
-                      isVisible: cardNumberVisible,
-                      onToggle: () => setCardNumberVisible(!cardNumberVisible),
-                    })}
-                    {renderField('Получатель', cardHolder, 'holder')}
-                    {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'amount', { mono: true, gold: true, large: true })}
-                    <div style={{ borderBottom: 'none' }}>
-                      {renderField('Комментарий к переводу', `Заказ #${order.id}`, 'comment')}
+                  <div className={s.sheetPanel}>
+                    <div className={s.sheetFieldsHeader}>
+                      <span className={s.sheetFieldsTitle}>Перевод по карте</span>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopyAll}
+                        className={s.sheetSecondaryButton}
+                      >
+                        {copiedField === 'all'
+                          ? <Check size={12} color="rgba(212,175,55,0.8)" />
+                          : <Copy size={12} color="rgba(255,255,255,0.28)" />
+                        }
+                        {copiedField === 'all' ? 'Скопировано' : 'Скопировать всё'}
+                      </motion.button>
+                    </div>
+                    <div className={s.sheetFieldBody}>
+                      {renderField('Номер карты', cardNumber, 'card', {
+                        mono: true,
+                        large: true,
+                        toggleVisibility: true,
+                        isVisible: cardNumberVisible,
+                        onToggle: () => setCardNumberVisible(!cardNumberVisible),
+                      })}
+                      {renderField('Получатель', cardHolder, 'holder')}
+                      {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'amount', { mono: true, gold: true, large: true })}
+                      {renderField('Комментарий', `Заказ #${order.id}`, 'comment', { last: true })}
                     </div>
                   </div>
                 ) : (
-                  /* ── SBP: grouped fields ── */
-                  <div style={{
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    padding: '0 16px',
-                  }}>
-                    {renderField(
-                      'Номер телефона',
-                      paymentInfo?.sbp_phone
-                        ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5')
-                        : '—',
-                      'sbp_phone',
-                      { mono: true, large: true }
-                    )}
-                    {renderField('Банк получателя', paymentInfo?.sbp_bank || '—', 'sbp_bank')}
-                    {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'sbp_amount', { mono: true, gold: true, large: true })}
-                    <div style={{ borderBottom: 'none' }}>
-                      {renderField('Комментарий', `Заказ #${order.id}`, 'sbp_comment')}
+                  <div className={s.sheetPanel}>
+                    <div className={s.sheetFieldsHeader}>
+                      <span className={s.sheetFieldsTitle}>Перевод по СБП</span>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopyAll}
+                        className={s.sheetSecondaryButton}
+                      >
+                        {copiedField === 'all'
+                          ? <Check size={12} color="rgba(212,175,55,0.8)" />
+                          : <Copy size={12} color="rgba(255,255,255,0.28)" />
+                        }
+                        {copiedField === 'all' ? 'Скопировано' : 'Скопировать всё'}
+                      </motion.button>
+                    </div>
+                    <div className={s.sheetFieldBody}>
+                      {renderField(
+                        'Номер телефона',
+                        paymentInfo?.sbp_phone
+                          ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5')
+                          : '—',
+                        'sbp_phone',
+                        { mono: true, large: true }
+                      )}
+                      {renderField('Банк получателя', paymentInfo?.sbp_bank || '—', 'sbp_bank')}
+                      {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'sbp_amount', { mono: true, gold: true, large: true })}
+                      {renderField('Комментарий', `Заказ #${order.id}`, 'sbp_comment', { last: true })}
                     </div>
                   </div>
-                )}
-
-                {/* Copy all for card/sbp */}
-                {paymentMethod !== 'online' && (
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleCopyAll}
-                    style={{
-                      width: '100%',
-                      marginTop: 8,
-                      padding: '12px 16px',
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      background: copiedField === 'all' ? 'rgba(212,175,55,0.15)' : 'transparent',
-                      border: `1px solid ${copiedField === 'all' ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {copiedField === 'all'
-                      ? <Check size={14} color="rgba(212,175,55,0.8)" />
-                      : <Copy size={14} color="rgba(255,255,255,0.3)" />
-                    }
-                    <span style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: copiedField === 'all' ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
-                    }}>
-                      Скопировать все реквизиты
-                    </span>
-                  </motion.button>
                 )}
               </div>
             </div>
@@ -1918,7 +2096,7 @@ const PaymentSheet = memo(function PaymentSheet({
               }}
             >
               {!hasPaymentInfo && paymentMethod !== 'online' && (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center' as const, marginBottom: 12 }}>
+                <div className={s.sheetFootnote} style={{ textAlign: 'center', marginBottom: 12 }}>
                   Реквизиты загружаются...
                 </div>
               )}
@@ -2006,9 +2184,9 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
   onSubmit,
 }: ConfirmPaymentModalProps) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
-    { id: 'amount', label: `Сумма перевода: ${formatPrice(paymentAmount)} ₽`, checked: false },
-    { id: 'details', label: 'Реквизиты указаны верно', checked: false },
-    { id: 'comment', label: `Комментарий к переводу: Заказ #${order.id}`, checked: false },
+    { id: 'amount', label: `Сумма: ${formatPrice(paymentAmount)} ₽`, checked: false },
+    { id: 'details', label: 'Реквизиты верны', checked: false },
+    { id: 'comment', label: `Комментарий: Заказ #${order.id}`, checked: false },
   ])
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
@@ -2021,9 +2199,9 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
   useEffect(() => {
     if (isOpen) {
       setChecklist([
-        { id: 'amount', label: `Сумма перевода: ${formatPrice(paymentAmount)} ₽`, checked: false },
-        { id: 'details', label: 'Реквизиты указаны верно', checked: false },
-        { id: 'comment', label: `Комментарий к переводу: Заказ #${order.id}`, checked: false },
+        { id: 'amount', label: `Сумма: ${formatPrice(paymentAmount)} ₽`, checked: false },
+        { id: 'details', label: 'Реквизиты верны', checked: false },
+        { id: 'comment', label: `Комментарий: Заказ #${order.id}`, checked: false },
       ])
       setScreenshot(null)
       setScreenshotPreview(null)
@@ -2088,6 +2266,12 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
   const checkedCount = checklist.filter(i => i.checked).length
   const totalCount = checklist.length
+  const remainingChecks = totalCount - checkedCount
+  const submitLabel = allChecked
+    ? 'Отправить на проверку'
+    : checkedCount === 0
+      ? 'Проверьте перевод'
+      : `Остался ${remainingChecks} ${pluralizeRu(remainingChecks, ['пункт', 'пункта', 'пунктов'])}`
 
   if (!isOpen) return null
 
@@ -2107,7 +2291,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 34, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col"
+            className={s.sheetShellCompact}
             style={{
               background: DS.colors.bgSurface,
               borderRadius: '24px 24px 0 0',
@@ -2143,10 +2327,9 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             </div>
 
             {/* ─── Content ─── */}
-            <div className="flex-1 overflow-y-auto" style={{ padding: '14px 20px' }}>
-              {/* Checklist — single grouped surface */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.01em', marginBottom: 8 }}>
+            <div className={s.sheetScroll}>
+              <div className={s.sheetSection}>
+                <div className={s.sheetCaption}>
                   Проверьте перед отправкой
                 </div>
 
@@ -2208,72 +2391,81 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 </div>
               </div>
 
-              {/* Screenshot Upload — visually demoted */}
-              <div style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
-                  Скриншот оплаты{' '}
-                  <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>(необязательно)</span>
+              <div className={s.sheetSection}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className={s.sheetCaption} style={{ margin: 0 }}>
+                    Скриншот оплаты
+                  </div>
+                  <span className={s.sheetBadge} style={{ padding: '5px 8px', fontSize: 9, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.04em' }}>
+                    Необязательно
+                  </span>
                 </div>
 
-                {screenshotPreview ? (
-                  <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <img
-                      src={screenshotPreview}
-                      alt="Скриншот"
-                      loading="lazy"
-                      style={{ width: '100%', maxHeight: 160, objectFit: 'cover' as const }}
-                    />
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={removeScreenshot}
-                      style={{
-                        position: 'absolute', top: 8, right: 8,
-                        width: 28, height: 28, borderRadius: 8,
-                        background: 'rgba(0,0,0,0.7)', border: 'none',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Trash2 size={13} color="rgba(239,68,68,0.8)" />
-                    </motion.button>
-                    <div style={{
-                      position: 'absolute', bottom: 0, left: 0, right: 0,
-                      padding: '6px 10px',
-                      background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+                <div className={s.sheetFootnote}>
+                  Если перевод уже виден в банке, можно отправить подтверждение и без файла.
+                </div>
+
+                <div>
+                  {screenshotPreview ? (
+                    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <img
+                        src={screenshotPreview}
+                        alt="Скриншот"
+                        loading="lazy"
+                        style={{ width: '100%', maxHeight: 160, objectFit: 'cover' as const }}
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={removeScreenshot}
+                        style={{
+                          position: 'absolute', top: 8, right: 8,
+                          width: 28, height: 28, borderRadius: 8,
+                          background: 'rgba(0,0,0,0.7)', border: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={13} color="rgba(239,68,68,0.8)" />
+                      </motion.button>
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '6px 10px',
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}>
+                        <FileImage size={11} color="rgba(212,175,55,0.7)" />
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                          {screenshot?.name}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <label style={{
                       display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.08)',
                     }}>
-                      <FileImage size={11} color="rgba(212,175,55,0.7)" />
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                        {screenshot?.name}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <Upload size={16} color="rgba(255,255,255,0.2)" />
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
-                        Загрузить скриншот
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <Upload size={16} color="rgba(255,255,255,0.2)" />
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
+                          Загрузить скриншот
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', marginTop: 1 }}>
+                          PNG, JPG до 10 МБ
+                        </div>
                       </div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', marginTop: 1 }}>
-                        PNG, JPG до 10 МБ
-                      </div>
-                    </div>
-                  </label>
-                )}
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2284,26 +2476,17 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
               borderTop: '1px solid rgba(255,255,255,0.06)',
               background: DS.colors.bgSurface,
             }}>
-              {/* Timing note */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 12px', borderRadius: 8,
-                background: 'rgba(212,175,55,0.04)',
-                border: '1px solid rgba(212,175,55,0.06)',
-                marginBottom: 8,
-              }}>
+              <div className={s.sheetFootnote} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Timer size={13} color="rgba(212,175,55,0.45)" />
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
-                  Проверка займёт <strong style={{ color: 'rgba(228,213,163,0.85)', fontWeight: 600 }}>5–15 минут</strong>
+                <span>
+                  Проверка обычно занимает <strong style={{ color: 'rgba(228,213,163,0.85)', fontWeight: 600 }}>5–15 минут</strong>
                 </span>
               </div>
 
-              {/* CTA — progressive reveal as checkboxes are ticked */}
               <motion.button
                 whileTap={allChecked && !isSubmitting ? { scale: 0.98 } : undefined}
                 onClick={handleSubmit}
                 disabled={!allChecked || isSubmitting}
-                animate={allChecked ? { scale: [1, 1.02, 1] } : undefined}
                 style={{
                   width: '100%',
                   height: 50,
@@ -2355,7 +2538,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       color: allChecked ? '#121212' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`,
                       transition: 'color 0.35s',
                     }}>
-                      Отправить на проверку
+                      {submitLabel}
                     </span>
                   </>
                 )}
@@ -2378,41 +2561,191 @@ interface RevisionRequestSheetProps {
   isOpen: boolean
   onClose: () => void
   order: Order
-  onSubmit: (message: string) => Promise<void>
+  currentRound?: OrderRevisionRound | null
+  onOpenChat: () => void
+  onSubmit: (payload: { message: string; files: File[]; voiceBlob: Blob | null; voiceDuration: number }) => Promise<void>
 }
 
 const RevisionRequestSheet = memo(function RevisionRequestSheet({
   isOpen,
   onClose,
   order,
+  currentRound,
+  onOpenChat,
   onSubmit,
 }: RevisionRequestSheetProps) {
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
+  const [voiceDuration, setVoiceDuration] = useState(0)
+  const [isRecording, setIsRecording] = useState(false)
   const { haptic } = useTelegram()
   const { showToast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingTimerRef = useRef<number | null>(null)
   useModalRegistration(isOpen, 'revision-request-sheet')
 
   const revisionCount = order.revision_count || 0
-  const isPaid = false // Unlimited revisions policy — no paid revisions
+  const activeRound = currentRound?.status === 'open' ? currentRound : null
+  const nextRevisionNumber = activeRound?.round_number || revisionCount + 1
 
   useEffect(() => {
     if (isOpen) {
       setMessage('')
       setIsSubmitting(false)
+      setSelectedFiles([])
+      setVoiceBlob(null)
+      setVoiceDuration(0)
+      setIsRecording(false)
+    } else {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current)
+        recordingTimerRef.current = null
+      }
+      mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop())
+      mediaRecorderRef.current = null
+      audioChunksRef.current = []
     }
   }, [isOpen])
 
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current)
+        recordingTimerRef.current = null
+      }
+      mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop())
+    }
+  }, [])
+
+  const resetRecording = useCallback(() => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current)
+      recordingTimerRef.current = null
+    }
+    mediaRecorderRef.current = null
+    setIsRecording(false)
+  }, [])
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const incomingFiles = Array.from(event.target.files || [])
+    if (incomingFiles.length === 0) return
+
+    const oversizedFile = incomingFiles.find(file => file.size > 20 * 1024 * 1024)
+    if (oversizedFile) {
+      haptic?.('warning')
+      showToast({
+        type: 'info',
+        title: 'Файл слишком большой',
+        message: `${oversizedFile.name} превышает 20 МБ`,
+      })
+      event.target.value = ''
+      return
+    }
+
+    setSelectedFiles(prev => [...prev, ...incomingFiles])
+    event.target.value = ''
+    haptic?.('light')
+  }, [haptic, showToast])
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, fileIndex) => fileIndex !== index))
+    haptic?.('light')
+  }, [haptic])
+
+  const startRecording = useCallback(async () => {
+    let stream: MediaStream | null = null
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm'
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+      setVoiceBlob(null)
+      setVoiceDuration(0)
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data)
+        }
+      }
+
+      mediaRecorder.onstop = () => {
+        stream?.getTracks().forEach(track => track.stop())
+        if (audioChunksRef.current.length > 0) {
+          setVoiceBlob(new Blob(audioChunksRef.current, { type: mimeType }))
+        }
+        resetRecording()
+      }
+
+      mediaRecorder.start(100)
+      setIsRecording(true)
+      haptic?.('medium')
+
+      recordingTimerRef.current = window.setInterval(() => {
+        setVoiceDuration(prev => prev + 1)
+      }, 1000)
+    } catch {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Микрофон недоступен', message: 'Разрешите доступ к микрофону и попробуйте снова.' })
+    }
+  }, [haptic, resetRecording, showToast])
+
+  const stopRecording = useCallback(() => {
+    if (!mediaRecorderRef.current || !isRecording) return
+    mediaRecorderRef.current.stop()
+    haptic?.('medium')
+  }, [isRecording, haptic])
+
+  const cancelRecording = useCallback(() => {
+    if (!mediaRecorderRef.current || !isRecording) return
+    audioChunksRef.current = []
+    mediaRecorderRef.current.stop()
+    resetRecording()
+    setVoiceBlob(null)
+    setVoiceDuration(0)
+    haptic?.('light')
+  }, [isRecording, haptic, resetRecording])
+
+  const formatDuration = useCallback((seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }, [])
+
   const handleSubmit = async () => {
-    if (!message.trim()) {
+    const trimmedMessage = message.trim()
+    const hasAttachments = selectedFiles.length > 0 || Boolean(voiceBlob)
+
+    if (!trimmedMessage && !activeRound) {
       haptic?.('warning')
       showToast({ type: 'info', title: 'Опишите, что нужно исправить' })
+      return
+    }
+
+    if (!trimmedMessage && !hasAttachments) {
+      haptic?.('warning')
+      showToast({ type: 'info', title: 'Добавьте комментарий или материалы' })
       return
     }
     haptic?.('medium')
     setIsSubmitting(true)
     try {
-      await onSubmit(message.trim())
+      await onSubmit({
+        message: trimmedMessage,
+        files: selectedFiles,
+        voiceBlob,
+        voiceDuration,
+      })
       onClose()
     } catch (err) {
       haptic?.('error')
@@ -2444,7 +2777,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 34, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[480px] overflow-hidden flex flex-col"
+            className={s.sheetShell}
             style={{
               background: DS.colors.bgSurface,
               borderRadius: '24px 24px 0 0',
@@ -2458,10 +2791,10 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
             }}>
               <div>
                 <h2 style={{ fontSize: 17, fontWeight: 600, color: 'rgba(255,255,255,0.88)', margin: 0 }}>
-                  Запрос правок
+                  {activeRound ? 'Дополнить правку' : 'Запрос правок'}
                 </h2>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0' }}>
-                  {revisionCount > 0 ? `Правка #${revisionCount + 1}` : 'Безлимитные правки'}
+                  {`Правка #${nextRevisionNumber}`}
                 </p>
               </div>
               <motion.button
@@ -2479,42 +2812,32 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
 
             {/* Content */}
             <div style={{ padding: '16px 20px' }}>
-              {/* Revision counter visual */}
+              {/* Revision summary */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '12px 14px',
+                borderRadius: 12,
+                marginBottom: 16,
+                background: 'rgba(212,175,55,0.06)',
+                border: '1px solid rgba(212,175,55,0.14)',
               }}>
-                {[1, 2, 3].map((n) => (
-                  <div
-                    key={n}
-                    style={{
-                      width: 32, height: 4, borderRadius: 2,
-                      background: n <= revisionCount
-                        ? 'rgba(212,175,55,0.5)'
-                        : 'rgba(255,255,255,0.08)',
-                      flex: 1,
-                      transition: 'background 0.3s',
-                    }}
-                  />
-                ))}
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>
-                  {revisionCount}/3
-                </span>
-              </div>
-
-              {/* Paid revision warning */}
-              {isPaid && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-                  background: 'rgba(239,68,68,0.08)',
-                  border: '1px solid rgba(239,68,68,0.15)',
-                }}>
-                  <AlertTriangle size={14} color="rgba(239,68,68,0.6)" />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-                    Бесплатные правки исчерпаны. Стоимость правки будет рассчитана менеджером.
-                  </span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.76)', marginBottom: 2 }}>
+                    {activeRound ? 'Правка уже открыта' : 'Безлимитные правки'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', lineHeight: 1.45 }}>
+                    {activeRound
+                      ? 'Этот круг правок уже открыт. Добавьте уточнение сюда, а файлы, скриншоты и голосовые можно дослать через чат заказа.'
+                      : 'Отправьте замечания одним списком. Доведём работу до нужного результата в рамках исходного ТЗ.'}
+                  </div>
                 </div>
-              )}
+                <div style={{ fontSize: 11, color: 'rgba(212,175,55,0.9)', whiteSpace: 'nowrap' }}>
+                  {activeRound ? 'Открыта' : revisionCount > 0 ? `Уже было: ${revisionCount}` : 'Первая итерация'}
+                </div>
+              </div>
 
               {/* Text input */}
               <div style={{ marginBottom: 12 }}>
@@ -2525,6 +2848,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Например: изменить формулировку в разделе 2, добавить ссылку на источник..."
+                  maxLength={5000}
                   rows={4}
                   style={{
                     width: '100%',
@@ -2542,9 +2866,304 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                 />
               </div>
 
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>
-                Текстовое описание правок ускорит работу
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 12,
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.2)',
+              }}>
+                <span>{activeRound ? 'Текст и файлы попадут в текущую правку' : 'Текстовое описание правок ускорит работу'}</span>
+                <span>{`${message.trim().length}/5000`}</span>
               </div>
+
+              <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(212,175,55,0.18)',
+                      background: 'rgba(212,175,55,0.08)',
+                      color: '#E8D5A3',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Paperclip size={15} />
+                    Прикрепить файлы
+                  </motion.button>
+
+                  {!isRecording ? (
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => {
+                        void startRecording()
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.03)',
+                        color: 'rgba(255,255,255,0.78)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Mic size={15} />
+                      Голосовое
+                    </motion.button>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(212,175,55,0.18)',
+                          background: 'rgba(212,175,55,0.08)',
+                          color: '#E8D5A3',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
+                      >
+                        <MicOff size={15} />
+                        Идёт запись · {formatDuration(voiceDuration)}
+                      </div>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={stopRecording}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(212,175,55,0.18)',
+                          background: 'rgba(212,175,55,0.08)',
+                          color: '#E8D5A3',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <StopCircle size={15} />
+                        Стоп
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={cancelRecording}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: 'rgba(255,255,255,0.03)',
+                          color: 'rgba(255,255,255,0.58)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <X size={15} />
+                        Отмена
+                      </motion.button>
+                    </>
+                  )}
+                </div>
+
+                {(selectedFiles.length > 0 || voiceBlob) && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gap: 8,
+                      padding: 12,
+                      borderRadius: 12,
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={`${file.name}-${index}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 10,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: file.type.startsWith('image/') ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.04)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {file.type.startsWith('image/') ? (
+                              <Image size={16} color="#E8D5A3" />
+                            ) : (
+                              <FileText size={16} color="rgba(255,255,255,0.58)" />
+                            )}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {file.name}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)' }}>
+                              {(file.size / (1024 * 1024)).toFixed(file.size > 1024 * 1024 ? 1 : 2)} МБ
+                            </div>
+                          </div>
+                        </div>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            background: 'transparent',
+                            color: 'rgba(255,255,255,0.48)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </motion.button>
+                      </div>
+                    ))}
+
+                    {voiceBlob && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 10,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'rgba(212,175,55,0.08)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Mic size={16} color="#E8D5A3" />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.82)' }}>
+                              Голосовое сообщение
+                            </div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)' }}>
+                              {formatDuration(voiceDuration || 0)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => {
+                            setVoiceBlob(null)
+                            setVoiceDuration(0)
+                            haptic?.('light')
+                          }}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            background: 'transparent',
+                            color: 'rgba(255,255,255,0.48)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </motion.button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {activeRound && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={() => {
+                    haptic?.('light')
+                    onClose()
+                    onOpenChat()
+                  }}
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    marginTop: 12,
+                    borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.03)',
+                    color: 'rgba(255,255,255,0.72)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  <MessageCircle size={16} />
+                  Открыть чат и дослать материалы
+                </motion.button>
+              )}
             </div>
 
             {/* Footer */}
@@ -2585,7 +3204,7 @@ const RevisionRequestSheet = memo(function RevisionRequestSheet({
                   <>
                     <Edit3 size={17} color={message.trim() ? '#121212' : 'rgba(255,255,255,0.3)'} />
                     <span style={{ fontSize: 15, fontWeight: 700, color: message.trim() ? '#121212' : 'rgba(255,255,255,0.3)' }}>
-                      Отправить на доработку
+                      {activeRound ? 'Добавить к правке' : 'Отправить на доработку'}
                     </span>
                   </>
                 )}
@@ -2831,7 +3450,7 @@ const FilesSection = memo(function FilesSection({
   })
 
   // Check if files section should be visible
-  const filesAvailable = ['completed', 'review', 'paid', 'paid_full', 'in_progress'].includes(order.status)
+  const filesAvailable = ['completed', 'review', 'revision', 'paid', 'paid_full', 'in_progress'].includes(order.status)
   const hasFiles = files.length > 0
 
   if (!filesAvailable && !hasFiles) return null
@@ -2955,6 +3574,407 @@ const FilesSection = memo(function FilesSection({
   )
 })
 
+interface DeliveryVersionsSectionProps {
+  order: Order
+  onOpenVersion: (batch: OrderDeliveryBatch | null) => void
+}
+
+const DeliveryVersionsSection = memo(function DeliveryVersionsSection({
+  order,
+  onOpenVersion,
+}: DeliveryVersionsSectionProps) {
+  const latestDelivery = getLatestDeliveryForView(order)
+  const deliveryHistory = (order.delivery_history || []).filter(batch => batch.id !== latestDelivery?.id)
+
+  if (!latestDelivery) return null
+
+  const latestTimestamp = latestDelivery.sent_at || latestDelivery.created_at
+  const formattedLatestTimestamp = latestTimestamp
+    ? new Date(latestTimestamp).toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
+  return (
+    <div style={{ padding: '0 20px', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <Package size={16} color="rgba(212,175,55,0.55)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+          Версии работы
+        </span>
+      </div>
+
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: deliveryHistory.length > 0 ? 10 : 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>
+              {latestDelivery.version_number ? `Версия ${latestDelivery.version_number}` : 'Последняя выдача'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+              {formattedLatestTimestamp || 'Дата отправки обновится автоматически'}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenVersion(latestDelivery)}
+            disabled={!latestDelivery.files_url && !order.files_url}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: '1px solid rgba(212,175,55,0.22)',
+              background: 'rgba(212,175,55,0.08)',
+              color: '#E8D5A3',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: latestDelivery.files_url || order.files_url ? 'pointer' : 'default',
+              opacity: latestDelivery.files_url || order.files_url ? 1 : 0.45,
+            }}
+          >
+            Открыть
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: latestDelivery.manager_comment ? 10 : 0 }}>
+          {(latestDelivery.file_count || 0) > 0 && (
+            <span style={{
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: 'rgba(212,175,55,0.08)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              fontSize: 11,
+              color: '#E8D5A3',
+            }}>
+              Файлов: {latestDelivery.file_count}
+            </span>
+          )}
+          {(latestDelivery.revision_count_snapshot || 0) > 0 && (
+            <span style={{
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.62)',
+            }}>
+              Правка #{latestDelivery.revision_count_snapshot}
+            </span>
+          )}
+        </div>
+
+        {latestDelivery.manager_comment && (
+          <div style={{
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: 'rgba(255,255,255,0.68)',
+          }}>
+            {latestDelivery.manager_comment}
+          </div>
+        )}
+      </div>
+
+      {deliveryHistory.length > 0 && (
+        <div style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: 14,
+          padding: 12,
+          display: 'grid',
+          gap: 8,
+        }}>
+          {deliveryHistory.slice(0, 4).map((batch) => (
+            <button
+              key={batch.id}
+              type="button"
+              onClick={() => onOpenVersion(batch)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '10px 0',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                color: 'inherit',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.84)' }}>
+                  {batch.version_number ? `Версия ${batch.version_number}` : 'Выдача'}
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+                  {(batch.sent_at || batch.created_at)
+                    ? new Date(batch.sent_at || batch.created_at || '').toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Дата не указана'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.52)' }}>
+                {(batch.file_count || 0) > 0 && <span style={{ fontSize: 11 }}>{batch.file_count} файл(ов)</span>}
+                <ChevronRight size={16} />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+interface RevisionRoundsSectionProps {
+  order: Order
+  onRequestRevision: () => void
+  onOpenChat: () => void
+  onOpenVersion: (batch: OrderDeliveryBatch | null) => void
+}
+
+const RevisionRoundsSection = memo(function RevisionRoundsSection({
+  order,
+  onRequestRevision,
+  onOpenChat,
+  onOpenVersion,
+}: RevisionRoundsSectionProps) {
+  const currentRound = getOpenRevisionRoundForView(order)
+  const revisionHistory = getRevisionHistoryForView(order)
+  const visibleStatus = getClientVisibleStatus(order)
+
+  if (!currentRound && revisionHistory.length === 0 && !['review', 'revision'].includes(visibleStatus)) {
+    return null
+  }
+
+  return (
+    <div style={{ padding: '0 20px', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <Edit3 size={16} color="rgba(212,175,55,0.55)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+          Правки
+        </span>
+      </div>
+
+      {currentRound ? (
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: revisionHistory.length > 0 ? 10 : 0,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>
+                {getRevisionRoundLabel(currentRound)}
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+                {getRevisionRoundActivityLabel(currentRound)
+                  ? `Последняя активность ${getRevisionRoundActivityLabel(currentRound)}`
+                  : 'Материалы по правке можно дополнять до следующей версии'}
+              </div>
+            </div>
+            <span
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: 'rgba(212,175,55,0.08)',
+                border: '1px solid rgba(212,175,55,0.14)',
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#E8D5A3',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Открыта
+            </span>
+          </div>
+
+          {currentRound.initial_comment && (
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.55,
+                color: 'rgba(255,255,255,0.68)',
+                marginBottom: 10,
+              }}
+            >
+              {currentRound.initial_comment}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onRequestRevision}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid rgba(212,175,55,0.22)',
+                background: 'rgba(212,175,55,0.08)',
+                color: '#E8D5A3',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Добавить комментарий
+            </button>
+            <button
+              type="button"
+              onClick={onOpenChat}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+                color: 'rgba(255,255,255,0.72)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Открыть чат и дослать файлы
+            </button>
+          </div>
+        </div>
+      ) : visibleStatus === 'review' ? (
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: revisionHistory.length > 0 ? 10 : 0,
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>
+            Нужны правки?
+          </div>
+          <div style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(255,255,255,0.45)', marginBottom: 10 }}>
+            Запросите доработку или откройте чат заказа, если хотите сразу дослать файлы, скриншоты или голосовое сообщение.
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onRequestRevision}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid rgba(212,175,55,0.22)',
+                background: 'rgba(212,175,55,0.08)',
+                color: '#E8D5A3',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Запросить правки
+            </button>
+            <button
+              type="button"
+              onClick={onOpenChat}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+                color: 'rgba(255,255,255,0.72)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Открыть чат
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {revisionHistory.length > 0 && (
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 14,
+            padding: 12,
+            display: 'grid',
+            gap: 8,
+          }}
+        >
+          {revisionHistory.slice(0, 4).map((round, index, list) => {
+            const linkedDelivery = getDeliveryBatchByIdForView(order, round.closed_by_delivery_batch_id)
+
+            return (
+              <div
+                key={round.id || `${round.round_number}-${index}`}
+                style={{
+                  padding: '10px 0',
+                  borderBottom: index === list.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.84)' }}>
+                      {getRevisionRoundLabel(round)}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+                      {formatOrderDateTimeCompact(round.requested_at) || 'Дата запроса обновится автоматически'}
+                      {round.closed_at ? ` · закрыта ${formatOrderDateTimeCompact(round.closed_at)}` : ''}
+                    </div>
+                  </div>
+
+                  {linkedDelivery?.files_url ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenVersion(linkedDelivery)}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(212,175,55,0.16)',
+                        background: 'rgba(212,175,55,0.08)',
+                        color: '#E8D5A3',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {linkedDelivery.version_number ? `Версия ${linkedDelivery.version_number}` : 'Открыть'}
+                    </button>
+                  ) : null}
+                </div>
+
+                {round.initial_comment && (
+                  <div style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(255,255,255,0.56)', marginTop: 8 }}>
+                    {round.initial_comment}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+})
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              SUPPORT CARD
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2967,14 +3987,14 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
   const { haptic } = useTelegram()
 
   return (
-    <div style={{ padding: '0 20px', marginBottom: 8 }}>
+    <div style={{ padding: '0 20px' }}>
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={() => { haptic?.('medium'); onOpenChat() }}
         style={{
           width: '100%',
-          padding: '16px 20px',
-          borderRadius: 16,
+          padding: '15px 18px',
+          borderRadius: 14,
           background: 'rgba(255,255,255,0.02)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.04)',
@@ -3004,11 +4024,11 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
           </div>
           {/* Text */}
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
-              Поддержка
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.78)' }}>
+              Чат по заказу
             </div>
             <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
-              Обычно отвечаем за ~10 мин
+              Ответ обычно за 10 минут
             </div>
           </div>
         </div>
@@ -3096,7 +4116,7 @@ export function OrderDetailPageV8() {
   const isValidOrderId = !isNaN(orderId) && orderId > 0
 
   // Countdown for payment
-  const paymentCountdownAnchor = order && ['waiting_payment', 'confirmed'].includes(order.status)
+  const paymentCountdownAnchor = order && isAwaitingPaymentStatus(order.status)
     ? (order.updated_at || order.created_at || null)
     : null
   const countdown = usePaymentCountdown(paymentCountdownAnchor)
@@ -3126,7 +4146,7 @@ export function OrderDetailPageV8() {
         normalizedOrder.final_price &&
         normalizedOrder.final_price > 0 &&
         getOrderRemainingAmount(normalizedOrder) > 0 &&
-        ['confirmed', 'waiting_payment', 'paid', 'in_progress', 'review'].includes(normalizedOrder.status)
+        [isAwaitingPaymentStatus(normalizedOrder.status), ['paid', 'in_progress', 'review'].includes(normalizedOrder.status)].some(Boolean)
       ) {
         try {
           const payment = await fetchPaymentInfo(orderId)
@@ -3160,6 +4180,14 @@ export function OrderDetailPageV8() {
       if (message.type === 'refresh') {
         loadOrder()
       } else if (message.type === 'order_update' && (message as Record<string, unknown>).order_id === orderId) {
+        loadOrder()
+      } else if (message.type === 'delivery_update' && (message as Record<string, unknown>).order_id === orderId) {
+        loadOrder()
+      } else if (message.type === 'revision_round_opened' && (message as Record<string, unknown>).order_id === orderId) {
+        loadOrder()
+      } else if (message.type === 'revision_round_updated' && (message as Record<string, unknown>).order_id === orderId) {
+        loadOrder()
+      } else if (message.type === 'revision_round_fulfilled' && (message as Record<string, unknown>).order_id === orderId) {
         loadOrder()
       } else if (message.type === 'file_delivery' && (message as Record<string, unknown>).order_id === orderId) {
         loadOrder()
@@ -3292,19 +4320,75 @@ export function OrderDetailPageV8() {
     }
   }, [order?.id, pauseLoading, haptic, showToast, loadOrder])
 
-  const handleSubmitRevision = useCallback(async (message: string) => {
+  const handleSubmitRevision = useCallback(async ({
+    message,
+    files,
+    voiceBlob,
+  }: {
+    message: string
+    files: File[]
+    voiceBlob: Blob | null
+    voiceDuration: number
+  }) => {
     if (!order) return
-    const result = await requestRevision(order.id, message)
-    if (result.success) {
+    const activeRound = getOpenRevisionRoundForView(order)
+
+    let result: Awaited<ReturnType<typeof requestRevision>> | null = null
+    if (message) {
+      result = await requestRevision(order.id, message)
+      if (!result.success) {
+        throw new Error(result.message)
+      }
+    }
+
+    const uploadFailures: string[] = []
+
+    for (const file of files) {
+      try {
+        await uploadChatFile(order.id, file)
+      } catch {
+        uploadFailures.push(file.name)
+      }
+    }
+
+    if (voiceBlob) {
+      try {
+        await uploadVoiceMessage(order.id, voiceBlob)
+      } catch {
+        uploadFailures.push('Голосовое сообщение')
+      }
+    }
+
+    const hasAttachments = files.length > 0 || Boolean(voiceBlob)
+    const title = result
+      ? activeRound
+        ? 'Правка обновлена'
+        : 'Правки отправлены'
+      : 'Материалы отправлены'
+
+    const successMessage = result
+      ? activeRound
+        ? `${getRevisionRoundLabel(activeRound)} дополнена`
+        : `Правка #${result.revision_count}`
+      : 'Файлы и голосовые уже в текущем круге правок'
+
+    if (uploadFailures.length > 0) {
+      showToast({
+        type: 'info',
+        title,
+        message: `${successMessage}. Не удалось загрузить: ${uploadFailures.join(', ')}`,
+      })
+    } else {
       showToast({
         type: 'success',
-        title: result.is_paid ? 'Платная правка отправлена' : 'Правки отправлены',
-        message: `Правка #${result.revision_count}`,
+        title,
+        message: hasAttachments && !message
+          ? 'Материалы уже у менеджера'
+          : successMessage,
       })
-      loadOrder()
-    } else {
-      throw new Error(result.message)
     }
+
+    await loadOrder()
   }, [order, showToast, loadOrder])
 
   const handleOpenFAQ = useCallback(() => {
@@ -3469,7 +4553,10 @@ export function OrderDetailPageV8() {
   const isPaymentFlow = Boolean(
     order &&
     getOrderRemainingAmount(order) > 0 &&
-    ['waiting_payment', 'confirmed', 'paid', 'in_progress', 'review'].includes(clientVisibleStatus || order.status),
+    [
+      isAwaitingPaymentStatus(clientVisibleStatus || order.status),
+      ['paid', 'in_progress', 'review'].includes(clientVisibleStatus || order.status),
+    ].some(Boolean),
   )
   const isVerificationPending = clientVisibleStatus === 'verification_pending'
   const requestedAction = searchParams.get('action')
@@ -3504,7 +4591,7 @@ export function OrderDetailPageV8() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
 
-  const CANCELABLE_STATUSES = ['draft', 'pending', 'waiting_payment', 'confirmed', 'waiting_estimation']
+  const CANCELABLE_STATUSES = ['draft', 'pending', 'waiting_payment', 'waiting_estimation']
   const canCancelOrder = order ? CANCELABLE_STATUSES.includes(order.status) : false
 
   const handleCancelOrder = useCallback(async () => {
@@ -3565,19 +4652,41 @@ export function OrderDetailPageV8() {
     showToast({ type: 'success', title: 'Загрузка всех файлов' })
   }, [order, haptic, showToast])
 
+  const handleOpenDeliveryVersion = useCallback((batch: OrderDeliveryBatch | null) => {
+    const targetUrl = batch?.files_url || order?.files_url
+    if (!targetUrl) return
+    haptic?.('medium')
+    window.open(targetUrl, '_blank', 'noopener,noreferrer')
+    showToast({
+      type: 'success',
+      title: batch?.version_number ? `Открываем версию ${batch.version_number}` : 'Открываем файлы',
+      message: 'Папка с файлами уже открывается',
+    })
+  }, [order?.files_url, haptic, showToast])
+
   // Render
   if (loading) {
     return (
-      <div className="premium-club-page">
-        <LoadingState />
+      <div className={`premium-club-page ${s.page} saloon-page-shell saloon-page-shell--workflow`}>
+        <div className="page-background" aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+        </div>
+        <div className={`${s.pageContent} saloon-page-content saloon-page-content--detail`}>
+          <LoadingState />
+        </div>
       </div>
     )
   }
 
   if (!order || error) {
     return (
-      <div className="premium-club-page">
-        <ErrorState message={error || 'Заказ не найден'} onBack={handleBack} />
+      <div className={`premium-club-page ${s.page} saloon-page-shell saloon-page-shell--workflow`}>
+        <div className="page-background" aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+        </div>
+        <div className={`${s.pageContent} saloon-page-content saloon-page-content--detail`}>
+          <ErrorState message={error || 'Заказ не найден'} onBack={handleBack} />
+        </div>
       </div>
     )
   }
@@ -3588,14 +4697,28 @@ export function OrderDetailPageV8() {
     status: order.status,
     route: `/order/${order.id}`,
   }
+  const detailVisibleStatus = (clientVisibleStatus ?? getClientVisibleStatus(order)) as OrderStatus
+  const visibleStatusConfig = STATUS_CONFIG[detailVisibleStatus]
+  const totalPrice = getOrderTotalPrice(order)
+  const remainingAmount = getOrderRemainingAmount(order)
+  const latestDelivery = getLatestDeliveryForView(order)
+  const latestVersionNumber = latestDelivery?.version_number ?? null
+  const latestDeliveryDate = latestDelivery?.sent_at
+    ? new Date(latestDelivery.sent_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+    : null
+  const openRevisionRound = getOpenRevisionRoundForView(order)
+  const revisionHistory = getRevisionHistoryForView(order)
+  const workTypeLabel = stripEmoji(order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || '')
+  const headline = getOrderHeadlineSafe(order)
 
   return (
     <div
-      className="premium-club-page pb-[140px]"
-      style={{
-        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.03) 0%, transparent 60%), var(--bg-main, #121212)',
-      }}
+      className={`premium-club-page ${s.page} saloon-page-shell saloon-page-shell--workflow`}
     >
+      <div className="page-background" aria-hidden="true">
+        <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+      </div>
+      <div className={`${s.pageContent} saloon-page-content saloon-page-content--detail`}>
       {/* ─── App Bar ─── */}
       <SectionErrorBoundary
         sectionName="order-app-bar"
@@ -3626,88 +4749,184 @@ export function OrderDetailPageV8() {
         />
       </SectionErrorBoundary>
 
-      {/* ─── Hero (order info + price + stepper + inline guarantees) ─── */}
-      <SectionErrorBoundary
-        sectionName="order-hero"
-        resetKey={sectionResetKey}
-        context={sectionContext}
-        fallback={<SectionFallbackCard title="Карточка заказа" message="Основные детали временно не отрисовались. Попробуйте открыть заказ ещё раз через пару секунд." />}
-      >
-        <HeroSummary order={order} countdown={countdown} />
-      </SectionErrorBoundary>
+      <div className={`${s.contentColumn} ${ps.sectionStack}`}>
+        <section className={`${ps.hero} ${ps.heroWorkflow} ${s.detailPrelude}`}>
+          <div className={ps.heroGrid}>
+            <div className={ps.heroCopy}>
+              <div className={ps.chipRow}>
+                <span className={`${ps.chip} ${ps.chipStrong}`}>{visibleStatusConfig.label}</span>
+                {latestVersionNumber ? <span className={ps.chip}>Версия {latestVersionNumber}</span> : null}
+                {openRevisionRound ? <span className={ps.chip}>{getRevisionRoundLabel(openRevisionRound)}</span> : null}
+                {!openRevisionRound && order.revision_count ? <span className={ps.chip}>{order.revision_count} правок</span> : null}
+              </div>
 
-      {/* ─── Verification Pending Banner ─── */}
-      {isVerificationPending && (
+              <h1 className={ps.heroTitle} style={{ fontSize: 'clamp(30px, 5vw, 40px)' }}>
+                {headline}
+              </h1>
+              {workTypeLabel ? <p className={ps.heroSubtitle}>{workTypeLabel}</p> : null}
+
+              <div className={ps.heroMetrics}>
+                <div className={`${ps.metric} ${ps.metricStrong}`}>
+                  <div className={ps.metricLabel}>Срок</div>
+                  <div className={`${ps.metricValue} ${ps.metricValueAccent}`}>{formatOrderDeadlineRu(order.deadline)}</div>
+                  <div className={ps.metricHint}>Текущая дата сдачи</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Стоимость</div>
+                  <div className={ps.metricValue}>{formatPrice(totalPrice)} ₽</div>
+                  <div className={ps.metricHint}>Общая сумма заказа</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Оплачено</div>
+                  <div className={ps.metricValue}>{formatPrice(order.paid_amount || 0)} ₽</div>
+                  <div className={ps.metricHint}>Подтверждённые платежи</div>
+                </div>
+                <div className={ps.metric}>
+                  <div className={ps.metricLabel}>Осталось</div>
+                  <div className={ps.metricValue}>{formatPrice(remainingAmount)} ₽</div>
+                  <div className={ps.metricHint}>До полного расчёта</div>
+                </div>
+              </div>
+            </div>
+
+            <div className={ps.heroAside}>
+              <div className={`${ps.surface} ${ps.surfaceUtility}`}>
+                <div className={ps.sectionHeading}>
+                  <div className={ps.sectionHeadingCopy}>
+                    <h2 className={ps.sectionTitle}>Версия и материалы</h2>
+                    <p className={ps.sectionSubtitle}>{latestDeliveryDate ? latestDeliveryDate : 'Без отправленной версии'}</p>
+                  </div>
+                </div>
+                <div className={ps.sectionStack}>
+                  <div className={s.heroAsideRow}>
+                    <span className={s.heroAsideLabel}>Файлы</span>
+                    <span className={s.heroAsideValue}>{latestDelivery?.file_count || 0}</span>
+                  </div>
+                  <div className={s.heroAsideRow}>
+                    <span className={s.heroAsideLabel}>Последняя версия</span>
+                    <span className={s.heroAsideValue}>{latestVersionNumber ? `v${latestVersionNumber}` : '—'}</span>
+                  </div>
+                  <div className={s.heroAsideRow}>
+                    <span className={s.heroAsideLabel}>Статус</span>
+                    <span className={s.heroAsideValue}>{visibleStatusConfig.label}</span>
+                  </div>
+                  {(openRevisionRound || order.revision_count || revisionHistory.length > 0) && (
+                    <div className={s.heroAsideRow}>
+                      <span className={s.heroAsideLabel}>{openRevisionRound ? 'Открытая правка' : 'Кругов правок'}</span>
+                      <span className={s.heroAsideValue}>
+                        {openRevisionRound ? `#${openRevisionRound.round_number}` : Math.max(order.revision_count || 0, revisionHistory.length)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Hero (order info + price + stepper + inline guarantees) ─── */}
         <SectionErrorBoundary
-          sectionName="order-verification-banner"
+          sectionName="order-hero"
           resetKey={sectionResetKey}
           context={sectionContext}
-          fallback={null}
+          fallback={<SectionFallbackCard title="Карточка заказа" message="Основные детали временно не отрисовались. Попробуйте открыть заказ ещё раз через пару секунд." />}
         >
-          <VerificationPendingBanner />
+          <HeroSummary order={order} countdown={countdown} />
         </SectionErrorBoundary>
-      )}
 
-      {/* ─── Files ─── */}
-      <SectionErrorBoundary
-        sectionName="order-files"
-        resetKey={sectionResetKey}
-        context={sectionContext}
-        fallback={null}
-      >
-        <FilesSection
-          order={order}
-          onDownloadFile={handleDownloadFile}
-          onDownloadAll={handleDownloadAllFiles}
-        />
-      </SectionErrorBoundary>
+        {/* ─── Verification Pending Banner ─── */}
+        {isVerificationPending && (
+          <SectionErrorBoundary
+            sectionName="order-verification-banner"
+            resetKey={sectionResetKey}
+            context={sectionContext}
+            fallback={null}
+          >
+            <VerificationPendingBanner />
+          </SectionErrorBoundary>
+        )}
 
-      {/* ─── Review (completed only) ─── */}
-      {order.status === 'completed' && !order.review_submitted && (
+        {/* ─── Files ─── */}
         <SectionErrorBoundary
-          sectionName="order-review"
+          sectionName="order-files"
           resetKey={sectionResetKey}
           context={sectionContext}
           fallback={null}
         >
-          <ReviewSection
-            orderId={order.id}
-            haptic={haptic ?? (() => {})}
-            onReviewSubmitted={loadOrder}
+          <FilesSection
+            order={order}
+            onDownloadFile={handleDownloadFile}
+            onDownloadAll={handleDownloadAllFiles}
           />
         </SectionErrorBoundary>
-      )}
 
-      {/* ─── Support (compact) ─── */}
-      <SectionErrorBoundary
-        sectionName="order-support"
-        resetKey={sectionResetKey}
-        context={sectionContext}
-        fallback={null}
-      >
-        <SupportCard onOpenChat={handleOpenChat} />
-      </SectionErrorBoundary>
+        <SectionErrorBoundary
+          sectionName="order-delivery-versions"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <DeliveryVersionsSection
+            order={order}
+            onOpenVersion={handleOpenDeliveryVersion}
+          />
+        </SectionErrorBoundary>
 
-      {/* ─── Cancel (subtle text) ─── */}
-      {canCancelOrder && (
-        <div style={{ textAlign: 'center', margin: '24px 0' }}>
-          <button
-            type="button"
-            onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255,255,255,0.2)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: '12px 24px',
-            }}
+        <SectionErrorBoundary
+          sectionName="order-revision-rounds"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <RevisionRoundsSection
+            order={order}
+            onRequestRevision={handleRequestRevision}
+            onOpenChat={handleContactManager}
+            onOpenVersion={handleOpenDeliveryVersion}
+          />
+        </SectionErrorBoundary>
+
+        {/* ─── Review (completed only) ─── */}
+        {order.status === 'completed' && !order.review_submitted && (
+          <SectionErrorBoundary
+            sectionName="order-review"
+            resetKey={sectionResetKey}
+            context={sectionContext}
+            fallback={null}
           >
-            Отменить заказ
-          </button>
-        </div>
-      )}
+            <ReviewSection
+              orderId={order.id}
+              haptic={haptic ?? (() => {})}
+              onReviewSubmitted={loadOrder}
+            />
+          </SectionErrorBoundary>
+        )}
+      </div>
+
+      <div className={s.utilityFooter}>
+        {/* ─── Support (compact) ─── */}
+        <SectionErrorBoundary
+          sectionName="order-support"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <SupportCard onOpenChat={handleOpenChat} />
+        </SectionErrorBoundary>
+
+        {/* ─── Cancel (subtle text) ─── */}
+        {canCancelOrder && (
+          <div className={s.cancelRow}>
+            <button
+              type="button"
+              onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
+              className={s.cancelButton}
+            >
+              Отменить заказ
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Cancel Confirmation Modal */}
       <AnimatePresence>
@@ -3953,6 +5172,8 @@ export function OrderDetailPageV8() {
         isOpen={revisionSheetOpen}
         onClose={() => setRevisionSheetOpen(false)}
         order={order}
+        currentRound={openRevisionRound}
+        onOpenChat={handleContactManager}
         onSubmit={handleSubmitRevision}
       />
 
@@ -4042,6 +5263,7 @@ export function OrderDetailPageV8() {
           onSubmit={handleSubmitPaymentConfirmation}
         />
       </SectionErrorBoundary>
+      </div>
     </div>
   )
 }

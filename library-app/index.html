@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#08070b" />
+    <meta
+      name="description"
+      content="Библиотека студенческих работ Академического Салона: 235+ документов, поиск по темам, сохранённые примеры и заказ по теме."
+    />
+    <meta name="application-name" content="БиблиоСалон" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="БиблиоСалон" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Библиотека Салона</title>
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%icons/icon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #08070b;
+      }
+
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 14%, rgba(232, 205, 138, 0.18), transparent 24%),
+          radial-gradient(circle at 12% 84%, rgba(167, 115, 28, 0.12), transparent 26%),
+          radial-gradient(circle at 88% 18%, rgba(119, 78, 20, 0.14), transparent 28%),
+          linear-gradient(180deg, #100d12 0%, #08070b 42%, #050509 100%);
+        transition:
+          opacity 0.96s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.96s cubic-bezier(0.16, 1, 0.3, 1),
+          filter 0.96s cubic-bezier(0.16, 1, 0.3, 1),
+          visibility 0.96s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      #boot-splash::before,
+      #boot-splash::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #boot-splash::before {
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 22%),
+          radial-gradient(circle at 50% 116%, rgba(0, 0, 0, 0.72), transparent 38%);
+      }
+
+      #boot-splash::after {
+        inset: 22px;
+        border-radius: 38px;
+        border: 1px solid rgba(239, 216, 167, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      }
+
+      #boot-splash.is-hidden {
+        opacity: 0;
+        transform: scale(1.02);
+        filter: blur(9px);
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .boot-splash__scene {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .boot-splash__orb,
+      .boot-splash__beam,
+      .boot-splash__grid {
+        position: absolute;
+      }
+
+      .boot-splash__orb {
+        border-radius: 999px;
+        filter: blur(18px);
+        opacity: 0.9;
+      }
+
+      .boot-splash__orb--one {
+        top: 10%;
+        left: 50%;
+        width: min(78vw, 620px);
+        height: min(78vw, 620px);
+        translate: -50% 0;
+        background: radial-gradient(circle, rgba(235, 213, 154, 0.16), rgba(235, 213, 154, 0.05) 42%, transparent 72%);
+        animation: boot-orb-one 10.2s ease-in-out infinite;
+      }
+
+      .boot-splash__orb--two {
+        right: -4%;
+        bottom: 12%;
+        width: min(40vw, 320px);
+        height: min(40vw, 320px);
+        background: radial-gradient(circle, rgba(174, 116, 25, 0.18), rgba(174, 116, 25, 0.04) 48%, transparent 74%);
+        animation: boot-orb-two 12.4s ease-in-out infinite;
+      }
+
+      .boot-splash__beam {
+        left: 50%;
+        top: -10%;
+        width: min(88vw, 840px);
+        height: 420px;
+        translate: -50% 0;
+        background: radial-gradient(circle at top, rgba(247, 228, 182, 0.18), transparent 62%);
+        filter: blur(34px);
+        animation: boot-beam 8.4s ease-in-out infinite;
+      }
+
+      .boot-splash__grid {
+        inset: auto 50% 14%;
+        width: min(84vw, 620px);
+        height: 1px;
+        translate: -50% 0;
+        background: linear-gradient(90deg, transparent, rgba(243, 226, 187, 0.22), transparent);
+        box-shadow:
+          0 -94px 0 rgba(243, 226, 187, 0.03),
+          0 -188px 0 rgba(243, 226, 187, 0.015);
+      }
+
+      .boot-splash__panel {
+        position: relative;
+        width: min(calc(100vw - 48px), 468px);
+        padding: 34px 20px calc(34px + env(safe-area-inset-bottom, 0px));
+        display: grid;
+        gap: 16px;
+        justify-items: center;
+        text-align: center;
+        animation: boot-stage-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .boot-splash__signature {
+        min-height: 28px;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(240, 219, 161, 0.1);
+        color: rgba(232, 212, 169, 0.8);
+        font: 700 10px/1.2 Manrope, Inter, system-ui, sans-serif;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      .boot-splash__mark-wrap {
+        position: relative;
+        width: 184px;
+        height: 184px;
+        display: grid;
+        place-items: center;
+      }
+
+      .boot-splash__mark-wrap::before {
+        content: '';
+        position: absolute;
+        inset: 16px;
+        border-radius: 42px;
+        background:
+          radial-gradient(circle at 50% 22%, rgba(248, 235, 201, 0.14), transparent 42%),
+          linear-gradient(180deg, rgba(28, 24, 31, 0.98), rgba(9, 9, 13, 0.98));
+        border: 1px solid rgba(241, 224, 183, 0.08);
+        box-shadow:
+          0 26px 60px rgba(0, 0, 0, 0.48),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .boot-splash__ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 52px;
+        pointer-events: none;
+      }
+
+      .boot-splash__ring--outer {
+        border: 1px solid rgba(240, 219, 161, 0.14);
+        opacity: 0.7;
+        animation: boot-ring 7.4s ease-in-out infinite;
+      }
+
+      .boot-splash__ring--inner {
+        inset: 10px;
+        border-radius: 44px;
+        border: 1px solid rgba(240, 219, 161, 0.08);
+        opacity: 0.42;
+        animation: boot-ring-inner 6s ease-in-out infinite;
+      }
+
+      .boot-splash__icon {
+        position: relative;
+        z-index: 1;
+        width: 136px;
+        height: 136px;
+        display: block;
+        border-radius: 38px;
+        box-shadow:
+          0 26px 48px rgba(0, 0, 0, 0.34),
+          0 0 0 1px rgba(244, 225, 176, 0.06);
+        animation: boot-float 5.4s ease-in-out infinite;
+      }
+
+      .boot-splash__copy {
+        display: grid;
+        gap: 10px;
+        justify-items: center;
+      }
+
+      .boot-splash__eyebrow {
+        color: rgba(224, 201, 146, 0.82);
+        font: 700 10px/1.2 Manrope, Inter, system-ui, sans-serif;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+      }
+
+      .boot-splash__title {
+        max-width: 9ch;
+        color: #f8f2e4;
+        font: 800 clamp(40px, 9vw, 56px) / 0.88 "Playfair Display", Georgia, serif;
+        letter-spacing: -0.06em;
+      }
+
+      .boot-splash__text {
+        max-width: 31ch;
+        color: rgba(235, 226, 201, 0.72);
+        font: 500 14px/1.56 Manrope, Inter, system-ui, sans-serif;
+      }
+
+      .boot-splash__loader {
+        width: min(100%, 250px);
+        display: grid;
+        gap: 10px;
+      }
+
+      .boot-splash__loader-track {
+        position: relative;
+        height: 2px;
+        border-radius: 999px;
+        overflow: hidden;
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(243, 225, 182, 0.18), rgba(255, 255, 255, 0.04)),
+          rgba(255, 255, 255, 0.05);
+      }
+
+      .boot-splash__loader-track span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 34%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, rgba(240, 219, 161, 0), rgba(248, 236, 202, 0.98), rgba(240, 219, 161, 0));
+        box-shadow: 0 0 24px rgba(233, 202, 130, 0.32);
+        animation: boot-sweep 2.8s cubic-bezier(0.32, 0, 0.16, 1) infinite;
+      }
+
+      .boot-splash__loader-caption {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .boot-splash__loader-label {
+        color: rgba(216, 201, 164, 0.68);
+        font: 600 12px/1.3 Manrope, Inter, system-ui, sans-serif;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .boot-splash__loader-value {
+        color: rgba(240, 219, 161, 0.8);
+        font: 700 12px/1.2 Manrope, Inter, system-ui, sans-serif;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      @keyframes boot-float {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        50% {
+          transform: translateY(-8px) scale(1.014);
+        }
+      }
+
+      @keyframes boot-ring {
+        0%,
+        100% {
+          transform: scale(0.94);
+          opacity: 0.54;
+        }
+        50% {
+          transform: scale(1);
+          opacity: 0.92;
+        }
+      }
+
+      @keyframes boot-ring-inner {
+        0%,
+        100% {
+          transform: scale(0.98);
+          opacity: 0.28;
+        }
+        50% {
+          transform: scale(1.02);
+          opacity: 0.5;
+        }
+      }
+
+      @keyframes boot-orb-one {
+        0%,
+        100% {
+          transform: translate(-50%, 0) scale(1);
+          opacity: 0.78;
+        }
+        50% {
+          transform: translate(-50%, 18px) scale(1.06);
+          opacity: 1;
+        }
+      }
+
+      @keyframes boot-orb-two {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+        50% {
+          transform: translate3d(-12px, -10px, 0) scale(1.08);
+        }
+      }
+
+      @keyframes boot-beam {
+        0%,
+        100% {
+          transform: translate(-50%, 0) scaleX(1);
+          opacity: 0.76;
+        }
+        50% {
+          transform: translate(-50%, 16px) scaleX(1.04);
+          opacity: 0.96;
+        }
+      }
+
+      @keyframes boot-sweep {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(382%);
+        }
+      }
+
+      @keyframes boot-stage-in {
+        from {
+          opacity: 0;
+          transform: translateY(22px) scale(0.984);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot-splash__orb,
+        .boot-splash__beam,
+        .boot-splash__ring,
+        .boot-splash__icon,
+        .boot-splash__loader-track span,
+        .boot-splash__panel {
+          animation: none;
+        }
+      }
+
+      @media (max-width: 420px) {
+        #boot-splash::after {
+          inset: 16px;
+          border-radius: 30px;
+        }
+
+        .boot-splash__panel {
+          width: min(calc(100vw - 32px), 420px);
+          padding-top: 28px;
+          gap: 14px;
+        }
+
+        .boot-splash__mark-wrap {
+          width: 158px;
+          height: 158px;
+        }
+
+        .boot-splash__icon {
+          width: 120px;
+          height: 120px;
+        }
+
+        .boot-splash__title {
+          font-size: clamp(36px, 10vw, 48px);
+        }
+
+        .boot-splash__text {
+          max-width: 26ch;
+          font-size: 13px;
+        }
+      }
+    </style>
+    <script>
+      window.__BUILD_TIME__ = new Date().toISOString()
+      window.__APP_BOOT_START__ = Date.now()
+    </script>
+  </head>
+  <body>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="boot-splash__scene">
+        <span class="boot-splash__orb boot-splash__orb--one"></span>
+        <span class="boot-splash__orb boot-splash__orb--two"></span>
+        <span class="boot-splash__beam"></span>
+        <span class="boot-splash__grid"></span>
+      </div>
+      <div class="boot-splash__panel">
+        <div class="boot-splash__signature">Библиотека примеров</div>
+        <div class="boot-splash__mark-wrap">
+          <span class="boot-splash__ring boot-splash__ring--outer"></span>
+          <span class="boot-splash__ring boot-splash__ring--inner"></span>
+          <img class="boot-splash__icon" src="%BASE_URL%icons/icon.svg" alt="" />
+        </div>
+        <div class="boot-splash__copy">
+          <div class="boot-splash__eyebrow">Академический Салон</div>
+          <div class="boot-splash__title">Академический Салон</div>
+          <div class="boot-splash__text">Подготавливаем личное пространство с темами, примерами и быстрым входом в нужную работу.</div>
+        </div>
+        <div class="boot-splash__loader">
+          <div class="boot-splash__loader-track" role="presentation"><span></span></div>
+          <div class="boot-splash__loader-caption">
+            <span class="boot-splash__loader-label">Подготавливаем каталог</span>
+            <span class="boot-splash__loader-value">АС</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+  </html>

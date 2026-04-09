@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean, Index
+from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean, Index, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
 from datetime import datetime
@@ -17,7 +17,6 @@ class OrderStatus(str, enum.Enum):
     WAITING_ESTIMATION = "waiting_estimation"  # Спецзаказ: ждёт ручной оценки админа
     WAITING_PAYMENT = "waiting_payment"  # Цена рассчитана, ждёт оплаты
     VERIFICATION_PENDING = "verification_pending"  # Пользователь нажал "Я оплатил", ждём проверки админа
-    CONFIRMED = "confirmed"      # Подтверждён (legacy, для совместимости)
     PAID = "paid"                # Оплачен аванс
     PAID_FULL = "paid_full"      # Оплачен полностью
     IN_PROGRESS = "in_progress"  # В работе
@@ -27,6 +26,19 @@ class OrderStatus(str, enum.Enum):
     COMPLETED = "completed"      # Завершён
     CANCELLED = "cancelled"      # Отменён
     REJECTED = "rejected"        # Отклонён админом
+
+
+LEGACY_CONFIRMED_STATUS = "confirmed"
+
+
+LEGACY_ORDER_STATUS_ALIASES: dict[str, str] = {
+    LEGACY_CONFIRMED_STATUS: OrderStatus.WAITING_PAYMENT.value,
+}
+
+LEGACY_WAITING_PAYMENT_STATUSES: tuple[str, ...] = (
+    OrderStatus.WAITING_PAYMENT.value,
+    LEGACY_CONFIRMED_STATUS,
+)
 
 
 class PaymentScheme(str, enum.Enum):
@@ -149,16 +161,6 @@ ORDER_STATUS_META = {
         "user_can_cancel": False,
         "show_in_history": False,
     },
-    OrderStatus.CONFIRMED: {
-        "emoji": "✅",
-        "label": "Ждёт оплаты",
-        "short_label": "К оплате",
-        "description": "Цена назначена",
-        "is_active": True,
-        "is_final": False,
-        "user_can_cancel": True,
-        "show_in_history": False,
-    },
     OrderStatus.PAID: {
         "emoji": "💳",
         "label": "Аванс оплачен",
@@ -254,6 +256,7 @@ ORDER_STATUS_META = {
 
 def get_status_meta(status: str | OrderStatus) -> dict:
     """Получить метаданные статуса"""
+    status = canonicalize_order_status(status)
     if isinstance(status, str):
         try:
             status = OrderStatus(status)
@@ -277,34 +280,40 @@ def get_cancelable_statuses() -> list[str]:
     return [s.value for s, meta in ORDER_STATUS_META.items() if meta.get("user_can_cancel")]
 
 
+def canonicalize_order_status(status: str | OrderStatus | None) -> str | None:
+    """Нормализует legacy-алиасы статусов к одному каноническому значению."""
+    if status is None:
+        return None
+    raw_status = status.value if isinstance(status, OrderStatus) else str(status)
+    return LEGACY_ORDER_STATUS_ALIASES.get(raw_status, raw_status)
+
+
+def is_waiting_payment_status(status: str | OrderStatus | None) -> bool:
+    """Проверяет, что статус означает ожидание оплаты, включая legacy confirmed."""
+    return canonicalize_order_status(status) == OrderStatus.WAITING_PAYMENT.value
+
+
 # ══════════════════════════════════════════════════════════════
 #           ALLOWED STATUS TRANSITIONS (state machine)
 # ══════════════════════════════════════════════════════════════
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     OrderStatus.DRAFT.value: {
         OrderStatus.PENDING.value,
+        OrderStatus.WAITING_ESTIMATION.value,
         OrderStatus.CANCELLED.value,
     },
     OrderStatus.PENDING.value: {
         OrderStatus.WAITING_ESTIMATION.value,
         OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
         OrderStatus.CANCELLED.value,
         OrderStatus.REJECTED.value,
     },
     OrderStatus.WAITING_ESTIMATION.value: {
         OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
         OrderStatus.CANCELLED.value,
         OrderStatus.REJECTED.value,
     },
     OrderStatus.WAITING_PAYMENT.value: {
-        OrderStatus.VERIFICATION_PENDING.value,
-        OrderStatus.CANCELLED.value,
-        OrderStatus.REJECTED.value,
-    },
-    OrderStatus.CONFIRMED.value: {
-        OrderStatus.WAITING_PAYMENT.value,
         OrderStatus.VERIFICATION_PENDING.value,
         OrderStatus.PAID.value,
         OrderStatus.PAID_FULL.value,
@@ -319,6 +328,7 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
         OrderStatus.REJECTED.value,
     },
     OrderStatus.PAID.value: {
+        OrderStatus.VERIFICATION_PENDING.value,  # follow-up payment / доплата
         OrderStatus.PAID_FULL.value,
         OrderStatus.IN_PROGRESS.value,
         OrderStatus.PAUSED.value,
@@ -330,6 +340,7 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
         OrderStatus.CANCELLED.value,
     },
     OrderStatus.IN_PROGRESS.value: {
+        OrderStatus.VERIFICATION_PENDING.value,  # follow-up payment / доплата
         OrderStatus.REVIEW.value,
         OrderStatus.PAUSED.value,
         OrderStatus.CANCELLED.value,
@@ -342,6 +353,7 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
         OrderStatus.REVIEW.value,
     },
     OrderStatus.REVIEW.value: {
+        OrderStatus.VERIFICATION_PENDING.value,  # follow-up payment / доплата
         OrderStatus.REVISION.value,
         OrderStatus.PAUSED.value,
         OrderStatus.COMPLETED.value,
@@ -361,8 +373,10 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
 
 def is_valid_transition(from_status: str, to_status: str) -> bool:
     """Check if a status transition is allowed by the state machine."""
-    allowed = ALLOWED_TRANSITIONS.get(from_status, set())
-    return to_status in allowed
+    canonical_from_status = canonicalize_order_status(from_status) or from_status
+    canonical_to_status = canonicalize_order_status(to_status) or to_status
+    allowed = ALLOWED_TRANSITIONS.get(canonical_from_status, set())
+    return canonical_to_status in allowed
 
 
 class Order(Base):
@@ -482,6 +496,78 @@ class Order(Base):
         return max(Decimal("100"), price_after_discounts - bonus)
 
 
+class OrderDeliveryBatchStatus(str, enum.Enum):
+    """Статусы версии выдачи клиенту."""
+    DRAFT = "draft"
+    SENT = "sent"
+    CANCELLED = "cancelled"
+
+
+class OrderDeliveryBatch(Base):
+    """
+    Версия выдачи файлов клиенту.
+    Draft используется для менеджерской подготовки файлов перед отправкой.
+    """
+    __tablename__ = "order_delivery_batches"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default=OrderDeliveryBatchStatus.DRAFT.value, index=True)
+    version_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    revision_count_snapshot: Mapped[int] = mapped_column(Integer, default=0)
+    manager_comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(String(50), default="topic")
+    files_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    file_count: Mapped[int] = mapped_column(Integer, default=0)
+    file_manifest: Mapped[Optional[list[dict]]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    sent_by_admin_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+
+    order: Mapped["Order"] = relationship("Order", backref="delivery_batches")
+
+
+class OrderRevisionRoundStatus(str, enum.Enum):
+    """Статусы клиентской итерации правок."""
+    OPEN = "open"
+    FULFILLED = "fulfilled"
+    CANCELLED = "cancelled"
+
+
+class OrderRevisionRound(Base):
+    """
+    Отдельная клиентская итерация правок.
+    В одну открытую итерацию клиент может досылать комментарии, файлы и голосовые
+    до тех пор, пока менеджер не отправит следующую версию работы.
+    """
+
+    __tablename__ = "order_revision_rounds"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    round_number: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default=OrderRevisionRoundStatus.OPEN.value, index=True)
+    initial_comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_client_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_by_delivery_batch_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("order_delivery_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    requested_by_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, index=True)
+
+    order: Mapped["Order"] = relationship("Order", backref="revision_rounds")
+    closed_by_delivery_batch: Mapped[Optional["OrderDeliveryBatch"]] = relationship(
+        "OrderDeliveryBatch",
+        foreign_keys=[closed_by_delivery_batch_id],
+        backref="fulfilled_revision_rounds",
+    )
+
+
 class MessageSender(str, enum.Enum):
     """Отправитель сообщения в чате заказа"""
     ADMIN = "admin"
@@ -499,6 +585,18 @@ class OrderMessage(Base):
 
     # Связь с заказом
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), index=True)
+    delivery_batch_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("order_delivery_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    revision_round_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("order_revision_rounds.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Кто отправил
     sender_type: Mapped[str] = mapped_column(String(20))  # admin / client
@@ -523,6 +621,8 @@ class OrderMessage(Base):
 
     # Relationship
     order: Mapped["Order"] = relationship("Order", backref="messages")
+    delivery_batch: Mapped[Optional["OrderDeliveryBatch"]] = relationship("OrderDeliveryBatch", backref="messages")
+    revision_round: Mapped[Optional["OrderRevisionRound"]] = relationship("OrderRevisionRound", backref="messages")
 
 
 class ConversationType(str, enum.Enum):
@@ -552,6 +652,7 @@ class Conversation(Base):
 
     # ID закреплённой карточки заказа внутри топика
     topic_card_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    topic_header_message_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
 
     # Тип диалога
     conversation_type: Mapped[str] = mapped_column(String(20), default=ConversationType.FREE.value)

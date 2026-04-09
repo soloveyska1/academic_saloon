@@ -1,6 +1,8 @@
 import { useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, CreditCard, FileText, RotateCcw, CheckCircle2, MessageCircle } from 'lucide-react'
+import type { Order as BaseOrder, OrderDeliveryBatch, OrderRevisionRound } from '../../types'
+import { getOpenRevisionRound } from '../../lib/orderView'
 import { NextAction } from './types'
 import { NEXT_ACTION_CONFIG } from './constants'
 import s from '../../pages/HomePage.module.css'
@@ -9,18 +11,18 @@ import s from '../../pages/HomePage.module.css'
 //  NEXT ACTION CARD — Priority Dossier
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface Order {
-  id: number
-  status: string
-  work_type_label?: string
-  subject: string | null
-  has_unread_messages?: boolean
-}
-
 interface NextActionCardProps {
   orders: Order[]
   onNavigate: (route: string) => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
+}
+
+function getLatestDelivery(order: Order): OrderDeliveryBatch | null {
+  return order.latest_delivery || order.delivery_history?.[0] || null
+}
+
+function getOpenRound(order: Order): OrderRevisionRound | null {
+  return getOpenRevisionRound(order)
 }
 
 function getNextAction(orders: Order[]): NextAction | null {
@@ -61,31 +63,33 @@ function getNextAction(orders: Order[]): NextAction | null {
   }
 
   // Priority 3: Revision needed
-  const revisionOrder = orders.find(o => o.status === 'revision')
+  const revisionOrder = orders.find(o => getOpenRound(o) || o.status === 'revision')
   if (revisionOrder) {
+    const currentRound = getOpenRound(revisionOrder)
     return {
       id: `revision-${revisionOrder.id}`,
       type: 'revision',
       priority: 3,
-      title: 'Проверьте доработку',
+      title: currentRound ? `Правка #${currentRound.round_number} в работе` : 'Мы дорабатываем заказ',
       subtitle: revisionOrder.subject || revisionOrder.work_type_label || `Заказ #${revisionOrder.id}`,
       icon: RotateCcw,
       color: NEXT_ACTION_CONFIG.revision.color,
       bgColor: NEXT_ACTION_CONFIG.revision.bgColor,
       borderColor: NEXT_ACTION_CONFIG.revision.borderColor,
       orderId: revisionOrder.id,
-      route: `/order/${revisionOrder.id}`,
+      route: `/order/${revisionOrder.id}?focus=revision`,
     }
   }
 
   // Priority 4: Review ready
   const reviewOrder = orders.find(o => o.status === 'review')
   if (reviewOrder) {
+    const latestDelivery = getLatestDelivery(reviewOrder)
     return {
       id: `review-${reviewOrder.id}`,
       type: 'review',
       priority: 4,
-      title: 'Работа готова',
+      title: latestDelivery?.version_number ? `Проверьте версию ${latestDelivery.version_number}` : 'Проверьте новую версию',
       subtitle: reviewOrder.subject || reviewOrder.work_type_label || `Заказ #${reviewOrder.id}`,
       icon: CheckCircle2,
       color: NEXT_ACTION_CONFIG.review.color,
@@ -220,9 +224,17 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
     const next = nextProps.orders[i]
     if (prev.id !== next.id ||
       prev.status !== next.status ||
-      prev.has_unread_messages !== next.has_unread_messages) {
+      prev.has_unread_messages !== next.has_unread_messages ||
+      prev.current_revision_round?.id !== next.current_revision_round?.id ||
+      prev.current_revision_round?.status !== next.current_revision_round?.status ||
+      prev.current_revision_round?.round_number !== next.current_revision_round?.round_number ||
+      prev.latest_delivery?.id !== next.latest_delivery?.id ||
+      prev.latest_delivery?.version_number !== next.latest_delivery?.version_number) {
       return false
     }
   }
   return true
 })
+interface Order extends BaseOrder {
+  has_unread_messages?: boolean
+}

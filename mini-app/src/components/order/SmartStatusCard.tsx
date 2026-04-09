@@ -5,6 +5,11 @@ import {
   RefreshCw, MessageCircle, Download
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
+import {
+  getEffectiveOrderStatus,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
+} from '../../lib/orderView'
 
 interface SmartStatusCardProps {
   order: Order
@@ -64,17 +69,6 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
     description: 'Заказ оценён! Оплатите, чтобы мы начали работу.',
     nextStep: 'Выберите способ оплаты и переведите средства.',
     action: { label: 'Оплатить', action: 'payment', icon: CreditCard },
-    color: 'var(--gold-400)',
-    bgColor: 'rgba(212, 175, 55, 0.1)',
-    borderColor: 'rgba(212, 175, 55, 0.3)',
-    glowColor: 'rgba(212, 175, 55, 0.2)',
-  },
-  confirmed: {
-    icon: CreditCard,
-    label: 'К оплате',
-    description: 'Расчёт подтверждён. Оплатите заказ, чтобы мы сразу запустили работу.',
-    nextStep: 'Прокрутите вниз к форме оплаты.',
-    action: { label: 'К оплате', action: 'payment', icon: CreditCard },
     color: 'var(--gold-400)',
     bgColor: 'rgba(212, 175, 55, 0.1)',
     borderColor: 'rgba(212, 175, 55, 0.3)',
@@ -200,7 +194,27 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
 }
 
 export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) {
-  const info = STATUS_INFO[order.status] || STATUS_INFO.pending
+  const canonicalStatus = (getEffectiveOrderStatus(order) ?? order.status) as OrderStatus
+  const baseInfo = STATUS_INFO[canonicalStatus] || STATUS_INFO.pending
+  const latestDelivery = getLatestDeliveryBatch(order)
+  const currentRound = getOpenRevisionRound(order)
+  const info: StatusInfo = currentRound
+    ? {
+        ...baseInfo,
+        label: currentRound.round_number ? `Правка #${currentRound.round_number}` : baseInfo.label,
+        description: 'Комментарий уже отправлен. Можно дополнять правку материалами до следующей версии.',
+        nextStep: 'Откройте чат или форму правки, если нужно дослать файлы, скриншоты или голосовое.',
+        action: { label: 'Дополнить', action: 'revision', icon: PenTool },
+      }
+    : canonicalStatus === 'review' && latestDelivery?.version_number
+      ? {
+          ...baseInfo,
+          label: `Версия ${latestDelivery.version_number} на проверке`,
+          description: 'Новая версия уже отправлена. Скачайте файлы и решите, принять работу или запросить ещё правки.',
+          nextStep: 'Откройте последнюю версию, проверьте результат и подтвердите следующий шаг.',
+          action: { label: `Открыть v${latestDelivery.version_number}`, action: 'files', icon: Download },
+        }
+      : baseInfo
   const StatusIcon = info.icon
   const progress = (order as any).progress || 0
 

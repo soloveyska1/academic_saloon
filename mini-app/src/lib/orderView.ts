@@ -1,4 +1,4 @@
-import type { Order, OrderStatus } from '../types'
+import type { Order, OrderDeliveryBatch, OrderRevisionRound, OrderStatus } from '../types'
 
 export type OrderLike = Partial<Order> | null | undefined
 
@@ -26,7 +26,6 @@ export const KNOWN_ORDER_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatu
   'waiting_estimation',
   'waiting_payment',
   'verification_pending',
-  'confirmed',
   'paid',
   'paid_full',
   'in_progress',
@@ -39,6 +38,9 @@ export const KNOWN_ORDER_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatu
 ])
 
 const KNOWN_WORK_TYPES = new Set(Object.keys(ORDER_WORK_TYPE_LABELS))
+const ORDER_STATUS_ALIASES: Readonly<Record<string, OrderStatus>> = {
+  confirmed: 'waiting_payment',
+}
 
 export function toSafeString(value: unknown): string | null {
   if (typeof value === 'string') {
@@ -119,9 +121,28 @@ export function formatOrderDeadlineRu(value: unknown): string {
   })
 }
 
+export function canonicalizeOrderStatusAlias(value: unknown): string | null {
+  const safeValue = toSafeString(value)?.toLowerCase()
+  if (!safeValue) return null
+  return ORDER_STATUS_ALIASES[safeValue] ?? safeValue
+}
+
 export function normalizeOrderStatus(value: unknown): OrderStatus {
-  const safeValue = toSafeString(value)?.toLowerCase() as OrderStatus | undefined
-  return safeValue && KNOWN_ORDER_STATUSES.has(safeValue) ? safeValue : 'pending'
+  const safeValue = canonicalizeOrderStatusAlias(value) as OrderStatus | undefined
+  if (!safeValue || !KNOWN_ORDER_STATUSES.has(safeValue)) {
+    return 'pending'
+  }
+
+  return safeValue
+}
+
+export function isAwaitingPaymentStatus(value: unknown): boolean {
+  return canonicalizeOrderStatusAlias(value) === 'waiting_payment'
+}
+
+export function canBatchPayOrderStatus(value: unknown): boolean {
+  const status = canonicalizeOrderStatusAlias(value)
+  return status === 'waiting_payment' || status === 'paid' || status === 'in_progress' || status === 'review'
 }
 
 export function normalizeWorkType(value: unknown): string {
@@ -129,11 +150,80 @@ export function normalizeWorkType(value: unknown): string {
   return safeValue && KNOWN_WORK_TYPES.has(safeValue) ? safeValue : 'other'
 }
 
+function normalizeRevisionRound(value: unknown): OrderRevisionRound | null {
+  if (!value || typeof value !== 'object') return null
+  const round = value as Partial<OrderRevisionRound>
+  const roundNumber = Math.max(0, Math.trunc(toSafeNumber(round.round_number, 0)))
+
+  return {
+    id: Math.max(0, Math.trunc(toSafeNumber(round.id, 0))),
+    round_number: roundNumber,
+    status: toSafeString(round.status) || 'open',
+    initial_comment: toSafeString(round.initial_comment),
+    requested_at: toSafeIsoString(round.requested_at),
+    last_client_activity_at: toSafeIsoString(round.last_client_activity_at),
+    closed_at: toSafeIsoString(round.closed_at),
+    closed_by_delivery_batch_id: Math.max(0, Math.trunc(toSafeNumber(round.closed_by_delivery_batch_id, 0))) || null,
+    requested_by_user_id: Math.max(0, Math.trunc(toSafeNumber(round.requested_by_user_id, 0))) || null,
+  }
+}
+
+function normalizeRevisionHistory(values: unknown): OrderRevisionRound[] {
+  if (!Array.isArray(values)) return []
+
+  const seenIds = new Set<number>()
+  return values
+    .map(item => normalizeRevisionRound(item))
+    .filter((item): item is OrderRevisionRound => item !== null)
+    .filter((item) => {
+      if (!item.id) return true
+      if (seenIds.has(item.id)) return false
+      seenIds.add(item.id)
+      return true
+    })
+    .sort((a, b) => {
+      if (b.round_number !== a.round_number) return b.round_number - a.round_number
+      const aDate = parseOrderDateSafe(a.requested_at)?.getTime() ?? 0
+      const bDate = parseOrderDateSafe(b.requested_at)?.getTime() ?? 0
+      return bDate - aDate
+    })
+}
+
 export function normalizeOrder(order: OrderLike, index = 0): Order {
   const safeOrder = order && typeof order === 'object' ? order : {}
   const normalizedWorkType = normalizeWorkType((safeOrder as Partial<Order>).work_type)
   const pausedFromStatusRaw = toSafeString((safeOrder as Partial<Order>).paused_from_status)
   const pausedFromStatus = pausedFromStatusRaw ? normalizeOrderStatus(pausedFromStatusRaw) : null
+  const normalizeDeliveryBatch = (value: unknown): OrderDeliveryBatch | null => {
+    if (!value || typeof value !== 'object') return null
+    const batch = value as Partial<OrderDeliveryBatch>
+    return {
+      id: Math.max(0, Math.trunc(toSafeNumber(batch.id, 0))),
+      status: toSafeString(batch.status) || 'sent',
+      version_number: Math.max(0, Math.trunc(toSafeNumber(batch.version_number, 0))) || null,
+      revision_count_snapshot: Math.max(0, Math.trunc(toSafeNumber(batch.revision_count_snapshot, 0))),
+      manager_comment: toSafeString(batch.manager_comment),
+      source: toSafeString(batch.source),
+      files_url: toSafeString(batch.files_url),
+      file_count: Math.max(0, Math.trunc(toSafeNumber(batch.file_count, 0))),
+      created_at: toSafeIsoString(batch.created_at),
+      sent_at: toSafeIsoString(batch.sent_at),
+    }
+  }
+  const normalizedLatestDelivery = normalizeDeliveryBatch((safeOrder as Partial<Order>).latest_delivery)
+  const normalizedDeliveryHistory = Array.isArray((safeOrder as Partial<Order>).delivery_history)
+    ? ((safeOrder as Partial<Order>).delivery_history as unknown[])
+        .map(item => normalizeDeliveryBatch(item))
+        .filter((item): item is OrderDeliveryBatch => item !== null)
+    : []
+  const normalizedCurrentRevisionRound = normalizeRevisionRound((safeOrder as Partial<Order>).current_revision_round)
+  const normalizedRevisionHistory = normalizeRevisionHistory((safeOrder as Partial<Order>).revision_history)
+  const mergedRevisionHistory = normalizedCurrentRevisionRound && normalizedCurrentRevisionRound.id
+    ? [
+        normalizedCurrentRevisionRound,
+        ...normalizedRevisionHistory.filter(round => round.id !== normalizedCurrentRevisionRound.id),
+      ]
+    : normalizedRevisionHistory
 
   return {
     id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).id, index + 1))),
@@ -174,6 +264,10 @@ export function normalizeOrder(order: OrderLike, index = 0): Order {
     can_resume: toSafeBoolean((safeOrder as Partial<Order>).can_resume),
     completed_at: toSafeIsoString((safeOrder as Partial<Order>).completed_at),
     delivered_at: toSafeIsoString((safeOrder as Partial<Order>).delivered_at),
+    latest_delivery: normalizedLatestDelivery,
+    delivery_history: normalizedDeliveryHistory,
+    current_revision_round: normalizedCurrentRevisionRound,
+    revision_history: mergedRevisionHistory,
     fullname: toSafeString((safeOrder as Partial<Order>).fullname) || undefined,
     username: toSafeString((safeOrder as Partial<Order>).username),
     telegram_id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).telegram_id, 0))) || undefined,
@@ -211,6 +305,29 @@ export function getOrderHeadlineSafe(order: Order): string {
   // Fallback if topic is too short or garbled (< 3 chars)
   const headline = topic && topic.length >= 3 ? topic : subject && subject.length >= 3 ? subject : null
   return headline || toSafeString(order.work_type_label) || 'Тема уточняется'
+}
+
+export function getOpenRevisionRound(order: OrderLike): OrderRevisionRound | null {
+  if (!order || typeof order !== 'object') return null
+
+  const normalizedRound = normalizeRevisionRound((order as Partial<Order>).current_revision_round)
+  return normalizedRound?.status === 'open' ? normalizedRound : null
+}
+
+export function hasOpenRevisionRound(order: OrderLike): boolean {
+  return getOpenRevisionRound(order) !== null
+}
+
+export function getEffectiveOrderStatus(order: OrderLike): OrderStatus | null {
+  if (!order || typeof order !== 'object') return null
+  if (getOpenRevisionRound(order)) return 'revision'
+  return normalizeOrderStatus((order as Partial<Order>).status)
+}
+
+export function getLatestDeliveryBatch(order: OrderLike): OrderDeliveryBatch | null {
+  if (!order || typeof order !== 'object') return null
+
+  return (order as Partial<Order>).latest_delivery ?? (order as Partial<Order>).delivery_history?.[0] ?? null
 }
 
 export function getOrderSublineSafe(order: Order): string {

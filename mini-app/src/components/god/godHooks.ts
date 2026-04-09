@@ -69,10 +69,18 @@ export function useGodWebSocket(
               data: data.order,
             })
           } else if (data.type === 'admin_payment_pending') {
+            const isBatch = data.is_batch === true
+            const batchOrders = Array.isArray(data.orders) ? data.orders : []
+            const batchPreview = batchOrders
+              .slice(0, 3)
+              .map((order: { id: number; amount_to_pay?: number }) => `#${order.id} · ${order.amount_to_pay || 0}₽`)
+              .join('\n')
             addNotification({
               type: 'payment_pending',
-              title: 'Проверка оплаты',
-              message: `#${data.order_id} — ${data.amount}₽\n${data.user_fullname}`,
+              title: isBatch ? 'Массовая оплата' : 'Проверка оплаты',
+              message: isBatch
+                ? `${data.orders_count} заказа · ${Number(data.total_amount || 0).toLocaleString('ru-RU')}₽\n${data.user_fullname}${batchPreview ? `\n${batchPreview}` : ''}`
+                : `#${data.order_id} — ${Number(data.amount || 0).toLocaleString('ru-RU')}₽\n${data.user_fullname}${data.work_type_label ? `\n${data.work_type_label}` : ''}`,
               data,
             })
           }

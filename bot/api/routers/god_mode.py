@@ -18,53 +18,100 @@ Features:
 from __future__ import annotations
 
 import logging
-import re
 import secrets
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Optional
 from zoneinfo import ZoneInfo
 
+from aiogram import Bot
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import select, desc, func, text, update, and_, or_
+from sqlalchemy import and_, desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram import Bot
 
-from database.db import get_session
-from database.models.users import User
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, OrderMessage
-from database.models.transactions import BalanceTransaction
-from database.models.promocodes import PromoCode, PromoCodeUsage
-from database.models.admin_logs import AdminActionLog, AdminActionType, UserActivity
-from core.config import settings
-from core.redis_pool import get_redis
 from bot.api.auth import TelegramUser, get_current_user
-from bot.api.schemas import (
-    OrderResponse, GodOrderStatusRequest, GodOrderPriceRequest, GodOrderProgressRequest,
-    GodPaymentConfirmRequest, GodPaymentRejectRequest, GodOrderMessageRequest,
-    GodOrderNotesRequest, GodUserBalanceRequest, GodUserBanRequest, GodUserWatchRequest,
-    GodUserNotesRequest, GodPromoCreateRequest, GodActivityUpdateRequest, GodSqlRequest,
-    GodBroadcastRequest
-)
 from bot.api.dependencies import order_to_response
+from bot.api.schemas import (
+    GodActivityUpdateRequest,
+    GodBroadcastRequest,
+    GodOrderMessageRequest,
+    GodOrderNotesRequest,
+    GodOrderPriceRequest,
+    GodOrderProgressRequest,
+    GodOrderStatusRequest,
+    GodPaymentConfirmRequest,
+    GodPaymentRejectRequest,
+    GodPromoCreateRequest,
+    GodSqlRequest,
+    GodUserBalanceRequest,
+    GodUserBanRequest,
+    GodUserNotesRequest,
+    GodUserWatchRequest,
+)
 from bot.bot_instance import get_bot
 from bot.services.bonus import BonusService, BonusReason
-from bot.services.order_lifecycle import get_order_cashback_base
-from bot.services.payment_accounting import (
-    apply_payment_update_to_user,
-    build_payment_update,
-)
 from bot.services.order_message_formatter import (
     build_client_payment_rejected_text,
     build_client_price_ready_text,
     build_issue_keyboard,
     build_order_keyboard,
+    format_admin_datetime,
 )
+from bot.services.order_delivery_service import (
+    get_delivery_history,
+    get_latest_sent_delivery_batch,
+    serialize_delivery_batch,
+)
+from bot.services.order_revision_round_service import (
+    get_current_revision_round,
+    get_revision_round_history,
+    serialize_revision_round,
+)
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
+from bot.services.payment_verification import (
+    get_batch_payment_review_items,
+    get_payment_verification_contexts,
+    get_pending_verification_amount,
+)
+from bot.services.payment_accounting import (
+    apply_payment_update_to_user,
+    build_payment_update,
+)
+from core.config import settings
+from core.redis_pool import get_redis
+from database.db import get_session
+from database.models.admin_logs import AdminActionLog, AdminActionType, UserActivity
+from database.models.order_events import OrderLifecycleEvent, OrderLifecycleEventType
+from database.models.orders import (
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    Order,
+    OrderMessage,
+    OrderRevisionRound,
+    OrderStatus,
+    canonicalize_order_status,
+    get_status_meta,
+)
+from database.models.promocodes import PromoCode, PromoCodeUsage
+from database.models.transactions import BalanceTransaction
+from database.models.users import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/god", tags=["God Mode"])
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
+DELIVERABLE_FILE_TYPES = ("document", "photo", "video", "voice", "audio")
+GOD_TIMELINE_LOG_ACTIONS = (
+    AdminActionType.ORDER_PRICE_SET.value,
+    AdminActionType.ORDER_PROGRESS_UPDATE.value,
+    AdminActionType.ORDER_PAYMENT_CONFIRM.value,
+    AdminActionType.ORDER_PAYMENT_REJECT.value,
+    AdminActionType.ORDER_NOTE_UPDATE.value,
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -78,6 +125,673 @@ def require_god_mode(tg_user: TelegramUser) -> None:
     if tg_user.id not in settings.ADMIN_IDS:
         logger.warning(f"[GOD MODE] Access denied for user {tg_user.id}")
         raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+
+def canonicalize_god_order_status(status: Optional[str]) -> Optional[str]:
+    """Collapse legacy aliases so dashboard and filters expose one payment state."""
+    if not status:
+        return status
+    return canonicalize_order_status(status) or status
+
+
+def merge_god_order_status_counts(raw_counts: dict[str, int]) -> dict[str, int]:
+    """Merge legacy raw DB counters into canonical status buckets."""
+    merged_counts: dict[str, int] = {}
+
+    for status in OrderStatus:
+        canonical_status = canonicalize_god_order_status(status.value)
+        if canonical_status:
+            merged_counts.setdefault(canonical_status, 0)
+
+    for raw_status, count in raw_counts.items():
+        canonical_status = canonicalize_god_order_status(raw_status)
+        if not canonical_status:
+            continue
+        merged_counts[canonical_status] = merged_counts.get(canonical_status, 0) + int(count or 0)
+
+    return merged_counts
+
+
+def is_god_deliverable_message(message: OrderMessage) -> bool:
+    return (
+        message.sender_type == "admin"
+        and bool(message.file_type)
+        and message.file_type in DELIVERABLE_FILE_TYPES
+    )
+
+
+def build_god_delivery_item(
+    message: OrderMessage,
+    *,
+    fallback_files_url: str | None = None,
+) -> dict[str, object]:
+    source = "direct_admin_send" if message.client_message_id else "order_topic"
+    source_label = "Прямая выдача" if source == "direct_admin_send" else "Через топик"
+    file_title = message.file_name or {
+        "photo": "Фото",
+        "video": "Видео",
+        "voice": "Голосовое",
+        "audio": "Аудио",
+    }.get(message.file_type or "", "Файл")
+
+    return {
+        "id": message.id,
+        "file_type": message.file_type,
+        "file_name": message.file_name,
+        "title": file_title,
+        "message_text": message.message_text,
+        "created_at": message.created_at.isoformat() if message.created_at else None,
+        "file_url": message.yadisk_url or fallback_files_url,
+        "source": source,
+        "source_label": source_label,
+    }
+
+
+def build_god_delivery_items(
+    messages: list[OrderMessage],
+    *,
+    fallback_files_url: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, object]]:
+    deliverable_messages = sorted(
+        (message for message in messages if is_god_deliverable_message(message)),
+        key=lambda message: message.created_at or datetime.min,
+        reverse=True,
+    )
+    if limit is not None:
+        deliverable_messages = deliverable_messages[:limit]
+    return [
+        build_god_delivery_item(message, fallback_files_url=fallback_files_url)
+        for message in deliverable_messages
+    ]
+
+
+def _format_god_timeline_money(value: object) -> str | None:
+    try:
+        amount = float(value or 0)
+    except (TypeError, ValueError):
+        return None
+    if amount <= 0:
+        return None
+    if amount.is_integer():
+        return f"{amount:,.0f}".replace(",", " ") + " ₽"
+    return f"{amount:,.2f}".replace(",", " ") + " ₽"
+
+
+def _get_god_payment_method_label(method: object) -> str:
+    normalized = str(method or "").strip().lower()
+    return {
+        "sbp": "СБП",
+        "card": "Карта",
+        "transfer": "Перевод",
+        "yookassa": "ЮKassa",
+    }.get(normalized, normalized or "не указан")
+
+
+def _get_event_extra_data(event: OrderLifecycleEvent) -> dict[str, object]:
+    payload = event.payload if isinstance(event.payload, dict) else {}
+    dispatch = payload.get("dispatch") if isinstance(payload.get("dispatch"), dict) else {}
+    extra_data = dispatch.get("notification_extra_data")
+    if isinstance(extra_data, dict):
+        return extra_data
+    return {}
+
+
+def _normalize_god_timeline_timestamp(value: datetime | None) -> float:
+    if value is None:
+        return 0.0
+    if value.tzinfo is None:
+        return value.replace(tzinfo=MSK_TZ).timestamp()
+    return value.timestamp()
+
+
+def _format_god_iso_datetime(value: object) -> str | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return format_admin_datetime(value)
+    if isinstance(value, str):
+        with_date = value.strip()
+        if not with_date:
+            return None
+        try:
+            return format_admin_datetime(datetime.fromisoformat(with_date))
+        except ValueError:
+            return None
+    return None
+
+
+def build_god_timeline_item(
+    *,
+    item_id: str,
+    kind: str,
+    title: str,
+    timestamp: datetime | None,
+    details: str | None = None,
+    accent: str = "default",
+    link_url: str | None = None,
+    link_label: str | None = None,
+) -> dict[str, object]:
+    return {
+        "id": item_id,
+        "kind": kind,
+        "title": title,
+        "details": details,
+        "timestamp": timestamp.isoformat() if timestamp else None,
+        "accent": accent,
+        "link_url": link_url,
+        "link_label": link_label,
+    }
+
+
+def build_god_revision_request_items(messages: list[OrderMessage]) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    prefix = "📝 <b>Запрос на правки</b>"
+    for message in messages:
+        if message.sender_type != "client" or not message.message_text:
+            continue
+        if message.revision_round_id:
+            continue
+        if not message.message_text.startswith(prefix):
+            continue
+        comment = message.message_text.split("\n\n", 1)[1].strip() if "\n\n" in message.message_text else ""
+        items.append(
+            build_god_timeline_item(
+                item_id=f"revision_request:{message.id}",
+                kind="revision_request",
+                title="Клиент запросил правки",
+                timestamp=message.created_at,
+                details=comment or None,
+                accent="warning",
+            )
+        )
+    return items
+
+
+def _extract_revision_round_comment(message_text: str | None) -> str | None:
+    if not message_text:
+        return None
+    text = str(message_text).strip()
+    if not text:
+        return None
+    prefix = "📝 <b>Запрос на правки</b>"
+    if text.startswith(prefix):
+        text = text.split("\n\n", 1)[1].strip() if "\n\n" in text else ""
+    return text or None
+
+
+def _build_god_revision_round_summary(
+    round_: OrderRevisionRound,
+    messages: list[OrderMessage],
+    delivery_batches_by_id: dict[int, object] | None = None,
+) -> dict[str, object]:
+    delivery_batches_by_id = delivery_batches_by_id or {}
+    round_messages = [
+        message
+        for message in messages
+        if int(message.revision_round_id or 0) == int(round_.id or 0)
+        and message.sender_type == "client"
+    ]
+    round_messages.sort(key=lambda message: message.created_at or datetime.min)
+
+    message_count = sum(1 for message in round_messages if (message.message_text or "").strip())
+    attachment_count = sum(1 for message in round_messages if message.file_type)
+    latest_activity_at = round_.last_client_activity_at or round_.requested_at
+
+    preview = None
+    for message in reversed(round_messages):
+        preview = _extract_revision_round_comment(message.message_text)
+        if preview:
+            break
+    if not preview:
+        preview = (round_.initial_comment or "").strip() or None
+
+    closed_by_delivery_version_number = None
+    if round_.closed_by_delivery_batch_id:
+        delivery_batch = delivery_batches_by_id.get(int(round_.closed_by_delivery_batch_id))
+        if delivery_batch is not None:
+            closed_by_delivery_version_number = getattr(delivery_batch, "version_number", None)
+
+    return {
+        **serialize_revision_round(round_),
+        "message_count": int(message_count),
+        "attachment_count": int(attachment_count),
+        "latest_activity_at": latest_activity_at.isoformat() if latest_activity_at else None,
+        "last_client_message_preview": preview,
+        "closed_by_delivery_version_number": (
+            int(closed_by_delivery_version_number)
+            if closed_by_delivery_version_number is not None
+            else None
+        ),
+    }
+
+
+def build_god_revision_round_items(
+    revision_rounds: list[OrderRevisionRound],
+    *,
+    messages: list[OrderMessage],
+    delivery_batches_by_id: dict[int, object] | None = None,
+) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    for round_ in revision_rounds:
+        summary = _build_god_revision_round_summary(
+            round_,
+            messages,
+            delivery_batches_by_id=delivery_batches_by_id,
+        )
+        details_parts: list[str] = []
+        if summary["last_client_message_preview"]:
+            details_parts.append(str(summary["last_client_message_preview"]))
+        activity_parts: list[str] = []
+        if summary["message_count"]:
+            activity_parts.append(f"сообщений: {int(summary['message_count'])}")
+        if summary["attachment_count"]:
+            activity_parts.append(f"вложений: {int(summary['attachment_count'])}")
+        if activity_parts:
+            details_parts.append(" · ".join(activity_parts))
+        if summary["closed_by_delivery_version_number"]:
+            details_parts.append(f"Закрыта версией v{int(summary['closed_by_delivery_version_number'])}")
+
+        status = str(summary["status"] or "")
+        title = (
+            f"Открыта правка #{int(summary['round_number'])}"
+            if status == "open"
+            else f"Правка #{int(summary['round_number'])}"
+        )
+        if status == "fulfilled" and summary["closed_by_delivery_version_number"]:
+            title = f"Правка #{int(summary['round_number'])} закрыта новой версией"
+
+        items.append(
+            build_god_timeline_item(
+                item_id=f"revision_round:{summary['id']}",
+                kind="revision_round",
+                title=title,
+                timestamp=round_.requested_at,
+                details=" · ".join(part for part in details_parts if part) or None,
+                accent="warning" if status == "open" else "info",
+            )
+        )
+    return items
+
+
+def build_god_admin_message_items(messages: list[OrderMessage]) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    for message in messages:
+        if message.sender_type != "admin" or message.file_type or not message.message_text:
+            continue
+        text = message.message_text.strip()
+        if not text:
+            continue
+        items.append(
+            build_god_timeline_item(
+                item_id=f"admin_message:{message.id}",
+                kind="admin_message",
+                title="Менеджер написал клиенту",
+                timestamp=message.created_at,
+                details=text,
+                accent="info",
+            )
+        )
+    return items
+
+
+def build_god_status_timeline_item(event: OrderLifecycleEvent) -> dict[str, object]:
+    new_status = canonicalize_order_status(event.status_to) or event.status_to
+    old_status = canonicalize_order_status(event.status_from) or event.status_from
+    status_meta = get_status_meta(new_status)
+    old_meta = get_status_meta(old_status)
+    extra_data = _get_event_extra_data(event)
+    payload = event.payload if isinstance(event.payload, dict) else {}
+
+    title = f"Статус: {status_meta.get('label', new_status)}"
+    details = None
+    accent = "default"
+
+    if new_status == OrderStatus.VERIFICATION_PENDING.value:
+        amount_label = _format_god_timeline_money(extra_data.get("amount_to_pay"))
+        phase = "Доплата" if extra_data.get("payment_phase") == "final" else "Оплата"
+        payment_method = _get_god_payment_method_label(extra_data.get("payment_method"))
+        details_parts = [phase, payment_method]
+        if amount_label:
+            details_parts.append(amount_label)
+        if extra_data.get("batch_orders_count"):
+            details_parts.append(f"заявка: {int(extra_data['batch_orders_count'])}")
+        title = "Клиент сообщил об оплате"
+        details = " · ".join(details_parts)
+        accent = "gold"
+    elif new_status == OrderStatus.REVIEW.value:
+        title = "Работа передана клиенту"
+        delivered_at = extra_data.get("delivered_at")
+        details = f"Проверка клиентом открыта{f' · {delivered_at}' if delivered_at else ''}"
+        accent = "success"
+    elif new_status == OrderStatus.REVISION.value:
+        revision_count = extra_data.get("revision_count")
+        details_parts = []
+        if revision_count:
+            details_parts.append(f"итерация {int(revision_count)}")
+        title = "Заказ переведён в правки"
+        details = " · ".join(details_parts) or None
+        accent = "warning"
+    elif new_status == OrderStatus.COMPLETED.value:
+        cashback_label = _format_god_timeline_money(payload.get("cashback_amount"))
+        title = "Заказ завершён"
+        details = f"Кешбэк: {cashback_label}" if cashback_label else None
+        accent = "success"
+    elif new_status == OrderStatus.CANCELLED.value:
+        title = "Заказ отменён"
+        details = "Промокод возвращён" if payload.get("promo_returned") else None
+        accent = "danger"
+    elif new_status == OrderStatus.REJECTED.value:
+        title = "Заказ отклонён"
+        details = "Промокод возвращён" if payload.get("promo_returned") else None
+        accent = "danger"
+    elif new_status == OrderStatus.WAITING_PAYMENT.value and old_status in {
+        OrderStatus.PENDING.value,
+        OrderStatus.WAITING_ESTIMATION.value,
+    }:
+        title = "Заказ переведён к оплате"
+        details = f"{old_meta.get('label', old_status)} → {status_meta.get('label', new_status)}"
+        accent = "gold"
+    else:
+        details = f"{old_meta.get('label', old_status)} → {status_meta.get('label', new_status)}"
+
+    return build_god_timeline_item(
+        item_id=f"status:{event.id}",
+        kind="status_change",
+        title=title,
+        timestamp=event.created_at,
+        details=details,
+        accent=accent,
+    )
+
+
+def build_god_admin_log_timeline_item(log: AdminActionLog) -> dict[str, object] | None:
+    title = None
+    details = None
+    accent = "default"
+
+    if log.action_type == AdminActionType.ORDER_PRICE_SET.value:
+        old_price = (log.old_value or {}).get("price")
+        new_price = (log.new_value or {}).get("price")
+        title = "Цена изменена"
+        old_label = _format_god_timeline_money(old_price)
+        new_label = _format_god_timeline_money(new_price)
+        details = " → ".join(part for part in [old_label, new_label] if part) or log.details
+        accent = "gold"
+    elif log.action_type == AdminActionType.ORDER_PROGRESS_UPDATE.value:
+        old_progress = (log.old_value or {}).get("progress")
+        new_progress = (log.new_value or {}).get("progress")
+        title = "Прогресс обновлён"
+        if old_progress is not None and new_progress is not None:
+            details = f"{int(old_progress)}% → {int(new_progress)}%"
+        else:
+            details = log.details
+        accent = "info"
+    elif log.action_type == AdminActionType.ORDER_PAYMENT_CONFIRM.value:
+        title = "Оплата подтверждена вручную"
+        details = log.details
+        accent = "success"
+    elif log.action_type == AdminActionType.ORDER_PAYMENT_REJECT.value:
+        title = "Оплата отклонена"
+        details = str((log.new_value or {}).get("reason") or log.details or "")
+        accent = "danger"
+    elif log.action_type == AdminActionType.ORDER_NOTE_UPDATE.value:
+        title = "Обновлена внутренняя заметка"
+        old_notes = str((log.old_value or {}).get("notes") or "").strip()
+        new_notes = str((log.new_value or {}).get("notes") or "").strip()
+        if old_notes and new_notes:
+            details = f"{old_notes} → {new_notes}"
+        elif new_notes:
+            details = new_notes
+        elif old_notes:
+            details = f"Очищено: {old_notes}"
+        else:
+            details = log.details
+        accent = "info"
+    else:
+        return None
+
+    if log.admin_username:
+        actor = f"@{log.admin_username}"
+        details = f"{details} · {actor}" if details else actor
+
+    return build_god_timeline_item(
+        item_id=f"admin_log:{log.id}",
+        kind=log.action_type,
+        title=title,
+        timestamp=log.created_at,
+        details=details,
+        accent=accent,
+    )
+
+
+def build_god_activity_timeline(
+    *,
+    order: Order,
+    lifecycle_events: list[OrderLifecycleEvent],
+    admin_logs: list[AdminActionLog],
+    messages: list[OrderMessage],
+    revision_rounds: list[OrderRevisionRound] | None = None,
+    delivery_batches_by_id: dict[int, object] | None = None,
+    fallback_files_url: str | None = None,
+) -> list[dict[str, object]]:
+    revision_rounds = revision_rounds or []
+    revision_round_items = build_god_revision_round_items(
+        revision_rounds,
+        messages=messages,
+        delivery_batches_by_id=delivery_batches_by_id,
+    )
+    revision_items = build_god_revision_request_items(messages)
+    admin_message_items = build_god_admin_message_items(messages)
+    revision_timestamps = {
+        int(_normalize_god_timeline_timestamp(round_.requested_at))
+        for round_ in revision_rounds
+        if round_.requested_at
+    } | {
+        int(_normalize_god_timeline_timestamp(message.created_at))
+        for message in messages
+        if message.sender_type == "client"
+        and message.message_text
+        and message.message_text.startswith("📝 <b>Запрос на правки</b>")
+        and not message.revision_round_id
+    }
+
+    timeline_items: list[dict[str, object]] = [
+        build_god_timeline_item(
+            item_id="created",
+            kind="created",
+            title="Заказ создан",
+            timestamp=order.created_at,
+            details=order.work_type_label if getattr(order, "work_type_label", None) else order.work_type,
+            accent="default",
+        )
+    ]
+
+    for event in lifecycle_events:
+        if event.event_type != OrderLifecycleEventType.STATUS_CHANGED.value:
+            continue
+        if (canonicalize_order_status(event.status_to) or event.status_to) == OrderStatus.REVISION.value:
+            event_ts = int(_normalize_god_timeline_timestamp(event.created_at))
+            if any(abs(event_ts - revision_ts) <= 300 for revision_ts in revision_timestamps):
+                continue
+        timeline_items.append(build_god_status_timeline_item(event))
+
+    for log in admin_logs:
+        item = build_god_admin_log_timeline_item(log)
+        if item:
+            timeline_items.append(item)
+
+    for delivery in build_god_delivery_items(messages, fallback_files_url=fallback_files_url, limit=20):
+        delivery_timestamp = None
+        if delivery.get("created_at"):
+            delivery_timestamp = datetime.fromisoformat(str(delivery["created_at"]))
+        timeline_items.append(
+            build_god_timeline_item(
+                item_id=f"delivery:{delivery['id']}",
+                kind="delivery",
+                title=f"Выдан файл: {delivery['title']}",
+                timestamp=delivery_timestamp,
+                details=(
+                    f"{delivery['source_label']}"
+                    + (f" · {delivery['message_text']}" if delivery.get("message_text") else "")
+                ),
+                accent="success",
+                link_url=str(delivery["file_url"]) if delivery.get("file_url") else None,
+                link_label="Открыть файл",
+            )
+        )
+
+    timeline_items.extend(revision_round_items)
+    timeline_items.extend(revision_items)
+    timeline_items.extend(admin_message_items)
+    timeline_items.sort(key=lambda item: _normalize_god_timeline_timestamp(datetime.fromisoformat(item["timestamp"]) if item.get("timestamp") else None), reverse=True)
+    return timeline_items
+
+
+def build_god_operational_summary(
+    *,
+    order: Order,
+    activity_timeline: list[dict[str, object]],
+    payment_context=None,
+    recent_deliveries: list[dict[str, object]] | None = None,
+    current_revision_round: dict[str, object] | None = None,
+) -> dict[str, object]:
+    recent_deliveries = recent_deliveries or []
+    status = canonicalize_god_order_status(order.status) or order.status
+
+    title = "Заказ требует внимания"
+    subtitle = None
+    next_action = None
+    tone = "default"
+
+    if status == OrderStatus.VERIFICATION_PENDING.value:
+        title = "Платёж на ручной проверке"
+        tone = "gold"
+        amount = _format_god_timeline_money(getattr(payment_context, "amount_to_pay", None))
+        phase = "Доплата" if getattr(payment_context, "payment_phase", None) == "final" else "Оплата"
+        method = _get_god_payment_method_label(getattr(payment_context, "payment_method", None))
+        subtitle_parts = [phase, method]
+        if amount:
+            subtitle_parts.append(amount)
+        subtitle = " · ".join(part for part in subtitle_parts if part)
+        next_action = "Сверить перевод и подтвердить или отклонить платёж"
+    elif status == OrderStatus.WAITING_PAYMENT.value:
+        title = "Ждём оплату"
+        tone = "gold"
+        amount = _format_god_timeline_money(order.final_price or order.price)
+        subtitle = f"К оплате: {amount}" if amount else None
+        next_action = "Отправить счёт клиенту и дождаться подтверждения"
+    elif status == OrderStatus.REVISION.value:
+        title = "Нужны правки по заказу"
+        tone = "warning"
+        if current_revision_round:
+            subtitle_parts = [f"Правка #{int(current_revision_round.get('round_number') or order.revision_count or 1)}"]
+            attachment_count = int(current_revision_round.get("attachment_count") or 0)
+            message_count = int(current_revision_round.get("message_count") or 0)
+            if attachment_count:
+                subtitle_parts.append(f"{attachment_count} влож.")
+            if message_count:
+                subtitle_parts.append(f"{message_count} сообщ.")
+            latest_activity_at = current_revision_round.get("latest_activity_at") or current_revision_round.get("last_client_activity_at")
+            latest_activity_label = _format_god_iso_datetime(latest_activity_at)
+            if latest_activity_label:
+                subtitle_parts.append(f"активность: {latest_activity_label}")
+            subtitle = " · ".join(subtitle_parts)
+        else:
+            subtitle = f"Круг правок: {int(order.revision_count or 0)}"
+        next_action = "Открыть текущую правку, посмотреть материалы и отправить исправленную версию"
+    elif status == OrderStatus.REVIEW.value:
+        title = "Работа у клиента на проверке"
+        tone = "success"
+        if recent_deliveries:
+            subtitle = f"Последняя выдача: {format_admin_datetime(order.delivered_at)}"
+        next_action = "Дождаться ответа клиента или закрыть заказ"
+    elif status in {OrderStatus.IN_PROGRESS.value, OrderStatus.PAID.value, OrderStatus.PAID_FULL.value}:
+        title = "Заказ в работе"
+        tone = "info"
+        subtitle = f"Прогресс: {int(order.progress or 0)}%"
+        next_action = "Обновить прогресс или отправить клиенту промежуточный ответ"
+    elif status == OrderStatus.PAUSED.value:
+        title = "Заказ на паузе"
+        tone = "warning"
+        subtitle = f"Пауза от статуса: {get_status_meta(order.paused_from_status).get('label', order.paused_from_status) if order.paused_from_status else 'не указан'}"
+        next_action = "Снять паузу или уточнить новый срок с клиентом"
+    elif status == OrderStatus.COMPLETED.value:
+        title = "Заказ завершён"
+        tone = "success"
+        subtitle = f"Закрыт: {format_admin_datetime(order.completed_at)}"
+        next_action = "Проверить отзыв и повторные продажи по клиенту"
+    elif status in {OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value}:
+        title = "Заказ остановлен"
+        tone = "danger"
+        subtitle = get_status_meta(status).get("label", status)
+        next_action = "Проверить возвраты и финальную коммуникацию с клиентом"
+
+    snapshot_items: list[dict[str, object]] = []
+    for item in activity_timeline[:3]:
+        snapshot_items.append(
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "details": item.get("details"),
+                "timestamp": item.get("timestamp"),
+                "accent": item.get("accent", "default"),
+            }
+        )
+
+    return {
+        "tone": tone,
+        "title": title,
+        "subtitle": subtitle,
+        "next_action": next_action,
+        "items": snapshot_items,
+    }
+
+
+async def get_god_order_delivery_stats(
+    session: AsyncSession,
+    order_ids: list[int],
+) -> dict[int, dict[str, object]]:
+    if not order_ids:
+        return {}
+
+    result = await session.execute(
+        select(
+            OrderMessage.order_id,
+            func.count(OrderMessage.id),
+            func.max(OrderMessage.created_at),
+        )
+        .where(
+            OrderMessage.order_id.in_(order_ids),
+            OrderMessage.sender_type == "admin",
+            OrderMessage.file_type.in_(DELIVERABLE_FILE_TYPES),
+        )
+        .group_by(OrderMessage.order_id)
+    )
+
+    stats: dict[int, dict[str, object]] = {}
+    for order_id, deliveries_count, last_deliverable_at in result.all():
+        stats[order_id] = {
+            "deliveries_count": int(deliveries_count or 0),
+            "last_deliverable_at": last_deliverable_at.isoformat() if last_deliverable_at else None,
+        }
+    return stats
+
+
+def get_god_order_status_filter_values(status: Optional[str]) -> Optional[tuple[str, ...]]:
+    normalized_status = canonicalize_god_order_status(status)
+    if not normalized_status or normalized_status == "all":
+        return None
+    if normalized_status == OrderStatus.WAITING_PAYMENT.value:
+        return LEGACY_WAITING_PAYMENT_STATUSES
+    return (normalized_status,)
+
+
+def canonicalize_god_order_payload_status(order_payload: dict) -> dict:
+    status = canonicalize_god_order_status(order_payload.get("status"))
+    if status:
+        order_payload["status"] = status
+    return order_payload
 
 
 # ─── 2FA Constants ────────────────────────────────────────────────────────
@@ -292,19 +1006,23 @@ async def get_dashboard(
     total_orders = await session.scalar(select(func.count(Order.id)))
 
     # Orders by status
-    status_counts = {}
-    for status in OrderStatus:
-        count = await session.scalar(
-            select(func.count(Order.id)).where(Order.status == status.value)
-        )
-        status_counts[status.value] = count or 0
+    status_counts_result = await session.execute(
+        select(Order.status, func.count(Order.id)).group_by(Order.status)
+    )
+    raw_status_counts = {
+        status: count or 0
+        for status, count in status_counts_result.all()
+        if status
+    }
+    status_counts = merge_god_order_status_counts(raw_status_counts)
 
     # Active orders (not completed/cancelled/rejected)
     active_statuses = [
         OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value,
-        OrderStatus.WAITING_PAYMENT.value, OrderStatus.VERIFICATION_PENDING.value,
-        OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
         OrderStatus.IN_PROGRESS.value, OrderStatus.REVIEW.value, OrderStatus.REVISION.value,
+        *LEGACY_WAITING_PAYMENT_STATUSES,
     ]
     active_orders = await session.scalar(
         select(func.count(Order.id)).where(Order.status.in_(active_statuses))
@@ -505,8 +1223,12 @@ async def get_orders(
     query = select(Order).order_by(desc(Order.created_at))
 
     # Filter by status
-    if status and status != "all":
-        query = query.where(Order.status == status)
+    status_filter_values = get_god_order_status_filter_values(status)
+    if status_filter_values:
+        if len(status_filter_values) == 1:
+            query = query.where(Order.status == status_filter_values[0])
+        else:
+            query = query.where(Order.status.in_(status_filter_values))
 
     # Search by order ID, subject, topic
     if search:
@@ -538,11 +1260,15 @@ async def get_orders(
         select(User).where(User.telegram_id.in_(user_ids))
     )
     users_map = {u.telegram_id: u for u in users_result.scalars().all()}
+    verification_contexts = await get_payment_verification_contexts(session, list(orders))
+    delivery_stats = await get_god_order_delivery_stats(session, [o.id for o in orders])
 
     orders_data = []
     for o in orders:
         user = users_map.get(o.user_id)
-        order_dict = order_to_response(o).__dict__
+        order_dict = canonicalize_god_order_payload_status(order_to_response(o).__dict__)
+        payment_context = verification_contexts.get(o.id)
+        delivery_stat = delivery_stats.get(o.id, {})
 
         promo_discount_amount = calculate_order_promo_discount_amount(o)
 
@@ -557,6 +1283,17 @@ async def get_orders(
             "promo_code": o.promo_code,
             "promo_discount": o.promo_discount,
             "promo_discount_amount": promo_discount_amount,
+            "payment_method": o.payment_method,
+            "pending_verification_amount": get_pending_verification_amount(o),
+            "payment_requested_amount": payment_context.amount_to_pay if payment_context else 0.0,
+            "payment_phase": payment_context.payment_phase if payment_context else None,
+            "payment_requested_at": payment_context.requested_at if payment_context else None,
+            "payment_is_batch": payment_context.is_batch if payment_context else False,
+            "payment_batch_orders_count": payment_context.batch_orders_count if payment_context else 0,
+            "payment_batch_total_amount": payment_context.batch_total_amount if payment_context else 0.0,
+            "payment_batch_order_ids": payment_context.batch_order_ids if payment_context else [],
+            "deliveries_count": delivery_stat.get("deliveries_count", 0),
+            "last_deliverable_at": delivery_stat.get("last_deliverable_at"),
         })
         orders_data.append(order_dict)
 
@@ -592,6 +1329,22 @@ async def get_order_details(
         .order_by(OrderMessage.created_at)
     )
     messages = messages_result.scalars().all()
+    lifecycle_events_result = await session.execute(
+        select(OrderLifecycleEvent)
+        .where(OrderLifecycleEvent.order_id == order_id)
+        .order_by(OrderLifecycleEvent.created_at.desc(), OrderLifecycleEvent.id.desc())
+    )
+    lifecycle_events = lifecycle_events_result.scalars().all()
+    admin_logs_result = await session.execute(
+        select(AdminActionLog)
+        .where(
+            AdminActionLog.target_type == "order",
+            AdminActionLog.target_id == order_id,
+            AdminActionLog.action_type.in_(GOD_TIMELINE_LOG_ACTIONS),
+        )
+        .order_by(AdminActionLog.created_at.desc(), AdminActionLog.id.desc())
+    )
+    admin_logs = admin_logs_result.scalars().all()
 
     # Calculate promo discount amount
     promo_discount_amount = 0.0
@@ -611,9 +1364,62 @@ async def get_order_details(
         if promo_usage_result.scalar_one_or_none():
             promo_returned = True
 
+    payment_contexts = await get_payment_verification_contexts(session, [order])
+    payment_context = payment_contexts.get(order.id)
+    payment_batch_orders = []
+    if payment_context and payment_context.is_batch and payment_context.batch_order_ids:
+        payment_batch_orders = await get_batch_payment_review_items(session, payment_context.batch_order_ids)
+    latest_delivery_batch = await get_latest_sent_delivery_batch(session, order.id)
+    delivery_history = await get_delivery_history(session, order.id, sent_only=True)
+    delivery_batches_by_id = {
+        int(batch.id): batch
+        for batch in delivery_history
+        if getattr(batch, "id", None) is not None
+    }
+    current_revision_round = await get_current_revision_round(session, order.id)
+    revision_history = await get_revision_round_history(session, order.id)
+    current_revision_round_payload = (
+        _build_god_revision_round_summary(
+            current_revision_round,
+            messages,
+            delivery_batches_by_id=delivery_batches_by_id,
+        )
+        if current_revision_round
+        else None
+    )
+    revision_history_payload = [
+        _build_god_revision_round_summary(
+            round_,
+            messages,
+            delivery_batches_by_id=delivery_batches_by_id,
+        )
+        for round_ in revision_history
+    ]
+    recent_deliveries = build_god_delivery_items(
+        messages,
+        fallback_files_url=order.files_url,
+        limit=10,
+    )
+    activity_timeline = build_god_activity_timeline(
+        order=order,
+        lifecycle_events=lifecycle_events,
+        admin_logs=admin_logs,
+        messages=messages,
+        revision_rounds=revision_history,
+        delivery_batches_by_id=delivery_batches_by_id,
+        fallback_files_url=order.files_url,
+    )
+    operational_summary = build_god_operational_summary(
+        order=order,
+        activity_timeline=activity_timeline,
+        payment_context=payment_context,
+        recent_deliveries=recent_deliveries,
+        current_revision_round=current_revision_round_payload,
+    )
+
     return {
         "order": {
-            **order_to_response(order).__dict__,
+            **canonicalize_god_order_payload_status(order_to_response(order).__dict__),
             "user_telegram_id": order.user_id,
             "user_fullname": user.fullname if user else "Без имени",
             "user_username": user.username if user else None,
@@ -621,6 +1427,24 @@ async def get_order_details(
             "revision_count": order.revision_count,
             "description": order.description,
             "payment_method": order.payment_method,
+            "pending_verification_amount": get_pending_verification_amount(order),
+            "payment_requested_amount": payment_context.amount_to_pay if payment_context else 0.0,
+            "payment_phase": payment_context.payment_phase if payment_context else None,
+            "payment_requested_at": payment_context.requested_at if payment_context else None,
+            "payment_is_batch": payment_context.is_batch if payment_context else False,
+            "payment_batch_orders_count": payment_context.batch_orders_count if payment_context else 0,
+            "payment_batch_total_amount": payment_context.batch_total_amount if payment_context else 0.0,
+            "payment_batch_order_ids": payment_context.batch_order_ids if payment_context else [],
+            "payment_batch_orders": payment_batch_orders,
+            "deliveries_count": len([message for message in messages if is_god_deliverable_message(message)]),
+            "last_deliverable_at": recent_deliveries[0]["created_at"] if recent_deliveries else None,
+            "recent_deliveries": recent_deliveries,
+            "latest_delivery": serialize_delivery_batch(latest_delivery_batch) if latest_delivery_batch else None,
+            "delivery_history": [serialize_delivery_batch(batch) for batch in delivery_history],
+            "current_revision_round": current_revision_round_payload,
+            "revision_history": revision_history_payload,
+            "activity_timeline": activity_timeline,
+            "operational_summary": operational_summary,
             "promo_code": order.promo_code,
             "promo_discount": order.promo_discount,
             "promo_discount_amount": promo_discount_amount,
@@ -642,6 +1466,15 @@ async def get_order_details(
                 "message_text": m.message_text,
                 "file_type": m.file_type,
                 "file_name": m.file_name,
+                "revision_round_id": m.revision_round_id,
+                "delivery_batch_id": m.delivery_batch_id,
+                "delivery_version_number": (
+                    int(delivery_batch.version_number)
+                    if m.delivery_batch_id
+                    and (delivery_batch := delivery_batches_by_id.get(int(m.delivery_batch_id or 0))) is not None
+                    and delivery_batch.version_number is not None
+                    else None
+                ),
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             }
             for m in messages
@@ -666,81 +1499,43 @@ async def update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
 
-    new_status = data.status
-    old_status = order.status
+    try:
+        change = apply_order_status_transition(order, data.status, force=data.force)
+    except OrderStatusTransitionError as exc:
+        detail = str(exc)
+        if not data.force:
+            detail = f"{detail}. Используйте force=true для принудительного изменения."
+        raise HTTPException(status_code=400, detail=detail) from exc
 
-    # Validate status transition (unless force=True)
-    from database.models.orders import is_valid_transition
-    if not data.force and not is_valid_transition(old_status, new_status):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Переход {old_status} → {new_status} недопустим. "
-                   f"Используйте force=true для принудительного изменения.",
-        )
-
-    order.status = new_status
-
-    # Set completed_at if completing
-    if new_status == OrderStatus.COMPLETED.value and not order.completed_at:
-        order.completed_at = datetime.now(MSK_TZ)
-        # Process cashback
-        try:
-            await BonusService.add_order_cashback(
-                session, bot, order.user_id, order_id, get_order_cashback_base(order)
-            )
-        except Exception as e:
-            logger.error(f"Cashback error: {e}")
-
-    # Return promo code if order is cancelled or rejected
-    if new_status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value]:
-        if order.promo_code:
-            try:
-                from bot.services.promo_service import PromoService
-                success, msg = await PromoService.return_promo_usage(session, order_id, bot=bot)
-                if success:
-                    logger.info(f"[God Mode] Promo returned for cancelled order #{order_id}")
-                else:
-                    logger.warning(f"[God Mode] Failed to return promo for order #{order_id}: {msg}")
-            except Exception as e:
-                logger.error(f"[God Mode] Error returning promo for order #{order_id}: {e}")
+    if not change.changed:
+        return {"success": True, "old_status": order.status, "new_status": order.status}
 
     # Log action
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_STATUS_CHANGE,
         target_type="order", target_id=order_id,
-        details=f"Status: {old_status} -> {new_status}",
-        old_value={"status": old_status},
-        new_value={"status": new_status},
+        details=f"Status: {change.old_status} -> {change.new_status}",
+        old_value={"status": change.old_status},
+        new_value={"status": change.new_status},
         request=request,
     )
 
-    await session.commit()
-
-    # Update live card in channel
-    try:
-        from bot.services.live_cards import update_live_card
-        await update_live_card(bot, session, order)
-    except Exception as e:
-        logger.warning(f"Live card update failed: {e}")
-
-    # Send notification to user
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order_id,
-            new_status=new_status,
-            old_status=old_status,
-            extra_data={
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            notification_extra_data={
                 "final_price": order.final_price,
                 "price": order.price,
                 "paid_amount": order.paid_amount,
-            }
-        )
-    except Exception as e:
-        logger.warning(f"WebSocket notification failed: {e}")
+            },
+        ),
+    )
 
-    return {"success": True, "old_status": old_status, "new_status": new_status}
+    return {"success": True, "old_status": change.old_status, "new_status": change.new_status}
 
 
 @router.post("/orders/{order_id}/price")
@@ -839,8 +1634,16 @@ async def update_order_price(
 
     # Auto-transition status if needed
     old_status = order.status
-    if order.status in [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value]:
-        order.status = OrderStatus.WAITING_PAYMENT.value
+    canonical_status = canonicalize_order_status(order.status) or order.status
+    if canonical_status in [
+        OrderStatus.PENDING.value,
+        OrderStatus.WAITING_ESTIMATION.value,
+        OrderStatus.WAITING_PAYMENT.value,
+    ]:
+        try:
+            apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+        except OrderStatusTransitionError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_PRICE_SET,
@@ -979,9 +1782,13 @@ async def confirm_order_payment(
         previous_paid_amount=old_paid,
         new_paid_amount=target_paid_amount,
         final_price=order.final_price,
+        current_status=old_status,
     )
+    try:
+        apply_order_status_transition(order, payment_update.new_status)
+    except OrderStatusTransitionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     order.paid_amount = payment_update.new_paid_amount
-    order.status = payment_update.new_status
 
     # Update user stats
     user = await session.scalar(
@@ -1104,14 +1911,21 @@ async def reject_order_payment(
     reason = data.reason
 
     old_status = order.status
-    order.status = OrderStatus.WAITING_PAYMENT.value
+    try:
+        status_change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_PAYMENT_REJECT,
         target_type="order", target_id=order_id,
         details=f"Payment rejected: {reason}",
         old_value={"status": old_status},
-        new_value={"status": order.status, "reason": reason},
+        new_value={
+            "status": status_change.new_status,
+            "previous_status": status_change.old_status,
+            "reason": reason,
+        },
         request=request,
     )
 

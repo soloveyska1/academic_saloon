@@ -22,7 +22,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from bot.utils.formatting import format_price
-from database.models.orders import Order, OrderStatus, Conversation, get_status_meta
+from database.models.orders import (
+    Order,
+    OrderStatus,
+    Conversation,
+    canonicalize_order_status,
+    get_status_meta,
+)
 from bot.services.order_message_formatter import (
     build_price_breakdown_lines,
     format_deadline_label,
@@ -61,7 +67,7 @@ CARD_STAGES = {
     },
     # Ждёт оплаты
     "waiting": {
-        "statuses": [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value],
+        "statuses": [OrderStatus.WAITING_PAYMENT.value],
         "emoji": "🟡",
         "tag": "Ждёт оплаты",
     },
@@ -112,8 +118,9 @@ CARD_STAGES = {
 
 def get_card_stage(status: str) -> dict:
     """Получить стадию карточки по статусу заказа"""
+    canonical_status = canonicalize_order_status(status) or status
     for stage_name, stage_config in CARD_STAGES.items():
-        if status in stage_config["statuses"]:
+        if canonical_status in stage_config["statuses"]:
             return {**stage_config, "name": stage_name}
     return {**CARD_STAGES["new"], "name": "new"}
 
@@ -628,6 +635,8 @@ async def _update_topic_card(
             elif "message to edit not found" in str(e) or "message_thread_id" in str(e).lower():
                 logger.warning(f"Topic card not found for order #{order.id}, creating new")
                 conv.topic_card_message_id = None
+                if hasattr(conv, "topic_header_message_id"):
+                    conv.topic_header_message_id = None
             else:
                 logger.error(f"Failed to edit topic card for order #{order.id}: {e}")
                 return None
@@ -662,6 +671,8 @@ async def _update_topic_card(
             logger.warning(f"Topic {conv.topic_id} was deleted for order #{order.id}")
             conv.topic_id = None
             conv.topic_card_message_id = None
+            if hasattr(conv, "topic_header_message_id"):
+                conv.topic_header_message_id = None
             await session.commit()
         else:
             logger.error(f"Failed to send topic card for order #{order.id}: {e}")
@@ -690,6 +701,31 @@ async def update_card_status(
         yadisk_link, extra_text
     )
     return result is not None
+
+
+async def update_live_card(
+    bot: Bot,
+    session: AsyncSession,
+    order: Order,
+    *,
+    client_username: str = None,
+    client_name: str = None,
+    yadisk_link: str = None,
+    extra_text: str = None,
+) -> bool:
+    """Backward-compatible wrapper for routes still calling the legacy helper."""
+    from bot.services.unified_hub import update_topic_name
+
+    await update_topic_name(bot=bot, session=session, order=order)
+    return await update_card_status(
+        bot=bot,
+        order=order,
+        session=session,
+        client_username=client_username,
+        client_name=client_name,
+        yadisk_link=yadisk_link,
+        extra_text=extra_text,
+    )
 
 
 # ══════════════════════════════════════════════════════════════

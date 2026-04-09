@@ -8,7 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
+from database.models.orders import (
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    Order,
+    OrderStatus,
+    WORK_TYPE_LABELS,
+    WorkType,
+    is_waiting_payment_status,
+)
 from bot.states.order import OrderState
 from bot.keyboards.inline import get_cancel_complete_keyboard
 from bot.keyboards.orders import (
@@ -27,6 +34,12 @@ from bot.services.abandoned_detector import get_abandoned_tracker
 from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
 
 from .router import (
     order_router,
@@ -402,8 +415,7 @@ async def edit_order_data_callback(callback: CallbackQuery, state: FSMContext, s
         Order.user_id == callback.from_user.id,
         Order.status.in_([
             OrderStatus.DRAFT.value,           # YELLOW FLOW (before submitting for review)
-            OrderStatus.WAITING_PAYMENT.value,
-            OrderStatus.CONFIRMED.value,  # legacy
+            *LEGACY_WAITING_PAYMENT_STATUSES,
         ])
     )
     order_result = await session.execute(order_query)
@@ -448,20 +460,33 @@ async def cancel_confirmed_order_callback(callback: CallbackQuery, session: Asyn
         return
 
     # Can only cancel unpaid orders
-    cancelable = [
+    cancelable = {
         OrderStatus.DRAFT.value,              # YELLOW FLOW (before submitting for review)
         OrderStatus.PENDING.value,
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,  # legacy
-        OrderStatus.WAITING_ESTIMATION.value
-    ]
-    if order.status not in cancelable:
+        OrderStatus.WAITING_ESTIMATION.value,
+    }
+    if order.status not in cancelable and not is_waiting_payment_status(order.status):
         await callback.answer("Этот заказ уже нельзя отменить", show_alert=True)
         return
 
-    # Cancel
-    order.status = OrderStatus.CANCELLED.value
-    await session.commit()
+    try:
+        change = apply_order_status_transition(order, OrderStatus.CANCELLED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=callback.from_user.username,
+            client_name=callback.from_user.full_name,
+            card_extra_text=f"❌ Клиент отменил заказ (был: {change.old_status})",
+        ),
+    )
 
     await callback.answer("❌ Заказ отменён")
 
@@ -565,8 +590,12 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
     data = await state.get_data()
     attachments = data.get("attachments", [])
 
-    # Change status to WAITING_ESTIMATION
-    order.status = OrderStatus.WAITING_ESTIMATION.value
+    try:
+        apply_order_status_transition(order, OrderStatus.WAITING_ESTIMATION.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+
     await session.commit()
 
     await callback.answer("Заказ отправлен на оценку")

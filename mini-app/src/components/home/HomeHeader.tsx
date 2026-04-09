@@ -350,6 +350,9 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
   const totalSaved = summary?.totalSaved ?? 0
   const showFinance = !isNewUser && summary
   const { delta: weeklyDelta, sparklineData } = useBalanceFraming(balance, user.orders_count)
+  const showSavingsChip = totalSaved > 0
+  const showWeeklyChip = !showSavingsChip && weeklyDelta !== null && weeklyDelta !== 0
+  const showOrdersChip = (user.orders_count ?? 0) > 0
 
   // Sticky mini-bar: track when header scrolls out of view
   const headerRef = useRef<HTMLElement>(null)
@@ -668,7 +671,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
         </motion.div>
 
         {/* Spacer between name and finance card (only when finance is visible) */}
-        {showFinance && <div style={{ height: 14 }} />}
+        {showFinance && <div style={{ height: 12 }} />}
 
         {/* ═══ Finance card — full-width ═══ */}
         {showFinance && (
@@ -861,7 +864,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                   </span>
                 </motion.div>
 
-                {/* Metric chips row — always show at least one */}
+                {/* Metric chips row — keep it short and readable */}
                 {online && !balanceHidden && (
                   <motion.div
                     initial={reduced ? false : { opacity: 0, y: 3 }}
@@ -871,10 +874,10 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: 6,
-                      marginTop: 8,
+                      marginTop: 7,
                     }}
                   >
-                    {weeklyDelta !== null && weeklyDelta !== 0 && (
+                    {showWeeklyChip && weeklyDelta !== null && (
                       <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -899,7 +902,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                         )}
                       </div>
                     )}
-                    {totalSaved > 0 && (
+                    {showSavingsChip && (
                       <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -915,8 +918,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                         </span>
                       </div>
                     )}
-                    {/* Orders count chip — VIP gold badge for 50+ orders */}
-                    {(user.orders_count ?? 0) > 0 && (() => {
+                    {showOrdersChip && (() => {
                       const count = user.orders_count ?? 0
                       const isVIP = count >= 50
                       return (
@@ -944,59 +946,58 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                 )}
               </div>
 
-              {/* ── Bottom: 3-column mini-grid ── */}
+              {/* ── Bottom row: rank, cashback, club ── */}
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto 1fr',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: 0,
+                  justifyContent: 'space-between',
+                  gap: 12,
                   paddingTop: 10,
                   borderTop: '1px solid rgba(212,175,55,0.06)',
                 }}
               >
-                {/* Left: rank */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Crown
-                    size={12}
-                    strokeWidth={2}
-                    aria-hidden
-                    style={{ color: 'rgba(212,175,55,0.50)', flexShrink: 0 }}
-                  />
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'rgba(245,235,200,0.40)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
-                    {user.rank.name || 'Клуб'}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                    <Crown
+                      size={12}
+                      strokeWidth={2}
+                      aria-hidden
+                      style={{ color: 'rgba(212,175,55,0.50)', flexShrink: 0 }}
+                    />
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: 'rgba(245,235,200,0.40)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {user.rank.name || 'Клуб'}
+                    </span>
+                  </div>
+                  <div style={{ width: 1, height: 14, background: 'rgba(212,175,55,0.08)', flexShrink: 0 }} />
+                  <GoldText
+                    variant="static"
+                    size="sm"
+                    weight={700}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      fontSize: 15,
+                      textAlign: 'left',
+                    }}
+                  >
+                    {cashback}% кешбэк
+                  </GoldText>
                 </div>
-
-                {/* Center: cashback hero */}
-                <GoldText
-                  variant="static"
-                  size="sm"
-                  weight={700}
-                  style={{
-                    whiteSpace: 'nowrap',
-                    fontSize: 15,
-                    textAlign: 'center',
-                    padding: '0 16px',
-                  }}
-                >
-                  {cashback}% кешбэк
-                </GoldText>
 
                 {/* Right: bonus link — subtle text, not a loud button */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <motion.button
                     type="button"
-                    aria-label="Открыть бонусы"
+                    aria-label="Открыть клуб"
                     whileTap={reduced ? undefined : { scale: TAP_SCALE }}
                     onClick={() => onOpenLounge()}
                     style={{
@@ -1015,7 +1016,7 @@ const HomeHeaderInner = memo(function HomeHeaderInner({
                       color: 'rgba(212,175,55,0.50)',
                       whiteSpace: 'nowrap',
                     }}>
-                      Бонусы
+                      Клуб
                     </span>
                     <ArrowUpRight
                       size={10}

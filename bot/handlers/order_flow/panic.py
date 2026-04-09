@@ -500,9 +500,13 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
                     client_name=client_name,
                     work_type="Срочный заказ",
                     telegram_id=user_id,
+                    client_username=callback.from_user.username,
+                    order_meta=yandex_disk_service.build_order_meta(order),
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
+                    order.files_url = result.folder_url
+                    await session.commit()
                     logger.info(f"Panic Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
 
         except Exception as e:

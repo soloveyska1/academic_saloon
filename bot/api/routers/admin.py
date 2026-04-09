@@ -1,7 +1,7 @@
 import logging
 import html
 from typing import List
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, desc, func, text, and_, case
@@ -10,7 +10,7 @@ from aiogram import Bot
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType
+from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, canonicalize_order_status
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
@@ -21,6 +21,12 @@ from bot.api.schemas import (
     LiveEvent, LiveFeedResponse
 )
 from bot.bot_instance import get_bot
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -468,7 +474,8 @@ async def update_order_status_admin(
     order_id: int,
     data: AdminOrderUpdate,
     tg_user: TelegramUser = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    bot: Bot = Depends(get_bot),
 ):
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
@@ -476,9 +483,25 @@ async def update_order_status_admin(
     order = await session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail='Order not found')
-        
-    order.status = data.status
-    await session.commit()
+
+    try:
+        change = apply_order_status_transition(order, data.status)
+    except OrderStatusTransitionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not change.changed:
+        return {'success': True}
+
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+        ),
+    )
+
     return {'success': True}
 
 @router.post('/admin/orders/{order_id}/price')
@@ -499,8 +522,16 @@ async def update_order_price_admin(
     order.price = data.price
     # final_price is computed from price, discount, and bonus_used
 
-    if order.status == OrderStatus.WAITING_ESTIMATION.value:
-        order.status = OrderStatus.WAITING_PAYMENT.value
+    canonical_status = canonicalize_order_status(order.status) or order.status
+    if canonical_status in {
+        OrderStatus.PENDING.value,
+        OrderStatus.WAITING_ESTIMATION.value,
+        OrderStatus.WAITING_PAYMENT.value,
+    }:
+        try:
+            apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+        except OrderStatusTransitionError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         
     await session.commit()
     

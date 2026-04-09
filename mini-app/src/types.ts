@@ -91,6 +91,31 @@ export interface BonusExpiryInfo {
   color?: string
 }
 
+export interface OrderDeliveryBatch {
+  id: number
+  status: 'draft' | 'sent' | 'cancelled' | string
+  version_number?: number | null
+  revision_count_snapshot?: number
+  manager_comment?: string | null
+  source?: string | null
+  files_url?: string | null
+  file_count?: number
+  created_at?: string | null
+  sent_at?: string | null
+}
+
+export interface OrderRevisionRound {
+  id: number
+  round_number: number
+  status: 'open' | 'fulfilled' | 'cancelled' | string
+  initial_comment?: string | null
+  requested_at?: string | null
+  last_client_activity_at?: string | null
+  closed_at?: string | null
+  closed_by_delivery_batch_id?: number | null
+  requested_by_user_id?: number | null
+}
+
 export interface Order {
   id: number
   user_id: number
@@ -124,6 +149,10 @@ export interface Order {
   can_resume?: boolean
   completed_at?: string | null
   delivered_at?: string | null  // When work was delivered (30-day revision period starts)
+  latest_delivery?: OrderDeliveryBatch | null
+  delivery_history?: OrderDeliveryBatch[]
+  current_revision_round?: OrderRevisionRound | null
+  revision_history?: OrderRevisionRound[]
   // Admin-specific fields
   fullname?: string
   username?: string | null
@@ -138,7 +167,6 @@ export type OrderStatus =
   | 'waiting_estimation'
   | 'waiting_payment'
   | 'verification_pending'
-  | 'confirmed'
   | 'paid'
   | 'paid_full'
   | 'in_progress'
@@ -535,6 +563,76 @@ export interface GodOrder {
   bonus_used: number
   progress: number
   payment_scheme: string | null
+  payment_method?: string | null
+  pending_verification_amount?: number
+  payment_requested_amount?: number
+  payment_phase?: 'initial' | 'final' | null
+  payment_requested_at?: string | null
+  payment_is_batch?: boolean
+  payment_batch_orders_count?: number
+  payment_batch_total_amount?: number
+  payment_batch_order_ids?: number[]
+  payment_batch_orders?: Array<{
+    id: number
+    status: string
+    work_type_label: string
+    subject: string | null
+    topic: string | null
+    amount_to_pay: number
+    payment_phase: 'initial' | 'final'
+  }>
+  deliveries_count?: number
+  last_deliverable_at?: string | null
+  latest_delivery?: OrderDeliveryBatch | null
+  delivery_history?: OrderDeliveryBatch[]
+  current_revision_round?: (OrderRevisionRound & {
+    message_count?: number
+    attachment_count?: number
+    latest_activity_at?: string | null
+    last_client_message_preview?: string | null
+    closed_by_delivery_version_number?: number | null
+  }) | null
+  revision_history?: Array<OrderRevisionRound & {
+    message_count?: number
+    attachment_count?: number
+    latest_activity_at?: string | null
+    last_client_message_preview?: string | null
+    closed_by_delivery_version_number?: number | null
+  }>
+  recent_deliveries?: Array<{
+    id: number
+    file_type: string | null
+    file_name: string | null
+    title: string
+    message_text: string | null
+    created_at: string | null
+    file_url: string | null
+    source: 'direct_admin_send' | 'order_topic'
+    source_label: string
+  }>
+  activity_timeline?: Array<{
+    id: string
+    kind: string
+    title: string
+    details: string | null
+    timestamp: string | null
+    accent: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'gold'
+    link_url?: string | null
+    link_label?: string | null
+  }>
+  operational_summary?: {
+    tone: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'gold'
+    title: string
+    subtitle: string | null
+    next_action: string | null
+    items: Array<{
+      id: string
+      title: string
+      details: string | null
+      timestamp: string | null
+      accent: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'gold'
+    }>
+  }
   files_url: string | null
   created_at: string
   user_telegram_id: number
@@ -623,5 +721,8 @@ export interface GodOrderMessage {
   message_text: string | null
   file_type: string | null
   file_name: string | null
+  revision_round_id?: number | null
+  delivery_batch_id?: number | null
+  delivery_version_number?: number | null
   created_at: string | null
 }

@@ -3,9 +3,15 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models.levels import RankLevel, LoyaltyLevel
-from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS
+from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS, canonicalize_order_status
 from bot.services.order_pause import can_pause_order, get_pause_available_days
-from .schemas import RankInfo, LoyaltyInfo, OrderResponse
+from .schemas import (
+    LoyaltyInfo,
+    OrderDeliveryBatchResponse,
+    OrderResponse,
+    OrderRevisionRoundResponse,
+    RankInfo,
+)
 from .cache import get_cached_rank_levels, get_cached_loyalty_levels
 from core.ranks import RANK_TIERS
 
@@ -98,11 +104,45 @@ def get_loyalty_info(orders_count: int, loyalty_levels: list[LoyaltyLevel]) -> L
         orders_to_next=orders_to_next
     )
 
-def order_to_response(order: Order) -> OrderResponse:
+def _normalize_delivery_batch(
+    batch: OrderDeliveryBatchResponse | dict[str, object] | None,
+) -> OrderDeliveryBatchResponse | None:
+    if batch is None:
+        return None
+    if isinstance(batch, OrderDeliveryBatchResponse):
+        return batch
+    return OrderDeliveryBatchResponse(**batch)
+
+
+def _normalize_revision_round(
+    round_: OrderRevisionRoundResponse | dict[str, object] | None,
+) -> OrderRevisionRoundResponse | None:
+    if round_ is None:
+        return None
+    if isinstance(round_, OrderRevisionRoundResponse):
+        return round_
+    return OrderRevisionRoundResponse(**round_)
+
+
+def order_to_response(
+    order: Order,
+    *,
+    latest_delivery: OrderDeliveryBatchResponse | dict[str, object] | None = None,
+    delivery_history: list[OrderDeliveryBatchResponse | dict[str, object]] | None = None,
+    current_revision_round: OrderRevisionRoundResponse | dict[str, object] | None = None,
+    revision_history: list[OrderRevisionRoundResponse | dict[str, object]] | None = None,
+) -> OrderResponse:
     """Convert Order model to response schema"""
-    normalized_status = _normalize_enum_value(getattr(order, 'status', None), KNOWN_ORDER_STATUSES, OrderStatus.PENDING.value)
+    raw_status = canonicalize_order_status(getattr(order, 'status', None))
+    normalized_status = _normalize_enum_value(raw_status, KNOWN_ORDER_STATUSES, OrderStatus.PENDING.value)
     normalized_work_type = _normalize_enum_value(getattr(order, 'work_type', None), KNOWN_WORK_TYPES, WorkType.OTHER.value)
     final_price = order.final_price if getattr(order, 'final_price', None) is not None else (order.price or 0)
+    paused_from_status = canonicalize_order_status(getattr(order, 'paused_from_status', None))
+    normalized_paused_from_status = (
+        _normalize_enum_value(paused_from_status, KNOWN_ORDER_STATUSES, OrderStatus.PENDING.value)
+        if paused_from_status in KNOWN_ORDER_STATUSES
+        else None
+    )
 
     try:
         work_type_enum = WorkType(normalized_work_type)
@@ -136,7 +176,7 @@ def order_to_response(order: Order) -> OrderResponse:
         review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
         is_archived=getattr(order, 'is_archived', False),  # Whether order is archived
         revision_count=getattr(order, 'revision_count', 0) or 0,
-        paused_from_status=_normalize_text(getattr(order, 'paused_from_status', None)),
+        paused_from_status=normalized_paused_from_status,
         pause_started_at=_normalize_optional_iso(getattr(order, 'pause_started_at', None)),
         pause_until=_normalize_optional_iso(getattr(order, 'pause_until', None)),
         pause_reason=_normalize_text(getattr(order, 'pause_reason', None)),
@@ -147,5 +187,23 @@ def order_to_response(order: Order) -> OrderResponse:
         created_at=order.created_at.isoformat() if order.created_at else "",
         updated_at=_normalize_optional_iso(getattr(order, 'updated_at', None)),
         completed_at=_normalize_optional_iso(getattr(order, 'completed_at', None)),
-        delivered_at=_normalize_optional_iso(getattr(order, 'delivered_at', None))
+        delivered_at=_normalize_optional_iso(getattr(order, 'delivered_at', None)),
+        latest_delivery=_normalize_delivery_batch(latest_delivery),
+        delivery_history=[
+            normalized
+            for normalized in (
+                _normalize_delivery_batch(item)
+                for item in (delivery_history or [])
+            )
+            if normalized is not None
+        ],
+        current_revision_round=_normalize_revision_round(current_revision_round),
+        revision_history=[
+            normalized
+            for normalized in (
+                _normalize_revision_round(item)
+                for item in (revision_history or [])
+            )
+            if normalized is not None
+        ],
     )

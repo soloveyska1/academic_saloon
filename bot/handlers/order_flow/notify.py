@@ -129,9 +129,14 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
                     client_name=client_name,
                     work_type=work_label,
                     telegram_id=user.id,
+                    client_username=getattr(user, "username", None),
+                    order_meta=yandex_disk_service.build_order_meta(order),
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
+                    if session:
+                        order.files_url = result.folder_url
+                        await session.commit()
                     logger.info(f"Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
 
         except Exception as e:

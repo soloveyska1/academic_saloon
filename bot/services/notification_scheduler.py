@@ -17,22 +17,28 @@ from typing import Optional
 
 import pytz
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from sqlalchemy import select, and_
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from core.config import settings
-from core.redis_pool import get_redis
-from database.models.orders import Order, OrderStatus, get_status_meta
-from database.models.users import User
 from bot.services.order_pause import auto_resume_if_needed
 from bot.utils.formatting import format_price
+from core.config import settings
+from core.redis_pool import get_redis
+from database.models.orders import (
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    Order,
+    OrderStatus,
+    get_status_meta,
+)
+from database.models.users import User
 
 logger = logging.getLogger(__name__)
 MSK = pytz.timezone("Europe/Moscow")
 
 # Check interval (minutes)
 CHECK_INTERVAL = 300  # 5 min
+ORDER_LIFECYCLE_REPLAY_BATCH = 20
 
 # Redis key prefix for dedup
 NOTIF_PREFIX = "notif:sent"
@@ -91,6 +97,29 @@ class NotificationScheduler:
         ])
 
     # ══════════════════════════════════════════════════════════
+    #  ORDER LIFECYCLE REDRIVE
+    # ══════════════════════════════════════════════════════════
+
+    async def _replay_order_lifecycle_events(self):
+        """Retry pending/failed order lifecycle fanout events."""
+        async with self.session_maker() as session:
+            from bot.services.order_status_service import replay_pending_order_lifecycle_events
+
+            summary = await replay_pending_order_lifecycle_events(
+                session=session,
+                bot=self.bot,
+                limit=ORDER_LIFECYCLE_REPLAY_BATCH,
+            )
+            if summary.processed:
+                logger.info(
+                    "[Scheduler] Order lifecycle replay processed=%s dispatched=%s failed=%s skipped=%s",
+                    summary.processed,
+                    summary.dispatched,
+                    summary.failed,
+                    summary.skipped,
+                )
+
+    # ══════════════════════════════════════════════════════════
     #  PAUSED ORDER AUTO-RESUME
     # ══════════════════════════════════════════════════════════
 
@@ -134,8 +163,9 @@ class NotificationScheduler:
                     logger.warning(f"[Scheduler] Failed to send pause-resume WS for order #{order.id}: {e}")
 
                 try:
-                    from bot.services.live_cards import send_or_update_card
                     from bot.handlers.order_chat import get_or_create_topic
+                    from bot.services.live_cards import send_or_update_card
+
                     await send_or_update_card(
                         bot=self.bot,
                         order=order,
@@ -175,17 +205,15 @@ class NotificationScheduler:
     async def _check_payment_reminders(self):
         """
         Remind users who haven't paid yet.
-        Triggers: 2h, 24h, 3d after price was set (status = waiting_payment/confirmed).
+        Triggers: 2h, 24h, 3d after price was set
+        (status = waiting_payment, including legacy confirmed rows).
         """
         async with self.session_maker() as session:
             now = datetime.now(MSK)
 
             # Orders waiting for payment
             query = select(Order).where(
-                Order.status.in_([
-                    OrderStatus.WAITING_PAYMENT.value,
-                    OrderStatus.CONFIRMED.value,
-                ]),
+                Order.status.in_(LEGACY_WAITING_PAYMENT_STATUSES),
                 Order.price > 0,
             )
             result = await session.execute(query)
@@ -428,8 +456,8 @@ class NotificationScheduler:
 
                     sent = await self._send(
                         user.telegram_id,
-                        f"<b>Давно не виделись</b>\n\n"
-                        f"Новая сессия или задание? Мы на связи и готовы помочь.",
+                        "<b>Давно не виделись</b>\n\n"
+                        "Новая сессия или задание? Мы на связи и готовы помочь.",
                         keyboard,
                     )
                     if sent:
@@ -441,6 +469,11 @@ class NotificationScheduler:
 
     async def _run_checks(self):
         """Run all notification checks."""
+        try:
+            await self._replay_order_lifecycle_events()
+        except Exception as e:
+            logger.error(f"[Scheduler] Order lifecycle replay error: {e}")
+
         try:
             await self._check_paused_orders()
         except Exception as e:

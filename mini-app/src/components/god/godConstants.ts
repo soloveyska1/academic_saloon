@@ -44,7 +44,6 @@ export const STATUS_CONFIG: Record<string, { label: string; emoji: string; color
   waiting_estimation:   { label: 'Оценка',      emoji: '🔍', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
   waiting_payment:      { label: 'К оплате',    emoji: '💵', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
   verification_pending: { label: 'Проверка',    emoji: '🔔', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
-  confirmed:            { label: 'Подтверждён', emoji: '✅', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
   paid:                 { label: 'Аванс',       emoji: '💳', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' },
   paid_full:            { label: 'Оплачен',     emoji: '💰', color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
   in_progress:          { label: 'В работе',    emoji: '⚙️', color: '#6366f1', bg: 'rgba(99,102,241,0.15)' },

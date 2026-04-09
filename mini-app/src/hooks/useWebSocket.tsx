@@ -14,6 +14,10 @@ export type WSMessageType =
   | 'chat_message'
   | 'typing_indicator'
   | 'file_delivery'
+  | 'delivery_update'
+  | 'revision_round_opened'
+  | 'revision_round_updated'
+  | 'revision_round_fulfilled'
 
 export interface WSMessage {
   type: WSMessageType
@@ -76,6 +80,53 @@ export interface FileDeliveryMessage extends WSMessage {
   priority?: 'low' | 'normal' | 'high'
 }
 
+export interface DeliveryUpdateMessage extends WSMessage {
+  type: 'delivery_update'
+  order_id: number
+  delivery_batch_id: number
+  version_number: number
+  revision_count_snapshot: number
+  manager_comment?: string | null
+  file_count: number
+  files_url: string
+  title: string
+  message: string
+  icon?: string
+  color?: string
+  priority?: 'low' | 'normal' | 'high'
+}
+
+export interface RevisionRoundOpenedMessage extends WSMessage {
+  type: 'revision_round_opened'
+  order_id: number
+  revision_round_id: number
+  round_number: number
+  initial_comment?: string | null
+  title?: string
+  message?: string
+}
+
+export interface RevisionRoundUpdatedMessage extends WSMessage {
+  type: 'revision_round_updated'
+  order_id: number
+  revision_round_id: number
+  round_number: number
+  latest_comment?: string | null
+  title?: string
+  message?: string
+}
+
+export interface RevisionRoundFulfilledMessage extends WSMessage {
+  type: 'revision_round_fulfilled'
+  order_id: number
+  revision_round_id: number
+  round_number: number
+  delivery_batch_id?: number | null
+  version_number?: number | null
+  title?: string
+  message?: string
+}
+
 export interface RefreshMessage extends WSMessage {
   type: 'refresh'
   refresh_type: 'all' | 'orders' | 'profile' | 'balance'
@@ -127,6 +178,10 @@ interface UseWebSocketOptions {
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
+  onDeliveryUpdate?: (msg: DeliveryUpdateMessage) => void
+  onRevisionRoundOpened?: (msg: RevisionRoundOpenedMessage) => void
+  onRevisionRoundUpdated?: (msg: RevisionRoundUpdatedMessage) => void
+  onRevisionRoundFulfilled?: (msg: RevisionRoundFulfilledMessage) => void
   onConnect?: () => void
   onDisconnect?: () => void
   autoReconnect?: boolean
@@ -154,6 +209,10 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onNotification,
     onRefresh,
     onFileDelivery,
+    onDeliveryUpdate,
+    onRevisionRoundOpened,
+    onRevisionRoundUpdated,
+    onRevisionRoundFulfilled,
     onConnect,
     onDisconnect,
     autoReconnect = true,
@@ -205,6 +264,10 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onNotification,
     onRefresh,
     onFileDelivery,
+    onDeliveryUpdate,
+    onRevisionRoundOpened,
+    onRevisionRoundUpdated,
+    onRevisionRoundFulfilled,
     onConnect,
     onDisconnect,
   })
@@ -219,10 +282,14 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       onNotification,
       onRefresh,
       onFileDelivery,
+      onDeliveryUpdate,
+      onRevisionRoundOpened,
+      onRevisionRoundUpdated,
+      onRevisionRoundFulfilled,
       onConnect,
       onDisconnect,
     }
-  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onChatMessage, onNotification, onRefresh, onFileDelivery, onConnect, onDisconnect])
+  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onChatMessage, onNotification, onRefresh, onFileDelivery, onDeliveryUpdate, onRevisionRoundOpened, onRevisionRoundUpdated, onRevisionRoundFulfilled, onConnect, onDisconnect])
 
   // Add message handler
   const addMessageHandler = useCallback((handler: MessageHandler) => {
@@ -285,6 +352,18 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           break
         case 'file_delivery':
           handlers.onFileDelivery?.(message as FileDeliveryMessage)
+          break
+        case 'delivery_update':
+          handlers.onDeliveryUpdate?.(message as DeliveryUpdateMessage)
+          break
+        case 'revision_round_opened':
+          handlers.onRevisionRoundOpened?.(message as RevisionRoundOpenedMessage)
+          break
+        case 'revision_round_updated':
+          handlers.onRevisionRoundUpdated?.(message as RevisionRoundUpdatedMessage)
+          break
+        case 'revision_round_fulfilled':
+          handlers.onRevisionRoundFulfilled?.(message as RevisionRoundFulfilledMessage)
           break
         case 'ping':
           // Respond to server ping
@@ -482,6 +561,10 @@ interface WebSocketProviderProps {
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
+  onDeliveryUpdate?: (msg: DeliveryUpdateMessage) => void
+  onRevisionRoundOpened?: (msg: RevisionRoundOpenedMessage) => void
+  onRevisionRoundUpdated?: (msg: RevisionRoundUpdatedMessage) => void
+  onRevisionRoundFulfilled?: (msg: RevisionRoundFulfilledMessage) => void
 }
 
 export function WebSocketProvider({
@@ -494,6 +577,10 @@ export function WebSocketProvider({
   onNotification,
   onRefresh,
   onFileDelivery,
+  onDeliveryUpdate,
+  onRevisionRoundOpened,
+  onRevisionRoundUpdated,
+  onRevisionRoundFulfilled,
 }: WebSocketProviderProps) {
   const ws = useWebSocket(telegramId, {
     onOrderUpdate,
@@ -503,6 +590,10 @@ export function WebSocketProvider({
     onNotification,
     onRefresh,
     onFileDelivery,
+    onDeliveryUpdate,
+    onRevisionRoundOpened,
+    onRevisionRoundUpdated,
+    onRevisionRoundFulfilled,
   })
 
   const contextValue = useMemo(() => ({

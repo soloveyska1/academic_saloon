@@ -1,0 +1,100 @@
+.section {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.topLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(212, 175, 55, 0.08) 50%, transparent 90%);
+  pointer-events: none;
+}
+
+.collectionCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0e0d0c;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+}
+
+.achievementsRail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.achievementsRail::-webkit-scrollbar {
+  display: none;
+}
+
+.achievementItem {
+  flex-shrink: 0;
+  width: 104px;
+  scroll-snap-align: start;
+}
+
+.referralCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0e0d0c;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+}
+
+.referralActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.referralCodeButton {
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .referralActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .referralCodeButton {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 900px) {
+  .section {
+    gap: 14px;
+  }
+
+  .collectionCard {
+    padding: 18px;
+  }
+
+  .achievementsRail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  .achievementItem {
+    width: auto;
+  }
+}

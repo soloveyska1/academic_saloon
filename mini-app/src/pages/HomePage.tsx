@@ -1,11 +1,11 @@
 import { useCallback, useRef, useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useAdaptiveDarkMode } from '../hooks/useAdaptiveDarkMode'
+import { useReducedMotion } from '../hooks/useDeviceCapability'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
 import { Confetti } from '../components/ui/Confetti'
 import { openAdminPanel } from '../components/AdminPanel'
@@ -34,6 +34,8 @@ import {
   LoungeVault,
   PricingAnchor,
   FAQSection,
+  HomePageSkeleton,
+  ModalLoadingFallback,
   // New features
   SpinWheel,
   StreakFreezeCard,
@@ -63,6 +65,8 @@ const HOME_MODAL_PRELOADERS: Array<() => Promise<unknown>> = [
   loadTransactionsModal,
 ]
 
+type LazyHomeModalKey = 'qr' | 'cashback' | 'guarantees' | 'transactions' | 'ranks'
+
 interface Props {
   user: UserData | null
   onRefresh?: () => Promise<void>
@@ -70,12 +74,51 @@ interface Props {
 
 import s from './HomePage.module.css'
 
-/* ─── Section wrapper for visual grouping ─── */
-function Section({ children, gap = 0 }: { children: ReactNode; gap?: number }) {
+function isExamSeasonWindow(date = new Date()) {
+  const month = date.getMonth()
+  const day = date.getDate()
+
+  if (month === 11 && day >= 15) return true
+  if (month === 0) return true
+  if (month === 4) return true
+  if (month === 5) return true
+
+  return false
+}
+
+function hasSeasonalBanner(date = new Date()) {
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+
+  if ((month === 12 && day >= 15) || (month === 1 && day <= 15)) return true
+  if ((month === 1 && day > 15) || (month === 2 && day <= 15)) return true
+  if (month >= 5 && month <= 6) return true
+  if (month === 9) return true
+  if (month >= 10 && month <= 11) return true
+  if (month >= 7 && month <= 8) return true
+  if (month >= 3 && month <= 4) return true
+
+  return false
+}
+
+function Section({
+  children,
+  tone = 'default',
+  gap = 'normal',
+}: {
+  children: ReactNode
+  tone?: 'default' | 'hero' | 'compact'
+  gap?: 'normal' | 'tight'
+}) {
+  const className = [
+    s.section,
+    tone === 'hero' ? s.sectionHero : '',
+    tone === 'compact' ? s.sectionCompact : '',
+    gap === 'tight' ? s.sectionTight : '',
+  ].filter(Boolean).join(' ')
+
   return (
-    <div style={{ marginBottom: 16, display: 'grid', gap }}>
-      {children}
-    </div>
+    <section className={className}>{children}</section>
   )
 }
 
@@ -86,6 +129,7 @@ export function HomePage({ user, onRefresh }: Props) {
   const admin = useAdmin()
   const capability = useCapability()
   const { setShowBonusBadge } = useNavigation()
+  const shouldReduceMotion = useReducedMotion()
 
   const { containerRef, PullIndicator } = usePullToRefresh({
     onRefresh: async () => { if (onRefresh) await onRefresh() },
@@ -95,7 +139,14 @@ export function HomePage({ user, onRefresh }: Props) {
   const { state, actions } = useHomePageState()
   // WelcomeTour removed — no longer needed
   const [referralCopied, setReferralCopied] = useState(false)
-  const heroCTARef = useRef<HTMLElement>(null)
+  const [mountedHomeModals, setMountedHomeModals] = useState<Record<LazyHomeModalKey, boolean>>({
+    qr: false,
+    cashback: false,
+    guarantees: false,
+    transactions: false,
+    ranks: false,
+  })
+  const heroCTARef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -215,8 +266,10 @@ export function HomePage({ user, onRefresh }: Props) {
     }
     setShowBonusBadge(false) // Clear nav badge immediately
     if (onRefresh) {
-      void onRefresh().then(() => setOptimisticBonusAdd(0))
+      void onRefresh().finally(() => setOptimisticBonusAdd(0))
+      return
     }
+    setOptimisticBonusAdd(0)
   }, [onRefresh, setShowBonusBadge])
 
   // Calculate total savings from cashback transactions
@@ -282,42 +335,42 @@ export function HomePage({ user, onRefresh }: Props) {
     (user?.streak_freeze_count ?? 0) > 0
   )
   const shouldShowExamBanner = isNewUser || returningUserState === 'idle'
+  const showExamBanner = shouldShowExamBanner && isExamSeasonWindow()
+  const showSeasonalBanner = !showExamBanner && hasSeasonalBanner()
 
   // Sync bonus badge dot on navigation Бонусы tab
   useEffect(() => {
     setShowBonusBadge(Boolean(user?.daily_luck_available))
   }, [user?.daily_luck_available, setShowBonusBadge])
 
-  /* ─── Gold shimmer skeleton ─── */
-  const goldSkeletonStyle: React.CSSProperties = {
-    background: 'linear-gradient(90deg, rgba(212,175,55,0.04) 25%, rgba(212,175,55,0.08) 50%, rgba(212,175,55,0.04) 75%)',
-    backgroundSize: '200% 100%',
-    animation: 'gold-skeleton 1.5s ease infinite',
-  }
+  useEffect(() => {
+    setMountedHomeModals((prev) => {
+      let changed = false
+      const next = { ...prev }
 
-  if (!user) return (
-    <main className={`${s.container} bg-void relative`} style={{ height: '100dvh', paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))', background: '#0A0A0A' }}>
-      <style>{`@keyframes gold-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-      <div className="relative z-[1]" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Header: avatar + name + balance card */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ width: 100, height: 14, borderRadius: 4, ...goldSkeletonStyle }} />
-            <div style={{ width: 140, height: 24, borderRadius: 8, ...goldSkeletonStyle }} />
-          </div>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', ...goldSkeletonStyle }} />
+      ;(['qr', 'cashback', 'guarantees', 'transactions', 'ranks'] as const).forEach((key) => {
+        if (state.modals[key] && !prev[key]) {
+          next[key] = true
+          changed = true
+        }
+      })
+
+      return changed ? next : prev
+    })
+  }, [state.modals])
+
+  if (!user) {
+    return (
+      <main className={`${s.container} ${shouldReduceMotion ? s.containerReducedMotion : ''} bg-void relative`}>
+        <div className={s.backgroundLayer} aria-hidden="true">
+          <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
         </div>
-        {/* Balance card */}
-        <div style={{ height: 120, borderRadius: 12, ...goldSkeletonStyle }} />
-        {/* Order card */}
-        <div style={{ height: 80, borderRadius: 12, ...goldSkeletonStyle }} />
-        {/* CTA */}
-        <div style={{ height: 52, borderRadius: 12, ...goldSkeletonStyle }} />
-        {/* Daily bonus */}
-        <div style={{ height: 80, borderRadius: 12, ...goldSkeletonStyle }} />
-      </div>
-    </main>
-  )
+        <div className={s.loadingShell}>
+          <HomePageSkeleton />
+        </div>
+      </main>
+    )
+  }
 
   return (
     <>
@@ -325,41 +378,25 @@ export function HomePage({ user, onRefresh }: Props) {
       ref={containerRef as unknown as React.RefObject<HTMLElement>}
       role="main"
       data-scroll-container="true"
-      className={`${s.container} bg-void relative`}
-      style={{
-        paddingBottom: 'var(--page-padding-bottom)',
-        overflowY: 'auto',
-        overflowX: 'clip',
-        width: '100%',
-        maxWidth: '100%',
-        height: '100dvh',
-        paddingTop: 'max(var(--page-padding-top), env(safe-area-inset-top))',
-      }}>
+      className={`${s.container} ${shouldReduceMotion ? s.containerReducedMotion : ''} bg-void relative`}>
       <PullIndicator />
 
-      {/* Breathing gold orb — fades on scroll */}
-      <motion.div
-        aria-hidden="true"
-        animate={{ scale: [1, 1.04, 1] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'fixed',
-          top: -120,
-          right: -80,
-          width: 320,
-          height: 320,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 40%, transparent 70%)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
+      {shouldReduceMotion ? (
+        <div aria-hidden="true" className={s.backdropOrb} />
+      ) : (
+        <motion.div
+          aria-hidden="true"
+          className={s.backdropOrb}
+          animate={{ scale: [1, 1.04, 1] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
 
-      <div className="page-background fixed inset-0 z-0" aria-hidden="true">
+      <div className={s.backgroundLayer} aria-hidden="true">
         <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
       </div>
 
-      <div className="relative z-[1]">
+      <div className={s.pageContent}>
 
         {/* ═══ HEADER — Greeting + Avatar + Finance (unified) ═══ */}
         <HomeHeader
@@ -389,72 +426,27 @@ export function HomePage({ user, onRefresh }: Props) {
             ═══════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            <div ref={heroCTARef as React.RefObject<HTMLDivElement>} onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
-              <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
-            </div>
-
-            {/* ─── Seasonal banner ─── */}
-            <Section>
-              <SeasonalBanner onAction={handleNewOrder} />
+            <Section tone="hero">
+              <div ref={heroCTARef} onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
+                <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
+              </div>
             </Section>
 
-            {shouldShowExamBanner && <ExamSeasonBanner />}
-            <WhyTrustUs />
-            <TestimonialsSection />
+            {(showSeasonalBanner || showExamBanner) && (
+              <Section tone="compact">
+                {showExamBanner ? <ExamSeasonBanner /> : <SeasonalBanner onAction={handleNewOrder} />}
+              </Section>
+            )}
 
-            {/* Repeat CTA after social proof — premium style with shine */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-              style={{ marginBottom: 24, position: 'relative' }}
-            >
-              {/* Breathing ambient glow */}
-              <motion.div
-                aria-hidden="true"
-                animate={{ opacity: [0, 0.08, 0], scale: [0.98, 1.01, 0.98] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute', inset: -8, borderRadius: 20,
-                  background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.15), transparent 70%)',
-                  filter: 'blur(16px)', pointerEvents: 'none',
-                }}
-              />
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={handleNewOrder}
-                style={{
-                  position: 'relative',
-                  width: '100%', padding: '18px 24px', borderRadius: 14,
-                  border: '1px solid rgba(212,175,55,0.20)',
-                  background: 'linear-gradient(160deg, rgba(27,22,12,0.95) 0%, rgba(12,12,12,0.98) 100%)',
-                  color: 'var(--gold-400)',
-                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), 0 1px 0 rgba(212,175,55,0.06) inset',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Travelling shine effect */}
-                <motion.div
-                  aria-hidden="true"
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute', top: 0, left: 0, width: '50%', height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
-                    pointerEvents: 'none',
-                  }}
-                />
-                <span style={{ position: 'relative', zIndex: 1 }}>Узнать стоимость</span>
-                <ArrowRight size={16} strokeWidth={2.2} style={{ position: 'relative', zIndex: 1 }} />
-              </motion.button>
-            </motion.div>
+            <div className={s.featureBand}>
+              <WhyTrustUs />
+              <TestimonialsSection />
+            </div>
 
-            <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
-            <FAQSection />
+            <div className={s.supportBand}>
+              <PricingAnchor onNavigateToOrder={handleNewOrderWithType} haptic={haptic} />
+              <FAQSection />
+            </div>
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════
@@ -484,42 +476,44 @@ export function HomePage({ user, onRefresh }: Props) {
             )}
 
             {/* ─── New order CTA (context-aware) ─── */}
-            <Section>
+            <Section tone="hero">
               <div onMouseEnter={prefetchCreateOrder} onFocus={prefetchCreateOrder}>
                 <NewTaskCTA onClick={handleNewOrder} onUrgent={handleOpenUrgentSheet} variant="repeat-order" />
               </div>
             </Section>
 
-            {/* ─── Quick actions row ─── */}
-            <Section>
-              <QuickActionsRow
-                onNavigate={navigate}
-                onOpenModal={handleOpenModal}
-                onOpenUrgentSheet={handleOpenUrgentSheet}
-                haptic={haptic}
-                cashbackPercent={user.rank.cashback}
-              />
-            </Section>
-
-            {/* ─── Daily bonus + Streak Freeze ─── */}
-            {shouldShowDailyBonus && (
-              <Section gap={8}>
-                <DailyBonusCard
-                  variant="compact"
-                  dailyAvailable={user.daily_luck_available ?? false}
-                  streak={user.daily_bonus_streak || 0}
+            <div className={s.utilityBand}>
+              {/* ─── Quick actions row ─── */}
+              <Section>
+                <QuickActionsRow
+                  onNavigate={navigate}
+                  onOpenModal={handleOpenModal}
+                  onOpenUrgentSheet={handleOpenUrgentSheet}
                   haptic={haptic}
-                  onBonusClaimed={handleBonusClaimed}
-                />
-                <StreakFreezeCard
-                  streak={user.daily_bonus_streak || 0}
-                  bonusBalance={user.bonus_balance + optimisticBonusAdd}
-                  freezeCount={user.streak_freeze_count || 0}
-                  haptic={haptic}
-                  onBalanceChanged={onRefresh}
+                  cashbackPercent={user.rank.cashback}
                 />
               </Section>
-            )}
+
+              {/* ─── Daily bonus + Streak Freeze ─── */}
+              {shouldShowDailyBonus && (
+                <Section gap="tight">
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                  <StreakFreezeCard
+                    streak={user.daily_bonus_streak || 0}
+                    bonusBalance={user.bonus_balance + optimisticBonusAdd}
+                    freezeCount={user.streak_freeze_count || 0}
+                    haptic={haptic}
+                    onBalanceChanged={onRefresh}
+                  />
+                </Section>
+              )}
+            </div>
 
             {/* ─── Bonus expiry alert ─── */}
             {user.bonus_expiry && (
@@ -550,12 +544,11 @@ export function HomePage({ user, onRefresh }: Props) {
               onTelegramShare={handleTelegramShare}
             />
 
-            {/* ─── Seasonal banner ─── */}
-            <Section>
-              <SeasonalBanner onAction={handleNewOrder} />
-            </Section>
-
-            {shouldShowExamBanner && <ExamSeasonBanner />}
+            {(showSeasonalBanner || showExamBanner) && (
+              <Section tone="compact">
+                {showExamBanner ? <ExamSeasonBanner /> : <SeasonalBanner onAction={handleNewOrder} />}
+              </Section>
+            )}
           </>
         )}
 
@@ -569,47 +562,68 @@ export function HomePage({ user, onRefresh }: Props) {
         haptic={haptic}
       />
 
-      <Suspense fallback={null}>
-        <QRCodeModal
-          isOpen={state.modals.qr}
-          value={inviteLink}
-          displayValue={user.referral_code}
-          onClose={() => actions.closeModal('qr')}
-          shareText={buildReferralShareText(user.referral_code)}
-          downloadFileName={`academic-saloon-${user.referral_code}`}
-        />
+      <Confetti
+        active={state.showConfetti}
+        onComplete={() => actions.setConfetti(false)}
+        intensity={capability.tier === 3 ? 'medium' : 'low'}
+      />
 
-        <Confetti
-          active={state.showConfetti}
-          onComplete={() => actions.setConfetti(false)}
-          intensity={capability.tier === 3 ? 'medium' : 'low'}
-        />
+      {mountedHomeModals.qr && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <QRCodeModal
+            isOpen={state.modals.qr}
+            value={inviteLink}
+            displayValue={user.referral_code}
+            onClose={() => actions.closeModal('qr')}
+            shareText={buildReferralShareText(user.referral_code)}
+            downloadFileName={`academic-saloon-${user.referral_code}`}
+          />
+        </Suspense>
+      )}
 
-        <CashbackModal
-          isOpen={state.modals.cashback}
-          onClose={() => actions.closeModal('cashback')}
-          user={user}
-          onCreateOrder={handleNewOrder}
-        />
-        <GuaranteesModal
-          isOpen={state.modals.guarantees}
-          onClose={() => actions.closeModal('guarantees')}
-          onCreateOrder={handleNewOrder}
-        />
-        <TransactionsModal
-          isOpen={state.modals.transactions}
-          onClose={() => actions.closeModal('transactions')}
-          transactions={user.transactions}
-          balance={user.balance}
-          onViewAll={() => navigate('/profile')}
-        />
-        <RanksModal
-          isOpen={state.modals.ranks}
-          onClose={() => actions.closeModal('ranks')}
-          user={user}
-          onCreateOrder={handleNewOrder}
-        />
-      </Suspense>
+      {mountedHomeModals.cashback && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <CashbackModal
+            isOpen={state.modals.cashback}
+            onClose={() => actions.closeModal('cashback')}
+            user={user}
+            onCreateOrder={handleNewOrder}
+          />
+        </Suspense>
+      )}
+
+      {mountedHomeModals.guarantees && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <GuaranteesModal
+            isOpen={state.modals.guarantees}
+            onClose={() => actions.closeModal('guarantees')}
+            onCreateOrder={handleNewOrder}
+          />
+        </Suspense>
+      )}
+
+      {mountedHomeModals.transactions && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <TransactionsModal
+            isOpen={state.modals.transactions}
+            onClose={() => actions.closeModal('transactions')}
+            transactions={user.transactions}
+            balance={user.balance}
+            onViewAll={() => navigate('/profile')}
+          />
+        </Suspense>
+      )}
+
+      {mountedHomeModals.ranks && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <RanksModal
+            isOpen={state.modals.ranks}
+            onClose={() => actions.closeModal('ranks')}
+            user={user}
+            onCreateOrder={handleNewOrder}
+          />
+        </Suspense>
+      )}
 
       {/* Spin Wheel modal */}
       <SpinWheel

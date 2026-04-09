@@ -23,6 +23,11 @@ import { ToolsTab } from '../components/god/ToolsTab'
 
 import s from './GodModePage.module.css'
 
+interface GodRouteTarget {
+  tab: TabId
+  params?: Record<string, string | null | undefined>
+}
+
 export function GodModePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -39,6 +44,23 @@ export function GodModePage() {
     (tab: TabId) => {
       setSearchParams(
         withRouteParams(searchParams, { tab, order_q: null, order_status: null, user_q: null, user_filter: null }),
+        { replace: true },
+      )
+    },
+    [searchParams, setSearchParams],
+  )
+
+  const handleRouteJump = useCallback(
+    ({ tab, params }: GodRouteTarget) => {
+      setSearchParams(
+        withRouteParams(searchParams, {
+          tab,
+          order_q: null,
+          order_status: null,
+          user_q: null,
+          user_filter: null,
+          ...params,
+        }),
         { replace: true },
       )
     },
@@ -92,7 +114,7 @@ export function GodModePage() {
         onBack={handleBack}
       >
         <AnimatePresence mode="wait">
-          {activeTab === 'center' && <CenterTab key="center" />}
+          {activeTab === 'center' && <CenterTab key="center" onRouteJump={handleRouteJump} />}
           {activeTab === 'orders' && <OrdersTab key="orders" />}
           {activeTab === 'clients' && <ClientsTab key="clients" />}
           {activeTab === 'analytics' && <AnalyticsTab key="analytics" />}

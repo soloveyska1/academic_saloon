@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from database.db import get_session
-from database.models.orders import Order, OrderStatus
+from database.models.orders import Order, OrderStatus, canonicalize_order_status
 from database.models.users import User
 from database.models.payment_logs import PaymentLog
 from bot.api.auth import TelegramUser, get_current_user
@@ -28,6 +28,10 @@ from bot.api.rate_limit import rate_limit
 from bot.services.payment_accounting import (
     apply_payment_update_to_user,
     build_payment_update,
+)
+from bot.services.order_status_service import (
+    OrderStatusTransitionError,
+    apply_order_status_transition,
 )
 from bot.services.yookassa import get_yookassa_service
 from bot.services.bonus import BonusService, BonusReason
@@ -144,9 +148,9 @@ async def create_payment(
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Нет доступа")
 
-    if order.status not in [
+    canonical_status = canonicalize_order_status(order.status) or order.status
+    if canonical_status not in [
         OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
         OrderStatus.PAID.value,
         OrderStatus.IN_PROGRESS.value,
         OrderStatus.REVIEW.value,
@@ -347,9 +351,16 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         previous_paid_amount=previous_paid_amount,
         new_paid_amount=target_paid_amount,
         final_price=order.final_price,
+        current_status=old_status,
     )
     current_payment_amount = float(payment_update.payment_delta)
-    order.status = payment_update.new_status
+    try:
+        status_change = apply_order_status_transition(order, payment_update.new_status)
+    except OrderStatusTransitionError as exc:
+        logger.error(f"[YooKassa] Invalid status transition for order #{order_id}: {exc}")
+        payment_log.event_type = "payment.invalid_transition"
+        await session.commit()
+        return
     order.paid_amount = payment_update.new_paid_amount
 
     # Deduct bonuses if used (in same transaction as status update)
@@ -405,7 +416,7 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             telegram_id=order.user_id,
             order_id=order.id,
             new_status=order.status,
-            old_status=old_status,
+            old_status=status_change.old_status if status_change.changed else None,
         )
     except Exception as e:
         logger.warning(f"[YooKassa] Failed to send WS notification: {e}")

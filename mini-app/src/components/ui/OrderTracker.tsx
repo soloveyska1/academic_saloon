@@ -3,6 +3,7 @@ import {
   Check, FileText, Search, CheckCircle,
   Loader2, AlertCircle, Sparkles, Truck
 } from 'lucide-react'
+import { canonicalizeOrderStatusAlias } from '../../lib/orderView'
 
 interface Props {
   status: string
@@ -25,11 +26,11 @@ const STEP_CONFIG = {
     description: 'Эксперт оценивает сложность',
     color: '#f59e0b',
   },
-  confirmed: {
-    label: 'Подтверждён',
-    shortLabel: 'Подтв.',
+  waiting_payment: {
+    label: 'К оплате',
+    shortLabel: 'Оплата',
     icon: Check,
-    description: 'Заказ подтверждён, ожидает оплаты',
+    description: 'Стоимость согласована, ожидается оплата',
     color: '#3b82f6',
   },
   in_progress: {
@@ -72,17 +73,18 @@ const STEP_CONFIG = {
 const STATUS_TO_STEPS: Record<string, string[]> = {
   'pending': ['pending'],
   'reviewing': ['pending', 'reviewing'],
-  'confirmed': ['pending', 'reviewing', 'confirmed'],
-  'in_progress': ['pending', 'reviewing', 'confirmed', 'in_progress'],
-  'on_review': ['pending', 'reviewing', 'confirmed', 'in_progress', 'on_review'],
-  'completed': ['pending', 'reviewing', 'confirmed', 'in_progress', 'on_review', 'completed'],
+  'waiting_payment': ['pending', 'reviewing', 'waiting_payment'],
+  'in_progress': ['pending', 'reviewing', 'waiting_payment', 'in_progress'],
+  'on_review': ['pending', 'reviewing', 'waiting_payment', 'in_progress', 'on_review'],
+  'completed': ['pending', 'reviewing', 'waiting_payment', 'in_progress', 'on_review', 'completed'],
 }
 
-const ALL_STEPS = ['pending', 'reviewing', 'confirmed', 'in_progress', 'on_review', 'completed']
+const ALL_STEPS = ['pending', 'reviewing', 'waiting_payment', 'in_progress', 'on_review', 'completed']
 
 // Horizontal Timeline (Domino's/Uber style)
 function HorizontalTracker({ status }: { status: string }) {
-  const activeSteps = STATUS_TO_STEPS[status] || ['pending']
+  const canonicalStatus = canonicalizeOrderStatusAlias(status) ?? status
+  const activeSteps = STATUS_TO_STEPS[canonicalStatus] || ['pending']
   const currentStep = activeSteps[activeSteps.length - 1]
   const currentConfig = STEP_CONFIG[currentStep as keyof typeof STEP_CONFIG]
   const progress = (activeSteps.length / ALL_STEPS.length) * 100

@@ -4,6 +4,11 @@ import {
   CheckCircle2, XCircle, Eye
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
+import {
+  getEffectiveOrderStatus,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
+} from '../../lib/orderView'
 
 interface OrderTimelineProps {
   order: Order
@@ -82,7 +87,6 @@ function getTimelineProgress(status: OrderStatus): number {
     draft: 0,
     pending: 1,
     waiting_estimation: 1,
-    confirmed: 2,
     waiting_payment: 2,
     verification_pending: 2.5,
     paid: 3,
@@ -118,8 +122,11 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function OrderTimeline({ order }: OrderTimelineProps) {
-  const progress = getTimelineProgress(order.status)
-  const isCancelled = ['cancelled', 'rejected'].includes(order.status)
+  const visibleStatus = (getEffectiveOrderStatus(order) ?? order.status) as OrderStatus
+  const progress = getTimelineProgress(visibleStatus)
+  const isCancelled = ['cancelled', 'rejected'].includes(visibleStatus)
+  const latestDelivery = getLatestDeliveryBatch(order)
+  const currentRound = getOpenRevisionRound(order)
 
   if (isCancelled) {
     return (
@@ -154,7 +161,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
               color: 'var(--error-text)',
               marginBottom: 4,
             }}>
-              Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
+              Заказ {visibleStatus === 'cancelled' ? 'отменён' : 'отклонён'}
             </div>
             <div style={{
               fontSize: 13,
@@ -206,7 +213,11 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
             fontSize: 12,
             color: 'var(--text-muted)',
           }}>
-            Создан {formatDate(order.created_at)}
+            {currentRound
+              ? `Активна правка #${currentRound.round_number}`
+              : visibleStatus === 'review' && latestDelivery?.version_number
+                ? `На проверке версия ${latestDelivery.version_number}`
+                : `Создан ${formatDate(order.created_at)}`}
           </div>
         </div>
       </div>

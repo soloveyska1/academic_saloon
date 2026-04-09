@@ -6,16 +6,16 @@ App-First подход: все действия направляют в Mini App
 """
 
 import logging
-from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-from database.models.orders import Order, OrderStatus
-from core.config import settings
+from aiogram import Bot
+
 from bot.services.order_message_formatter import (
     build_issue_keyboard,
     build_order_keyboard,
     build_status_notification_text,
 )
+from bot.services.realtime_notifications import canonicalize_order_status_for_notifications
+from database.models.orders import Order, OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +27,6 @@ logger = logging.getLogger(__name__)
 NOTIFICATION_TEMPLATES = {
     # Заказ ждёт оплаты
     OrderStatus.WAITING_PAYMENT.value: {
-        "title": "Стоимость готова",
-        "message": "Откройте заказ, чтобы выбрать способ оплаты и запустить работу.",
-        "show_price": True,
-        "webapp_button": "Открыть оплату",
-    },
-
-    # Заказ подтверждён
-    OrderStatus.CONFIRMED.value: {
         "title": "Стоимость готова",
         "message": "Откройте заказ, чтобы выбрать способ оплаты и запустить работу.",
         "show_price": True,
@@ -120,10 +112,11 @@ async def notify_order_status_change(
     Returns:
         True если уведомление отправлено успешно
     """
-    template = NOTIFICATION_TEMPLATES.get(new_status)
+    canonical_new_status = canonicalize_order_status_for_notifications(new_status)
+    template = NOTIFICATION_TEMPLATES.get(canonical_new_status)
 
     if not template:
-        logger.debug(f"Нет шаблона уведомления для статуса {new_status}")
+        logger.debug(f"Нет шаблона уведомления для статуса {canonical_new_status}")
         return False
 
     title = template["title"]
@@ -149,7 +142,7 @@ async def notify_order_status_change(
             text=text,
             reply_markup=keyboard,
         )
-        logger.info(f"[Notifications] Status {new_status} sent to user {order.user_id}")
+        logger.info(f"[Notifications] Status {canonical_new_status} sent to user {order.user_id}")
         return True
     except Exception as e:
         logger.error(f"[Notifications] Failed to notify user {order.user_id}: {e}")
@@ -168,7 +161,7 @@ async def notify_price_set(
         bot=bot,
         order=order,
         old_status=OrderStatus.PENDING.value,
-        new_status=OrderStatus.CONFIRMED.value,
+        new_status=OrderStatus.WAITING_PAYMENT.value,
     )
 
 

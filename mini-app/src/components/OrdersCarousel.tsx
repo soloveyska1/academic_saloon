@@ -3,6 +3,7 @@ import { motion, useMotionValue, animate, PanInfo } from 'framer-motion'
 import { FileText, Clock, CheckCircle, AlertCircle, Loader, Lock, Eye, Calendar, Zap } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { canonicalizeOrderStatusAlias } from '../lib/orderView'
 
 interface OrdersCarouselProps {
   orders: Order[]
@@ -22,7 +23,6 @@ const statusConfig: Record<string, {
   waiting_estimation: { label: 'Оценка', variant: 'warning', icon: Clock },
   waiting_payment: { label: 'К оплате', variant: 'gold', icon: AlertCircle },
   verification_pending: { label: 'Проверка', variant: 'info', icon: Loader },
-  confirmed: { label: 'Подтверждён', variant: 'info', icon: CheckCircle },
   paid: { label: 'В работе', variant: 'info', icon: Loader },
   paid_full: { label: 'В работе', variant: 'info', icon: Loader },
   in_progress: { label: 'В работе', variant: 'info', icon: Loader },
@@ -87,7 +87,8 @@ interface CaseFileCardProps {
 }
 
 function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps) {
-  const config = statusConfig[order.status] || { label: order.status, variant: 'info', icon: FileText }
+  const canonicalStatus = canonicalizeOrderStatusAlias(order.status) ?? order.status
+  const config = statusConfig[canonicalStatus] || { label: canonicalStatus, variant: 'info', icon: FileText }
   const colors = variantColors[config.variant]
   const countdown = useCountdown(order.deadline)
 

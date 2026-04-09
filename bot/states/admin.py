@@ -14,6 +14,7 @@ class AdminStates(StatesGroup):
     # Новые состояния для расширенной админки
     broadcast_text = State()           # Ожидание текста рассылки
     setting_price = State()            # Ожидание ввода новой цены
+    editing_order_note = State()       # Редактирование заметки по заказу
     messaging_user = State()           # Отправка сообщения клиенту
     sending_file = State()             # Отправка файла клиенту
     dialog_file = State()              # Отправка файла в диалоге

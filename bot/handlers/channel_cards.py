@@ -44,9 +44,21 @@ from bot.services.order_message_formatter import (
 from bot.services.order_lifecycle import (
     can_complete_order,
     can_deliver_order,
-    get_order_cashback_base,
     is_order_already_delivered,
+    sync_order_delivery_review,
 )
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    dispatch_order_status_change,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
+from bot.services.payment_accounting import (
+    apply_payment_update_to_user,
+    build_payment_update,
+)
+from bot.services.bonus import BonusService, BonusReason
 from bot.utils import parse_order_id
 from bot.utils.formatting import format_price
 from core.media_cache import send_cached_photo
@@ -259,20 +271,25 @@ async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSessi
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Выполняем отклонение
-    order.status = OrderStatus.REJECTED.value
-    await session.commit()
+    try:
+        change = apply_order_status_transition(order, OrderStatus.REJECTED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=f"❌ Отклонено {datetime.now().strftime('%d.%m %H:%M')}"
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            close_topic=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            card_extra_text=f"❌ Отклонено {datetime.now().strftime('%d.%m %H:%M')}",
+        ),
     )
-
-    # UNIFIED HUB: Закрываем топик
-    await close_order_topic(bot, session, order)
 
     # Уведомляем клиента
     await notify_client(
@@ -347,19 +364,25 @@ async def card_ban_user_execute(callback: CallbackQuery, session: AsyncSession, 
     if user:
         user.is_banned = True
 
-    order.status = OrderStatus.REJECTED.value
-    await session.commit()
+    try:
+        change = apply_order_status_transition(order, OrderStatus.REJECTED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=f"🚫 СПАМ/БАН {datetime.now().strftime('%d.%m %H:%M')}"
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            close_topic=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            card_extra_text=f"🚫 СПАМ/БАН {datetime.now().strftime('%d.%m %H:%M')}",
+        ),
     )
-
-    # UNIFIED HUB: Закрываем топик
-    await close_order_topic(bot, session, order)
 
     await callback.answer("🚫 Пользователь забанен", show_alert=True)
 
@@ -505,14 +528,11 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     # Устанавливаем цену и бонусы
     order.price = float(price)
     order.bonus_used = bonus_used
-    order.status = OrderStatus.WAITING_PAYMENT.value
-    await session.commit()
-
-    # UNIFIED HUB: Обновляем название топика
-    await update_topic_name(bot, session, order, user)
-
-    # Обновляем карточку
-    # Use order.final_price property which includes discount (loyalty + promo)
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     final_price = order.final_price
 
     # Формируем текст с информацией о бонусах
@@ -525,27 +545,22 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     else:
         extra_text = f"💵 Цена: {format_price(price)} (бонусов нет)"
 
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=extra_text
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            card_extra_text=extra_text,
+            notification_extra_data={"final_price": float(final_price), "bonus_used": bonus_used},
+        ),
     )
 
     # Отправляем полноценное уведомление с кнопками оплаты
     sent = await send_payment_notification(bot, order, user, price)
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=OrderStatus.WAITING_PAYMENT.value,
-            extra_data={"final_price": final_price, "bonus_used": bonus_used},
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     price_formatted = format_price(price, False)
     if sent:
@@ -595,50 +610,94 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     is_final_payment = already_paid > 0 and remaining_amount > 0
 
     if is_final_payment:
-        order.status = OrderStatus.PAID_FULL.value
-        order.paid_amount = final_price
+        target_paid_amount = final_price
         if not order.payment_scheme:
             order.payment_scheme = "half"
         extra_text = f"✅ Доплата ({int(remaining_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
     elif payment_type == "half":
         # Предоплата 50%
-        half_amount = final_price / Decimal("2")
-        order.status = OrderStatus.PAID.value  # В работу!
-        order.paid_amount = half_amount
+        target_paid_amount = final_price / Decimal("2")
         order.payment_scheme = "half"
-        extra_text = f"💰 Предоплата 50% ({int(half_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
+        extra_text = f"💰 Предоплата 50% ({int(target_paid_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
     else:
         # Полная оплата
-        order.status = OrderStatus.PAID_FULL.value
-        order.paid_amount = final_price
+        target_paid_amount = final_price
         order.payment_scheme = "full"
         extra_text = f"✅ Полная оплата ({int(final_price)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
 
+    payment_update = build_payment_update(
+        previous_paid_amount=already_paid,
+        new_paid_amount=target_paid_amount,
+        final_price=final_price,
+        current_status=order.status,
+    )
+    try:
+        status_change = apply_order_status_transition(order, payment_update.new_status)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+    order.paid_amount = payment_update.new_paid_amount
+
+    if user:
+        apply_payment_update_to_user(user, payment_update)
+        if payment_update.is_first_successful_payment and order.bonus_used > 0:
+            await BonusService.deduct_bonus(
+                session=session,
+                user_id=order.user_id,
+                amount=order.bonus_used,
+                reason=BonusReason.ORDER_DISCOUNT,
+                description=f"Списание на заказ #{order.id}",
+                bot=bot,
+                user=user,
+                auto_commit=False,
+            )
+
     await session.commit()
 
-    # UNIFIED HUB: Обновляем название топика
-    try:
-        await update_topic_name(bot, session, order, user)
-    except Exception as e:
-        logger.exception(f"Failed to update topic name after payment confirmation for order #{order.id}: {e}")
+    order_bonus = 0
+    if user and payment_update.is_first_successful_payment:
+        try:
+            order_bonus = await BonusService.process_order_bonus(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to award order bonus for order #{order.id}: {exc}")
 
-    # Обновляем карточку
-    try:
-        await update_card_status(
-            bot, order, session,
+        if user.referrer_id:
+            try:
+                await BonusService.process_referral_bonus(
+                    session=session,
+                    bot=bot,
+                    referrer_id=user.referrer_id,
+                    order_amount=order.price,
+                    referred_user_id=order.user_id,
+                )
+            except Exception as exc:
+                logger.warning(f"Failed to award referral bonus for order #{order.id}: {exc}")
+
+    confirmed_payment_type = "final" if is_final_payment else payment_type
+    await dispatch_order_status_change(
+        session,
+        bot,
+        order,
+        status_change,
+        options=OrderStatusDispatchOptions(
+            update_live_card=True,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=extra_text
-        )
-    except Exception as e:
-        logger.exception(f"Failed to update live card after payment confirmation for order #{order.id}: {e}")
-        try:
-            await callback.message.edit_reply_markup(reply_markup=None)
-        except Exception:
-            pass
+            card_extra_text=extra_text,
+            notification_extra_data={
+                "paid_amount": float(order.paid_amount or 0),
+                "payment_type": confirmed_payment_type,
+            },
+        ),
+    )
 
     # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
     paid_formatted = format_price(int(order.paid_amount), False)
+    bonus_line = f"\n\n🎁 +{order_bonus:.0f}₽ бонусов на баланс!" if order_bonus > 0 else ""
 
     if is_final_payment:
         user_text = f"""🎉 <b>ДОПЛАТА ПОЛУЧЕНА!</b>
@@ -646,7 +705,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 Заказ <b>#{order.id}</b> оплачен полностью.
 ✅ Получено всего: <b>{paid_formatted} ₽</b>
 
-Теперь можно передать клиенту полный результат."""
+Теперь можно передать клиенту полный результат.{bonus_line}"""
     elif payment_type == "half":
         remaining = int(max(final_price - _to_decimal(order.paid_amount), Decimal("0")))
         user_text = f"""💰 <b>ПРЕДОПЛАТА ПОЛУЧЕНА!</b>
@@ -655,7 +714,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 ✅ Внесено: <b>{paid_formatted} ₽</b>
 💳 Доплата после выполнения: <b>{remaining} ₽</b>
 
-Работа уже началась. Следи за прогрессом в кабинете!"""
+Работа уже началась. Следи за прогрессом в кабинете!{bonus_line}"""
     else:
         user_text = f"""🎉 <b>Оплата подтверждена</b>
 
@@ -663,7 +722,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 💰 Получено: <b>{paid_formatted} ₽</b>
 
 Работа уже запущена. Когда появится следующий этап, сразу пришлём уведомление сюда.
-Статус и детали всегда доступны в приложении."""
+Статус и детали всегда доступны в приложении.{bonus_line}"""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -689,19 +748,6 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
             await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ОБ ОПЛАТЕ ═══
-    confirmed_payment_type = "final" if is_final_payment else payment_type
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=order.status,
-            extra_data={"paid_amount": float(order.paid_amount or 0), "payment_type": confirmed_payment_type},
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -791,17 +837,34 @@ async def card_confirm_final_payment(callback: CallbackQuery, session: AsyncSess
         await callback.answer("Заказ уже полностью оплачен", show_alert=True)
         return
 
-    # Фиксируем полную оплату
-    order.paid_amount = order.final_price
-    order.status = OrderStatus.PAID_FULL.value
+    payment_update = build_payment_update(
+        previous_paid_amount=order.paid_amount or 0,
+        new_paid_amount=order.final_price,
+        final_price=order.final_price,
+        current_status=order.status,
+    )
+    try:
+        change = apply_order_status_transition(order, payment_update.new_status)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+    order.paid_amount = payment_update.new_paid_amount
+    if user:
+        apply_payment_update_to_user(user, payment_update)
     await session.commit()
 
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=f"✅ Доплата {int(remaining)} ₽ получена — {datetime.now().strftime('%d.%m %H:%M')}"
+    await dispatch_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        options=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            card_extra_text=f"✅ Доплата {int(remaining)} ₽ получена — {datetime.now().strftime('%d.%m %H:%M')}",
+            notification_extra_data={"total_paid": float(order.final_price or 0)},
+        ),
     )
 
     # Уведомляем клиента
@@ -816,18 +879,6 @@ async def card_confirm_final_payment(callback: CallbackQuery, session: AsyncSess
         await bot.send_message(order.user_id, user_text)
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ДОПЛАТЕ ═══
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=OrderStatus.PAID_FULL.value,
-            extra_data={"total_paid": float(order.final_price or 0)},
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     await callback.answer(f"✅ Доплата {int(remaining)} ₽ подтверждена", show_alert=True)
 
@@ -848,23 +899,27 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
         return
 
     # Возвращаем статус "Ждёт оплаты"
-    order.status = OrderStatus.WAITING_PAYMENT.value
-    await session.commit()
-
-    # UNIFIED HUB: Обновляем название топика
-    await update_topic_name(bot, session, order, user)
-
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=f"❌ Оплата не найдена {datetime.now().strftime('%d.%m %H:%M')}"
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+    final_price = order.final_price
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            card_extra_text=f"❌ Оплата не найдена {datetime.now().strftime('%d.%m %H:%M')}",
+            notification_extra_data={"final_price": float(final_price)},
+        ),
     )
 
     # Красивое уведомление клиенту с кнопками (с учётом скидки и бонусов)
-    final_price = order.final_price
-
     client_text = f"""⚠️ <b>Оплата не найдена</b>
 
 Заказ <code>#{order.id}</code> • <b>{format_price(int(final_price))}</b>
@@ -965,40 +1020,29 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
         await callback.answer(f"Нельзя завершить заказ из статуса: {order.status}", show_alert=True)
         return
 
-    # Завершаем заказ
-    old_status = order.status
-    order.status = OrderStatus.COMPLETED.value
-    order.completed_at = datetime.utcnow()
+    try:
+        change = apply_order_status_transition(order, OrderStatus.COMPLETED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-    await session.commit()
-
-    # Начисляем кешбэк за заказ
-    cashback_amount = 0.0
-    if user:
-        from bot.services.bonus import BonusService
-        order_amount = get_order_cashback_base(order)
-        cashback_amount = await BonusService.add_order_cashback(
-            session=session,
-            bot=bot,
-            user_id=order.user_id,
-            order_id=order.id,
-            order_amount=order_amount,
-        )
-
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            close_topic=True,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+        ),
     )
-
-    # UNIFIED HUB: Закрываем топик
-    await close_order_topic(bot, session, order)
 
     # Уведомляем клиента
     cashback_text = ""
-    if cashback_amount > 0:
-        cashback_text = f"\n💰 <b>Кешбэк:</b> +{cashback_amount:.0f}₽ на бонусный счёт"
+    if change.cashback_amount > 0:
+        cashback_text = f"\n💰 <b>Кешбэк:</b> +{change.cashback_amount:.0f}₽ на бонусный счёт"
 
     await notify_client(
         bot, order.user_id,
@@ -1006,19 +1050,6 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
         "Спасибо, что выбрал нас! Будем рады помочь снова.\n\n"
         "Оставь отзыв, если понравилось 🌟"
     )
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЗАВЕРШЕНИИ ═══
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=OrderStatus.COMPLETED.value,
-            old_status=old_status,
-            extra_data={"cashback": cashback_amount} if cashback_amount > 0 else None,
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     await callback.answer("✅ Заказ завершён!", show_alert=True)
 
@@ -1098,22 +1129,15 @@ async def card_deliver_confirm(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer(f"Нельзя отправить работу из статуса: {order.status}", show_alert=True)
         return
 
-    # Меняем статус на "На проверке"
-    old_status = order.status
     delivered_at = datetime.utcnow()
-    order.status = OrderStatus.REVIEW.value
-    order.delivered_at = delivered_at  # Фиксируем время сдачи для 30-дневного таймера
-    await session.commit()
-
-    # UNIFIED HUB: Обновляем название топика
-    await update_topic_name(bot, session, order, user)
-
-    # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
+    await sync_order_delivery_review(
+        session,
+        bot,
+        order,
         client_username=user.username if user else None,
         client_name=user.fullname if user else None,
-        extra_text=f"📤 Работа сдана — {datetime.now().strftime('%d.%m %H:%M')}"
+        card_extra_text="📤 Работа сдана",
+        delivered_at=delivered_at,
     )
 
     # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
@@ -1136,19 +1160,6 @@ async def card_deliver_confirm(callback: CallbackQuery, session: AsyncSession, b
         await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ═══
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=OrderStatus.REVIEW.value,
-            old_status=old_status,
-            extra_data={"delivered_at": delivered_at.isoformat()},
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     await callback.answer("✅ Работа отправлена клиенту!", show_alert=True)
 
@@ -1492,9 +1503,12 @@ async def card_reopen_order(callback: CallbackQuery, session: AsyncSession, bot:
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Возвращаем статус в "Новый"
-    order.status = OrderStatus.PENDING.value
-    order.completed_at = None
+    try:
+        apply_order_status_transition(order, OrderStatus.PENDING.value, force=True)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+
     await session.commit()
 
     # UNIFIED HUB: Переоткрываем топик

@@ -3,15 +3,20 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
 import {
-  ACTIONABLE_ORDER_META,
   formatDeadline,
+  formatCompactDate,
   formatPauseUntil,
   formatMoney,
+  getActionableOrderMeta,
+  getCurrentRevisionRound,
+  getEffectiveProfileOrderStatus,
   getOrderDisplayTitle,
+  getLatestDelivery,
   getRemainingAmount,
   prefersReducedMotion,
 } from './profileHelpers'
 import type { Order } from '../../types'
+import { isAwaitingPaymentStatus } from '../../lib/orderView'
 
 interface Props {
   order: Order
@@ -19,18 +24,26 @@ interface Props {
 }
 
 export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order, onClick }: Props) {
-  const meta = ACTIONABLE_ORDER_META[order.status]
+  const meta = getActionableOrderMeta(order)
   if (!meta) return null
+  const currentRound = getCurrentRevisionRound(order)
+  const latestDelivery = getLatestDelivery(order)
+  const status = getEffectiveProfileOrderStatus(order)
+  const latestVersionLabel = latestDelivery?.version_number ? `Версия ${latestDelivery.version_number}` : 'Последняя версия'
 
   const Icon = meta.icon
   const title = meta.title
   const orderTitle = getOrderDisplayTitle(order)
 
   const footnote =
-    order.status === 'paused'
+    currentRound
+      ? `${currentRound.round_number ? `Правка #${currentRound.round_number}` : 'Правка'} активна${currentRound.last_client_activity_at ? ` · активность ${formatCompactDate(currentRound.last_client_activity_at)}` : ''}`
+      : status === 'paused'
       ? `Заморозка активна ${formatPauseUntil(order.pause_until)}`
-      : order.status === 'confirmed' || order.status === 'waiting_payment'
+      : isAwaitingPaymentStatus(status)
       ? `К оплате ${formatMoney(getRemainingAmount(order))}${order.deadline ? ` · срок ${formatDeadline(order.deadline)}` : ''}`
+      : status === 'review' && latestDelivery
+        ? `${latestVersionLabel}${latestDelivery.sent_at ? ` · отправлена ${formatCompactDate(latestDelivery.sent_at)}` : ''}`
       : order.deadline
         ? `Срок: ${formatDeadline(order.deadline)}`
         : 'Откройте, чтобы не потерять следующий шаг'

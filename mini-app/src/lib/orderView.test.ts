@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { OrderStatus } from '../types'
 import {
+  canonicalizeOrderStatusAlias,
   formatOrderDeadlineRu,
+  getEffectiveOrderStatus,
   getOrderHeadlineSafe,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
   getOrderSublineSafe,
+  hasOpenRevisionRound,
+  isAwaitingPaymentStatus,
   normalizeOrder,
   normalizeOrders,
+  normalizeOrderStatus,
 } from './orderView'
 
 describe('orderView', () => {
@@ -96,5 +103,81 @@ describe('orderView', () => {
     expect(formatOrderDeadlineRu('today')).toBe('Сегодня')
     expect(formatOrderDeadlineRu('week')).toBe('Неделя')
     expect(formatOrderDeadlineRu(null)).toBe('')
+  })
+
+  it('maps legacy confirmed status to waiting_payment', () => {
+    expect(canonicalizeOrderStatusAlias('confirmed')).toBe('waiting_payment')
+    expect(normalizeOrderStatus('confirmed')).toBe('waiting_payment')
+    expect(isAwaitingPaymentStatus('confirmed')).toBe(true)
+
+    const order = normalizeOrder({
+      id: 23,
+      status: 'confirmed' as unknown as OrderStatus,
+      paused_from_status: 'confirmed' as unknown as OrderStatus,
+    })
+
+    expect(order.status).toBe('waiting_payment')
+    expect(order.paused_from_status).toBe('waiting_payment')
+  })
+
+  it('normalizes revision rounds and keeps current round at the top of history', () => {
+    const order = normalizeOrder({
+      id: 51,
+      status: 'revision',
+      current_revision_round: {
+        id: '7' as unknown as number,
+        round_number: '3' as unknown as number,
+        status: ' open ',
+        initial_comment: '  Добавить таблицу и поправить выводы  ',
+        requested_at: '2026-04-08T10:00:00Z',
+        last_client_activity_at: '2026-04-08T12:00:00Z',
+      },
+      revision_history: [
+        {
+          id: 5,
+          round_number: 1,
+          status: 'fulfilled',
+          closed_by_delivery_batch_id: '11' as unknown as number,
+        },
+        {
+          id: 7,
+          round_number: 3,
+          status: 'open',
+        },
+        {
+          id: 6,
+          round_number: 2,
+          status: 'fulfilled',
+          closed_by_delivery_batch_id: 12,
+        },
+      ],
+    })
+
+    expect(hasOpenRevisionRound(order)).toBe(true)
+    expect(getOpenRevisionRound(order)?.round_number).toBe(3)
+    expect(order.current_revision_round?.initial_comment).toBe('Добавить таблицу и поправить выводы')
+    expect(order.revision_history?.map((round) => round.round_number)).toEqual([3, 2, 1])
+    expect(order.revision_history?.[1].closed_by_delivery_batch_id).toBe(12)
+  })
+
+  it('derives effective status and latest delivery from enriched order state', () => {
+    const order = normalizeOrder({
+      id: 77,
+      status: 'review',
+      latest_delivery: {
+        id: 15,
+        status: 'sent',
+        version_number: 4,
+        sent_at: '2026-04-09T08:00:00Z',
+      },
+      current_revision_round: {
+        id: 3,
+        round_number: 2,
+        status: 'open',
+      },
+    })
+
+    expect(getEffectiveOrderStatus(order)).toBe('revision')
+    expect(getLatestDeliveryBatch(order)?.version_number).toBe(4)
   })
 })

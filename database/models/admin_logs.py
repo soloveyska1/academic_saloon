@@ -33,6 +33,7 @@ class AdminActionType(str, Enum):
     ORDER_MESSAGE_SEND = "order_message_send"
     ORDER_NOTE_UPDATE = "order_note_update"
     ORDER_DELETE = "order_delete"
+    ORDER_PAYMENT_REQUEST = "order_payment_request"
     ORDER_PAYMENT_CONFIRM = "order_payment_confirm"
     ORDER_PAYMENT_REJECT = "order_payment_reject"
 
@@ -103,6 +104,7 @@ class AdminActionLog(Base):
             AdminActionType.ORDER_PROGRESS_UPDATE.value: "📊",
             AdminActionType.ORDER_MESSAGE_SEND.value: "💬",
             AdminActionType.ORDER_NOTE_UPDATE.value: "🗒️",
+            AdminActionType.ORDER_PAYMENT_REQUEST.value: "💳",
             AdminActionType.ORDER_PAYMENT_CONFIRM.value: "✅",
             AdminActionType.ORDER_PAYMENT_REJECT.value: "❌",
             AdminActionType.PROMO_CREATE.value: "🎫",

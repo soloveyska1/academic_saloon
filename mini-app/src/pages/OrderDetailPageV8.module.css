@@ -1,0 +1,296 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
+}
+
+.pageContent {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  padding-top: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 144px);
+}
+
+.appBarShell {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 52%),
+    color-mix(in srgb, var(--bg-void) 92%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(212, 175, 55, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 24px 44px -34px rgba(0, 0, 0, 0.78), 0 18px 30px -28px rgba(212, 175, 55, 0.14);
+}
+
+.appBarInner {
+  width: 100%;
+  margin: 0;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.appBarSpacer {
+  height: 4px;
+}
+
+.contentColumn {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.detailPrelude {
+  margin-top: 2px;
+}
+
+.heroAsideRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.heroAsideLabel {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.heroAsideValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-200);
+}
+
+.utilityFooter {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.cancelRow {
+  text-align: center;
+}
+
+.cancelButton {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 18px;
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.floatingBarInner {
+  width: min(100%, 620px);
+  margin: 0 auto;
+}
+
+.sheetShell {
+  width: min(100%, 560px);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheetShellCompact {
+  width: min(100%, 560px);
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheetScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 20px 16px;
+  display: grid;
+  gap: 18px;
+}
+
+.sheetSection {
+  display: grid;
+  gap: 10px;
+}
+
+.sheetCaption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.sheetPanel {
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 52%),
+    rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sheetSummary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 248, 214, 0.08), transparent 30%),
+    linear-gradient(135deg, rgba(212, 175, 55, 0.14), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 18px 34px -28px rgba(212, 175, 55, 0.18);
+}
+
+.sheetSummaryValue {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-family: 'JetBrains Mono', monospace;
+  color: #E8D5A3;
+}
+
+.sheetSummaryText {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.sheetBadge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.76);
+  white-space: nowrap;
+}
+
+.sheetSegment {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sheetSegmentButton {
+  flex: 1;
+  padding: 12px 12px 11px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.sheetSegmentButtonActive {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.04));
+  border-color: rgba(212, 175, 55, 0.24);
+}
+
+.sheetSegmentLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sheetSegmentButtonActive .sheetSegmentLabel {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sheetSegmentValue {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sheetSegmentButtonActive .sheetSegmentValue {
+  color: #E8D5A3;
+}
+
+.sheetFieldsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px 0;
+}
+
+.sheetFieldsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.sheetFieldBody {
+  padding: 0 16px;
+}
+
+.sheetSecondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sheetFootnote {
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+@media (min-width: 768px) {
+  .pageContent {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 156px);
+  }
+
+  .appBarInner,
+  .contentColumn,
+  .utilityFooter,
+  .floatingBarInner {
+    width: min(100%, 680px);
+  }
+
+  .sheetShell,
+  .sheetShellCompact {
+    width: min(100%, 620px);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cancelButton:hover {
+    color: rgba(255, 255, 255, 0.38);
+    transform: translateY(-1px);
+  }
+}

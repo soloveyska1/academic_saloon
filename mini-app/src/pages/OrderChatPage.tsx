@@ -27,7 +27,12 @@ import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessag
 import { useTelegram } from '../hooks/useUserData'
 import { isChatSocketMessage, isTypingIndicatorSocketMessage, useWebSocketContext } from '../hooks/useWebSocket'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
+import { haveSameChatMessages } from '../lib/chatMessages'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
+import { PremiumBackground } from '../components/ui/PremiumBackground'
+import ps from '../styles/PremiumPageSystem.module.css'
+
+const MAX_CHAT_MESSAGE_LENGTH = 5000
 
 // File type icons
 const FILE_ICONS: Record<string, typeof FileText> = {
@@ -50,7 +55,7 @@ export function OrderChatPage() {
   const { id } = useParams<{ id: string }>()
   const orderId = parseInt(id || '0', 10)
   const { haptic } = useTelegram()
-  const { addMessageHandler } = useWebSocketContext()
+  const { addMessageHandler, isConnected } = useWebSocketContext()
   const safeBack = useSafeBackNavigation(orderId ? `/order/${orderId}` : '/orders')
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -79,41 +84,109 @@ export function OrderChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const errorCountRef = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isFetchingRef = useRef(false)
+  const pendingRefreshRef = useRef(false)
+  const isMountedRef = useRef(true)
+  const [isDocumentVisible, setIsDocumentVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState === 'visible',
+  )
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
   const loadMessages = useCallback(async () => {
     if (!orderId) return
+
+    if (isFetchingRef.current) {
+      pendingRefreshRef.current = true
+      return
+    }
+
+    isFetchingRef.current = true
+
     try {
       const response = await fetchOrderMessages(orderId)
+      if (!isMountedRef.current) return
+
       errorCountRef.current = 0
       setError(null)
-      setMessages(response.messages)
+      setMessages((prev) =>
+        haveSameChatMessages(prev, response.messages) ? prev : response.messages,
+      )
     } catch {
+      if (!isMountedRef.current) return
+
       errorCountRef.current++
       if (errorCountRef.current >= 3) {
         setError('Не удалось загрузить сообщения')
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
-        }
+        stopPolling()
       }
     } finally {
-      setIsLoading(false)
-    }
-  }, [orderId])
-
-  // Initial load and polling
-  useEffect(() => {
-    loadMessages()
-    intervalRef.current = setInterval(loadMessages, 5000)
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
+      isFetchingRef.current = false
+      if (isMountedRef.current) {
+        setIsLoading(false)
       }
+
+      if (isMountedRef.current && pendingRefreshRef.current) {
+        pendingRefreshRef.current = false
+        queueMicrotask(() => {
+          if (isMountedRef.current) {
+            void loadMessages()
+          }
+        })
+      }
+    }
+  }, [orderId, stopPolling])
+
+  const startPolling = useCallback(() => {
+    if (intervalRef.current || !orderId) return
+
+    intervalRef.current = setInterval(() => {
+      void loadMessages()
+    }, 5000)
+  }, [loadMessages, orderId])
+
+  // Initial load
+  useEffect(() => {
+    void loadMessages()
+  }, [loadMessages])
+
+  // Keep polling only as a fallback when the websocket is offline
+  // or the document is in the background and real-time delivery is unreliable.
+  useEffect(() => {
+    if (isConnected && isDocumentVisible) {
+      stopPolling()
+      return
+    }
+
+    startPolling()
+    return stopPolling
+  }, [isConnected, isDocumentVisible, startPolling, stopPolling])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const handleVisibilityChange = () => {
+      const nextVisible = document.visibilityState === 'visible'
+      setIsDocumentVisible(nextVisible)
+
+      if (nextVisible) {
+        void loadMessages()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [loadMessages])
 
@@ -127,24 +200,58 @@ export function OrderChatPage() {
     const unsubscribe = addMessageHandler((message) => {
       if (isChatSocketMessage(message) && message.order_id === orderId) {
         setIsAdminTyping(false)
-        loadMessages()
+        void loadMessages()
         haptic?.('success')
+      }
+      if (message.type === 'delivery_update' && (message as Record<string, unknown>).order_id === orderId) {
+        void loadMessages()
+        haptic?.('success')
+      }
+      if (message.type === 'revision_round_opened' && (message as Record<string, unknown>).order_id === orderId) {
+        void loadMessages()
+      }
+      if (message.type === 'revision_round_updated' && (message as Record<string, unknown>).order_id === orderId) {
+        void loadMessages()
+      }
+      if (message.type === 'revision_round_fulfilled' && (message as Record<string, unknown>).order_id === orderId) {
+        void loadMessages()
       }
       if (isTypingIndicatorSocketMessage(message) && message.order_id === orderId) {
         setIsAdminTyping(message.is_typing)
         if (message.is_typing) {
-          setTimeout(() => setIsAdminTyping(false), 5000)
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current)
+          }
+          typingTimeoutRef.current = window.setTimeout(() => {
+            setIsAdminTyping(false)
+            typingTimeoutRef.current = null
+          }, 5000)
+        } else if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current)
+          typingTimeoutRef.current = null
         }
       }
     })
-    return unsubscribe
+    return () => {
+      unsubscribe()
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+    }
   }, [orderId, addMessageHandler, loadMessages, haptic])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      isMountedRef.current = false
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current)
+      }
+      stopPolling()
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
       }
       // Fully dispose audio on unmount
       if (audioRef.current) {
@@ -155,7 +262,7 @@ export function OrderChatPage() {
         audioRef.current = null
       }
     }
-  }, [])
+  }, [stopPolling])
 
   const handleBack = useCallback(() => {
     haptic?.('light')
@@ -166,18 +273,18 @@ export function OrderChatPage() {
     setError(null)
     setIsLoading(true)
     errorCountRef.current = 0
-    loadMessages()
-    if (!intervalRef.current) {
-      intervalRef.current = setInterval(loadMessages, 5000)
+    void loadMessages()
+    if (!isConnected || !isDocumentVisible) {
+      startPolling()
     }
-  }, [loadMessages])
+  }, [isConnected, isDocumentVisible, loadMessages, startPolling])
 
   const handleSend = async () => {
-    if (!inputText.trim() || isSending) return
+    const textToSend = inputText.trim()
+    if (!textToSend || isSending) return
 
     haptic?.('light')
     setIsSending(true)
-    const textToSend = inputText
     setInputText('')
 
     // Optimistic update — declared before try so catch can access it
@@ -415,53 +522,58 @@ export function OrderChatPage() {
 
   return (
     <div
-      className="app-content flex flex-col min-h-screen relative overflow-hidden"
-      style={{ height: '100dvh', background: 'var(--bg-main)' }}
+      className="page-full-width saloon-page-shell saloon-page-shell--utility app-content flex flex-col min-h-screen relative overflow-hidden"
+      style={{ height: '100dvh' }}
     >
+      <div className="page-background" aria-hidden="true">
+        <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+      </div>
       <FloatingParticles />
+      <div className="w-full max-w-[920px] mx-auto flex flex-col min-h-[100dvh] relative z-[1] px-4 py-4 md:px-6">
 
-      {/* Header */}
-      <motion.header
+      <motion.section
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-4 py-3 flex items-center gap-3 relative z-[1] shrink-0 backdrop-blur-[20px] border-b border-white/5"
-        style={{ background: 'var(--bg-card-solid)' }}
+        className={`${ps.hero} ${ps.heroUtility} mb-4 shrink-0`}
       >
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={handleBack}
-          className="w-9 h-9 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer"
-        >
-          <ArrowLeft size={18} color="var(--text-main)" />
-        </motion.button>
+        <div className={ps.heroCopy}>
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleBack}
+              className="saloon-icon-button"
+            >
+              <ArrowLeft size={18} color="var(--text-main)" />
+            </motion.button>
 
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="w-9 h-9 rounded-[8px] flex items-center justify-center shadow-gold-glow"
-          style={{ background: 'var(--gold-metallic)' }}
-        >
-          <MessageCircle size={18} color="var(--text-on-gold)" />
-        </motion.div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="w-11 h-11 rounded-[14px] flex items-center justify-center shadow-gold-glow"
+              style={{ background: 'var(--gold-metallic)' }}
+            >
+              <MessageCircle size={18} color="var(--text-on-gold)" />
+            </motion.div>
 
-        <div className="flex-1">
-          <h1
-            className="font-serif text-[16px] font-bold m-0"
-            style={{
-              background: 'var(--gold-text-shine)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Чат по заказу #{orderId}
-          </h1>
-          <p className="text-[11px] text-text-muted m-0">
-            {isAdminTyping ? 'Печатает...' : 'Вопросы по этому заказу'}
-          </p>
+            <div className="flex-1 min-w-0">
+              <h1 className={ps.heroTitle} style={{ fontSize: 'clamp(24px, 5vw, 32px)' }}>
+                Чат по заказу #{orderId}
+              </h1>
+              <p className={ps.heroSubtitle}>
+                {isAdminTyping ? 'Печатает...' : 'Вопросы по этому заказу'}
+              </p>
+            </div>
+          </div>
+
+          <div className={ps.chipRow}>
+            <span className={`${ps.chip} ${ps.chipStrong}`}>#{orderId}</span>
+            <span className={ps.chip}>{messages.length} сообщений</span>
+            <span className={ps.chip}>{isConnected ? 'Online' : 'Sync'}</span>
+          </div>
         </div>
-      </motion.header>
+      </motion.section>
 
-      {/* Messages Area */}
+      <div className={`${ps.surface} ${ps.surfaceUtility} flex flex-1 min-h-0 flex-col overflow-hidden`}>
       <div data-scroll-container="true" className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-[2]">
         {isLoading && messages.length === 0 ? (
           <div className="flex justify-center p-5">
@@ -694,7 +806,7 @@ export function OrderChatPage() {
         className="px-4 pt-3 relative z-[3] border-t border-white/10 backdrop-blur-[20px]"
         style={{
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-          background: 'var(--bg-card-solid)',
+          background: 'rgba(10, 10, 10, 0.36)',
         }}
       >
         <div className="flex items-end gap-2 bg-white/5 rounded-3xl py-2 pr-2 pl-4 border border-white/5">
@@ -724,6 +836,7 @@ export function OrderChatPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Сообщение..."
+            maxLength={MAX_CHAT_MESSAGE_LENGTH}
             rows={1}
             disabled={isRecording}
             className="flex-1 bg-transparent border-none text-[var(--text-main)] text-[15px] resize-none py-2.5 px-0 max-h-[100px] min-h-[24px] outline-none font-[inherit]"
@@ -761,6 +874,8 @@ export function OrderChatPage() {
             </motion.button>
           )}
         </div>
+      </div>
+      </div>
       </div>
     </div>
   )

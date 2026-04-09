@@ -41,6 +41,8 @@ import { useTelegram } from '../hooks/useUserData'
 import { RANKS, getRankByCashback, getNextRank, isMaxRank, getRankIndexByCashback } from '../lib/ranks'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import homeStyles from './HomePage.module.css'
+import s from './ClubPage.module.css'
+import ps from '../styles/PremiumPageSystem.module.css'
 
 interface ClubPageProps {
   user: UserData | null
@@ -300,7 +302,7 @@ function HeroCard({ user }: { user: UserData }) {
         width: '100%',
         padding: '26px 22px 22px',
         borderRadius: 12,
-        marginBottom: 24,
+        marginBottom: 0,
         overflow: 'hidden',
         border: '1px solid var(--border-gold)',
         isolation: 'isolate',
@@ -477,7 +479,7 @@ function ReferralBlock({ user }: { user: UserData }) {
         padding: '22px 20px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 24,
+        marginBottom: 0,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
@@ -648,7 +650,7 @@ function AchievementOverview({
           padding: '22px 18px',
           borderRadius: 12,
           border: '1px solid var(--surface-hover)',
-          marginBottom: 16,
+          marginBottom: 0,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -704,7 +706,7 @@ function AchievementOverview({
                 lineHeight: 1.5,
               }}
             >
-              {unlocked.length} из {achievements.length} достижений уже открыто. Остальные привязаны к реальным действиям: оплатам, отзывам, рефералам и стрикам.
+              {unlocked.length} из {achievements.length} достижений уже открыто. Остальные открываются заказами, отзывами, приглашениями и серией.
             </div>
           </div>
 
@@ -898,12 +900,12 @@ function RecentUnlocks({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12 }}
         className={homeStyles.voidGlass}
-        style={{
-          padding: '20px 18px',
-          borderRadius: 12,
-          border: '1px solid var(--surface-hover)',
-          marginBottom: 16,
-        }}
+      style={{
+        padding: '20px 18px',
+        borderRadius: 12,
+        border: '1px solid var(--surface-hover)',
+        marginBottom: 0,
+      }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <Gift size={18} color="var(--gold-400)" />
@@ -912,7 +914,7 @@ function RecentUnlocks({
           </div>
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--gold-200)', opacity: 0.5, lineHeight: 1.55 }}>
-          Пока список пуст. Как только откроется первая ачивка, здесь останется её история и награда.
+          Первая открытая ачивка появится здесь вместе с датой и наградой.
         </div>
       </motion.section>
     )
@@ -928,7 +930,7 @@ function RecentUnlocks({
         padding: '18px 16px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 16,
+        marginBottom: 0,
       }}
     >
       <div
@@ -948,12 +950,12 @@ function RecentUnlocks({
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--gold-200)', opacity: 0.42 }}>
-          последние 3
+          последние 2
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {recent.map((achievement) => {
+        {recent.slice(0, 2).map((achievement) => {
           const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
           const rarity = RARITY_META[achievement.rarity]
 
@@ -1068,7 +1070,7 @@ function AchievementMomentum({
         padding: '18px 16px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 16,
+        marginBottom: 0,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -1078,11 +1080,11 @@ function AchievementMomentum({
         </div>
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
-        Ближайшие достижения с понятным следующим шагом. Это не просто прогресс-бар, а прямой маршрут к разблокировке.
+        Ближайшие достижения с понятным следующим шагом.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {candidates.map((achievement) => {
+        {candidates.slice(0, 2).map((achievement) => {
           const Icon = ACHIEVEMENT_ICON_MAP[achievement.icon] || Award
           const rarity = RARITY_META[achievement.rarity]
           const action = getAchievementActionMeta(achievement)
@@ -1265,7 +1267,7 @@ function AchievementTimeline({
         padding: '18px 16px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 24,
+        marginBottom: 0,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -1275,7 +1277,7 @@ function AchievementTimeline({
         </div>
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
-        История всех разблокировок по порядку. Полезно видеть, как рос профиль, а не только текущее состояние бейджей.
+        История открытых достижений по порядку.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -1459,7 +1461,7 @@ function AchievementCollection({
         padding: '18px 16px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 24,
+        marginBottom: 0,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 2px' }}>
@@ -1520,7 +1522,7 @@ function AchievementCollection({
             Ничего не найдено
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            В этом фильтре пока пусто. Переключите категорию или откройте новые достижения действиями в приложении.
+            В этом фильтре пока пусто. Попробуйте другую категорию.
           </div>
         </div>
       ) : (
@@ -2168,14 +2170,14 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className={homeStyles.voidGlass}
-        style={{
-          padding: '28px 20px',
-          borderRadius: 12,
-          border: '1px solid var(--surface-hover)',
-          marginBottom: 24,
-          textAlign: 'center',
-          fontFamily: "'Manrope', sans-serif",
-          display: 'flex',
+      style={{
+        padding: '28px 20px',
+        borderRadius: 12,
+        border: '1px solid var(--surface-hover)',
+        marginBottom: 0,
+        textAlign: 'center',
+        fontFamily: "'Manrope', sans-serif",
+        display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 0,
@@ -2203,7 +2205,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
             marginBottom: 16,
           }}
         >
-          Совершите заказ — и здесь появится история бонусов
+          Первый заказ создаст здесь историю бонусов и начислений
         </div>
         <motion.button
           type="button"
@@ -2239,7 +2241,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         padding: '18px 16px',
         borderRadius: 12,
         border: '1px solid var(--surface-hover)',
-        marginBottom: 24,
+        marginBottom: 0,
       }}
     >
       <div
@@ -2348,16 +2350,16 @@ function HowItWorks({ userCashback }: { userCashback: number }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      style={{ marginBottom: 120 }}
+      style={{ marginBottom: 0 }}
     >
       <div className={homeStyles.sectionTitle}>КАК ЭТО РАБОТАЕТ</div>
 
       {/* 3 steps */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
         {[
-          { num: '1', title: 'Заказывай', desc: 'Каждый оплаченный заказ приносит кешбэк на бонусный баланс' },
-          { num: '2', title: 'Получай кешбэк', desc: 'Чем больше потрачено — тем выше ранг и процент кешбэка' },
-          { num: '3', title: 'Приглашай друзей', desc: 'Реферальная ссылка — бонус вам обоим при первом заказе друга' },
+          { num: '1', title: 'Заказывайте', desc: 'Каждый оплаченный заказ пополняет бонусный баланс' },
+          { num: '2', title: 'Повышайте ранг', desc: 'Чем больше заказов, тем выше процент кешбэка' },
+          { num: '3', title: 'Приглашайте друзей', desc: 'Реферальная ссылка даёт бонус вам и другу' },
         ].map((step) => (
           <div
             key={step.num}
@@ -2631,7 +2633,7 @@ function ClubPage({ user }: ClubPageProps) {
 
   if (!user) {
     return (
-      <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+      <div className="page-full-width saloon-page-shell saloon-page-shell--workspace">
         <div style={{ padding: '24px 20px 120px' }}>
           {/* Hero skeleton */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -2661,89 +2663,100 @@ function ClubPage({ user }: ClubPageProps) {
   }
 
   return (
-    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+    <div className="page-full-width saloon-page-shell saloon-page-shell--workspace">
       <div className="page-background">
         <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
       </div>
 
-      <div className="page-content">
-        {/* Header */}
-        <motion.div
+      <div className={`page-content saloon-page-content saloon-page-content--wide ${s.pageContent}`}>
+        <motion.section
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 16,
-          }}
+          className={`${ps.hero} ${ps.heroWorkspace}`}
         >
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            onClick={handleBack}
-            aria-label="Назад"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              background: 'var(--border-default)',
-              border: '1px solid var(--border-strong)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            <ArrowLeft size={18} color="var(--text-main)" />
-          </motion.button>
+          <div className={ps.heroGrid}>
+            <div className={ps.heroCopy}>
+              <div className={`${s.pageHeader} ${s.pageHeaderInline}`}>
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleBack}
+                  aria-label="Назад"
+                  className="saloon-icon-button"
+                >
+                  <ArrowLeft size={18} color="var(--text-main)" />
+                </motion.button>
 
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--gold-400)',
-                opacity: 0.72,
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.08em',
-                marginBottom: 4,
-              }}
-            >
-              Программа лояльности
+                <div className={s.pageTitle}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--gold-400)',
+                      opacity: 0.72,
+                      textTransform: 'uppercase' as const,
+                      letterSpacing: '0.08em',
+                      marginBottom: 4,
+                    }}
+                  >
+                    Программа клуба
+                  </div>
+                  <div
+                    className={homeStyles.goldAccent}
+                    style={{
+                      fontFamily: "'Manrope', sans-serif",
+                      fontSize: 30,
+                      fontWeight: 700,
+                      lineHeight: 1.02,
+                    }}
+                  >
+                    Клуб
+                  </div>
+                </div>
+              </div>
+
+              <HeroCard user={user} />
             </div>
-            <div
-              className={homeStyles.goldAccent}
-              style={{
-                fontFamily: "'Manrope', sans-serif",
-                fontSize: 26,
-                fontWeight: 700,
-                lineHeight: 1.05,
-              }}
-            >
-              Бонусы
+
+            <div className={ps.heroAside}>
+              <ReferralBlock user={user} />
             </div>
           </div>
-        </motion.div>
+        </motion.section>
 
-        <HeroCard user={user} />
-        <AchievementOverview achievements={achievements} onSelect={handleAchievementSelect} />
-        <AchievementMomentum
-          achievements={achievements}
-          onSelect={handleAchievementSelect}
-          onAction={handleAchievementAction}
-        />
-        <RecentUnlocks achievements={achievements} onSelect={handleAchievementSelect} />
-        <AchievementCollection
-          achievements={achievements}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          onSelect={handleAchievementSelect}
-        />
-        <AchievementTimeline achievements={achievements} onSelect={handleAchievementSelect} />
-        <ReferralBlock user={user} />
-        <TransactionHistory transactions={user.transactions || []} />
-        <HowItWorks userCashback={user.rank.cashback || 0} />
+        <div className={`${ps.surface} ${s.bandSurface}`}>
+          <div className={s.overviewBand}>
+            <AchievementOverview achievements={achievements} onSelect={handleAchievementSelect} />
+            <div className={s.sideBand}>
+              <AchievementMomentum
+                achievements={achievements}
+                onSelect={handleAchievementSelect}
+                onAction={handleAchievementAction}
+              />
+              <RecentUnlocks achievements={achievements} onSelect={handleAchievementSelect} />
+            </div>
+          </div>
+        </div>
+
+        <div className={`${ps.surface} ${s.bandSurface}`}>
+          <div className={s.collectionBand}>
+            <AchievementCollection
+              achievements={achievements}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              onSelect={handleAchievementSelect}
+            />
+            <div className={s.sideBand}>
+              <AchievementTimeline achievements={achievements} onSelect={handleAchievementSelect} />
+              <TransactionHistory transactions={user.transactions || []} />
+            </div>
+          </div>
+        </div>
+
+        <div className={`${ps.surface} ${s.bandSurface}`}>
+          <div className={s.sectionGap}>
+            <HowItWorks userCashback={user.rank.cashback || 0} />
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>

@@ -7,15 +7,18 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Dict, Any
 from enum import Enum
+from typing import Any
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 MSK_TZ = ZoneInfo("Europe/Moscow")
+LEGACY_ORDER_STATUS_ALIASES = {
+    "confirmed": "waiting_payment",
+}
 
 
-class NotificationType(str, Enum):
+class NotificationType(str, Enum):  # noqa: UP042
     """Типы уведомлений"""
     ORDER_CREATED = "order_created"
     ORDER_PENDING = "order_pending"
@@ -102,17 +105,6 @@ ORDER_STATUS_NOTIFICATIONS = {
         "celebration": True,
     },
 
-    # Подтверждён расчёт, ждём оплату
-    "confirmed": {
-        "type": NotificationType.PRICE_SET,
-        "title": "Расчёт готов",
-        "message": "Проверьте сумму и переходите к оплате",
-        "icon": "check-circle",
-        "color": "#d4af37",
-        "priority": "high",
-        "action": "view_order",
-    },
-
     # В работе
     "in_progress": {
         "type": NotificationType.IN_PROGRESS,
@@ -186,6 +178,13 @@ ORDER_STATUS_NOTIFICATIONS = {
         "priority": "high",
     },
 }
+
+
+def canonicalize_order_status_for_notifications(status: str | None) -> str | None:
+    """Collapse legacy outward-facing aliases to one client-visible status."""
+    if status is None:
+        return None
+    return LEGACY_ORDER_STATUS_ALIASES.get(status, status)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -307,7 +306,7 @@ async def send_order_status_notification(
     order_id: int,
     new_status: str,
     old_status: str = None,
-    extra_data: Dict[str, Any] = None
+    extra_data: dict[str, Any] = None
 ) -> bool:
     """
     Отправить умное уведомление о смене статуса заказа
@@ -315,17 +314,20 @@ async def send_order_status_notification(
     try:
         from bot.api.websocket import manager
 
+        canonical_new_status = canonicalize_order_status_for_notifications(new_status)
+        canonical_old_status = canonicalize_order_status_for_notifications(old_status)
+
         # Получаем конфигурацию уведомления
-        config = ORDER_STATUS_NOTIFICATIONS.get(new_status)
+        config = ORDER_STATUS_NOTIFICATIONS.get(canonical_new_status)
         if not config:
-            logger.warning(f"[Notify] No notification config for status: {new_status}")
+            logger.warning(f"[Notify] No notification config for status: {canonical_new_status}")
             return False
 
         # Динамически формируем сообщение с ценой для waiting_payment
         msg_text = config["message"]
         title_text = config["title"]
 
-        if extra_data and new_status in {"waiting_payment", "confirmed"}:
+        if extra_data and canonical_new_status == "waiting_payment":
             final_price = extra_data.get("final_price")
             bonus_used = extra_data.get("bonus_used", 0)
             if final_price:
@@ -334,7 +336,7 @@ async def send_order_status_notification(
                 msg_text = f"К оплате: {format_price(final_price)}"
                 if bonus_used > 0:
                     msg_text += f" (бонусы: −{format_price(bonus_used)})"
-        elif extra_data and new_status == "paused":
+        elif extra_data and canonical_new_status == "paused":
             pause_until = extra_data.get("pause_until")
             if isinstance(pause_until, str) and pause_until.strip():
                 try:
@@ -348,8 +350,8 @@ async def send_order_status_notification(
             "type": "order_update",
             "notification_type": config["type"].value,
             "order_id": order_id,
-            "status": new_status,
-            "old_status": old_status,
+            "status": canonical_new_status,
+            "old_status": canonical_old_status,
             "title": title_text,
             "message": msg_text,
             "icon": config.get("icon", "package"),
@@ -362,7 +364,7 @@ async def send_order_status_notification(
         }
 
         await manager.send_to_user(telegram_id, message)
-        logger.info(f"[Notify] Sent {new_status} notification to user {telegram_id} for order #{order_id}")
+        logger.info(f"[Notify] Sent {canonical_new_status} notification to user {telegram_id} for order #{order_id}")
         return True
 
     except Exception as e:
@@ -470,7 +472,7 @@ async def send_custom_notification(
     action: str = None,
     celebration: bool = False,
     confetti: bool = False,
-    data: Dict[str, Any] = None
+    data: dict[str, Any] = None
 ) -> bool:
     """
     Отправить кастомное уведомление

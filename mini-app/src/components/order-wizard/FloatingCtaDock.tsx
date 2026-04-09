@@ -29,6 +29,18 @@ export function FloatingCtaDock({
   // In fast mode, always show the dock (disabled state when can't proceed)
   const alwaysShow = isFastMode
   const isVisible = canProceed || alwaysShow
+  const showServiceContext = !isFastMode && step === 1 && Boolean(selectedServiceLabel)
+  const buttonLabel = submitting
+    ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
+    : step === totalSteps
+      ? (isFastMode ? 'Отправить запрос' : 'Отправить заявку')
+      : step === 1 && !isFastMode
+        ? 'К деталям'
+      : step === 2 && !isFastMode
+        ? 'К срокам'
+      : step === 1 && isFastMode
+        ? 'К сроку'
+      : 'Продолжить'
 
   return (
     <AnimatePresence>
@@ -55,15 +67,17 @@ export function FloatingCtaDock({
             onClick={step === totalSteps ? onSubmit : onNext}
             disabled={!canProceed || submitting}
             style={{
+              width: 'min(calc(100vw - 32px), 560px)',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: 12,
-              padding: '14px 24px',
+              padding: '12px 14px 12px 18px',
               background: 'rgba(14, 13, 12, 0.92)',
               backdropFilter: 'blur(24px) saturate(140%)',
               WebkitBackdropFilter: 'blur(24px) saturate(140%)',
               border: `1px solid ${canProceed ? 'rgba(212, 175, 55, 0.20)' : 'rgba(255, 255, 255, 0.06)'}`,
-              borderRadius: 16,
+              borderRadius: 18,
               cursor: !canProceed ? 'default' : submitting ? 'wait' : 'pointer',
               pointerEvents: 'auto',
               opacity: canProceed ? 1 : 0.5,
@@ -75,8 +89,7 @@ export function FloatingCtaDock({
               ` : '0 4px 20px -8px rgba(0, 0, 0, 0.4)',
             }}
           >
-            {/* Left side: Context info */}
-            {!isFastMode && step === 1 && selectedServiceLabel && (
+            {showServiceContext && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -84,7 +97,8 @@ export function FloatingCtaDock({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  paddingRight: 16,
+                  minWidth: 0,
+                  paddingRight: 14,
                   borderRight: '1px solid var(--surface-active)',
                 }}
               >
@@ -113,29 +127,19 @@ export function FloatingCtaDock({
               </motion.div>
             )}
 
-            {/* CTA Text */}
             <span
               style={{
+                flex: 1,
                 fontSize: 15,
                 fontWeight: 600,
                 color: 'var(--gold-400)',
                 letterSpacing: '0.01em',
+                textAlign: showServiceContext ? 'left' : 'center',
               }}
             >
-              {submitting
-                ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
-                : step === totalSteps
-                  ? (isFastMode ? 'Отправить быстрый запрос' : 'Отправить заявку')
-                  : step === 1 && !isFastMode
-                    ? 'Перейти к деталям'
-                  : step === 2 && !isFastMode
-                    ? 'Выбрать сроки'
-                  : step === 1 && isFastMode
-                    ? 'Перейти к сроку'
-                  : 'Продолжить'}
+              {buttonLabel}
             </span>
 
-            {/* Icon */}
             <motion.div
               animate={submitting ? { rotate: 360 } : { rotate: 0 }}
               transition={submitting ? { repeat: Infinity, duration: 1, ease: 'linear' } : {}}

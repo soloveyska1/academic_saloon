@@ -2,8 +2,10 @@ import { memo, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Copy, Crown, QrCode, Send, Award, Flame, Users, Star, Zap, Lock, Tag, GraduationCap, CheckCircle, ChevronDown, UserPlus } from 'lucide-react'
 import { PromoCodeSection } from '../ui/PromoCodeSection'
+import { CenteredModalWrapper } from '../modals/shared/CenteredModalWrapper'
 import { formatMoney } from '../../lib/utils'
 import type { Order, UserAchievement as ApiAchievement } from '../../types'
+import s from './LoungeVault.module.css'
 
 /* ─── Rarity System ─── */
 type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
@@ -574,179 +576,243 @@ const AchievementDetailModal = memo(function AchievementDetailModal({
     : null
 
   return (
-    <AnimatePresence>
-      {achievement && (
+    <CenteredModalWrapper
+      isOpen={Boolean(achievement)}
+      onClose={onClose}
+      modalId={`lounge-vault-achievement-${achievement.id}`}
+      title={achievement.label}
+      accentColor={unlocked ? r.primary : '#D4AF37'}
+    >
+      <div
+        style={{
+          padding: '26px 22px 22px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: 14,
+        }}
+      >
         <motion.div
-          key="badge-modal"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={onClose}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22 }}
           style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0,0,0,0.88)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 999,
+            background: unlocked ? r.bg : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${unlocked ? r.border : 'rgba(255,255,255,0.06)'}`,
+          }}
+        >
+          <span style={{ fontSize: 10, color: r.labelColor, letterSpacing: '0.1em' }}>
+            {r.label}
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: unlocked ? r.primary : 'rgba(255,255,255,0.42)',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {unlocked ? 'Открыто' : 'В процессе'}
+          </span>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.78, y: 14 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.05, type: 'spring', stiffness: 240, damping: 20 }}
+          style={{
+            width: 92,
+            height: 92,
+            borderRadius: '50%',
+            background: unlocked ? r.bg : 'rgba(255,255,255,0.03)',
+            border: `2px solid ${unlocked ? r.border : 'rgba(255,255,255,0.06)'}`,
+            boxShadow: unlocked
+              ? `0 0 32px ${r.glow}, 0 0 64px ${r.glow}`
+              : '0 12px 32px rgba(0,0,0,0.35)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 24,
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            onClick={(e) => e.stopPropagation()}
+          <Icon
+            size={38}
+            strokeWidth={1.6}
+            color={unlocked ? r.primary : 'rgba(255,255,255,0.18)'}
+          />
+        </motion.div>
+
+        <div
+          style={{
+            fontFamily: "var(--font-display, 'Playfair Display', serif)",
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: unlocked ? 'rgba(255,255,255,0.96)' : 'rgba(255,255,255,0.72)',
+            lineHeight: 1.1,
+          }}
+        >
+          {achievement.label}
+        </div>
+
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55 }}>
+          {achievement.description}
+        </div>
+
+        <div
+          style={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 10,
+            marginTop: 2,
+          }}
+        >
+          <div
             style={{
-              maxWidth: 300,
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              gap: 12,
+              padding: '12px 10px',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
             }}
           >
-            {/* Large icon 80px with glow */}
-            <motion.div
-              initial={{ scale: 0.5 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.34)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Редкость
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: unlocked ? r.primary : 'rgba(255,255,255,0.68)' }}>
+              {achievement.rarity === 'legendary'
+                ? 'Легендарная'
+                : achievement.rarity === 'epic'
+                  ? 'Эпическая'
+                  : achievement.rarity === 'rare'
+                    ? 'Редкая'
+                    : 'Обычная'}
+            </div>
+          </div>
+          <div
+            style={{
+              padding: '12px 10px',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.34)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Владельцы
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.82)' }}>
+              {achievement.percentOwners}%
+            </div>
+          </div>
+        </div>
+
+        {unlocked && (achievement.rewardAmount || unlockedAt) && (
+          <div
+            style={{
+              width: '100%',
+              display: 'grid',
+              gap: 8,
+              padding: '14px 14px 12px',
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(255,255,255,0.02))',
+              border: `1px solid ${r.border}`,
+            }}
+          >
+            {achievement.rewardAmount ? (
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#D4AF37' }}>
+                Награда: +{achievement.rewardAmount} ₽
+              </div>
+            ) : null}
+            {unlockedAt ? (
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.42)' }}>
+                Открыто {unlockedAt}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {!unlocked && achievement.progress !== undefined && (
+          <div
+            style={{
+              width: '100%',
+              padding: '14px 14px 12px',
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Прогресс
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#D4AF37' }}>
+                {Math.round(achievement.progress * 100)}%
+              </div>
+            </div>
+            <div
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: unlocked ? r.bg : 'rgba(255,255,255,0.03)',
-                border: `2px solid ${unlocked ? r.border : 'rgba(255,255,255,0.06)'}`,
-                boxShadow: unlocked
-                  ? `0 0 32px ${r.glow}, 0 0 64px ${r.glow}`
-                  : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                height: 6,
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.06)',
+                overflow: 'hidden',
               }}
             >
-              <Icon
-                size={36}
-                strokeWidth={1.6}
-                color={unlocked ? r.primary : 'rgba(255,255,255,0.15)'}
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${achievement.progress * 100}%` }}
+                transition={{ delay: 0.2, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #B38728, #D4AF37, #FFF8D6)' }}
               />
-            </motion.div>
-
-            {/* Rarity dots */}
-            <span style={{ fontSize: 10, color: r.labelColor, letterSpacing: '0.1em' }}>
-              {r.label}
-            </span>
-
-            {/* Title */}
-            <div
-              style={{
-                fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                fontSize: 22,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: unlocked ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)',
-              }}
-            >
-              {achievement.label}
             </div>
-
-            {/* Description */}
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>
-              {achievement.description}
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.46)', marginTop: 8, lineHeight: 1.45 }}>
+              {achievement.hint || `${achievement.current ?? 0} из ${achievement.target ?? 0}`}
             </div>
+          </div>
+        )}
 
-            {unlocked && (achievement.rewardAmount || unlockedAt) && (
-              <div style={{ display: 'grid', gap: 4, marginTop: 2 }}>
-                {achievement.rewardAmount ? (
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#D4AF37' }}>
-                    Награда: +{achievement.rewardAmount} ₽
-                  </div>
-                ) : null}
-                {unlockedAt ? (
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
-                    Открыто {unlockedAt}
-                  </div>
-                ) : null}
-              </div>
-            )}
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.28)', lineHeight: 1.45 }}>
+          {achievement.percentOwners}% пользователей уже имеют эту ачивку
+        </div>
 
-            {/* Progress for locked */}
-            {!unlocked && achievement.progress !== undefined && achievement.progress > 0 && (
-              <div style={{ width: '100%', marginTop: 4 }}>
-                <div
-                  style={{
-                    height: 4,
-                    borderRadius: 2,
-                    background: 'rgba(255,255,255,0.06)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${achievement.progress * 100}%` }}
-                    transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ height: '100%', borderRadius: 2, background: '#D4AF37' }}
-                  />
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#D4AF37', marginTop: 6 }}>
-                  {achievement.hint || `${Math.round(achievement.progress * 100)}%`}
-                </div>
-              </div>
-            )}
-
-            {/* Percentage of users */}
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.25)',
-                marginTop: 4,
-              }}
-            >
-              {achievement.percentOwners}% пользователей имеют
-            </div>
-
-            {/* Share button for unlocked */}
-            {unlocked && (
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  const text = `🏆 Достижение «${achievement.label}» получено!\n${achievement.description}\nТолько ${achievement.percentOwners}% имеют`
-                  const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(text)}`
-                  window.open(url, '_blank')
-                }}
-                style={{
-                  width: '100%',
-                  padding: '14px 20px',
-                  marginTop: 8,
-                  borderRadius: 12,
-                  border: `1px solid ${r.border}`,
-                  background: r.bg,
-                  color: r.primary,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                <Send size={16} strokeWidth={1.8} />
-                Поделиться
-              </motion.button>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {unlocked && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.96 }}
+            onClick={() => {
+              const text = `🏆 Достижение «${achievement.label}» получено!\n${achievement.description}\nТолько ${achievement.percentOwners}% имеют`
+              const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(text)}`
+              window.open(url, '_blank', 'noopener,noreferrer')
+            }}
+            style={{
+              width: '100%',
+              minHeight: 48,
+              padding: '14px 18px',
+              borderRadius: 14,
+              border: `1px solid ${r.border}`,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.14), rgba(255,255,255,0.04))',
+              color: r.primary,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 16px 40px -28px rgba(212,175,55,0.45)',
+            }}
+          >
+            <Send size={16} strokeWidth={1.8} />
+            Поделиться достижением
+          </motion.button>
+        )}
+      </div>
+    </CenteredModalWrapper>
   )
 })
 
@@ -774,15 +840,7 @@ const ReferralCard = memo(function ReferralCard({
   const hasStats = referralsCount > 0 || referralEarnings > 0
 
   return (
-    <div
-      style={{
-        borderRadius: 14,
-        background: '#0E0D0C',
-        border: '1px solid rgba(255,255,255,0.04)',
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-      }}
-    >
+    <div className={s.referralCard}>
       {/* ─── Compact header row (always visible) ─── */}
       <motion.button
         type="button"
@@ -849,17 +907,13 @@ const ReferralCard = memo(function ReferralCard({
           >
             <div style={{ padding: '0 16px 14px' }}>
               {/* Referral code + action buttons */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-                gap: 6,
-                marginBottom: 10,
-              }}>
+              <div className={s.referralActions}>
                 {/* Code button */}
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.95 }}
                   onClick={onCopy}
+                  className={s.referralCodeButton}
                   style={{
                     minWidth: 0, padding: '9px 12px', borderRadius: 10,
                     border: '1px solid rgba(212,175,55,0.14)',
@@ -980,35 +1034,17 @@ export const LoungeVault = memo(function LoungeVault({
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 20, display: 'grid', gap: 6 }}
+      className={s.section}
     >
       {/* ═══ Card B — КОЛЛЕКЦИЯ (Premium Achievement Grid) ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-        style={{
-          padding: 16,
-          borderRadius: 14,
-          background: '#0E0D0C',
-          border: '1px solid rgba(255,255,255,0.04)',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4)',
-        }}
+        className={s.collectionCard}
       >
         {/* Top accent line — thin gold */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            background: 'linear-gradient(90deg, transparent 10%, rgba(212,175,55,0.08) 50%, transparent 90%)',
-            pointerEvents: 'none',
-          }}
-        />
+        <div className={s.topLine} />
 
         {/* ─── Header с progress ring ─── */}
         <motion.div
@@ -1092,21 +1128,9 @@ export const LoungeVault = memo(function LoungeVault({
         </motion.div>
 
         {/* ─── Horizontal scroll carousel ─── */}
-        <div
-          className="hide-scrollbar"
-          style={{
-            display: 'flex',
-            gap: 10,
-            overflowX: 'auto',
-            scrollSnapType: 'x mandatory',
-            WebkitOverflowScrolling: 'touch',
-            margin: '0 -16px',
-            padding: '0 16px',
-            scrollbarWidth: 'none',
-          }}
-        >
+        <div className={`${s.achievementsRail} hide-scrollbar`}>
           {sortedAchievements.map((a, i) => (
-            <div key={a.id} style={{ flexShrink: 0, width: 104, scrollSnapAlign: 'start' }}>
+            <div key={a.id} className={s.achievementItem}>
               <AchievementCard achievement={a} index={i} onSelect={() => setSelectedBadge(a)} />
             </div>
           ))}

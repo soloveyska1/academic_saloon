@@ -11,7 +11,13 @@ vi.mock('../api/userApi', () => ({
 import { useWebSocket } from './useWebSocket'
 import type { OrderUpdateMessage } from './useWebSocket'
 import type { ChatSocketMessage } from './useWebSocket'
+import type { DeliveryUpdateMessage } from './useWebSocket'
 import type { FileDeliveryMessage } from './useWebSocket'
+import type {
+  RevisionRoundFulfilledMessage,
+  RevisionRoundOpenedMessage,
+  RevisionRoundUpdatedMessage,
+} from './useWebSocket'
 
 class MockWebSocket {
   static CONNECTING = 0
@@ -60,19 +66,31 @@ function HookHarness({
   telegramId,
   onOrderUpdate,
   onChatMessage,
+  onDeliveryUpdate,
   onFileDelivery,
+  onRevisionRoundOpened,
+  onRevisionRoundUpdated,
+  onRevisionRoundFulfilled,
 }: {
   telegramId: number | null
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
   onChatMessage?: (msg: ChatSocketMessage) => void
+  onDeliveryUpdate?: (msg: DeliveryUpdateMessage) => void
   onFileDelivery?: (msg: FileDeliveryMessage) => void
+  onRevisionRoundOpened?: (msg: RevisionRoundOpenedMessage) => void
+  onRevisionRoundUpdated?: (msg: RevisionRoundUpdatedMessage) => void
+  onRevisionRoundFulfilled?: (msg: RevisionRoundFulfilledMessage) => void
 }) {
   latestHook = useWebSocket(telegramId, {
     autoReconnect: true,
     reconnectInterval: 1000,
     onOrderUpdate,
     onChatMessage,
+    onDeliveryUpdate,
     onFileDelivery,
+    onRevisionRoundOpened,
+    onRevisionRoundUpdated,
+    onRevisionRoundFulfilled,
   })
 
   return null
@@ -219,6 +237,38 @@ describe('useWebSocket reconnect flow', () => {
     )
   })
 
+  it('forwards delivery update messages to the dedicated handler', () => {
+    const onDeliveryUpdate = vi.fn()
+
+    act(() => {
+      root.render(<HookHarness telegramId={123} onDeliveryUpdate={onDeliveryUpdate} />)
+    })
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'delivery_update',
+        timestamp: new Date().toISOString(),
+        order_id: 91,
+        delivery_batch_id: 7,
+        version_number: 3,
+        revision_count_snapshot: 2,
+        file_count: 2,
+        files_url: 'https://example.com/files/v3',
+        title: 'Исправленная версия по правке #2 готова',
+        message: 'Заказ #91 · Версия 3 · 2 файл(ов)',
+      })
+    })
+
+    expect(onDeliveryUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 91,
+        delivery_batch_id: 7,
+        version_number: 3,
+        files_url: 'https://example.com/files/v3',
+      }),
+    )
+  })
+
   it('forwards chat message notifications to the dedicated handler', () => {
     const onChatMessage = vi.fn()
 
@@ -241,6 +291,71 @@ describe('useWebSocket reconnect flow', () => {
         order_id: 45,
         title: '💬 Менеджер',
         message: 'Есть обновление по заказу',
+      }),
+    )
+  })
+
+  it('forwards revision round lifecycle messages to dedicated handlers', () => {
+    const onRevisionRoundOpened = vi.fn()
+    const onRevisionRoundUpdated = vi.fn()
+    const onRevisionRoundFulfilled = vi.fn()
+
+    act(() => {
+      root.render(
+        <HookHarness
+          telegramId={123}
+          onRevisionRoundOpened={onRevisionRoundOpened}
+          onRevisionRoundUpdated={onRevisionRoundUpdated}
+          onRevisionRoundFulfilled={onRevisionRoundFulfilled}
+        />,
+      )
+    })
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'revision_round_opened',
+        timestamp: new Date().toISOString(),
+        order_id: 91,
+        revision_round_id: 7,
+        round_number: 2,
+      })
+      MockWebSocket.instances[0].emitMessage({
+        type: 'revision_round_updated',
+        timestamp: new Date().toISOString(),
+        order_id: 91,
+        revision_round_id: 7,
+        round_number: 2,
+        latest_comment: 'Добавил скриншот',
+      })
+      MockWebSocket.instances[0].emitMessage({
+        type: 'revision_round_fulfilled',
+        timestamp: new Date().toISOString(),
+        order_id: 91,
+        revision_round_id: 7,
+        round_number: 2,
+        delivery_batch_id: 18,
+        version_number: 3,
+      })
+    })
+
+    expect(onRevisionRoundOpened).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 91,
+        revision_round_id: 7,
+        round_number: 2,
+      }),
+    )
+    expect(onRevisionRoundUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 91,
+        latest_comment: 'Добавил скриншот',
+      }),
+    )
+    expect(onRevisionRoundFulfilled).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 91,
+        delivery_batch_id: 18,
+        version_number: 3,
       }),
     )
   })

@@ -23,7 +23,7 @@ interface Props {
 const TOPICS = [
   { id: 'payment', icon: CreditCard, title: 'Оплата', description: 'Показываем, где оплатить и что делать, если подтверждение задержалось.' },
   { id: 'deadline', icon: Clock3, title: 'Сроки', description: 'Подскажем, как вести срочный заказ и что делать при истечении срока.' },
-  { id: 'revisions', icon: RefreshCcw, title: 'Правки', description: 'Коротко объясняем, как идут бесплатные круги правок и когда нужен отдельный расчёт.' },
+  { id: 'revisions', icon: RefreshCcw, title: 'Правки', description: 'Коротко объясняем, как работают безлимитные правки и что считается новым объёмом работ.' },
   { id: 'files', icon: FileText, title: 'Файлы', description: 'Помогаем с загрузкой методички, требований, примеров и ссылок.' },
 ] as const
 

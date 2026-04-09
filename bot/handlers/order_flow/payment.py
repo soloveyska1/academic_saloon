@@ -1,7 +1,6 @@
 """
 Order Flow Payment - payment and receipt handlers.
 """
-import logging
 
 from aiogram import F, Bot
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, WebAppInfo
@@ -9,14 +8,26 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
+from database.models.orders import (
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    Order,
+    OrderStatus,
+    WORK_TYPE_LABELS,
+    WorkType,
+    is_waiting_payment_status,
+)
 from bot.states.order import OrderState
 from bot.keyboards.orders import get_deadline_keyboard
-from bot.services.live_cards import update_card_status
 from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.services.promo_service import PromoService
 from bot.utils.formatting import format_price
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
 
 from .router import order_router, logger, DEADLINE_IMAGE_PATH, CHECKING_PAYMENT_IMAGE_PATH
 
@@ -58,12 +69,7 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    valid_statuses = [
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,  # legacy
-        OrderStatus.WAITING_ESTIMATION.value
-    ]
-    if order.status not in valid_statuses:
+    if not (is_waiting_payment_status(order.status) or order.status == OrderStatus.WAITING_ESTIMATION.value):
         await callback.answer("Этот заказ уже нельзя оплатить", show_alert=True)
         return
 
@@ -157,19 +163,9 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         return
 
     # Check order is in correct status for payment
-    valid_statuses = [
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
-        OrderStatus.WAITING_ESTIMATION.value,  # For special orders after accepting offer
-    ]
-    if order.status not in valid_statuses:
+    if not (is_waiting_payment_status(order.status) or order.status == OrderStatus.WAITING_ESTIMATION.value):
         await callback.answer("Этот заказ уже обрабатывается", show_alert=True)
         return
-
-    # If status WAITING_ESTIMATION - change to WAITING_PAYMENT
-    if order.status == OrderStatus.WAITING_ESTIMATION.value:
-        order.status = OrderStatus.WAITING_PAYMENT.value
-        await session.commit()
 
     await callback.answer("Платёж на проверке")
 
@@ -181,29 +177,34 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         order.payment_scheme = "half"
     if not order.payment_method:
         order.payment_method = "transfer"
-    order.status = OrderStatus.VERIFICATION_PENDING.value
-    await session.commit()
 
-    # === UPDATE LIVE CARD IN CHANNEL ===
-    card_updated = False
     try:
-        username = callback.from_user.username
-        user_link = f"@{username}" if username else f"ID:{callback.from_user.id}"
+        if order.status == OrderStatus.WAITING_ESTIMATION.value:
+            apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+        change = apply_order_status_transition(order, OrderStatus.VERIFICATION_PENDING.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-        card_updated = await update_card_status(
-            bot=bot,
-            order=order,
-            session=session,
+    username = callback.from_user.username
+    user_link = f"@{username}" if username else f"ID:{callback.from_user.id}"
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
             client_username=callback.from_user.username,
             client_name=callback.from_user.full_name,
-            extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {format_price(order.price)}",
-        )
-        if card_updated:
-            logger.info(f"Order #{order.id}: card updated with verification buttons")
-        else:
-            logger.warning(f"Order #{order.id}: card update returned False (no topic?)")
-    except Exception as e:
-        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+            card_extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {format_price(order.price)}",
+            notification_extra_data={
+                "payment_method": order.payment_method,
+                "payment_scheme": order.payment_scheme,
+                "payment_phase": "initial",
+            },
+        ),
+    )
 
     # === DELETE OLD MESSAGE (so can't click twice) ===
     try:
@@ -255,7 +256,6 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         )
 
     # === NOTIFICATION TO TOPIC ABOUT PAYMENT VERIFICATION ===
-    username = callback.from_user.username
     user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
 
     admin_text = f"""<b>Проверка оплаты</b>
@@ -321,10 +321,7 @@ async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, sess
     order_query = select(Order).where(
         Order.id == order_id,
         Order.user_id == callback.from_user.id,
-        Order.status.in_([
-            OrderStatus.WAITING_PAYMENT.value,
-            OrderStatus.CONFIRMED.value,  # legacy
-        ])
+        Order.status.in_(LEGACY_WAITING_PAYMENT_STATUSES)
     )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()

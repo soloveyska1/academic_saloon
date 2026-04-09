@@ -6,6 +6,12 @@ import {
   Crown, Zap, TrendingUp
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
+import {
+  getEffectiveOrderStatus,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
+  isAwaitingPaymentStatus,
+} from '../../lib/orderView'
 
 interface OrderHeroHeaderProps {
   order: Order
@@ -102,7 +108,6 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   pending: { icon: Clock, label: 'На оценке', shortLabel: 'Оценка', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.3)', isActive: true, step: 0 },
   waiting_estimation: { icon: Clock, label: 'На оценке', shortLabel: 'Оценка', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.3)', isActive: true, step: 0 },
   waiting_payment: { icon: CreditCard, label: 'К оплате', shortLabel: 'К оплате', color: '#D4AF37', bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.35)', step: 1 },
-  confirmed: { icon: CreditCard, label: 'К оплате', shortLabel: 'К оплате', color: '#D4AF37', bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.35)', step: 1 },
   verification_pending: { icon: Loader2, label: 'Проверка оплаты', shortLabel: 'Проверка', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)', borderColor: 'rgba(6,182,212,0.3)', isActive: true, step: 1 },
   paid: { icon: Loader2, label: 'В работе', shortLabel: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)', isActive: true, step: 2 },
   paid_full: { icon: Loader2, label: 'В работе', shortLabel: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)', isActive: true, step: 2 },
@@ -241,15 +246,28 @@ function MiniTimeline({ currentStep }: { currentStep: number }) {
 
 export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeaderProps) {
   const countdown = useCountdown(order.deadline)
-  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const visibleStatus = (getEffectiveOrderStatus(order) ?? order.status) as OrderStatus
+  const baseStatusConfig = STATUS_CONFIG[visibleStatus] || STATUS_CONFIG.pending
+  const currentRound = getOpenRevisionRound(order)
+  const latestDelivery = getLatestDeliveryBatch(order)
+  const statusConfig = {
+    ...baseStatusConfig,
+    label:
+      visibleStatus === 'revision' && currentRound?.round_number
+        ? `Правка #${currentRound.round_number}`
+        : visibleStatus === 'review' && latestDelivery?.version_number
+          ? `Версия ${latestDelivery.version_number} на проверке`
+          : baseStatusConfig.label,
+  }
   const StatusIcon = statusConfig.icon
   const typeConfig = WORK_TYPE_CONFIG[order.work_type] || WORK_TYPE_CONFIG.other
 
-  const isCompleted = order.status === 'completed'
-  const isCancelled = ['cancelled', 'rejected'].includes(order.status)
-  const needsPayment = ['confirmed', 'waiting_payment'].includes(order.status)
-  const isInProgress = ['paid', 'paid_full', 'in_progress'].includes(order.status)
-  const isReview = order.status === 'review'
+  const isCompleted = visibleStatus === 'completed'
+  const isCancelled = ['cancelled', 'rejected'].includes(visibleStatus)
+  const needsPayment = isAwaitingPaymentStatus(visibleStatus)
+  const isInProgress = ['paid', 'paid_full', 'in_progress'].includes(visibleStatus)
+  const isReview = visibleStatus === 'review'
+  const isRevision = visibleStatus === 'revision'
 
   const progress = (order as any).progress || 0
   const finalPrice = order.final_price || order.price || 0
@@ -274,7 +292,20 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
   // NOTE: Payment action removed - GoldenInvoice has the payment CTA
   const getPrimaryAction = () => {
     if (needsPayment) return null // Кнопка оплаты находится в GoldenInvoice
-    if (isReview) return { label: 'Проверить', action: 'files', color: '#8b5cf6' }
+    if (isReview) {
+      return {
+        label: latestDelivery?.version_number ? `Проверить v${latestDelivery.version_number}` : 'Проверить',
+        action: 'files',
+        color: '#8b5cf6',
+      }
+    }
+    if (isRevision) {
+      return {
+        label: currentRound?.round_number ? `Правка #${currentRound.round_number}` : 'Комментарий',
+        action: 'revision',
+        color: '#f97316',
+      }
+    }
     if (isInProgress) return { label: 'Написать', action: 'chat', color: '#3b82f6' }
     if (isCompleted && !order.review_submitted) return { label: 'Оценить', action: 'review', color: '#22c55e' }
     return null
@@ -308,8 +339,8 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         pointerEvents: 'none',
       }} />
 
-      {/* Floating particles for payment/review states */}
-      {(needsPayment || isReview) && <FloatingParticles color={statusConfig.color} count={5} />}
+      {/* Floating particles for payment/review/revision states */}
+      {(needsPayment || isReview || isRevision) && <FloatingParticles color={statusConfig.color} count={5} />}
 
       {/* Shimmer effect for payment state */}
       {needsPayment && (

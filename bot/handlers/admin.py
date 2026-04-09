@@ -28,9 +28,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 
 from database.models.users import User
-from database.models.orders import Order, WORK_TYPE_LABELS, WorkType, OrderStatus
+from database.models.admin_logs import AdminActionLog, AdminActionType
+from database.models.orders import (
+    LEGACY_CONFIRMED_STATUS,
+    LEGACY_WAITING_PAYMENT_STATUSES,
+    Order,
+    OrderStatus,
+    WORK_TYPE_LABELS,
+    WorkType,
+    canonicalize_order_status,
+    is_waiting_payment_status,
+)
 from bot.services.logger import BotLogger, LogEvent
 from bot.services.bonus import BonusService, BonusReason
+from bot.services.order_delivery_service import send_order_delivery_batch
+from bot.services.yandex_disk import yandex_disk_service
 from core.config import settings
 from core.saloon_status import (
     saloon_manager,
@@ -59,6 +71,13 @@ from bot.services.order_message_formatter import (
     build_issue_keyboard,
     build_order_keyboard,
     build_payment_keyboard,
+)
+from bot.services.order_lifecycle import can_deliver_order, sync_order_delivery_review
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
 )
 
 router = Router()
@@ -259,10 +278,11 @@ ORDER_STATUS_LABELS = {
     OrderStatus.WAITING_ESTIMATION.value: ("🔍", "Спецзаказ: ждёт цену"),
     OrderStatus.WAITING_PAYMENT.value: ("💳", "Ждёт оплаты"),
     OrderStatus.VERIFICATION_PENDING.value: ("🔔", "Проверка оплаты"),
-    OrderStatus.CONFIRMED.value: ("✅", "Подтверждён"),  # legacy
+    LEGACY_CONFIRMED_STATUS: ("💳", "Ждёт оплаты"),  # legacy alias
     OrderStatus.PAID.value: ("💰", "Оплачен"),
     OrderStatus.PAUSED.value: ("❄️", "На паузе"),
     OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
+    OrderStatus.REVISION.value: ("✏️", "На правках"),
     OrderStatus.REVIEW.value: ("👁", "На проверке"),
     OrderStatus.COMPLETED.value: ("✨", "Завершён"),
     OrderStatus.CANCELLED.value: ("❌", "Отменён"),
@@ -271,48 +291,136 @@ ORDER_STATUS_LABELS = {
 
 
 def get_order_detail_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarkup:
-    """
-    Клавиатура управления заказом — расширенная версия.
-
-    Actions:
-    - Сменить статус
-    - Изменить цену (для спецзаказов и override)
-    - Прогресс (для заказов в работе)
-    - Написать клиенту
-    - Отправить файл
-    - Отметить оплаченным
-    - Отменить / Удалить
-    """
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Status & Price
+    return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🔄 Статус", callback_data=f"admin_change_status:{order_id}"),
             InlineKeyboardButton(text="✏️ Цена", callback_data=f"admin_set_price:{order_id}"),
         ],
-        # Row 1.5: Progress
         [
             InlineKeyboardButton(text="📊 Прогресс", callback_data=f"admin_progress_menu:{order_id}"),
-        ],
-        # Row 2: Communication
-        [
             InlineKeyboardButton(text="📩 Написать", callback_data=f"admin_msg_user:{order_id}:{user_id}"),
-            InlineKeyboardButton(text="📤 Файл", callback_data=f"admin_send_file:{order_id}:{user_id}"),
         ],
-        # Row 3: Quick actions
         [
-            InlineKeyboardButton(text="✅ Оплачен", callback_data=f"admin_mark_paid:{order_id}"),
+            InlineKeyboardButton(text="📤 Файл", callback_data=f"admin_send_file:{order_id}:{user_id}"),
             InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_cancel_order:{order_id}"),
         ],
-        # Row 4: Danger zone
-        [
-            InlineKeyboardButton(text="🗑 Удалить", callback_data=f"admin_delete_order:{order_id}"),
-        ],
-        # Row 5: Navigation
-        [
-            InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list"),
-        ],
+        [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")],
     ])
-    return kb
+
+
+def get_order_detail_keyboard_for_order(order: Order, user_id: int) -> InlineKeyboardMarkup:
+    send_file_label = "📤 Файл"
+    if order.status == OrderStatus.REVISION.value:
+        send_file_label = "📤 Вернуть на проверку"
+    elif can_deliver_order(order):
+        send_file_label = "📤 Выдать работу"
+
+    keyboard_rows = [
+        [
+            InlineKeyboardButton(text="🔄 Статус", callback_data=f"admin_change_status:{order.id}"),
+            InlineKeyboardButton(text="✏️ Цена", callback_data=f"admin_set_price:{order.id}"),
+        ],
+        [
+            InlineKeyboardButton(text="📊 Прогресс", callback_data=f"admin_progress_menu:{order.id}"),
+            InlineKeyboardButton(text="📝 Заметка", callback_data=f"admin_order_note:{order.id}"),
+        ],
+        [
+            InlineKeyboardButton(text="💬 Топик", callback_data=f"admin_open_order_topic:{order.id}"),
+            InlineKeyboardButton(text="🔄 Карточка", callback_data=f"admin_refresh_card:{order.id}"),
+        ],
+        [
+            InlineKeyboardButton(text="📩 Написать", callback_data=f"admin_msg_user:{order.id}:{user_id}"),
+            InlineKeyboardButton(text=send_file_label, callback_data=f"admin_send_file:{order.id}:{user_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="✅ Оплачен", callback_data=f"admin_mark_paid:{order.id}"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_cancel_order:{order.id}"),
+        ],
+    ]
+
+    if order.files_url:
+        keyboard_rows.append([InlineKeyboardButton(text="🗂 Папка заказа", url=order.files_url)])
+
+    keyboard_rows.extend(
+        [
+            [InlineKeyboardButton(text="🗑 Удалить", callback_data=f"admin_delete_order:{order.id}")],
+            [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")],
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
+
+
+def build_order_detail_text(order: Order, user: Optional[User]) -> str:
+    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+
+    user_info = "—"
+    if user:
+        username = f"@{user.username}" if user.username else ""
+        user_info = f"{user.fullname or 'Без имени'} {username}\n<code>{user.telegram_id}</code>"
+
+    files_status = "есть" if order.files_url else "нет"
+    delivered_at = order.delivered_at.strftime('%d.%m.%Y %H:%M') if order.delivered_at else "—"
+    notes = (order.admin_notes or "—").strip() or "—"
+
+    return f"""📋 <b>Заказ #{order.id}</b>
+
+{emoji} <b>Статус:</b> {status_label}
+<b>Тип работы:</b> {work_label}
+<b>Предмет:</b> {order.subject or '—'}
+<b>Тема:</b> {order.topic or '—'}
+<b>Дедлайн:</b> {order.deadline or '—'}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💰 <b>Финансы:</b>
+◈ Цена: {(order.price or 0):.0f}₽
+◈ Бонусы: -{(order.bonus_used or 0):.0f}₽
+◈ Итого: {(order.final_price or 0):.0f}₽
+◈ Оплачено: {(order.paid_amount or 0):.0f}₽
+
+━━━━━━━━━━━━━━━━━━━━━
+
+🧭 <b>Оперативно:</b>
+◈ Кругов правок: {order.revision_count or 0}
+◈ Работа выдана: {delivered_at}
+◈ Папка заказа: {files_status}
+
+📝 <b>Внутренняя заметка:</b>
+{notes}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+👤 <b>Клиент:</b>
+{user_info}
+
+📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
+
+
+async def add_admin_action_log(
+    session: AsyncSession,
+    *,
+    admin_id: int,
+    admin_username: Optional[str],
+    action_type: AdminActionType,
+    target_type: str,
+    target_id: Optional[int],
+    details: Optional[str] = None,
+    old_value: Optional[dict] = None,
+    new_value: Optional[dict] = None,
+) -> None:
+    session.add(
+        AdminActionLog(
+            admin_id=admin_id,
+            admin_username=admin_username,
+            action_type=action_type.value,
+            target_type=target_type,
+            target_id=target_id,
+            details=details,
+            old_value=old_value,
+            new_value=new_value,
+        )
+    )
 
 
 def get_status_select_keyboard(order_id: int) -> InlineKeyboardMarkup:
@@ -429,14 +537,13 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
             OrderStatus.WAITING_ESTIMATION.value,  # Спецзаказы ждут оценки
-            OrderStatus.WAITING_PAYMENT.value,
             OrderStatus.VERIFICATION_PENDING.value,
-            OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.PAID_FULL.value,  # Полностью оплаченные
             OrderStatus.PAUSED.value,
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
+            *LEGACY_WAITING_PAYMENT_STATUSES,
         ]))
         .order_by(desc(Order.created_at))
         .limit(20)
@@ -455,7 +562,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
     waiting_estimation = [o for o in orders if o.status == OrderStatus.WAITING_ESTIMATION.value]
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
-    waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
+    waiting_payment = [o for o in orders if is_waiting_payment_status(o.status)]
     paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
     in_progress = [o for o in orders if o.status in [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
@@ -571,14 +678,13 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
             OrderStatus.WAITING_ESTIMATION.value,  # Спецзаказы ждут оценки
-            OrderStatus.WAITING_PAYMENT.value,
             OrderStatus.VERIFICATION_PENDING.value,
-            OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.PAID_FULL.value,  # Полностью оплаченные
             OrderStatus.PAUSED.value,
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
+            *LEGACY_WAITING_PAYMENT_STATUSES,
         ]))
         .order_by(desc(Order.created_at))
         .limit(20)
@@ -598,7 +704,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
     waiting_estimation = [o for o in orders if o.status == OrderStatus.WAITING_ESTIMATION.value]
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
-    waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
+    waiting_payment = [o for o in orders if is_waiting_payment_status(o.status)]
     paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
     in_progress = [o for o in orders if o.status in [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
@@ -727,40 +833,133 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession):
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    # Формируем информацию
-    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+    await callback.message.edit_text(
+        build_order_detail_text(order, user),
+        reply_markup=get_order_detail_keyboard_for_order(order, order.user_id),
+    )
 
-    user_info = "—"
-    if user:
-        username = f"@{user.username}" if user.username else ""
-        user_info = f"{user.fullname or 'Без имени'} {username}\n<code>{user.telegram_id}</code>"
 
-    text = f"""📋 <b>Заказ #{order.id}</b>
+@router.callback_query(F.data.startswith("admin_refresh_card:"))
+async def refresh_order_card(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
 
-{emoji} <b>Статус:</b> {status_label}
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
-<b>Тип работы:</b> {work_label}
-<b>Предмет:</b> {order.subject or '—'}
-<b>Тема:</b> {order.topic or '—'}
-<b>Дедлайн:</b> {order.deadline or '—'}
+    order_result = await session.execute(select(Order).where(Order.id == order_id))
+    order = order_result.scalar_one_or_none()
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
 
-━━━━━━━━━━━━━━━━━━━━━
+    user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+    user = user_result.scalar_one_or_none()
 
-💰 <b>Финансы:</b>
-◈ Цена: {order.price:.0f}₽
-◈ Бонусы: -{order.bonus_used:.0f}₽
-◈ Итого: {order.final_price:.0f}₽
-◈ Оплачено: {order.paid_amount:.0f}₽
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            yadisk_link=order.files_url,
+            extra_text="🔄 Карточка обновлена вручную",
+        )
+        await callback.answer("Карточка обновлена")
+    except Exception as exc:
+        logger.error(f"Failed to refresh order card #{order_id}: {exc}")
+        await callback.answer(f"Ошибка обновления: {exc}", show_alert=True)
 
-━━━━━━━━━━━━━━━━━━━━━
 
-👤 <b>Клиент:</b>
-{user_info}
+@router.callback_query(F.data.startswith("admin_order_note:"))
+async def start_edit_order_note(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
 
-📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
-    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id, order.user_id))
+    order_result = await session.execute(select(Order).where(Order.id == order_id))
+    order = order_result.scalar_one_or_none()
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    await state.update_data(note_order_id=order_id)
+    await state.set_state(AdminStates.editing_order_note)
+    await callback.answer("⏳")
+
+    current_note = (order.admin_notes or "—").strip() or "—"
+    text = f"""📝 <b>Внутренняя заметка по заказу #{order_id}</b>
+
+Текущая заметка:
+{current_note}
+
+Отправьте новый текст одним сообщением.
+Чтобы очистить заметку, отправьте <code>-</code>."""
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_detail:{order_id}")],
+        ]
+    )
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(AdminStates.editing_order_note)
+async def save_order_note(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+
+    data = await state.get_data()
+    order_id = data.get("note_order_id")
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден")
+        await state.clear()
+        return
+
+    note_text = (message.text or message.caption or "").strip()
+    if not note_text:
+        await message.answer("❌ Отправьте текст заметки")
+        return
+
+    order_result = await session.execute(select(Order).where(Order.id == order_id))
+    order = order_result.scalar_one_or_none()
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        await state.clear()
+        return
+
+    old_note = order.admin_notes or ""
+    order.admin_notes = None if note_text == "-" else note_text
+    await add_admin_action_log(
+        session,
+        admin_id=message.from_user.id,
+        admin_username=message.from_user.username,
+        action_type=AdminActionType.ORDER_NOTE_UPDATE,
+        target_type="order",
+        target_id=order.id,
+        details="Обновлена внутренняя заметка по заказу",
+        old_value={"notes": old_note},
+        new_value={"notes": order.admin_notes or ""},
+    )
+    await session.commit()
+    await state.clear()
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Вернуться к заказу", callback_data=f"admin_order_detail:{order.id}")],
+        ]
+    )
+    note_status = "очищена" if order.admin_notes is None else "сохранена"
+    await message.answer(f"✅ Заметка по заказу #{order.id} {note_status}", reply_markup=keyboard)
 
 
 @router.callback_query(F.data.startswith("admin_change_status:"))
@@ -812,33 +1011,27 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    old_status = order.status
-    order.status = new_status
+    try:
+        change = apply_order_status_transition(order, new_status)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-    # Если статус изменён на "completed", записываем время завершения и начисляем кешбэк
-    cashback_amount = 0.0
-    if new_status == OrderStatus.COMPLETED.value:
-        order.completed_at = datetime.now(MSK_TZ)
+    if not change.changed:
+        await callback.answer("Статус уже установлен", show_alert=True)
+        return
 
-    await session.commit()
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(notify_user=False),
+    )
+    cashback_amount = change.cashback_amount
 
-    # Начисляем кешбэк после коммита (если заказ завершён)
-    if new_status == OrderStatus.COMPLETED.value:
-        try:
-            from bot.services.bonus import BonusService
-            order_amount = float(order.paid_amount or order.final_price or order.price or 0)
-            cashback_amount = await BonusService.add_order_cashback(
-                session=session,
-                bot=bot,
-                user_id=order.user_id,
-                order_id=order.id,
-                order_amount=order_amount,
-            )
-        except Exception as e:
-            logger.warning(f"[Admin] Failed to add cashback for order {order.id}: {e}")
-
-    old_emoji, old_label = ORDER_STATUS_LABELS.get(old_status, ("", old_status))
-    new_emoji, new_label = ORDER_STATUS_LABELS.get(new_status, ("", new_status))
+    old_emoji, old_label = ORDER_STATUS_LABELS.get(change.old_status, ("", change.old_status))
+    new_emoji, new_label = ORDER_STATUS_LABELS.get(change.new_status, ("", change.new_status))
 
     await callback.answer(f"✅ Статус изменён: {new_emoji} {new_label}", show_alert=True)
 
@@ -846,8 +1039,8 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=new_status,
-        old_status=old_status,
+        new_status=change.new_status,
+        old_status=change.old_status,
         order_data={
             "work_type": order.work_type,
             "subject": order.subject,
@@ -863,10 +1056,10 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
         OrderStatus.CANCELLED.value,
     ]
 
-    if new_status in notify_statuses:
+    if change.new_status in notify_statuses:
         try:
             # Формируем сообщение о завершении с кешбэком
-            if new_status == OrderStatus.COMPLETED.value and cashback_amount > 0:
+            if change.new_status == OrderStatus.COMPLETED.value and cashback_amount > 0:
                 completed_msg = f"Заказ успешно завершён.\nКешбэк: +{cashback_amount:.0f}₽ на бонусный счёт.\n\nСпасибо за доверие."
             else:
                 completed_msg = "Заказ успешно завершён. Спасибо за доверие."
@@ -878,7 +1071,7 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
                 OrderStatus.COMPLETED.value: completed_msg,
                 OrderStatus.CANCELLED.value: "Заказ отменён.",
             }
-            msg = status_messages.get(new_status, f"Статус заказа изменён на: {new_label}")
+            msg = status_messages.get(change.new_status, f"Статус заказа изменён на: {new_label}")
             await bot.send_message(order.user_id, f"<b>Заказ #{order.id}</b>\n\n{msg}")
         except Exception:
             pass  # Клиент мог заблокировать бота
@@ -891,39 +1084,10 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
-
-    user_info = "—"
-    if user:
-        username = f"@{user.username}" if user.username else ""
-        user_info = f"{user.fullname or 'Без имени'} {username}\n<code>{user.telegram_id}</code>"
-
-    text = f"""📋 <b>Заказ #{order.id}</b>
-
-{emoji} <b>Статус:</b> {status_label}
-
-<b>Тип работы:</b> {work_label}
-<b>Предмет:</b> {order.subject or '—'}
-<b>Тема:</b> {order.topic or '—'}
-<b>Дедлайн:</b> {order.deadline or '—'}
-
-━━━━━━━━━━━━━━━━━━━━━
-
-💰 <b>Финансы:</b>
-◈ Цена: {order.price:.0f}₽
-◈ Бонусы: -{order.bonus_used:.0f}₽
-◈ Итого: {order.final_price:.0f}₽
-◈ Оплачено: {order.paid_amount:.0f}₽
-
-━━━━━━━━━━━━━━━━━━━━━
-
-👤 <b>Клиент:</b>
-{user_info}
-
-📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
-
-    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id, order.user_id))
+    await callback.message.edit_text(
+        build_order_detail_text(order, user),
+        reply_markup=get_order_detail_keyboard_for_order(order, order.user_id),
+    )
 
 
 @router.callback_query(F.data.startswith("admin_cancel_order:"))
@@ -951,53 +1115,34 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         await callback.answer("Заказ уже отменён", show_alert=True)
         return
 
-    # Возвращаем бонусы, если они были использованы
-    bonus_returned = 0
-    if order.bonus_used > 0:
-        user_query = select(User).where(User.telegram_id == order.user_id)
-        user_result = await session.execute(user_query)
-        user = user_result.scalar_one_or_none()
-        if user:
-            await BonusService.add_bonus(
-                session=session,
-                user_id=order.user_id,
-                amount=order.bonus_used,
-                reason=BonusReason.ORDER_REFUND,
-                description="Возврат бонусов за отменённый заказ",
-                bot=bot,
-                auto_commit=False,
-            )
-            bonus_returned = order.bonus_used
+    try:
+        change = apply_order_status_transition(order, OrderStatus.CANCELLED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
-    # Отменяем заказ
-    order.status = OrderStatus.CANCELLED.value
-    await session.commit()
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(notify_user=False),
+    )
 
     # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.CANCELLED.value,
-        order_data={"bonus_returned": bonus_returned}
+        new_status=change.new_status,
+        old_status=change.old_status if change.changed else None,
+        order_data={"bonus_returned": change.bonus_refunded_amount},
     )
-    # Если вернули бонусы - уведомляем о изменении баланса
-    if bonus_returned > 0:
-        user_query = select(User).where(User.telegram_id == order.user_id)
-        user_result = await session.execute(user_query)
-        user_obj = user_result.scalar_one_or_none()
-        if user_obj:
-            await ws_notify_balance_update(
-                telegram_id=order.user_id,
-                new_balance=float(user_obj.balance),
-                change=float(bonus_returned),
-                reason="Возврат бонусов за отменённый заказ"
-            )
 
     # Уведомляем клиента
     try:
         cancel_msg = f"❌ <b>Заказ #{order.id} отменён</b>"
-        if bonus_returned > 0:
-            cancel_msg += f"\n\n💎 Бонусы возвращены на баланс: +{bonus_returned:.0f}₽"
+        if change.bonus_refunded_amount > 0:
+            cancel_msg += f"\n\n💎 Бонусы возвращены на баланс: +{change.bonus_refunded_amount:.0f}₽"
         await bot.send_message(order.user_id, cancel_msg)
     except Exception:
         pass
@@ -1007,7 +1152,11 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Возвращаемся к списку заказов
     await callback.message.edit_text(
         f"❌ <b>Заказ #{order_id} отменён</b>" +
-        (f"\n\n💎 Бонусы возвращены клиенту: {bonus_returned:.0f}₽" if bonus_returned > 0 else ""),
+        (
+            f"\n\n💎 Бонусы возвращены клиенту: {change.bonus_refunded_amount:.0f}₽"
+            if change.bonus_refunded_amount > 0
+            else ""
+        ),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
         ])
@@ -2252,7 +2401,11 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     # Обновляем заказ
     order.price = price
     order.bonus_used = bonus_to_use
-    order.status = OrderStatus.CONFIRMED.value
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await message.answer(f"❌ {exc}")
+        return
     await session.commit()
 
     # Рассчитываем итоговую цену
@@ -2263,8 +2416,8 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.WAITING_PAYMENT.value,
-        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        new_status=order.status,
+        old_status=change.old_status if change.changed else None,
         order_data={"final_price": final_price, "bonus_used": bonus_to_use}
     )
 
@@ -2626,6 +2779,7 @@ def get_manual_payment_update(order: Order) -> PaymentUpdate:
         previous_paid_amount=existing_paid,
         new_paid_amount=existing_paid + payment_amount,
         final_price=final_price,
+        current_status=order.status,
     )
 
 
@@ -2635,6 +2789,13 @@ def get_payment_label(payment_update: PaymentUpdate) -> str:
     if payment_update.is_fully_paid:
         return "Оплата"
     return "Аванс"
+
+
+def apply_payment_update_to_order(order: Order, payment_update: PaymentUpdate):
+    """Apply payment bookkeeping together with lifecycle-safe status changes."""
+    status_change = apply_order_status_transition(order, payment_update.new_status)
+    order.paid_amount = payment_update.new_paid_amount
+    return status_change
 
 
 def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
@@ -2842,7 +3003,7 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("Платёж уже на проверке", show_alert=True)
         return
 
-    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]:
+    if not is_waiting_payment_status(order.status):
         await callback.answer("Этот заказ сейчас нельзя подтвердить", show_alert=True)
         return
 
@@ -2854,7 +3015,11 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
     await callback.answer("Платёж отправлен на проверку...")
 
     # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING ═══
-    order.status = OrderStatus.VERIFICATION_PENDING.value
+    try:
+        apply_order_status_transition(order, OrderStatus.VERIFICATION_PENDING.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     await session.commit()
 
     # ═══ УДАЛЯЕМ СТАРОЕ СООБЩЕНИЕ ═══
@@ -3207,7 +3372,11 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
 
     # Обновляем заказ
     order.bonus_used = bonus_to_use
-    order.status = OrderStatus.CONFIRMED.value
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     await session.commit()
 
     # Рассчитываем итоговую цену (используем раньше для WebSocket)
@@ -3218,8 +3387,8 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.WAITING_PAYMENT.value,  # Для UI - показываем как "ожидает оплаты"
-        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        new_status=order.status,
+        old_status=change.old_status if change.changed else None,
         order_data={"final_price": final_price, "bonus_used": bonus_to_use}
     )
 
@@ -3330,7 +3499,11 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     # Обновляем заказ
     order.price = price
     order.bonus_used = bonus_to_use
-    order.status = OrderStatus.CONFIRMED.value
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await reply(f"❌ {exc}")
+        return
     await session.commit()
 
     # Рассчитываем итоговую цену
@@ -3341,8 +3514,8 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.WAITING_PAYMENT.value,
-        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        new_status=order.status,
+        old_status=change.old_status if change.changed else None,
         order_data={"final_price": final_price, "bonus_used": bonus_to_use}
     )
 
@@ -3400,24 +3573,36 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Обновляем статус
-    order.status = OrderStatus.REJECTED.value
-    await session.commit()
+    user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+    user = user_result.scalar_one_or_none()
 
-    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
     try:
-        user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
-        user = user_result.scalar_one_or_none()
-        await update_card_status(
-            bot=bot,
-            order=order,
-            session=session,
+        change = apply_order_status_transition(order, OrderStatus.REJECTED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
+
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            notify_user=False,
+            update_live_card=True,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"❌ Отклонено админом",
-        )
-    except Exception as e:
-        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+            card_extra_text="❌ Отклонено админом",
+        ),
+    )
+
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=change.new_status,
+        old_status=change.old_status if change.changed else None,
+        order_data={"bonus_returned": change.bonus_refunded_amount},
+    )
 
     # Уведомляем клиента
     try:
@@ -3479,12 +3664,11 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
 
     allowed_statuses = {
         OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
         OrderStatus.VERIFICATION_PENDING.value,
         OrderStatus.PAID.value,
         OrderStatus.IN_PROGRESS.value,
     }
-    if order.status not in allowed_statuses:
+    if (canonicalize_order_status(order.status) or order.status) not in allowed_statuses:
         await callback.answer(
             f"Заказ нельзя отметить как оплаченный\nСтатус: {order.status_label}",
             show_alert=True
@@ -3527,9 +3711,11 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
             bonus_deducted = order.bonus_used
 
     # Обновляем статус заказа и статистику оплаты
-    old_status = order.status
-    order.status = payment_update.new_status
-    order.paid_amount = payment_update.new_paid_amount
+    try:
+        status_change = apply_payment_update_to_order(order, payment_update)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     apply_payment_update_to_user(user, payment_update)
 
     await session.commit()
@@ -3551,8 +3737,8 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=payment_update.new_status,
-        old_status=old_status,
+        new_status=order.status,
+        old_status=status_change.old_status if status_change.changed else None,
     )
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
@@ -3890,12 +4076,11 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     allowed_statuses = {
         OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
         OrderStatus.VERIFICATION_PENDING.value,
         OrderStatus.PAID.value,
         OrderStatus.IN_PROGRESS.value,
     }
-    if order.status not in allowed_statuses:
+    if (canonicalize_order_status(order.status) or order.status) not in allowed_statuses:
         await message.answer(
             f"⚠️ Заказ #{order_id} нельзя отметить как оплаченный\n"
             f"Текущий статус: {order.status_label}\n\n"
@@ -3942,9 +4127,11 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
             logger.warning(f"[/paid] Не удалось списать бонусы")
 
     # Обновляем статус заказа и статистику оплаты
-    old_status = order.status
-    order.status = payment_update.new_status
-    order.paid_amount = payment_update.new_paid_amount
+    try:
+        status_change = apply_payment_update_to_order(order, payment_update)
+    except OrderStatusTransitionError as exc:
+        await message.answer(f"❌ {exc}")
+        return
     apply_payment_update_to_user(user, payment_update)
 
     logger.info(f"[/paid] Коммитим изменения в БД")
@@ -3955,8 +4142,8 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=payment_update.new_status,
-        old_status=old_status,
+        new_status=order.status,
+        old_status=status_change.old_status if status_change.changed else None,
     )
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
@@ -4083,7 +4270,11 @@ async def cmd_offer(message: Message, command: CommandObject, session: AsyncSess
     # Обновляем заказ
     order.price = amount
     order.admin_notes = admin_comment
-    order.status = OrderStatus.CONFIRMED.value
+    try:
+        apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await message.answer(f"❌ {exc}")
+        return
     await session.commit()
 
     # Формируем сообщение для клиента
@@ -4162,18 +4353,24 @@ async def accept_offer_callback(callback: CallbackQuery, session: AsyncSession, 
 
     await callback.answer("🤝 Отлично! Показываю реквизиты...")
 
-    # ВАЖНО: Меняем статус на WAITING_PAYMENT чтобы confirm_payment работал
-    if order.status == OrderStatus.WAITING_ESTIMATION.value:
-        old_status = order.status
-        order.status = OrderStatus.WAITING_PAYMENT.value
+    # Нормализуем legacy confirmed/waiting_estimation в waiting_payment.
+    if (canonicalize_order_status(order.status) or order.status) in {
+        OrderStatus.WAITING_ESTIMATION.value,
+        OrderStatus.WAITING_PAYMENT.value,
+    }:
+        try:
+            change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+        except OrderStatusTransitionError as exc:
+            await callback.answer(str(exc), show_alert=True)
+            return
         await session.commit()
 
         # ═══ WEBSOCKET NOTIFICATION ═══
         await ws_notify_order_update(
             telegram_id=order.user_id,
             order_id=order.id,
-            new_status=OrderStatus.WAITING_PAYMENT.value,
-            old_status=old_status,
+            new_status=order.status,
+            old_status=change.old_status if change.changed else None,
         )
 
     # Показываем реквизиты для P2P оплаты (используем конфиг)
@@ -4983,7 +5180,15 @@ async def show_statistics(callback: CallbackQuery, session: AsyncSession):
     today_revenue = (await session.execute(today_revenue_query)).scalar() or 0
 
     # Активные заказы
-    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.VERIFICATION_PENDING.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.PAUSED.value, OrderStatus.IN_PROGRESS.value]
+    active_statuses = [
+        OrderStatus.PENDING.value,
+        OrderStatus.WAITING_ESTIMATION.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value,
+        OrderStatus.PAUSED.value,
+        OrderStatus.IN_PROGRESS.value,
+        *LEGACY_WAITING_PAYMENT_STATUSES,
+    ]
     active_orders_query = select(func.count(Order.id)).where(
         Order.status.in_(active_statuses)
     )
@@ -5200,7 +5405,7 @@ async def start_message_to_user(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(AdminStates.messaging_user)
-async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
+async def send_message_to_user(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Отправка сообщения клиенту"""
     if not is_admin(message.from_user.id):
         return
@@ -5222,6 +5427,15 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
 
     await state.clear()
 
+    order = None
+    order_owner = None
+    if order_id:
+        order_result = await session.execute(select(Order).where(Order.id == order_id))
+        order = order_result.scalar_one_or_none()
+        if order:
+            owner_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+            order_owner = owner_result.scalar_one_or_none()
+
     # Форматируем сообщение от менеджера
     support_msg = f"""<b>Сообщение поддержки</b>
 
@@ -5237,7 +5451,70 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
     ])
 
     try:
-        await bot.send_message(user_id, support_msg, reply_markup=keyboard)
+        sent_message = await bot.send_message(user_id, support_msg, reply_markup=keyboard)
+
+        if order:
+            from database.models.orders import MessageSender, OrderMessage
+            from bot.handlers.order_chat import (
+                ConversationType,
+                backup_chat_to_yadisk,
+                get_or_create_topic,
+                update_conversation,
+            )
+            from bot.services.realtime_notifications import notify_new_chat_message
+
+            session.add(
+                OrderMessage(
+                    order_id=order.id,
+                    sender_type=MessageSender.ADMIN.value,
+                    sender_id=message.from_user.id,
+                    message_text=msg_text,
+                    client_message_id=getattr(sent_message, "message_id", None),
+                    is_read=False,
+                )
+            )
+            await session.commit()
+
+            conv, _topic_id = await get_or_create_topic(
+                bot=bot,
+                session=session,
+                user_id=order.user_id,
+                order_id=order.id,
+                conv_type=ConversationType.ORDER_CHAT.value,
+            )
+            await update_conversation(
+                session,
+                conv,
+                last_message=msg_text,
+                sender=MessageSender.ADMIN.value,
+                increment_unread=False,
+            )
+            await backup_chat_to_yadisk(
+                order=order,
+                client_name=order_owner.fullname if order_owner and order_owner.fullname else "Client",
+                telegram_id=order.user_id,
+                session=session,
+                client_username=order_owner.username if order_owner else None,
+            )
+            await notify_new_chat_message(
+                telegram_id=order.user_id,
+                order_id=order.id,
+                sender_name="Менеджер",
+                message_preview=msg_text,
+                file_type=None,
+            )
+            await add_admin_action_log(
+                session,
+                admin_id=message.from_user.id,
+                admin_username=message.from_user.username,
+                action_type=AdminActionType.ORDER_MESSAGE_SEND,
+                target_type="order",
+                target_id=order.id,
+                details=f"Отправлено сообщение клиенту по заказу #{order.id}",
+                new_value={"message": msg_text},
+            )
+            await session.commit()
+
         await message.answer(f"✅ Сообщение отправлено клиенту ({user_id})")
     except Exception as e:
         await message.answer(f"❌ Ошибка отправки: {e}")
@@ -5248,7 +5525,7 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.startswith("admin_send_file:"))
-async def start_send_file(callback: CallbackQuery, state: FSMContext):
+async def start_send_file(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Начало отправки файла клиенту"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
@@ -5270,12 +5547,19 @@ async def start_send_file(callback: CallbackQuery, state: FSMContext):
     await state.update_data(file_order_id=order_id, file_user_id=user_id)
     await state.set_state(AdminStates.sending_file)
 
+    order = None
+    order_hint = ""
+    order_result = await session.execute(select(Order).where(Order.id == order_id))
+    order = order_result.scalar_one_or_none()
+    if order and can_deliver_order(order):
+        order_hint = "\n\nПосле отправки заказ автоматически вернётся клиенту на проверку."
+
     text = f"""📤 <b>Отправка файла клиенту</b>
 
 📋 Заказ: #{order_id}
 👤 ID: <code>{user_id}</code>
 
-Отправь файл (документ, фото, архив):"""
+Отправь файл (документ, фото, архив):{order_hint}"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_detail:{order_id}")],
@@ -5284,8 +5568,8 @@ async def start_send_file(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text, reply_markup=keyboard)
 
 
-@router.message(AdminStates.sending_file, F.document | F.photo)
-async def forward_file_to_user(message: Message, state: FSMContext, bot: Bot):
+@router.message(AdminStates.sending_file, F.document | F.photo | F.video)
+async def forward_file_to_user(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Пересылка файла клиенту"""
     if not is_admin(message.from_user.id):
         return
@@ -5301,26 +5585,49 @@ async def forward_file_to_user(message: Message, state: FSMContext, bot: Bot):
 
     await state.clear()
 
-    # Отправляем файл с подписью
-    caption = f"""📥 <b>Файл по заказу #{order_id}</b>
-
-<i>Материал по вашему заказу.</i>"""
+    order = None
+    order_owner = None
+    if order_id:
+        order_result = await session.execute(select(Order).where(Order.id == order_id))
+        order = order_result.scalar_one_or_none()
+        if order:
+            owner_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+            order_owner = owner_result.scalar_one_or_none()
 
     try:
+        file_bytes = None
+        filename = None
         if message.document:
-            await bot.send_document(
-                user_id,
-                message.document.file_id,
-                caption=caption
-            )
+            filename = message.document.file_name or f"заказ_{order_id}_файл"
+            telegram_file = await bot.get_file(message.document.file_id)
+            file_bytes = (await bot.download_file(telegram_file.file_path)).read()
         elif message.photo:
-            await bot.send_photo(
-                user_id,
-                message.photo[-1].file_id,
-                caption=caption
-            )
+            filename = f"заказ_{order_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            telegram_file = await bot.get_file(message.photo[-1].file_id)
+            file_bytes = (await bot.download_file(telegram_file.file_path)).read()
+        elif message.video:
+            filename = message.video.file_name or f"заказ_{order_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            telegram_file = await bot.get_file(message.video.file_id)
+            file_bytes = (await bot.download_file(telegram_file.file_path)).read()
 
-        await message.answer(f"✅ Файл отправлен клиенту ({user_id})")
+        if not order or not order_owner or not file_bytes or not filename:
+            await message.answer("❌ Не удалось подготовить файл к отправке")
+            return
+
+        result = await send_order_delivery_batch(
+            session,
+            bot,
+            order,
+            user=order_owner,
+            source="admin_direct",
+            sent_by_admin_id=message.from_user.id,
+            binary_files=[(file_bytes, filename)],
+            manager_comment=message.caption or None,
+        )
+        status_note = " и возвращена на проверку" if result.review_status_changed else ""
+        await message.answer(
+            f"✅ Версия {result.batch.version_number} отправлена клиенту ({user_id}){status_note}."
+        )
     except Exception as e:
         await message.answer(f"❌ Ошибка отправки: {e}")
 
@@ -5377,9 +5684,11 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
             bonus_deducted = order.bonus_used
 
     # Обновляем статус и paid_amount
-    old_status = order.status
-    order.status = payment_update.new_status
-    order.paid_amount = payment_update.new_paid_amount
+    try:
+        status_change = apply_payment_update_to_order(order, payment_update)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     apply_payment_update_to_user(user, payment_update)
 
     await session.commit()
@@ -5389,8 +5698,8 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=payment_update.new_status,
-        old_status=old_status,
+        new_status=order.status,
+        old_status=status_change.old_status if status_change.changed else None,
     )
 
     order_bonus = 0
@@ -5547,9 +5856,11 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
         order.payment_scheme = "half"
 
     payment_update = get_manual_payment_update(order)
-    old_status = order.status
-    order.status = payment_update.new_status
-    order.paid_amount = payment_update.new_paid_amount
+    try:
+        status_change = apply_payment_update_to_order(order, payment_update)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
 
     user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
     user = user_result.scalar_one_or_none()
@@ -5593,8 +5904,8 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=payment_update.new_status,
-        old_status=old_status,
+        new_status=order.status,
+        old_status=status_change.old_status if status_change.changed else None,
     )
 
     if user and payment_update.is_first_successful_payment:
@@ -5720,7 +6031,11 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
     await callback.answer("❌ Отклоняем...")
 
     # ═══ ВОЗВРАЩАЕМ В WAITING_PAYMENT ═══
-    order.status = OrderStatus.WAITING_PAYMENT.value
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await callback.answer(str(exc), show_alert=True)
+        return
     await session.commit()
 
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
@@ -5742,8 +6057,8 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.WAITING_PAYMENT.value,
-        old_status=OrderStatus.VERIFICATION_PENDING.value,
+        new_status=order.status,
+        old_status=change.old_status if change.changed else None,
     )
 
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══

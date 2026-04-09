@@ -85,11 +85,15 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className={s.goldAccent} style={{
             margin: 0,
-            fontSize: 24,
-            lineHeight: 1.1,
+            fontSize: 30,
+            lineHeight: 1.02,
             fontWeight: 700,
-            fontFamily: "'Manrope', sans-serif",
+            fontFamily: "var(--font-display, 'Playfair Display', serif)",
             marginBottom: 8,
+            background: 'var(--gold-text-shine)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
           }}>
             {user.fullname}
           </h1>

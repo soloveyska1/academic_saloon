@@ -8,6 +8,8 @@ import { SupportHeader } from '../components/support/SupportHeader'
 import { SupportQuickHelp } from '../components/support/SupportQuickHelp'
 import { SupportFAQ } from '../components/support/SupportFAQ'
 import { SupportChatView } from '../components/support/SupportChatView'
+import ps from '../styles/PremiumPageSystem.module.css'
+import s from './SupportPage.module.css'
 
 export function SupportPage() {
   const { haptic, openSupport } = useTelegram()
@@ -65,13 +67,13 @@ export function SupportPage() {
   /* ═══════ Render ═══════ */
 
   return (
-    <div className="page-full-width" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+    <div className="page-full-width saloon-page-shell saloon-page-shell--utility" style={{ minHeight: '100vh' }}>
       <div className="page-background">
         <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
       </div>
 
       <div
-        className="page-content"
+        className={`page-content saloon-page-content saloon-page-content--wide ${s.pageStack}`}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -90,16 +92,18 @@ export function SupportPage() {
         />
 
         {/* 3. Content Section */}
-        {activeView === 'faq' ? (
-          <SupportFAQ
-            expandedFaq={expandedFaq}
-            onToggleFaq={handleToggleFaq}
-            onOpenChat={handleOpenChat}
-            onOpenTelegram={handleOpenTelegram}
-          />
-        ) : (
-          <SupportChatView onOpenTelegram={handleOpenTelegram} />
-        )}
+        <div className={`${ps.surface} ${ps.surfaceUtility} ${s.contentSurface}`}>
+          {activeView === 'faq' ? (
+            <SupportFAQ
+              expandedFaq={expandedFaq}
+              onToggleFaq={handleToggleFaq}
+              onOpenChat={handleOpenChat}
+              onOpenTelegram={handleOpenTelegram}
+            />
+          ) : (
+            <SupportChatView onOpenTelegram={handleOpenTelegram} />
+          )}
+        </div>
       </div>
     </div>
   )

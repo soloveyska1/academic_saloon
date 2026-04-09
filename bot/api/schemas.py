@@ -7,6 +7,40 @@ from datetime import datetime
 from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from database.models.orders import OrderStatus, canonicalize_order_status
+
+
+VALID_ORDER_STATUSES = {status.value for status in OrderStatus}
+VALID_PAYMENT_METHODS = {"card", "sbp", "transfer"}
+VALID_PAYMENT_SCHEMES = {"half", "full"}
+MAX_CHAT_MESSAGE_LENGTH = 5000
+MAX_REVIEW_LENGTH = 2000
+MIN_REVIEW_LENGTH = 10
+
+
+def normalize_order_status(value: str) -> str:
+    normalized = canonicalize_order_status(value.strip().lower())
+    if normalized not in VALID_ORDER_STATUSES:
+        raise ValueError(f'Некорректный статус: {value}')
+    return normalized
+
+
+def normalize_non_empty_text(
+    value: str,
+    *,
+    field_label: str,
+    min_length: int = 1,
+    max_length: Optional[int] = None,
+) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f'{field_label} не может быть пустым')
+    if len(normalized) < min_length:
+        raise ValueError(f'{field_label} должен содержать минимум {min_length} символов')
+    if max_length is not None and len(normalized) > max_length:
+        raise ValueError(f'{field_label} не должен превышать {max_length} символов')
+    return normalized
+
 
 class RankInfo(BaseModel):
     """User rank information (spend-based)"""
@@ -74,6 +108,35 @@ class AchievementResponse(BaseModel):
     sort_order: int = 0
 
 
+class OrderDeliveryBatchResponse(BaseModel):
+    """Versioned delivery batch for corrected work."""
+
+    id: int
+    status: str
+    version_number: Optional[int] = None
+    revision_count_snapshot: int = 0
+    manager_comment: Optional[str] = None
+    source: Optional[str] = None
+    files_url: Optional[str] = None
+    file_count: int = 0
+    created_at: Optional[str] = None
+    sent_at: Optional[str] = None
+
+
+class OrderRevisionRoundResponse(BaseModel):
+    """Client revision round with latest activity."""
+
+    id: int
+    round_number: int
+    status: str
+    initial_comment: Optional[str] = None
+    requested_at: Optional[str] = None
+    last_client_activity_at: Optional[str] = None
+    closed_at: Optional[str] = None
+    closed_by_delivery_batch_id: Optional[int] = None
+    requested_by_user_id: Optional[int] = None
+
+
 class OrderResponse(BaseModel):
     """Order data for Mini App"""
     id: int
@@ -108,6 +171,10 @@ class OrderResponse(BaseModel):
     updated_at: Optional[str] = None
     completed_at: Optional[str] = None
     delivered_at: Optional[str] = None  # When work was delivered (30-day revision period)
+    latest_delivery: Optional[OrderDeliveryBatchResponse] = None
+    delivery_history: List[OrderDeliveryBatchResponse] = Field(default_factory=list)
+    current_revision_round: Optional[OrderRevisionRoundResponse] = None
+    revision_history: List[OrderRevisionRoundResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -454,7 +521,12 @@ class ClientProfileResponse(BaseModel):
     segment: str = "new"  # new, active, vip, dormant, churned
 
 class AdminOrderUpdate(BaseModel):
-    status: str
+    status: str = Field(..., min_length=1, max_length=50)
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        return normalize_order_status(v)
 
 class AdminPriceUpdate(BaseModel):
     price: float
@@ -478,6 +550,22 @@ class FileUploadResponse(BaseModel):
 class PaymentConfirmRequest(BaseModel):
     payment_method: str
     payment_scheme: str
+
+    @field_validator('payment_method')
+    @classmethod
+    def validate_payment_method(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in VALID_PAYMENT_METHODS:
+            raise ValueError('Некорректный способ оплаты')
+        return normalized
+
+    @field_validator('payment_scheme')
+    @classmethod
+    def validate_payment_scheme(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in VALID_PAYMENT_SCHEMES:
+            raise ValueError('Некорректная схема оплаты')
+        return normalized
 
 class PaymentConfirmResponse(BaseModel):
     success: bool
@@ -503,12 +591,38 @@ class SubmitReviewRequest(BaseModel):
     rating: int
     text: str
 
+    @field_validator('rating')
+    @classmethod
+    def validate_rating(cls, v: int) -> int:
+        if not 1 <= v <= 5:
+            raise ValueError('Оценка должна быть от 1 до 5')
+        return v
+
+    @field_validator('text')
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        return normalize_non_empty_text(
+            v,
+            field_label='Текст отзыва',
+            min_length=MIN_REVIEW_LENGTH,
+            max_length=MAX_REVIEW_LENGTH,
+        )
+
 class SubmitReviewResponse(BaseModel):
     success: bool
     message: str
 
 class RevisionRequestData(BaseModel):
     message: str
+
+    @field_validator('message')
+    @classmethod
+    def validate_message(cls, v: str) -> str:
+        return normalize_non_empty_text(
+            v,
+            field_label='Комментарий к правкам',
+            max_length=MAX_CHAT_MESSAGE_LENGTH,
+        )
 
 class RevisionRequestResponse(BaseModel):
     success: bool
@@ -523,6 +637,15 @@ class ConfirmWorkResponse(BaseModel):
 
 class SendMessageRequest(BaseModel):
     text: str
+
+    @field_validator('text')
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        return normalize_non_empty_text(
+            v,
+            field_label='Текст сообщения',
+            max_length=MAX_CHAT_MESSAGE_LENGTH,
+        )
 
 class ChatFileUploadResponse(BaseModel):
     success: bool
@@ -540,8 +663,14 @@ class BatchOrderItem(BaseModel):
     id: int
     work_type_label: str
     subject: Optional[str] = None
+    topic: Optional[str] = None
+    status: str
+    payment_phase: str
+    payment_scheme: Optional[str] = None
     final_price: float
     remaining: float
+    amount_for_half: float
+    amount_for_full: float
 
 
 class BatchPaymentInfoRequest(BaseModel):
@@ -553,6 +682,8 @@ class BatchPaymentInfoResponse(BaseModel):
     """Batch payment info response"""
     orders: List[BatchOrderItem]
     total_amount: float
+    total_amount_half: float
+    total_amount_full: float
     orders_count: int
     card_number: str
     card_holder: str
@@ -560,11 +691,44 @@ class BatchPaymentInfoResponse(BaseModel):
     sbp_bank: str
 
 
+class BatchProcessedOrderItem(BaseModel):
+    """Processed order details for a batch payment confirmation."""
+    id: int
+    work_type_label: str
+    subject: Optional[str] = None
+    topic: Optional[str] = None
+    amount_to_pay: float
+    payment_phase: str
+    status: str
+
+
+class BatchFailedOrderItem(BaseModel):
+    """Failed order details for a batch payment confirmation."""
+    id: int
+    reason: str
+
+
 class BatchPaymentConfirmRequest(BaseModel):
     """Batch payment confirmation request"""
     order_ids: List[int] = Field(..., min_length=1, max_length=50)
     payment_method: str  # card / sbp
     payment_scheme: str  # full / half
+
+    @field_validator('payment_method')
+    @classmethod
+    def validate_payment_method(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in VALID_PAYMENT_METHODS:
+            raise ValueError('Некорректный способ оплаты')
+        return normalized
+
+    @field_validator('payment_scheme')
+    @classmethod
+    def validate_payment_scheme(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in VALID_PAYMENT_SCHEMES:
+            raise ValueError('Некорректная схема оплаты')
+        return normalized
 
 
 class BatchPaymentConfirmResponse(BaseModel):
@@ -574,6 +738,10 @@ class BatchPaymentConfirmResponse(BaseModel):
     processed_count: int
     total_amount: float
     failed_orders: List[int] = []
+    processed_orders: List[BatchProcessedOrderItem] = []
+    failed_order_details: List[BatchFailedOrderItem] = []
+    payment_method: Optional[str] = None
+    payment_scheme: Optional[str] = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -614,14 +782,7 @@ class GodOrderStatusRequest(BaseModel):
     @field_validator('status')
     @classmethod
     def validate_status(cls, v: str) -> str:
-        valid_statuses = [
-            'draft', 'pending', 'waiting_estimation', 'waiting_payment',
-            'verification_pending', 'confirmed', 'paid', 'paid_full',
-            'in_progress', 'paused', 'review', 'revision', 'completed', 'cancelled', 'rejected'
-        ]
-        if v not in valid_statuses:
-            raise ValueError(f'Некорректный статус: {v}')
-        return v
+        return normalize_order_status(v)
 
 
 class GodOrderPriceRequest(BaseModel):

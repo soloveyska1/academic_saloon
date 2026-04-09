@@ -1,0 +1,118 @@
+{
+  "name": "Библиотека Салона",
+  "short_name": "БиблиоСалон",
+  "description": "Библиотека студенческих работ Академического Салона: примеры, сохранённые документы и заказ по теме.",
+  "id": "/app/",
+  "start_url": "/app/?source=pwa",
+  "scope": "/app/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#08070b",
+  "theme_color": "#08070b",
+  "lang": "ru",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/app/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Поделиться",
+      "short_name": "Поделиться",
+      "description": "Быстро отправить библиотеку одногруппнику или в учебный чат",
+      "url": "/app/?invite=1",
+      "icons": [
+        {
+          "src": "/app/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Поиск",
+      "short_name": "Поиск",
+      "description": "Сразу открыть поиск по каталогу",
+      "url": "/app/?focus=search",
+      "icons": [
+        {
+          "src": "/app/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Каталог",
+      "short_name": "Каталог",
+      "description": "Открыть весь каталог",
+      "url": "/app/",
+      "icons": [
+        {
+          "src": "/app/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Избранное",
+      "short_name": "Избранное",
+      "description": "Перейти к сохранённым работам",
+      "url": "/app/favorites/",
+      "icons": [
+        {
+          "src": "/app/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Заказать",
+      "short_name": "Заказать",
+      "description": "Открыть экран заказа",
+      "url": "/app/order/",
+      "icons": [
+        {
+          "src": "/app/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/app/",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "sharedTitle",
+      "text": "sharedText",
+      "url": "sharedUrl"
+    }
+  }
+}

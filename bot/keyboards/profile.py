@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database.models.orders import Order, get_status_meta
+from database.models.orders import Order, get_status_meta, is_waiting_payment_status
 from core.config import settings
 
 
@@ -111,9 +111,9 @@ def get_order_status_emoji(order: Order) -> str:
     # По статусу
     if status in ("completed", "done"):
         return "✅"
-    elif status in ("waiting_payment", "waiting_for_payment"):
+    elif status == "waiting_for_payment" or is_waiting_payment_status(status):
         return "💰"
-    elif status in ("in_progress", "confirmed", "pending"):
+    elif status in ("in_progress", "pending"):
         return "⏳"
     elif status in ("cancelled", "rejected"):
         return "❌"

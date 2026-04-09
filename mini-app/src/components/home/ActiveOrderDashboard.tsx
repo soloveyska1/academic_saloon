@@ -10,7 +10,13 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Order } from '../../types'
-import { formatOrderDeadlineRu, getOrderHeadlineSafe, parseOrderDateSafe, stripEmoji } from '../../lib/orderView'
+import {
+  canonicalizeOrderStatusAlias,
+  formatOrderDeadlineRu,
+  getOrderHeadlineSafe,
+  parseOrderDateSafe,
+  stripEmoji,
+} from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
 import { formatMoney } from '../../lib/utils'
 import { Reveal } from '../ui/StaggerReveal'
@@ -26,7 +32,6 @@ const ACTIVE_STATUSES = [
   'waiting_estimation',
   'waiting_payment',
   'verification_pending',
-  'confirmed',
   'paid',
   'paid_full',
   'in_progress',
@@ -43,31 +48,36 @@ const STAGES = [
 ] as const
 
 function getStageIndex(status: string): number {
-  if (['pending', 'waiting_estimation', 'waiting_payment', 'verification_pending'].includes(status)) return 0
-  if (['confirmed', 'paid', 'paid_full'].includes(status)) return 1
-  if (['in_progress', 'revision', 'paused'].includes(status)) return 2
-  if (['review', 'completed'].includes(status)) return 3
+  const canonicalStatus = canonicalizeOrderStatusAlias(status) ?? status
+  if (['pending', 'waiting_estimation', 'waiting_payment', 'verification_pending'].includes(canonicalStatus)) return 0
+  if (['paid', 'paid_full'].includes(canonicalStatus)) return 1
+  if (['in_progress', 'revision', 'paused'].includes(canonicalStatus)) return 2
+  if (['review', 'completed'].includes(canonicalStatus)) return 3
   return 0
 }
 
 function getVisibleOrderStatus(order: Order): string {
+  const status = canonicalizeOrderStatusAlias(order.status) ?? order.status
+  if (order.current_revision_round?.status === 'open') {
+    return 'revision'
+  }
   const total = Math.max(0, order.final_price ?? order.price ?? 0)
   const paid = Math.max(0, order.paid_amount ?? 0)
   const remaining = Math.max(0, total - paid)
 
-  if (paid > 0 && remaining > 0 && ['waiting_payment', 'confirmed', 'verification_pending'].includes(order.status)) {
+  if (paid > 0 && remaining > 0 && ['waiting_payment', 'verification_pending'].includes(status)) {
     return 'paid'
   }
 
-  if (paid > 0 && remaining <= 0 && ['waiting_payment', 'confirmed', 'verification_pending', 'paid'].includes(order.status)) {
+  if (paid > 0 && remaining <= 0 && ['waiting_payment', 'verification_pending', 'paid'].includes(status)) {
     return 'paid_full'
   }
 
-  return order.status
+  return status
 }
 
-function getStatusNarrative(status: string, remaining: number, paid: number, progress?: number): string {
-  switch (status) {
+function getStatusNarrative(order: Order, status: string, remaining: number, paid: number, progress?: number): string {
+  switch (canonicalizeOrderStatusAlias(status) ?? status) {
     case 'pending':
       return 'Заявка принята'
     case 'waiting_estimation':
@@ -76,7 +86,6 @@ function getStatusNarrative(status: string, remaining: number, paid: number, pro
       return paid > 0 ? `Осталось ${formatMoney(remaining)}` : 'Ожидает оплаты'
     case 'verification_pending':
       return 'Подтверждаем оплату'
-    case 'confirmed':
     case 'paid':
       return remaining > 0 ? 'Аванс внесён' : 'Оплата принята'
     case 'paid_full':
@@ -85,15 +94,15 @@ function getStatusNarrative(status: string, remaining: number, paid: number, pro
     case 'paused':
       return 'Пауза активна'
     case 'review':
-      return 'Материал готов'
+      return order.latest_delivery?.version_number ? `Версия ${order.latest_delivery.version_number} ждёт проверки` : 'Материал готов'
     case 'revision':
-      return 'Идёт доработка'
+      return order.current_revision_round?.round_number ? `Правка #${order.current_revision_round.round_number} в работе` : 'Идёт доработка'
     default:
       return 'Все детали внутри'
   }
 }
 
-function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
+function getPrimaryAction(order: Order, status: string, hasPartialPayment: boolean): string {
   switch (status) {
     case 'waiting_payment':
       return hasPartialPayment ? 'Доплатить' : 'Оплатить'
@@ -102,10 +111,10 @@ function getPrimaryAction(status: string, hasPartialPayment: boolean): string {
     case 'verification_pending':
       return 'Подробнее'
     case 'review':
-      return 'Посмотреть'
+      return order.latest_delivery?.version_number ? 'Проверить версию' : 'Посмотреть'
     case 'revision':
     case 'paused':
-      return status === 'paused' ? 'Возобновить' : 'Посмотреть'
+      return status === 'paused' ? 'Возобновить' : order.current_revision_round?.status === 'open' ? 'Чат и файлы' : 'Посмотреть'
     default:
       return 'Открыть'
   }
@@ -366,8 +375,8 @@ function OrderCard({
   const subline = order.subject && order.subject !== headline ? order.subject : null
   const deadlineState = useDeadlineCountdown(order.deadline)
   const needsAction = ACTION_NEEDED_STATUSES.includes(visibleStatus)
-  const narrative = getStatusNarrative(visibleStatus, remaining, paid, order.progress)
-  const primaryAction = getPrimaryAction(visibleStatus, hasPartialPayment)
+  const narrative = getStatusNarrative(order, visibleStatus, remaining, paid, order.progress)
+  const primaryAction = getPrimaryAction(order, visibleStatus, hasPartialPayment)
   const isWorking = ['in_progress', 'revision'].includes(visibleStatus)
   const elapsed = useElapsedTime(order.updated_at, isWorking)
   const deadlineText = visibleStatus === 'paused' ? formatPauseUntilBadge(order.pause_until) : deadlineState.text
@@ -722,14 +731,17 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
       in_progress: 6,
       paid: 7,
       paid_full: 7,
-      confirmed: 8,
       verification_pending: 9,
       pending: 10,
     }
 
     return orders
-      .filter((order) => ACTIVE_STATUSES.includes(order.status))
-      .sort((a, b) => (priority[a.status] ?? 99) - (priority[b.status] ?? 99))
+      .filter((order) => ACTIVE_STATUSES.includes(canonicalizeOrderStatusAlias(order.status) ?? order.status))
+      .sort((a, b) => {
+        const aStatus = canonicalizeOrderStatusAlias(a.status) ?? a.status
+        const bStatus = canonicalizeOrderStatusAlias(b.status) ?? b.status
+        return (priority[aStatus] ?? 99) - (priority[bStatus] ?? 99)
+      })
   }, [orders])
 
   const [currentIndex, setCurrentIndex] = useState(0)

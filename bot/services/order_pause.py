@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
+from bot.services.order_status_service import (
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+)
 from database.models.orders import Order, OrderStatus
 
 MAX_ORDER_PAUSE_DAYS = 7
@@ -20,7 +23,7 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _to_utc(value: Optional[datetime]) -> Optional[datetime]:
+def _to_utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     if value.tzinfo is None:
@@ -55,7 +58,7 @@ def can_pause_order(order: Order) -> bool:
     )
 
 
-def is_pause_active(order: Order, now: Optional[datetime] = None) -> bool:
+def is_pause_active(order: Order, now: datetime | None = None) -> bool:
     if getattr(order, "status", None) != OrderStatus.PAUSED.value:
         return False
     pause_until = _to_utc(getattr(order, "pause_until", None))
@@ -63,13 +66,16 @@ def is_pause_active(order: Order, now: Optional[datetime] = None) -> bool:
     return pause_until is not None and pause_until > current_time
 
 
-def pause_order(order: Order, reason: Optional[str] = None, now: Optional[datetime] = None) -> datetime:
+def pause_order(order: Order, reason: str | None = None, now: datetime | None = None) -> datetime:
     if not can_pause_order(order):
         raise ValueError("Order cannot be paused")
 
     current_time = _to_utc(now) or utc_now()
     order.paused_from_status = order.status
-    order.status = OrderStatus.PAUSED.value
+    try:
+        apply_order_status_transition(order, OrderStatus.PAUSED.value, now=current_time)
+    except OrderStatusTransitionError as exc:
+        raise ValueError(str(exc)) from exc
     order.pause_started_at = current_time
     order.pause_until = current_time + timedelta(days=MAX_ORDER_PAUSE_DAYS)
     order.pause_reason = reason.strip() if isinstance(reason, str) and reason.strip() else None
@@ -82,7 +88,10 @@ def resume_order(order: Order) -> str:
         raise ValueError("Order is not paused")
 
     resumed_status = infer_resume_status(order)
-    order.status = resumed_status
+    try:
+        apply_order_status_transition(order, resumed_status)
+    except OrderStatusTransitionError as exc:
+        raise ValueError(str(exc)) from exc
     order.paused_from_status = None
     order.pause_started_at = None
     order.pause_until = None
@@ -90,7 +99,7 @@ def resume_order(order: Order) -> str:
     return resumed_status
 
 
-def auto_resume_if_needed(order: Order, now: Optional[datetime] = None) -> Optional[str]:
+def auto_resume_if_needed(order: Order, now: datetime | None = None) -> str | None:
     if getattr(order, "status", None) != OrderStatus.PAUSED.value:
         return None
 

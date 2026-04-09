@@ -65,6 +65,11 @@ export const AlertStrip = memo(function AlertStrip({ items, onConfirm, onReject 
             <div className={s.flex1}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#ec4899' /* pink, no CSS var */ }}>#{item.id}</div>
               <div className={s.mutedSmall}>{item.label}</div>
+              {item.sublabel && (
+                <div className={s.mutedSmall} style={{ marginTop: 2, color: 'var(--text-secondary)' }}>
+                  {item.sublabel}
+                </div>
+              )}
               {item.amount != null && (
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginTop: 2 }}>
                   {formatMoney(item.amount)}

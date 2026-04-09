@@ -1,10 +1,13 @@
 from decimal import Decimal
 
+import pytest
+
 from bot.services.order_lifecycle import (
     can_complete_order,
     can_deliver_order,
     get_order_cashback_base,
     is_order_already_delivered,
+    sync_order_delivery_review,
 )
 from database.models.orders import Order, OrderStatus
 
@@ -55,3 +58,54 @@ def test_cashback_base_prefers_paid_amount():
 def test_cashback_base_falls_back_to_final_or_base_price():
     order = make_order(status=OrderStatus.COMPLETED.value, price=Decimal("8000.00"))
     assert get_order_cashback_base(order) == 8000.0
+
+
+class FakeLifecycleSession:
+    def __init__(self):
+        self.commit_calls = 0
+
+    async def commit(self):
+        self.commit_calls += 1
+
+
+@pytest.mark.asyncio
+async def test_sync_order_delivery_review_reopens_revision(monkeypatch):
+    order = make_order(status=OrderStatus.REVISION.value)
+    session = FakeLifecycleSession()
+    dispatches = []
+
+    async def fake_finalize(session_arg, bot, order_arg, result, *, dispatch):
+        dispatches.append(dispatch)
+        return result
+
+    monkeypatch.setattr(
+        "bot.services.order_status_service.finalize_order_status_change",
+        fake_finalize,
+    )
+
+    result = await sync_order_delivery_review(
+        session,
+        object(),
+        order,
+        client_username="client",
+        client_name="Client User",
+    )
+
+    assert result.reopened_review is True
+    assert order.status == OrderStatus.REVIEW.value
+    assert order.delivered_at is not None
+    assert dispatches[0].notification_extra_data == {"delivered_at": order.delivered_at.isoformat()}
+    assert "Исправленная версия отправлена" in (dispatches[0].card_extra_text or "")
+
+
+@pytest.mark.asyncio
+async def test_sync_order_delivery_review_backfills_review_timestamp_without_reopen():
+    order = make_order(status=OrderStatus.REVIEW.value)
+    order.delivered_at = None
+    session = FakeLifecycleSession()
+
+    result = await sync_order_delivery_review(session, object(), order)
+
+    assert result.reopened_review is False
+    assert order.delivered_at is not None
+    assert session.commit_calls == 1

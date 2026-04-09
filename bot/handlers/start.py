@@ -23,6 +23,12 @@ from bot.handlers.channel_cards import send_payment_notification
 from bot.states.chat import ChatStates
 from bot.handlers.order_chat import get_exit_chat_keyboard
 from bot.services.achievements import sync_user_achievements
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -476,7 +482,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 @router.message(SetPriceState.waiting_for_price)
 async def process_custom_price(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     """Обработка ввода цены от админа — отправляет клиенту полноценный счёт с кнопками"""
-    from bot.services.live_cards import update_card_status
 
     data = await state.get_data()
     order_id = data.get("order_id")
@@ -520,11 +525,13 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     # Устанавливаем цену и бонусы
     order.price = float(price)
     order.bonus_used = bonus_used
-    order.status = OrderStatus.WAITING_PAYMENT.value
-    await session.commit()
+    try:
+        change = apply_order_status_transition(order, OrderStatus.WAITING_PAYMENT.value)
+    except OrderStatusTransitionError as exc:
+        await message.answer(f"❌ {exc}")
+        await state.clear()
+        return
 
-    # Обновляем карточку в канале
-    # Use order.final_price property which includes discount (loyalty + promo)
     final_price = order.final_price
 
     # Формируем текст с информацией о бонусах
@@ -537,30 +544,22 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     else:
         card_extra_text = f"💵 Цена: {format_price(price)} (бонусов нет)"
 
-    try:
-        await update_card_status(
-            bot, order, session,
+    await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
             client_username=client.username if client else None,
             client_name=client.fullname if client else None,
-            extra_text=card_extra_text
-        )
-    except Exception as e:
-        await message.answer(f"⚠️ Карточка не обновлена: {e}")
+            card_extra_text=card_extra_text,
+            notification_extra_data={"final_price": float(final_price), "bonus_used": bonus_used},
+        ),
+    )
 
     # Отправляем полноценное уведомление с кнопками оплаты
     sent = await send_payment_notification(bot, order, client, price)
-
-    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
-    try:
-        from bot.services.realtime_notifications import send_order_status_notification
-        await send_order_status_notification(
-            telegram_id=order.user_id,
-            order_id=order.id,
-            new_status=OrderStatus.WAITING_PAYMENT.value,
-            extra_data={"final_price": final_price, "bonus_used": bonus_used},
-        )
-    except Exception as ws_err:
-        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     # Очищаем FSM
     await state.clear()

@@ -1,0 +1,297 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(22px, 3vw, 30px);
+  border-radius: 20px;
+  background:
+    linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%);
+  border: 1px solid rgba(212,175,55,0.15);
+  box-shadow:
+    0 4px 24px -8px rgba(0,0,0,0.6),
+    0 1px 0 rgba(212,175,55,0.04) inset;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top right, rgba(212,175,55,0.10) 0%, transparent 65%);
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: 220px 220px;
+  opacity: 1;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent);
+}
+
+.heroWorkspace {
+  background:
+    linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%);
+}
+
+.heroWorkflow {
+  background:
+    linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%);
+}
+
+.heroUtility {
+  background:
+    linear-gradient(155deg, rgba(22,18,10,0.98) 0%, rgba(14,13,10,0.99) 100%);
+}
+
+.heroGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 20px;
+}
+
+.heroCopy {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.heroEyebrow {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  color: rgba(255, 236, 174, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  background: var(--gold-text-shine);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroSubtitle {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+  font-weight: 600;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  color: rgba(212, 175, 55, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chipStrong {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.18);
+  color: var(--gold-200);
+}
+
+.heroMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background:
+    rgba(255,255,255,0.02);
+  border: 1px solid rgba(212,175,55,0.08);
+  box-shadow: 0 12px 28px -26px rgba(212,175,55,0.10);
+}
+
+.metricStrong {
+  background:
+    rgba(212,175,55,0.05);
+  border-color: rgba(212,175,55,0.14);
+  box-shadow: 0 16px 34px -28px rgba(212,175,55,0.16);
+}
+
+.metricLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.metricValue {
+  margin-top: 8px;
+  font-size: clamp(18px, 3vw, 28px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.metricValueAccent {
+  color: var(--gold-200);
+}
+
+.metricHint {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(212,175,55,0.50);
+}
+
+.heroAside {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: clamp(16px, 2.4vw, 24px);
+  background:
+    linear-gradient(155deg, rgba(22,18,10,0.96) 0%, rgba(14,13,10,0.98) 100%);
+  border: 1px solid rgba(212,175,55,0.12);
+  box-shadow:
+    0 4px 24px -8px rgba(0,0,0,0.55),
+    0 1px 0 rgba(212,175,55,0.03) inset;
+}
+
+.surfaceStrong {
+  background:
+    linear-gradient(155deg, rgba(24,19,10,0.98) 0%, rgba(14,13,10,0.99) 100%);
+  border-color: rgba(212, 175, 55, 0.15);
+}
+
+.surfaceUtility {
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+}
+
+.sectionStack {
+  display: grid;
+  gap: 18px;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.sectionHeadingCopy {
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.08;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+
+.sectionSubtitle {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.softDivider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.22), rgba(255, 255, 255, 0.04), transparent);
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroAction {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(212,175,55,0.06);
+  border: 1px solid rgba(212,175,55,0.12);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.heroActionAccent {
+  background: var(--gold-metallic);
+  border-color: rgba(255, 248, 214, 0.18);
+  color: var(--text-on-gold);
+  box-shadow: 0 8px 20px -8px rgba(212,175,55,0.3);
+}
+
+@media (min-width: 768px) {
+  .heroMetrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 980px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+    align-items: start;
+  }
+
+  .heroMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

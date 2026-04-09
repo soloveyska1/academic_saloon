@@ -1,0 +1,238 @@
+.page {
+  min-height: 100vh;
+  height: 100dvh;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+}
+
+.scrollArea {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding: 20px 18px 132px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.column {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.header {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 24px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 248, 214, 0.1), transparent 28%),
+    radial-gradient(34% 22% at 8% 0%, rgba(212, 175, 55, 0.08), transparent 74%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 52%),
+    linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(10, 10, 10, 0.95) 46%, rgba(212, 175, 55, 0.05) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow:
+    0 36px 76px -48px rgba(0, 0, 0, 0.9),
+    0 24px 44px -30px rgba(212, 175, 55, 0.2);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 60%),
+    rgba(12, 12, 10, 0.72);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(212, 175, 55, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 14px 28px -22px rgba(212, 175, 55, 0.18);
+}
+
+.progressMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressDots {
+  display: flex;
+  gap: 4px;
+}
+
+.progressDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.06);
+  transition: width 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.progressDotActive {
+  width: 20px;
+  background: var(--gold-400);
+}
+
+.progressDotPassed {
+  background: rgba(212, 175, 55, 0.28);
+}
+
+.stepCounter {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.contextChip {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.04));
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 28px -24px rgba(212, 175, 55, 0.18);
+}
+
+.contextIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--gold-400);
+  flex-shrink: 0;
+}
+
+.contextText {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.contextTitle {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.contextDetail {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titleCopy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(24px, 5vw, 30px);
+  font-weight: 700;
+  font-family: var(--font-display);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  background: var(--gold-text-shine);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroChip {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.heroChipAccent {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.2);
+  color: var(--gold-200);
+}
+
+.modeButton {
+  padding: 8px 12px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 14px 28px -26px rgba(212, 175, 55, 0.16);
+}
+
+@media (min-width: 768px) {
+  .scrollArea {
+    padding: 24px 24px 136px;
+  }
+
+  .header {
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .backButton:hover,
+  .modeButton:hover {
+    border-color: rgba(212, 175, 55, 0.18);
+  }
+}

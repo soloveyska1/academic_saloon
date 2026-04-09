@@ -12,7 +12,7 @@ from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.orders import Order, OrderStatus
+from database.models.orders import Order, OrderStatus, canonicalize_order_status
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ STATUS_PROGRESS = {
     OrderStatus.WAITING_ESTIMATION.value: 5,
     OrderStatus.WAITING_PAYMENT.value: 10,
     OrderStatus.VERIFICATION_PENDING.value: 15,
-    OrderStatus.CONFIRMED.value: 10,
     OrderStatus.PAID.value: 20,
     OrderStatus.PAID_FULL.value: 25,
     OrderStatus.IN_PROGRESS.value: 30,  # Админ может увеличивать до 90
@@ -120,12 +119,12 @@ def build_timeline(order: Order) -> str:
         Строка с таймлайном
     """
     progress = order.progress if hasattr(order, 'progress') and order.progress else 0
-    status = order.status
+    status = canonicalize_order_status(order.status) or order.status
 
     # Определяем этапы
     stages = [
         ("📝", "Создан", [OrderStatus.DRAFT.value, OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value]),
-        ("💵", "Оценён", [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]),
+        ("💵", "Оценён", [OrderStatus.WAITING_PAYMENT.value]),
         ("💳", "Оплачен", [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value, OrderStatus.VERIFICATION_PENDING.value]),
         ("⚙️", "В работе", [OrderStatus.IN_PROGRESS.value, OrderStatus.PAUSED.value]),
         ("✅", "Готово", [OrderStatus.REVIEW.value, OrderStatus.COMPLETED.value]),
@@ -337,7 +336,8 @@ def get_auto_progress(status: str) -> int:
     Returns:
         Процент прогресса
     """
-    return STATUS_PROGRESS.get(status, 0)
+    canonical_status = canonicalize_order_status(status) or status
+    return STATUS_PROGRESS.get(canonical_status, 0)
 
 
 async def sync_progress_with_status(

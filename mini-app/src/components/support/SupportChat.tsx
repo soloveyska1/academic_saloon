@@ -4,23 +4,10 @@ import { AlertCircle, ExternalLink, Loader2, RefreshCw, Send, ShieldCheck } from
 import { ChatMessage } from '../../types'
 import { fetchSupportMessages, sendSupportMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
+import { haveSameChatMessages } from '../../lib/chatMessages'
 import s from '../../pages/SupportPage.module.css'
 
 /* ═══════ Helpers ═══════ */
-
-function haveSameMessages(a: ChatMessage[], b: ChatMessage[]): boolean {
-  if (a.length !== b.length) return false
-  return a.every((message, index) => {
-    const next = b[index]
-    return (
-      message.id === next.id &&
-      message.message_text === next.message_text &&
-      message.created_at === next.created_at &&
-      message.is_read === next.is_read &&
-      message.sender_type === next.sender_type
-    )
-  })
-}
 
 function formatTime(dateString: string): string {
   return new Date(dateString).toLocaleTimeString('ru-RU', {
@@ -73,7 +60,7 @@ export function SupportChat() {
       errorCountRef.current = 0
       setError(null)
       setMessages((prev) =>
-        haveSameMessages(prev, response.messages) ? prev : response.messages,
+        haveSameChatMessages(prev, response.messages) ? prev : response.messages,
       )
     } catch {
       errorCountRef.current += 1

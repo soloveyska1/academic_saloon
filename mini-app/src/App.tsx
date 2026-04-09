@@ -21,7 +21,11 @@ import {
   ProgressUpdateMessage,
   NotificationMessage,
   ChatSocketMessage,
+  DeliveryUpdateMessage,
   FileDeliveryMessage,
+  RevisionRoundFulfilledMessage,
+  RevisionRoundOpenedMessage,
+  RevisionRoundUpdatedMessage,
   useWebSocketContext,
 } from './hooks/useWebSocket'
 import {
@@ -30,6 +34,7 @@ import {
 } from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw, Wifi, WifiOff, ArrowLeft, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { normalizeOrderStatus } from './lib/orderView'
 
 const loadHomePage = () => import('./pages/HomePage').then(module => ({ default: module.HomePage }))
 const loadOrdersPage = () => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage }))
@@ -338,6 +343,8 @@ function AppContent() {
 
   // WebSocket handlers - now unified for smart notifications
   const handleOrderUpdate = useCallback((msg: OrderUpdateMessage) => {
+    const normalizedStatus = normalizeOrderStatus(msg.status)
+
     // Smart notification data comes directly from server
     // Merge order_id into data for navigation action
     const mergedData = {
@@ -348,9 +355,9 @@ function AppContent() {
     const smartData: SmartNotificationData = {
       type: 'order_update',
       order_id: msg.order_id,
-      status: msg.status,
+      status: normalizedStatus,
       title: msg.title || 'Обновление заказа',
-      message: msg.message || `Статус: ${msg.status}`,
+      message: msg.message || `Статус: ${normalizedStatus}`,
       icon: msg.icon || 'package',
       color: msg.color || '#d4af37',
       priority: msg.priority || 'normal',
@@ -450,6 +457,40 @@ function AppContent() {
     refetch()
   }, [refetch])
 
+  const handleDeliveryUpdate = useCallback((msg: DeliveryUpdateMessage) => {
+    const versionLabel = msg.version_number > 0 ? `Версия ${msg.version_number}` : 'Новая версия'
+    const smartData: SmartNotificationData = {
+      type: 'notification',
+      title: msg.title || `${versionLabel} готова`,
+      message: msg.message || `По заказу #${msg.order_id} отправлена исправленная версия.`,
+      icon: msg.icon || 'download',
+      color: msg.color || '#22c55e',
+      priority: msg.priority || 'high',
+      action: 'view_order',
+      data: {
+        order_id: msg.order_id,
+        files_url: msg.files_url,
+        delivery_batch_id: msg.delivery_batch_id,
+        version_number: msg.version_number,
+      },
+    }
+
+    setNotification(smartData)
+    refetch()
+  }, [refetch])
+
+  const handleRevisionRoundOpened = useCallback((_msg: RevisionRoundOpenedMessage) => {
+    refetch()
+  }, [refetch])
+
+  const handleRevisionRoundUpdated = useCallback((_msg: RevisionRoundUpdatedMessage) => {
+    refetch()
+  }, [refetch])
+
+  const handleRevisionRoundFulfilled = useCallback((_msg: RevisionRoundFulfilledMessage) => {
+    refetch()
+  }, [refetch])
+
   const handleRefresh = useCallback(() => {
     // Trigger data refresh based on refresh_type from server
     refetch()
@@ -514,6 +555,10 @@ function AppContent() {
           onNotification={handleNotification}
           onRefresh={handleRefresh}
           onFileDelivery={handleFileDelivery}
+          onDeliveryUpdate={handleDeliveryUpdate}
+          onRevisionRoundOpened={handleRevisionRoundOpened}
+          onRevisionRoundUpdated={handleRevisionRoundUpdated}
+          onRevisionRoundFulfilled={handleRevisionRoundFulfilled}
         >
           {/* Always show notifications even on error screen - no navigation action needed */}
           <SmartNotification
@@ -717,6 +762,10 @@ function AppContent() {
                   onNotification={handleNotification}
                   onRefresh={handleRefresh}
                   onFileDelivery={handleFileDelivery}
+                  onDeliveryUpdate={handleDeliveryUpdate}
+                  onRevisionRoundOpened={handleRevisionRoundOpened}
+                  onRevisionRoundUpdated={handleRevisionRoundUpdated}
+                  onRevisionRoundFulfilled={handleRevisionRoundFulfilled}
                 >
                   <BrowserRouter>
                     <div className="app">

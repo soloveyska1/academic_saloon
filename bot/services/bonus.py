@@ -6,15 +6,17 @@ from __future__ import annotations
 import logging
 import math
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from zoneinfo import ZoneInfo
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from aiogram import Bot
 
-from database.models.users import User
-from database.models.transactions import BalanceTransaction
+from aiogram import Bot
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.models.levels import RankLevel
+from database.models.transactions import BalanceTransaction
+from database.models.users import User
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -66,6 +68,17 @@ REFERRAL_TIERS = [
 REFERRAL_SECOND_LEVEL_PERCENT = 2  # 2% from referral's referrals
 
 
+def _to_decimal_amount(value: object, default: str = "0") -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    if value is None:
+        return Decimal(default)
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal(default)
+
+
 def get_referral_percent(referrals_count: int) -> int:
     """Get referral bonus percentage based on number of referrals."""
     for min_refs, percent in REFERRAL_TIERS:
@@ -104,7 +117,7 @@ class BonusService:
 
     @staticmethod
     def _build_reason_text(reason: BonusReason, description: str | None) -> str:
-        return BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
+        return description or BONUS_REASON_DESCRIPTIONS.get(reason.value, reason.value)
 
     @staticmethod
     def _log_transaction(
@@ -170,8 +183,9 @@ class BonusService:
         if not user:
             return 0.0
 
-        old_balance = user.balance
-        user.balance += amount
+        amount_decimal = _to_decimal_amount(amount)
+        old_balance = _to_decimal_amount(user.balance)
+        user.balance = old_balance + amount_decimal
 
         # Обновляем дату последнего начисления и сбрасываем флаг уведомления о сгорании
         user.last_bonus_at = datetime.now(MSK_TZ)
@@ -181,7 +195,7 @@ class BonusService:
         BonusService._log_transaction(
             session=session,
             user_id=user_id,
-            amount=amount,
+            amount=float(amount_decimal),
             reason=reason,
             description=reason_text,
             tx_type="credit",
@@ -192,8 +206,8 @@ class BonusService:
 
         # Логируем в консоль
         logger.info(
-            f"Bonus added: user={user_id}, amount=+{amount:.0f}₽, "
-            f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
+            f"Bonus added: user={user_id}, amount=+{float(amount_decimal):.0f}₽, "
+            f"reason={reason.value}, balance: {float(old_balance):.0f}₽ → {float(user.balance):.0f}₽"
         )
 
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
@@ -202,7 +216,7 @@ class BonusService:
                 from bot.services.realtime_notifications import send_balance_notification
                 await send_balance_notification(
                     telegram_id=user_id,
-                    change=float(amount),
+                    change=float(amount_decimal),
                     new_balance=float(user.balance),
                     reason=reason_text,
                     reason_key=reason.value,
@@ -210,7 +224,7 @@ class BonusService:
             except Exception as e:
                 logger.warning(f"[WS] Failed to send balance notification: {e}")
 
-        return user.balance
+        return float(user.balance)
 
     @staticmethod
     async def deduct_bonus(
@@ -244,17 +258,18 @@ class BonusService:
             result = await session.execute(query)
             user = result.scalar_one_or_none()
 
-        if not user or user.balance < amount:
-            return False, user.balance if user else 0.0
+        amount_decimal = _to_decimal_amount(amount)
+        if not user or user.balance < amount_decimal:
+            return False, float(user.balance) if user else 0.0
 
-        old_balance = user.balance
-        user.balance -= amount
+        old_balance = _to_decimal_amount(user.balance)
+        user.balance = old_balance - amount_decimal
         reason_text = BonusService._build_reason_text(reason, description)
 
         BonusService._log_transaction(
             session=session,
             user_id=user_id,
-            amount=amount,
+            amount=float(amount_decimal),
             reason=reason,
             description=reason_text,
             tx_type="debit",
@@ -265,8 +280,8 @@ class BonusService:
 
         # Логируем в консоль
         logger.info(
-            f"Bonus deducted: user={user_id}, amount=-{amount:.0f}₽, "
-            f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
+            f"Bonus deducted: user={user_id}, amount=-{float(amount_decimal):.0f}₽, "
+            f"reason={reason.value}, balance: {float(old_balance):.0f}₽ → {float(user.balance):.0f}₽"
         )
 
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ О СПИСАНИИ ═══
@@ -274,7 +289,7 @@ class BonusService:
             from bot.services.realtime_notifications import send_balance_notification
             await send_balance_notification(
                 telegram_id=user_id,
-                change=-float(amount),  # Отрицательное значение для списания
+                change=-float(amount_decimal),  # Отрицательное значение для списания
                 new_balance=float(user.balance),
                 reason=reason_text,
                 reason_key=reason.value,
@@ -282,7 +297,55 @@ class BonusService:
         except Exception as e:
             logger.warning(f"[WS] Failed to send deduction notification: {e}")
 
-        return True, user.balance
+        return True, float(user.balance)
+
+    @staticmethod
+    async def refund_order_discount_if_deducted(
+        session: AsyncSession,
+        user_id: int,
+        order_id: int,
+        amount: float,
+        *,
+        bot: Bot | None = None,
+    ) -> float:
+        """Return reserved order discount only if it was actually debited before."""
+        amount_decimal = _to_decimal_amount(amount)
+        if amount_decimal <= 0:
+            return 0.0
+
+        order_marker = f"заказ #{order_id}"
+        deduction_exists = await session.scalar(
+            select(BalanceTransaction.id).where(
+                BalanceTransaction.user_id == user_id,
+                BalanceTransaction.reason == BonusReason.ORDER_DISCOUNT.value,
+                BalanceTransaction.type == "debit",
+                BalanceTransaction.description.like(f"%{order_marker}%"),
+            )
+        )
+        if deduction_exists is None:
+            return 0.0
+
+        refund_exists = await session.scalar(
+            select(BalanceTransaction.id).where(
+                BalanceTransaction.user_id == user_id,
+                BalanceTransaction.reason == BonusReason.ORDER_REFUND.value,
+                BalanceTransaction.type == "credit",
+                BalanceTransaction.description.like(f"%{order_marker}%"),
+            )
+        )
+        if refund_exists is not None:
+            return 0.0
+
+        await BonusService.add_bonus(
+            session=session,
+            user_id=user_id,
+            amount=float(amount_decimal),
+            reason=BonusReason.ORDER_REFUND,
+            description=f"Возврат бонусов за заказ #{order_id}",
+            bot=bot,
+            auto_commit=False,
+        )
+        return float(amount_decimal)
 
     @staticmethod
     async def get_balance(session: AsyncSession, user_id: int) -> float:
@@ -408,6 +471,9 @@ class BonusService:
         user_id: int,
         order_id: int,
         order_amount: float,
+        *,
+        auto_commit: bool = True,
+        sync_achievements: bool = True,
     ) -> float:
         """
         Начисляет кешбэк за выполненный заказ на основе ранга пользователя
@@ -429,6 +495,17 @@ class BonusService:
 
         if not user:
             logger.warning(f"[Cashback] User {user_id} not found")
+            return 0.0
+
+        existing_cashback = await session.execute(
+            select(BalanceTransaction.id).where(
+                BalanceTransaction.user_id == user_id,
+                BalanceTransaction.reason == BonusReason.ORDER_CASHBACK.value,
+                BalanceTransaction.description.like(f"%за заказ #{order_id}"),
+            )
+        )
+        if existing_cashback.scalar_one_or_none() is not None:
+            logger.warning(f"[Cashback] Duplicate cashback prevented for user {user_id}, order #{order_id}")
             return 0.0
 
         # Получаем конфигурацию рангов из БД
@@ -453,18 +530,21 @@ class BonusService:
             reason=BonusReason.ORDER_CASHBACK,
             description=f"Кэшбэк {cashback_percent}% за заказ #{order_id}",
             bot=bot,
+            auto_commit=auto_commit,
         )
 
-        try:
-            from bot.services.achievements import sync_user_achievements
-            await sync_user_achievements(
-                session=session,
-                telegram_id=user_id,
-                bot=bot,
-                notify=True,
-            )
-        except Exception as exc:
-            logger.warning(f"[Achievements] Failed to sync after cashback for {user_id}: {exc}")
+        if sync_achievements:
+            try:
+                from bot.services.achievements import sync_user_achievements
+                await sync_user_achievements(
+                    session=session,
+                    telegram_id=user_id,
+                    bot=bot,
+                    notify=True,
+                    auto_commit=auto_commit,
+                )
+            except Exception as exc:
+                logger.warning(f"[Achievements] Failed to sync after cashback for {user_id}: {exc}")
 
         logger.info(
             f"[Cashback] User {user_id} received {cashback_amount:.0f}₽ "

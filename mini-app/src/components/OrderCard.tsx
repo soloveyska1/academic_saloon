@@ -7,6 +7,11 @@ import {
 } from 'lucide-react'
 import { Order } from '../types'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
+import {
+  getEffectiveOrderStatus,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
+} from '../lib/orderView'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDER CARD — Premium Zero-Latency Touch Component
@@ -39,7 +44,6 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<string, StatusConfig> = {
   pending: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', icon: Clock },
   waiting_estimation: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', icon: Clock },
-  confirmed: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)', icon: CreditCard },
   waiting_payment: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)', icon: CreditCard },
   verification_pending: { label: 'Проверка', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)', icon: Loader },
   paid: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', icon: Loader },
@@ -61,18 +65,33 @@ interface OrderCardProps {
 
 export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
   const navigate = useNavigate()
+  const visibleStatus = getEffectiveOrderStatus(order) ?? order.status
+  const latestDelivery = getLatestDeliveryBatch(order)
+  const currentRound = getOpenRevisionRound(order)
 
   // Premium gesture hook — direct DOM manipulation for zero-latency
   const { ref, handlers } = usePremiumGesture({
-    onTap: () => navigate(`/order/${order.id}`),
+    onTap: () => navigate(visibleStatus === 'revision' ? `/order/${order.id}?focus=revision` : `/order/${order.id}`),
     scale: 0.97,
     hapticType: 'light',
     tolerance: 15,
     pressDelay: 40,
   })
 
-  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const statusConfig = STATUS_CONFIG[visibleStatus] || STATUS_CONFIG.pending
   const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
+  const statusLabel =
+    visibleStatus === 'revision' && currentRound?.round_number
+      ? `Правка #${currentRound.round_number}`
+      : visibleStatus === 'review' && latestDelivery?.version_number
+        ? `Версия ${latestDelivery.version_number}`
+        : statusConfig.label
+  const statusHint =
+    visibleStatus === 'revision' && currentRound
+      ? 'Можно дослать материалы'
+      : visibleStatus === 'review' && latestDelivery?.sent_at
+        ? `Отправлена ${new Date(latestDelivery.sent_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`
+        : null
 
   return (
     <div
@@ -150,10 +169,21 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
             fontWeight: 600,
             color: statusConfig.color,
           }}>
-            {statusConfig.label}
+            {statusLabel}
           </span>
         </div>
       </div>
+
+      {statusHint && (
+        <div style={{
+          marginBottom: 12,
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.42)',
+        }}>
+          {statusHint}
+        </div>
+      )}
 
       {/* Progress Bar (if applicable) */}
       {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && (

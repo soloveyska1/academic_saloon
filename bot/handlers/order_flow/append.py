@@ -9,7 +9,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
+from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus, is_waiting_payment_status
 from bot.states.order import OrderState
 from bot.keyboards.orders import get_append_files_keyboard
 from bot.services.live_cards import update_card_status
@@ -95,13 +95,10 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
         return
 
     # Check order status — can only append to waiting orders
-    allowed_statuses = [
+    if order.status not in {
         OrderStatus.PENDING.value,
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.CONFIRMED.value,
-        OrderStatus.WAITING_ESTIMATION.value,  # For special orders
-    ]
-    if order.status not in allowed_statuses:
+        OrderStatus.WAITING_ESTIMATION.value,
+    } and not is_waiting_payment_status(order.status):
         await callback.answer("К этому заказу уже нельзя добавить файлы", show_alert=True)
         return
 
@@ -413,9 +410,13 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
                     client_name=client_name,
                     work_type=work_label,
                     telegram_id=callback.from_user.id,
+                    client_username=callback.from_user.username,
+                    order_meta=yandex_disk_service.build_order_meta(order),
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
+                    order.files_url = result.folder_url
+                    await session.commit()
                     logger.info(f"Order #{order.id} appended files uploaded to Yandex Disk: {yadisk_link}")
 
         except Exception as e:

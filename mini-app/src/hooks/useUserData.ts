@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { UserData } from '../types'
-import { fetchUserData, fetchConfig } from '../api/userApi'
+import { fetchUserData, fetchConfig, isBrowserPreviewMode } from '../api/userApi'
 import { SUPPORT_TELEGRAM_URL } from '../lib/appLinks'
 import { useAdmin } from '../contexts/AdminContext'
 
@@ -8,6 +8,10 @@ import { useAdmin } from '../contexts/AdminContext'
 // On some mobile clients initData arrives a bit later than the first render,
 // which caused the app to throw "Open via Telegram" before WebApp was ready.
 async function waitForTelegramContext(timeoutMs = 7000, pollMs = 50) {
+  if (isBrowserPreviewMode()) {
+    return true
+  }
+
   const started = Date.now()
 
   while (Date.now() - started < timeoutMs) {
@@ -53,18 +57,49 @@ export function useUserData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isStale, setIsStale] = useState<boolean>(() => readCache() !== null)
+  const requestIdRef = useRef(0)
+  const isMountedRef = useRef(true)
 
-  const refreshUserData = useCallback(async () => {
-    const data = await fetchUserData()
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const isActiveRequest = useCallback((requestId: number) => {
+    return isMountedRef.current && requestIdRef.current === requestId
+  }, [])
+
+  const commitUserData = useCallback((requestId: number, data: UserData) => {
+    if (!isActiveRequest(requestId)) {
+      return data
+    }
+
     setRawUserData(data)
     writeCache(data)
     setIsStale(false)
     setError(null)
     return data
-  }, [])
+  }, [isActiveRequest])
+
+  const refreshUserData = useCallback(async () => {
+    const requestId = ++requestIdRef.current
+    try {
+      const data = await fetchUserData()
+      return commitUserData(requestId, data)
+    } finally {
+      if (isActiveRequest(requestId)) {
+        setLoading(false)
+      }
+    }
+  }, [commitUserData, isActiveRequest])
 
   useEffect(() => {
+    let cancelled = false
+
     async function loadUserData() {
+      const requestId = ++requestIdRef.current
+
       try {
         setLoading(true)
 
@@ -75,16 +110,28 @@ export function useUserData() {
           throw new Error('Откройте приложение через Telegram')
         }
 
-        await refreshUserData()
+        const data = await fetchUserData()
+
+        if (!cancelled) {
+          commitUserData(requestId, data)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
+        if (!cancelled && isActiveRequest(requestId)) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled && isActiveRequest(requestId)) {
+          setLoading(false)
+        }
       }
     }
 
-    loadUserData()
-  }, [refreshUserData])
+    void loadUserData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [commitUserData, isActiveRequest])
 
   const refetch = useCallback(async () => {
     try {

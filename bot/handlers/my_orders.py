@@ -30,7 +30,7 @@ REFERRAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "ref.jpg"
 from database.models.users import User
 from database.models.orders import (
     Order, OrderStatus,
-    get_status_meta, get_active_statuses, get_history_statuses,
+    canonicalize_order_status, get_status_meta, get_active_statuses, get_history_statuses,
 )
 from bot.services.bonus import BonusService, BonusReason
 from bot.keyboards.profile import (
@@ -59,6 +59,12 @@ from core.media_cache import send_cached_photo
 from core.redis_pool import get_redis
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.utils.formatting import format_price
+from bot.services.order_status_service import (
+    OrderStatusDispatchOptions,
+    OrderStatusTransitionError,
+    apply_order_status_transition,
+    finalize_order_status_change,
+)
 
 
 # Константы для кэша купонов в Redis
@@ -611,9 +617,9 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
 
 def get_status_display(status: str) -> tuple[str, str]:
     """Возвращает emoji и текст статуса для отображения"""
+    status = canonicalize_order_status(status) or status
     status_map = {
         "pending": ("⏳", "Ожидает оценки"),
-        "confirmed": ("💳", "К оплате"),
         "in_progress": ("🔨", "В работе"),
         "paid": ("✅", "Оплачено (в очереди)"),
         "waiting_payment": ("💳", "К оплате"),
@@ -630,6 +636,7 @@ def build_order_detail_caption(order: Order) -> str:
     """Формирует caption для деталей заказа — Premium UX"""
 
     lines = [f"<b>Заказ №{order.id}</b>", ""]
+    status = canonicalize_order_status(order.status) or order.status
 
     # ═══ СТАТУС ═══
     status_config = {
@@ -638,7 +645,6 @@ def build_order_detail_caption(order: Order) -> str:
         OrderStatus.WAITING_ESTIMATION.value: ("⏳", "На оценке", "Ожидайте расчёт стоимости"),
         OrderStatus.WAITING_PAYMENT.value: ("💳", "К оплате", None),
         OrderStatus.VERIFICATION_PENDING.value: ("🔍", "Проверка оплаты", "Подтверждаем платёж"),
-        OrderStatus.CONFIRMED.value: ("💳", "К оплате", None),
         OrderStatus.PAID.value: ("⚙️", "В работе", None),
         OrderStatus.PAID_FULL.value: ("⚙️", "В работе", None),
         OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе", None),
@@ -649,11 +655,11 @@ def build_order_detail_caption(order: Order) -> str:
         OrderStatus.REJECTED.value: ("✗", "Отклонён", None),
     }
 
-    emoji, status_text, hint = status_config.get(order.status, ("", order.status, None))
+    emoji, status_text, hint = status_config.get(status, ("", status, None))
 
     # Прогресс для активных заказов
     progress = getattr(order, 'progress', 0) or 0
-    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
+    if status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
                         OrderStatus.IN_PROGRESS.value] and progress > 0:
         lines.append(f"<b>Статус:</b> {emoji} {status_text} ({progress}%)")
         # Текстовый этап вместо прогресс-бара
@@ -870,20 +876,24 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
         await callback.message.answer(f"❌ Заказ #{order.id} уже нельзя отменить (статус: {order.status_label})")
         return
 
-    old_status = order.status
-    order.status = OrderStatus.CANCELLED.value
-    order.updated_at = datetime.now(MSK_TZ)
+    try:
+        change = apply_order_status_transition(order, OrderStatus.CANCELLED.value)
+    except OrderStatusTransitionError as exc:
+        await callback.message.answer(f"❌ {exc}")
+        return
 
-    # Return promo code if one was used (allows user to reuse it)
-    if order.promo_code:
-        try:
-            from bot.services.promo_service import PromoService
-            await PromoService.return_promo_usage(session, order.id, bot=bot)
-            logger.info(f"[CancelOrder] Returned promo code for order #{order_id}")
-        except Exception as e:
-            logger.warning(f"[CancelOrder] Failed to return promo for order #{order_id}: {e}")
-
-    await session.commit()
+    change = await finalize_order_status_change(
+        session,
+        bot,
+        order,
+        change,
+        dispatch=OrderStatusDispatchOptions(
+            update_live_card=True,
+            client_username=callback.from_user.username,
+            client_name=callback.from_user.full_name,
+            card_extra_text=f"❌ Клиент отменил заказ (был: {change.old_status})",
+        ),
+    )
 
     try:
         await log_action(bot=bot, event=LogEvent.ORDER_CANCEL, user=callback.from_user,
@@ -898,7 +908,7 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
                 admin_id,
                 f"Клиент отменил заказ #{order_id}\n"
                 f"{callback.from_user.full_name} (ID: {callback.from_user.id})\n"
-                f"Был статус: {old_status}"
+                f"Был статус: {change.old_status}"
             )
         except Exception:
             pass

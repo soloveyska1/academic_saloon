@@ -11,6 +11,8 @@ import { usePromo } from '../contexts/PromoContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { Confetti } from '../components/ui/Confetti'
+import { PremiumBackground } from '../components/ui/PremiumBackground'
+import s from './CreateOrderPage.module.css'
 import {
   ServiceTypeStep,
   RequirementsStep,
@@ -51,10 +53,10 @@ const slideVariants = prefersReducedMotion
     }
   : {
       enter: (dir: number) => ({
-        x: dir > 0 ? 60 : -60,
+        x: dir > 0 ? 40 : -40,
         opacity: 0,
-        scale: 0.97,
-        filter: 'blur(4px)',
+        scale: 0.985,
+        filter: 'blur(2px)',
       }),
       center: {
         x: 0,
@@ -63,25 +65,25 @@ const slideVariants = prefersReducedMotion
         filter: 'blur(0px)',
       },
       exit: (dir: number) => ({
-        x: dir < 0 ? 60 : -60,
+        x: dir < 0 ? 40 : -40,
         opacity: 0,
-        scale: 0.97,
-        filter: 'blur(4px)',
+        scale: 0.985,
+        filter: 'blur(2px)',
       }),
     }
 
 const FAST_STEPS_GENERIC = [
-  { num: 1, title: 'Быстрый запрос', subtitle: 'Опишите задачу — менеджер уточнит формат' },
-  { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
+  { num: 1, title: 'Опиши задачу', subtitle: 'Формат уточним после заявки' },
+  { num: 2, title: 'Срок', subtitle: 'Когда нужен результат?' },
 ]
 
 const FAST_STEPS_PHOTO = [
-  { num: 1, title: 'Задача по фото', subtitle: 'Сфотографируйте или загрузите задание' },
-  { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
+  { num: 1, title: 'Задание по фото', subtitle: 'Загрузите фото или файл с условием' },
+  { num: 2, title: 'Срок', subtitle: 'Когда нужен результат?' },
 ]
 
 const FAST_STEPS_OTHER = [
-  { num: 1, title: 'Ваша задача', subtitle: 'Расскажите, что нужно сделать' },
+  { num: 1, title: 'Ваша задача', subtitle: 'Коротко опишите, что нужно сделать' },
   { num: 2, title: 'Срок', subtitle: 'Когда нужен результат?' },
 ]
 
@@ -657,16 +659,41 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   const currentConfig = stepConfig[step - 1]
   const estimate = getEstimate()
+  const selectedServiceLabel = SERVICE_TYPES.find((service) => service.id === serviceTypeId)?.label
+  const selectedDeadlineLabel = DEADLINES.find((item) => item.value === deadline)?.label
+  const headerContext = (() => {
+    if (isReorder) {
+      return {
+        icon: Check,
+        title: 'Повторный заказ',
+        detail: 'Основные данные уже подставлены',
+      }
+    }
+
+    if (hasDraft && step === 2 && !isReorder) {
+      return {
+        icon: Clock,
+        title: 'Черновик восстановлен',
+        detail: 'Можно продолжить с этого шага',
+      }
+    }
+
+    if (isFirstOrder && step === 1 && !isReorder) {
+      return {
+        icon: Sparkles,
+        title: 'Первый заказ',
+        detail: 'Маршрут займёт всего несколько шагов',
+      }
+    }
+
+    return null
+  })()
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      height: '100dvh',
-      background: 'var(--bg-main)',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-    }}>
+    <div className={`${s.page} saloon-page-shell saloon-page-shell--workflow`}>
+      <div className="page-background" aria-hidden="true">
+        <PremiumBackground variant="gold" intensity="subtle" interactive={false} />
+      </div>
       {/* Aurora ambient background */}
       <AuroraBackground />
 
@@ -674,371 +701,230 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       <div
         ref={scrollContainerRef}
         data-scroll-container="true"
-        style={{
-          flex: 1,
-          padding: 24,
-          paddingBottom: 120, // Space for sticky CTA
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
-          touchAction: 'pan-y',
-        }}
+        className={s.scrollArea}
       >
-        {/* First Order Welcome Banner */}
-        {isFirstOrder && !isReorder && (
+        <div className={s.column}>
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 16px',
-              marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-              border: '1px solid rgba(212,175,55,0.3)',
-              borderRadius: 12,
-            }}
+            className={s.header}
           >
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #d4af37, #f5d76e)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Sparkles size={20} color="#050505" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#d4af37', marginBottom: 2 }}>
-                Ваш первый заказ
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Выберите тип работы и заполните детали
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Reorder Banner */}
-        {isReorder && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 16px',
-              marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.03))',
-              border: '1px solid rgba(212,175,55,0.18)',
-              borderRadius: 14,
-            }}
-          >
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #d4af37, #b38728)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Check size={20} color="#0A0A0A" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold-400)', marginBottom: 2 }}>
-                Повторный заказ
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Данные предзаполнены из прошлого заказа
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Draft Restored Banner */}
-        <AnimatePresence>
-          {hasDraft && step === 2 && !isReorder && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: -10, height: 0 }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '10px 14px',
-                marginBottom: 16,
-                background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
-                border: '1px solid rgba(59,130,246,0.3)',
-                borderRadius: 12,
-              }}
-            >
-              <Clock size={16} color="#3b82f6" />
-              <span style={{ fontSize: 12, color: '#60a5fa', flex: 1 }}>
-                Черновик восстановлен
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Header — compact premium */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 24 }}
-        >
-          {/* Top row: back + step counter */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-          }}>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={goBack}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                background: 'rgba(12, 12, 10, 0.6)',
-                backdropFilter: 'blur(16px) saturate(120%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(120%)',
-                border: '1px solid rgba(212, 175, 55, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <ArrowLeft size={18} color="var(--text-secondary)" />
-            </motion.button>
-
-            {/* Step dots + counter */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
-                  <div
-                    key={s}
-                    style={{
-                      width: s === step ? 20 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      background: s <= step
-                        ? 'var(--gold-400)'
-                        : 'rgba(212, 175, 55, 0.06)',
-                      transition: 'width 0.3s ease, background 0.3s ease',
-                    }}
-                  />
-                ))}
-              </div>
-              <span style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-              }}>
-                {step}/{totalSteps}
-              </span>
-            </div>
-          </div>
-
-          {/* Title row */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-                lineHeight: 1.2,
-                letterSpacing: '-0.02em',
-                marginBottom: 3,
-              }}>
-                {currentConfig?.title}
-              </h1>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4, fontWeight: 600 }}>
-                {currentConfig?.subtitle}
-              </p>
-            </div>
-
-            {canShowModeSwitch && isFastMode && (
+            <div className={s.topBar}>
               <motion.button
-                type="button"
                 whileTap={{ scale: 0.97 }}
-                onClick={() => switchMode('full')}
-                style={{
-                  padding: '8px 12px',
-                  background: 'rgba(212, 175, 55, 0.04)',
-                  border: '1px solid rgba(212, 175, 55, 0.10)',
-                  borderRadius: 8,
-                  color: 'var(--text-secondary)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
+                onClick={goBack}
+                className={s.backButton}
               >
-                Полная заявка
+                <ArrowLeft size={18} color="var(--text-secondary)" />
               </motion.button>
-            )}
-          </div>
-        </motion.div>
 
-        {/* Steps */}
-        <AnimatePresence mode="wait" custom={direction}>
-          {step === 1 && (
-            <motion.div
-              key="s1"
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
-            >
-              {isFastMode && preselectedType === 'photo_task' ? (
-                <PhotoTaskComposer
-                  files={files}
-                  onFilesAdd={addFiles}
-                  onFileRemove={removeFile}
-                  comment={photoComment}
-                  onCommentChange={setPhotoComment}
-                  subject={subject}
-                  onSubjectChange={setSubject}
-                  disabled={submitting || isRevalidating}
-                />
-              ) : isFastMode && preselectedType === 'other' ? (
-                <OtherComposer
-                  description={otherDescription}
-                  onDescriptionChange={setOtherDescription}
-                  subject={subject}
-                  onSubjectChange={setSubject}
-                  helpCategory={helpCategory}
-                  onHelpCategoryChange={setHelpCategory}
-                  files={files}
-                  onFilesAdd={addFiles}
-                  onFileRemove={removeFile}
-                  disabled={submitting || isRevalidating}
-                />
-              ) : isFastMode ? (
-                <FastComposer
-                  value={composerText}
-                  onChange={setComposerText}
-                  files={files}
-                  onFilesAdd={addFiles}
-                  onFileRemove={removeFile}
-                  disabled={submitting || isRevalidating}
-                />
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <ServiceTypeStep
-                    selected={serviceTypeId}
-                    onSelect={handleServiceTypeSelect}
-                    onUrgentRequest={(serviceId) => switchMode('fast', serviceId)}
-                    isFirstOrder={!user?.orders_count}
-                    draftInfo={(() => {
-                      if (serviceTypeId) return null
-                      const entries = Object.entries(drafts).filter(([, d]) => d && d.timestamp > Date.now() - 86400000)
-                      if (entries.length === 0) return null
-                      const [draftId, draft] = entries.sort((a, b) => b[1].timestamp - a[1].timestamp)[0]
-                      const svc = SERVICE_TYPES.find(s => s.id === draftId)
-                      if (!svc) return null
-                      const mins = Math.round((Date.now() - draft.timestamp) / 60000)
-                      const timeAgo = mins < 60 ? `${mins} мин назад` : mins < 1440 ? `${Math.round(mins / 60)} ч назад` : 'вчера'
-                      return { serviceTypeId: draftId, serviceLabel: svc.label, timeAgo }
-                    })()}
-                    onContinueDraft={(id) => { handleServiceTypeSelect(id); }}
-                  />
+              <div className={s.progressMeta}>
+                <div className={s.progressDots}>
+                  {Array.from({ length: totalSteps }, (_, index) => index + 1).map((progressStep) => (
+                    <div
+                      key={progressStep}
+                      className={[
+                        s.progressDot,
+                        progressStep === step ? s.progressDotActive : '',
+                        progressStep < step ? s.progressDotPassed : '',
+                      ].filter(Boolean).join(' ')}
+                    />
+                  ))}
                 </div>
+                <span className={s.stepCounter}>
+                  {step}/{totalSteps}
+                </span>
+              </div>
+            </div>
+
+            {headerContext && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={s.contextChip}
+              >
+                <div className={s.contextIcon}>
+                  <headerContext.icon size={14} />
+                </div>
+                <div className={s.contextText}>
+                  <div className={s.contextTitle}>{headerContext.title}</div>
+                  <div className={s.contextDetail}>{headerContext.detail}</div>
+                </div>
+              </motion.div>
+            )}
+
+            <div className={s.titleRow}>
+              <div className={s.titleCopy}>
+                <h1 className={s.title}>{currentConfig?.title}</h1>
+                <p className={s.subtitle}>{currentConfig?.subtitle}</p>
+              </div>
+
+              {canShowModeSwitch && isFastMode && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => switchMode('full')}
+                  className={s.modeButton}
+                >
+                  Полная заявка
+                </motion.button>
               )}
-            </motion.div>
-          )}
+            </div>
 
-          {step === 2 && !isFastMode && (
-            <motion.div
-              key="s2"
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
-            >
-              <RequirementsStep
-                serviceTypeId={serviceTypeId}
-                subject={subject}
-                onSubjectChange={setSubject}
-                topic={topic}
-                onTopicChange={setTopic}
-                requirements={requirements}
-                onRequirementsChange={setRequirements}
-                files={files}
-                onFilesAdd={addFiles}
-                onFileRemove={removeFile}
-                disabled={submitting || isRevalidating}
-              />
-            </motion.div>
-          )}
+            <div className={s.heroMeta}>
+              {selectedServiceLabel ? (
+                <div className={s.heroChip}>{selectedServiceLabel}</div>
+              ) : null}
+              {selectedDeadlineLabel ? (
+                <div className={s.heroChip}>{selectedDeadlineLabel}</div>
+              ) : null}
+              {files.length > 0 ? (
+                <div className={s.heroChip}>{files.length} файлов</div>
+              ) : null}
+              {estimate ? (
+                <div className={`${s.heroChip} ${s.heroChipAccent}`}>~ {estimate.toLocaleString('ru-RU')} ₽</div>
+              ) : null}
+            </div>
+          </motion.div>
 
-          {((step === 2 && isFastMode) || (step === 3 && !isFastMode)) && (
-            <motion.div
-              key={isFastMode ? 's2-fast' : 's3'}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
-            >
-              <DeadlineStep
-                selected={deadline}
-                onSelect={handleDeadlineSelect}
-                basePrice={SERVICE_TYPES.find(s => s.id === serviceTypeId)?.priceNum}
-              />
-
-              {/* Promo Code Section */}
-              {!isFastMode && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    style={{ marginTop: 24 }}
-                  >
-                    <PromoCodeSection
-                      variant="inline"
-                      basePrice={getEstimateBaseAfterLoyalty() || undefined}
+          <AnimatePresence mode="wait" custom={direction}>
+            {step === 1 && (
+              <motion.div
+                key="s1"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+              >
+                {isFastMode && preselectedType === 'photo_task' ? (
+                  <PhotoTaskComposer
+                    files={files}
+                    onFilesAdd={addFiles}
+                    onFileRemove={removeFile}
+                    comment={photoComment}
+                    onCommentChange={setPhotoComment}
+                    subject={subject}
+                    onSubjectChange={setSubject}
+                    disabled={submitting || isRevalidating}
+                  />
+                ) : isFastMode && preselectedType === 'other' ? (
+                  <OtherComposer
+                    description={otherDescription}
+                    onDescriptionChange={setOtherDescription}
+                    subject={subject}
+                    onSubjectChange={setSubject}
+                    helpCategory={helpCategory}
+                    onHelpCategoryChange={setHelpCategory}
+                    files={files}
+                    onFilesAdd={addFiles}
+                    onFileRemove={removeFile}
+                    disabled={submitting || isRevalidating}
+                  />
+                ) : isFastMode ? (
+                  <FastComposer
+                    value={composerText}
+                    onChange={setComposerText}
+                    files={files}
+                    onFilesAdd={addFiles}
+                    onFileRemove={removeFile}
+                    disabled={submitting || isRevalidating}
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <ServiceTypeStep
+                      selected={serviceTypeId}
+                      onSelect={handleServiceTypeSelect}
+                      onUrgentRequest={(serviceId) => switchMode('fast', serviceId)}
+                      draftInfo={(() => {
+                        if (serviceTypeId) return null
+                        const entries = Object.entries(drafts).filter(([, d]) => d && d.timestamp > Date.now() - 86400000)
+                        if (entries.length === 0) return null
+                        const [draftId, draft] = entries.sort((a, b) => b[1].timestamp - a[1].timestamp)[0]
+                        const svc = SERVICE_TYPES.find(s => s.id === draftId)
+                        if (!svc) return null
+                        const mins = Math.round((Date.now() - draft.timestamp) / 60000)
+                        const timeAgo = mins < 60 ? `${mins} мин назад` : mins < 1440 ? `${Math.round(mins / 60)} ч назад` : 'вчера'
+                        return { serviceTypeId: draftId, serviceLabel: svc.label, timeAgo }
+                      })()}
+                      onContinueDraft={(id) => { handleServiceTypeSelect(id) }}
                     />
-                  </motion.div>
+                  </div>
+                )}
+              </motion.div>
+            )}
 
-                  {estimate && (
-                    <EstimateCard
-                      estimate={estimate}
-                      baseEstimate={getBaseEstimate()}
-                      loyaltyDiscount={loyaltyDiscount}
-                      activePromo={activePromo}
-                    />
-                  )}
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {step === 2 && !isFastMode && (
+              <motion.div
+                key="s2"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+              >
+                <RequirementsStep
+                  serviceTypeId={serviceTypeId}
+                  subject={subject}
+                  onSubjectChange={setSubject}
+                  topic={topic}
+                  onTopicChange={setTopic}
+                  requirements={requirements}
+                  onRequirementsChange={setRequirements}
+                  files={files}
+                  onFilesAdd={addFiles}
+                  onFileRemove={removeFile}
+                  disabled={submitting || isRevalidating}
+                />
+              </motion.div>
+            )}
+
+            {((step === 2 && isFastMode) || (step === 3 && !isFastMode)) && (
+              <motion.div
+                key={isFastMode ? 's2-fast' : 's3'}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+              >
+                <DeadlineStep
+                  selected={deadline}
+                  onSelect={handleDeadlineSelect}
+                  basePrice={SERVICE_TYPES.find(serviceItem => serviceItem.id === serviceTypeId)?.priceNum}
+                />
+
+                {!isFastMode && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      style={{ marginTop: 22 }}
+                    >
+                      <PromoCodeSection
+                        variant="inline"
+                        basePrice={getEstimateBaseAfterLoyalty() || undefined}
+                      />
+                    </motion.div>
+
+                    {estimate && (
+                      <EstimateCard
+                        estimate={estimate}
+                        baseEstimate={getBaseEstimate()}
+                        loyaltyDiscount={loyaltyDiscount}
+                        activePromo={activePromo}
+                      />
+                    )}
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Floating CTA Dock (Fallback when MainButton not available) */}

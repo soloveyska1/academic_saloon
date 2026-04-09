@@ -70,7 +70,6 @@ export const ORDER_STATUS_MAP: Record<string, OrderStatusInfo> = {
   'waiting_estimation': { label: 'Оценка', color: 'var(--text-muted)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
   'waiting_payment': { label: 'К оплате', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
   'verification_pending': { label: 'Проверка', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
-  'confirmed': { label: 'Подтверждён', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
   'paid': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
   'paid_full': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
   'in_progress': { label: 'В работе', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },

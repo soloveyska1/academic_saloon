@@ -1,0 +1,369 @@
+/* Final visual rebalance for Order and Support.
+   Loaded after styles.css so these rules win over legacy late overrides. */
+
+.screen--order .screen-header,
+.screen--support .screen-header {
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+.screen--order .screen-header p,
+.screen--support .screen-header p {
+  color: #8c734c !important;
+  max-width: 24ch;
+}
+
+.screen--order h1,
+.screen--support h1 {
+  color: #d7b56b !important;
+  -webkit-text-fill-color: #d7b56b !important;
+  background: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.screen--order .order-overview,
+.screen--order .form-card,
+.screen--order .submit-dock,
+.screen--order .order-support-inline,
+.screen--support .support-hub,
+.screen--support .support-faq-panel,
+.screen--support .support-primary-link,
+.screen--support .support-mini-link {
+  background:
+    linear-gradient(180deg, rgba(11, 10, 13, 0.985), rgba(4, 4, 6, 1)) !important;
+  border-color: rgba(162, 119, 43, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 187, 0.02),
+    0 14px 30px rgba(0, 0, 0, 0.32) !important;
+}
+
+.screen--order .order-overview::before,
+.screen--order .order-overview::after,
+.screen--support .support-hub::before,
+.screen--support .support-hub::after,
+.screen--support .support-faq-panel::before,
+.screen--support .support-faq-panel::after,
+.screen--support .support-primary-link::after {
+  content: none !important;
+  background: none !important;
+}
+
+.screen--order .order-overview {
+  padding: 13px 14px;
+  gap: 8px;
+}
+
+.screen--order .order-overview__price strong,
+.screen--order .submit-dock__price strong {
+  color: #d7b56b !important;
+}
+
+.screen--order .order-overview__badge,
+.screen--order .order-overview__chips span,
+.screen--order .order-fold__chips span {
+  background:
+    linear-gradient(180deg, rgba(17, 15, 18, 0.98), rgba(9, 8, 10, 1)) !important;
+  border-color: rgba(162, 119, 43, 0.14) !important;
+  color: #c09b5a !important;
+  box-shadow: none !important;
+}
+
+.screen--order .order-overview__lead,
+.screen--order .order-overview__sample-copy small,
+.screen--order .order-overview__sample-copy span,
+.screen--order .order-overview__utility-item span,
+.screen--order .order-contact-channel > span,
+.screen--order .order-contact-channel > small,
+.screen--order .form-card__head small,
+.screen--order .order-fold__copy small,
+.screen--order .form-card__note,
+.screen--order .choice-row__copy span,
+.screen--order .selection-card span,
+.screen--order .choice-row__aside small,
+.screen--order .range-panel__glance span,
+.screen--order .range-meta,
+.screen--order .submit-dock__price span,
+.screen--order .submit-dock__summary,
+.screen--order .order-support-inline__copy span,
+.screen--order .field-group input::placeholder,
+.screen--order .field-group textarea::placeholder,
+.screen--support .support-hub__hero p,
+.screen--support .support-primary-link p,
+.screen--support .support-primary-link__meta-line,
+.screen--support .support-mini-link__copy small,
+.screen--support .support-faq-panel__head p,
+.screen--support .support-faq-panel .support-faq__answer {
+  color: #826846 !important;
+}
+
+.screen--order .order-overview__sample {
+  padding-top: 10px;
+  border-top: 1px solid rgba(162, 119, 43, 0.08) !important;
+  gap: 8px;
+}
+
+.screen--order .order-overview__sample-copy strong,
+.screen--order .order-overview__utility-item strong,
+.screen--order .form-card__head label,
+.screen--order .form-card__section-head strong,
+.screen--order .choice-row__copy strong,
+.screen--order .selection-card strong,
+.screen--order .order-support-inline__copy strong,
+.screen--order .range-panel__glance strong,
+.screen--order .choice-row__aside strong,
+.screen--support .support-hub__hero strong,
+.screen--support .support-utility__head strong,
+.screen--support .support-primary-link__identity strong,
+.screen--support .support-mini-link__copy strong,
+.screen--support .support-faq-panel .support-faq__question {
+  color: #d0ae71 !important;
+  font-family: inherit !important;
+}
+
+.screen--order .field-group label,
+.screen--order .form-card__section-head span,
+.screen--order .order-overview__price span,
+.screen--order .order-overview__sample-copy span,
+.screen--order .order-overview__utility-item span,
+.screen--order .order-contact-channel > span {
+  color: #9c7c4d !important;
+}
+
+.screen--order .field-group input,
+.screen--order .field-group textarea,
+.screen--order .range-panel__glance div,
+.screen--order .choice-row,
+.screen--order .selection-card,
+.screen--order .secondary-action,
+.screen--order .order-contact-chip,
+.screen--order .order-support-inline__link,
+.screen--order .order-overview__utility-item {
+  background:
+    linear-gradient(180deg, rgba(13, 12, 16, 0.98), rgba(7, 7, 10, 1)) !important;
+  border-color: rgba(162, 119, 43, 0.1) !important;
+  box-shadow: none !important;
+  color: #bf9b5c !important;
+}
+
+.screen--order .field-group input,
+.screen--order .field-group textarea {
+  color: #c8aa71 !important;
+}
+
+.screen--order .field-group input:focus,
+.screen--order .field-group textarea:focus {
+  background:
+    linear-gradient(180deg, rgba(16, 14, 18, 0.99), rgba(8, 7, 10, 1)) !important;
+  border-color: rgba(198, 149, 60, 0.34) !important;
+  box-shadow:
+    0 0 0 1px rgba(198, 149, 60, 0.16),
+    0 10px 20px rgba(0, 0, 0, 0.22) !important;
+}
+
+.screen--order .submit-dock .primary-action,
+.screen--order .order-contact-chip--active,
+.screen--order .selection-card--active,
+.screen--order .choice-row--active,
+.screen--order .secondary-action--active {
+  background:
+    linear-gradient(180deg, #efcf87 0%, #d4a44a 68%, #855814 100%) !important;
+  border-color: transparent !important;
+  color: #241805 !important;
+  box-shadow:
+    0 10px 22px rgba(162, 119, 43, 0.2),
+    inset 0 1px 0 rgba(255, 241, 205, 0.32) !important;
+  animation: none !important;
+}
+
+@media (max-width: 719px) {
+  .screen--order .submit-dock {
+    position: sticky;
+    bottom: calc(98px + env(safe-area-inset-bottom));
+    z-index: 14;
+    margin-bottom: 0;
+  }
+}
+
+.screen--order .selection-card--active strong,
+.screen--order .choice-row--active .choice-row__copy strong,
+.screen--order .choice-row--active .choice-row__aside strong,
+.screen--order .secondary-action--active,
+.screen--order .order-contact-chip--active {
+  color: #241805 !important;
+}
+
+.screen--order .selection-card--active span,
+.screen--order .choice-row--active .choice-row__copy span,
+.screen--order .choice-row--active .choice-row__aside small {
+  color: rgba(36, 24, 5, 0.72) !important;
+}
+
+.screen--order .order-support-inline {
+  padding: 10px 0 0;
+  border: 0 !important;
+  border-top: 1px solid rgba(162, 119, 43, 0.08) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.screen--order .order-support-inline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.screen--order .order-support-inline__link {
+  min-height: 34px;
+  padding: 0 11px;
+}
+
+.screen--support .support-hub,
+.screen--support .support-faq-panel {
+  border-radius: 24px;
+}
+
+.screen--support .support-hub {
+  gap: 10px;
+  padding: 14px;
+}
+
+.screen--support .support-hub__hero {
+  gap: 4px;
+  max-width: none;
+}
+
+.screen--support .support-primary-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px;
+}
+
+.screen--support .support-primary-link {
+  min-height: 0;
+  padding: 12px 13px;
+  display: grid;
+  gap: 7px;
+  border-radius: 18px;
+}
+
+.screen--support .support-primary-link__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.screen--support .support-primary-link__identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.screen--support .support-primary-link__badge,
+.screen--support .support-mini-link__badge {
+  background: rgba(104, 76, 28, 0.18) !important;
+  border: 1px solid rgba(162, 119, 43, 0.18) !important;
+  color: #d8b66b !important;
+  box-shadow: none !important;
+}
+
+.screen--support .support-primary-link__badge {
+  min-width: 36px;
+  height: 21px;
+  padding: 0 8px;
+}
+
+.screen--support .support-primary-link__action,
+.screen--support .support-hub__foot-link {
+  color: #b99658 !important;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.screen--support .support-primary-link p {
+  margin: 0;
+  max-width: none;
+  font-size: 0.77rem;
+  line-height: 1.32;
+}
+
+.screen--support .support-primary-link__meta-line {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.screen--support .support-utility {
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(162, 119, 43, 0.08) !important;
+}
+
+.screen--support .support-utility__head strong {
+  font-size: 0.84rem;
+  color: #b69458 !important;
+}
+
+.screen--support .support-mini-grid {
+  gap: 7px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.screen--support .support-mini-link {
+  min-height: 60px;
+  padding: 10px 11px;
+  border-radius: 15px;
+}
+
+.screen--support .support-mini-link__copy strong {
+  font-size: 0.81rem;
+}
+
+.screen--support .support-mini-link__copy small {
+  font-size: 0.72rem;
+}
+
+.screen--support .support-hub__foot {
+  padding-top: 7px;
+  border-top: 1px solid rgba(162, 119, 43, 0.08) !important;
+}
+
+.screen--support .support-hub__foot-link {
+  min-height: 32px;
+  gap: 7px;
+  text-decoration: none;
+}
+
+.screen--support .support-faq-panel {
+  gap: 8px;
+  padding: 13px 14px;
+}
+
+.screen--support .support-faq-panel .support-faq__item {
+  background:
+    linear-gradient(180deg, rgba(12, 11, 15, 0.96), rgba(6, 6, 8, 1)) !important;
+  border-color: rgba(162, 119, 43, 0.08) !important;
+  box-shadow: none !important;
+  padding: 0 13px;
+}
+
+.screen--support .support-faq-panel .support-faq__item--open {
+  border-color: rgba(162, 119, 43, 0.16) !important;
+}
+
+.screen--support .support-faq-panel .support-faq__question {
+  font-size: 0.82rem;
+}
+
+.screen--support .support-faq-panel .support-faq__answer {
+  font-size: 0.74rem;
+  line-height: 1.36;
+}
+
+@media (min-width: 720px) {
+  .screen--support .support-primary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

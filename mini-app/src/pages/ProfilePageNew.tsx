@@ -25,6 +25,8 @@ import { BonusWallet } from '../components/profile/BonusWallet'
 import { ReferralCard } from '../components/profile/ReferralCard'
 import { ProfileFooter } from '../components/profile/ProfileFooter'
 import { getActionableOrder, getPrimaryOrderPath, toSafeNumber } from '../components/profile/profileHelpers'
+import s from './ProfilePage.module.css'
+import ps from '../styles/PremiumPageSystem.module.css'
 
 interface Props {
   user: UserData | null
@@ -161,9 +163,9 @@ export function ProfilePageNew({ user }: Props) {
   /* ═══════ Guard ═══════ */
 
   if (!user) return (
-    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+    <div className="page-full-width saloon-page-shell saloon-page-shell--workspace">
       <div className="page-background"><PremiumBackground /></div>
-      <div className="page-content" style={{ padding: '20px 20px 120px' }}>
+      <div className="page-content saloon-page-content saloon-page-content--wide" style={{ padding: '20px 20px 120px' }}>
         <SkeletonProfileHeader />
         <div style={{ marginBottom: 16 }}><SkeletonStatsGrid /></div>
         <div style={{ marginBottom: 16 }}><SkeletonCard /></div>
@@ -175,69 +177,79 @@ export function ProfilePageNew({ user }: Props) {
   /* ═══════ Render ═══════ */
 
   return (
-    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+    <div className="page-full-width saloon-page-shell saloon-page-shell--workspace">
       <div className="page-background">
         <PremiumBackground />
       </div>
 
-      <div className="page-content">
-        {/* 1. Hero — avatar + name + rank badge */}
-        <ProfileHero
-          user={user}
-          userPhoto={tgUser?.photo_url}
-          isAdmin={isAdmin}
-          onAdminAccess={handleAdminAccess}
-        />
+      <div className="page-content saloon-page-content saloon-page-content--wide">
+        <div className={ps.sectionStack}>
+          <section className={`${ps.hero} ${ps.heroWorkspace}`}>
+            <div className={ps.heroGrid}>
+              <div className={ps.heroCopy}>
+                <ProfileHero
+                  user={user}
+                  userPhoto={tgUser?.photo_url}
+                  isAdmin={isAdmin}
+                  onAdminAccess={handleAdminAccess}
+                />
 
-        {/* 2. Actionable Order Banner (conditional) */}
-        {actionableOrder && (
-          <ActionableOrderBanner
-            order={actionableOrder}
-            onClick={handleOpenActionableOrder}
-          />
-        )}
+                {actionableOrder && (
+                  <ActionableOrderBanner
+                    order={actionableOrder}
+                    onClick={handleOpenActionableOrder}
+                  />
+                )}
+              </div>
 
-        {/* 3. Quick Actions Row */}
-        <ProfileQuickActions
-          ordersCount={user.orders_count}
-          onOpenOrders={handleOpenOrders}
-          onOpenSupport={handleOpenSupport}
-          onOpenClub={handleOpenClub}
-        />
+              <div className={ps.heroAside}>
+                <StatusCard user={user} />
+                <div className={`${ps.surface} ${s.sidePanel}`}>
+                  <ProfileQuickActions
+                    ordersCount={user.orders_count}
+                    onOpenOrders={handleOpenOrders}
+                    onOpenSupport={handleOpenSupport}
+                    onOpenClub={handleOpenClub}
+                  />
+                </div>
+                <div className={`${ps.surface} ${s.themePanel}`}>
+                  <ThemeToggle variant="card" />
+                </div>
+              </div>
+            </div>
+          </section>
 
-        {/* 4. Status & Membership */}
-        <StatusCard user={user} />
+          <div className={s.pageGrid}>
+            <div className={s.primaryColumn}>
+              <BonusWallet
+                user={user}
+                onOpenTransactions={handleOpenTransactions}
+              />
 
-        {/* 4.5. Theme Toggle */}
-        <div style={{ marginBottom: 16 }}>
-          <ThemeToggle variant="card" />
+              <ReferralCard
+                referralCode={user.referral_code}
+                referralsCount={user.referrals_count}
+                referralEarnings={user.referral_earnings}
+                referralPercent={user.referral_percent}
+                referralRefsToNext={user.referral_refs_to_next}
+                inviteLink={inviteLink}
+                onCopy={handleCopyReferral}
+                onShare={handleShareReferral}
+                onOpenQR={handleOpenQR}
+                onOpenProgram={handleOpenClub}
+              />
+            </div>
+
+            <div className={s.secondaryColumn}>
+              <div className={`${ps.surface} ${s.footerPanel}`}>
+                <ProfileFooter
+                  onOpenSupport={handleOpenSupport}
+                  onOpenLegalHub={handleOpenLegalHub}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* 5. Bonus Wallet */}
-        <BonusWallet
-          user={user}
-          onOpenTransactions={handleOpenTransactions}
-        />
-
-        {/* 6. Referral Program */}
-        <ReferralCard
-          referralCode={user.referral_code}
-          referralsCount={user.referrals_count}
-          referralEarnings={user.referral_earnings}
-          referralPercent={user.referral_percent}
-          referralRefsToNext={user.referral_refs_to_next}
-          inviteLink={inviteLink}
-          onCopy={handleCopyReferral}
-          onShare={handleShareReferral}
-          onOpenQR={handleOpenQR}
-          onOpenProgram={handleOpenClub}
-        />
-
-        {/* 7. Footer */}
-        <ProfileFooter
-          onOpenSupport={handleOpenSupport}
-          onOpenLegalHub={handleOpenLegalHub}
-        />
       </div>
 
       {/* Modals */}

@@ -43,6 +43,8 @@ export const GodShell = memo(function GodShell({
   activeTab, onTabChange, soundEnabled, onToggleSound,
   simulateNewUser, onToggleSimulate, unreadCount, onBack, children,
 }: GodShellProps) {
+  const activeTabLabel = TABS.find((tab) => tab.id === activeTab)?.label || 'Центр'
+
   return (
     <div className={s.adminPage}>
       <div className={s.stickyHeader}>
@@ -51,7 +53,10 @@ export const GodShell = memo(function GodShell({
           <div className={s.topBarLogo}>
             <Crown size={16} color="#121212" strokeWidth={2.5} />
           </div>
-          <div className={s.topBarTitle}>God Mode</div>
+          <div className={s.topBarTitleWrap}>
+            <div className={s.topBarTitle}>God Mode</div>
+            <div className={s.topBarSubtitle}>{activeTabLabel}</div>
+          </div>
           <div className={s.topBarActions}>
             <button type="button" className={soundEnabled ? s.topBarBtnActive : s.topBarBtn} onClick={onToggleSound}>
               {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}

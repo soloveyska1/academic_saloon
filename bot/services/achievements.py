@@ -458,6 +458,7 @@ async def sync_user_achievements(
     *,
     bot: Bot | None = None,
     notify: bool = False,
+    auto_commit: bool = True,
 ) -> list[dict[str, Any]]:
     user = await _load_user(session, telegram_id)
     if user is None:
@@ -500,9 +501,11 @@ async def sync_user_achievements(
             )
 
     if new_rows:
-        await session.commit()
+        await session.flush()
         for row in new_rows:
             await session.refresh(row)
+        if auto_commit:
+            await session.commit()
 
     owner_percentages = await _get_owner_percentages(session)
     payload = _serialize_achievements(context, unlocks, owner_percentages)

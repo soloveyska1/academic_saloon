@@ -7,8 +7,13 @@ import {
   Users,
   Wallet2,
 } from 'lucide-react'
-import { Order, OrderStatus, Transaction } from '../../types'
+import { Order, OrderDeliveryBatch, OrderRevisionRound, Transaction } from '../../types'
 import { getDisplayName } from '../../lib/ranks'
+import {
+  canonicalizeOrderStatusAlias,
+  getOpenRevisionRound,
+  isAwaitingPaymentStatus,
+} from '../../lib/orderView'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONSTANTS
@@ -23,13 +28,6 @@ export interface OrderActionMeta {
 }
 
 export const ACTIONABLE_ORDER_META: Record<string, OrderActionMeta> = {
-  confirmed: {
-    title: 'Завершить оплату',
-    description: 'После оплаты команда сразу запускает заказ в работу.',
-    button: 'Оплатить',
-    color: '#d4af37',
-    icon: CreditCard,
-  },
   waiting_payment: {
     title: 'Завершить оплату',
     description: 'После оплаты команда сразу запускает заказ в работу.',
@@ -200,20 +198,65 @@ export function getOrderDisplayTitle(order: Order) {
   return order.topic?.trim() || order.subject?.trim() || order.work_type_label || `Заказ #${order.id}`
 }
 
+export function getLatestDelivery(order: Order): OrderDeliveryBatch | null {
+  return order.latest_delivery || order.delivery_history?.[0] || null
+}
+
+export function getCurrentRevisionRound(order: Order): OrderRevisionRound | null {
+  return getOpenRevisionRound(order)
+}
+
+export function getEffectiveProfileOrderStatus(order: Order): string {
+  if (getCurrentRevisionRound(order)) return 'revision'
+  return canonicalizeOrderStatusAlias(order.status) ?? order.status
+}
+
+export function getActionableOrderMeta(order: Order): OrderActionMeta | null {
+  const effectiveStatus = getEffectiveProfileOrderStatus(order)
+  const baseMeta = ACTIONABLE_ORDER_META[effectiveStatus]
+  if (!baseMeta) return null
+
+  const currentRound = getCurrentRevisionRound(order)
+  const latestDelivery = getLatestDelivery(order)
+
+  if (currentRound) {
+    return {
+      ...baseMeta,
+      title: currentRound.round_number ? `Правка #${currentRound.round_number} в работе` : baseMeta.title,
+      description: 'Можно открыть заказ, добавить комментарий и дослать материалы в текущую итерацию.',
+      button: 'Открыть правку',
+    }
+  }
+
+  if (effectiveStatus === 'review' && latestDelivery?.version_number) {
+    return {
+      ...baseMeta,
+      title: `Проверить версию ${latestDelivery.version_number}`,
+      description: 'Откройте заказ, чтобы посмотреть новую версию и решить следующий шаг.',
+      button: `Проверить v${latestDelivery.version_number}`,
+    }
+  }
+
+  return baseMeta
+}
+
 export function getRemainingAmount(order: Order) {
   return Math.max((order.final_price || order.price || 0) - (order.paid_amount || 0), 0)
 }
 
 export function getPrimaryOrderPath(order: Order) {
-  if (order.status === 'confirmed' || order.status === 'waiting_payment') {
+  const effectiveStatus = getEffectiveProfileOrderStatus(order)
+  if (effectiveStatus === 'revision') {
+    return `/order/${order.id}?focus=revision`
+  }
+  if (isAwaitingPaymentStatus(order.status)) {
     return `/order/${order.id}?action=pay`
   }
   return `/order/${order.id}`
 }
 
 export function getActionableOrder(orders: Order[]): Order | null {
-  const priorityMap: Record<OrderStatus, number> = {
-    confirmed: 1,
+  const priorityMap: Record<string, number> = {
     waiting_payment: 1,
     review: 2,
     revision: 3,
@@ -232,10 +275,12 @@ export function getActionableOrder(orders: Order[]): Order | null {
 
   return (
     [...orders]
-      .filter((order) => Boolean(ACTIONABLE_ORDER_META[order.status]))
+      .filter((order) => Boolean(getActionableOrderMeta(order)))
       .sort((a, b) => {
-        const aPriority = priorityMap[a.status]
-        const bPriority = priorityMap[b.status]
+        const aStatus = getEffectiveProfileOrderStatus(a)
+        const bStatus = getEffectiveProfileOrderStatus(b)
+        const aPriority = priorityMap[aStatus] ?? 99
+        const bPriority = priorityMap[bStatus] ?? 99
         if (aPriority !== bPriority) return aPriority - bPriority
         const aDeadline = getDaysUntilDeadline(a.deadline) ?? 999
         const bDeadline = getDaysUntilDeadline(b.deadline) ?? 999

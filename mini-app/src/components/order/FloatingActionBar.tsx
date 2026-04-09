@@ -4,6 +4,11 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
+import {
+  getEffectiveOrderStatus,
+  getLatestDeliveryBatch,
+  getOpenRevisionRound,
+} from '../../lib/orderView'
 
 interface FloatingActionBarProps {
   order: Order
@@ -35,7 +40,11 @@ function getActionsForStatus(
   order: Order,
   props: FloatingActionBarProps
 ): ActionButton[] {
+  const canonicalStatus = (getEffectiveOrderStatus(order) ?? status) as OrderStatus
   const actions: ActionButton[] = []
+  const latestDelivery = getLatestDeliveryBatch(order)
+  const currentRound = getOpenRevisionRound(order)
+  const downloadLabel = latestDelivery?.version_number ? `Скачать v${latestDelivery.version_number}` : 'Скачать'
 
   // Chat is always available
   // REMOVED at user request: Chat button is redundant as there is an inline chat interface
@@ -54,9 +63,8 @@ function getActionsForStatus(
 
   // Status-specific actions
   // NOTE: Payment button removed - GoldenInvoice has the payment CTA directly on the page
-  switch (status) {
+  switch (canonicalStatus) {
     case 'waiting_payment':
-    case 'confirmed':
       // Кнопка оплаты убрана - GoldenInvoice виден на странице с кнопкой "Я оплатил"
       break
 
@@ -65,7 +73,7 @@ function getActionsForStatus(
         actions.unshift({
           id: 'files',
           icon: Download,
-          label: 'Скачать',
+          label: downloadLabel,
           color: '#8b5cf6',
           bgColor: 'rgba(139, 92, 246, 0.15)',
           borderColor: 'rgba(139, 92, 246, 0.3)',
@@ -93,6 +101,43 @@ function getActionsForStatus(
           bgColor: 'rgba(245, 158, 11, 0.15)',
           borderColor: 'rgba(245, 158, 11, 0.3)',
           onClick: props.onRevisionClick,
+        })
+      }
+      break
+
+    case 'revision':
+      if (order.files_url && props.onFilesClick) {
+        actions.unshift({
+          id: 'files',
+          icon: Download,
+          label: downloadLabel,
+          color: '#8b5cf6',
+          bgColor: 'rgba(139, 92, 246, 0.15)',
+          borderColor: 'rgba(139, 92, 246, 0.3)',
+          onClick: props.onFilesClick,
+        })
+      }
+      if (props.onRevisionClick) {
+        actions.unshift({
+          id: 'revision',
+          icon: PenTool,
+          label: currentRound?.round_number ? `Правка #${currentRound.round_number}` : 'Комментарий',
+          color: '#f59e0b',
+          bgColor: 'rgba(245, 158, 11, 0.15)',
+          borderColor: 'rgba(245, 158, 11, 0.3)',
+          onClick: props.onRevisionClick,
+          primary: true,
+        })
+      }
+      if (props.onChatClick) {
+        actions.push({
+          id: 'chat',
+          icon: MessageCircle,
+          label: 'Чат',
+          color: '#3b82f6',
+          bgColor: 'rgba(59, 130, 246, 0.15)',
+          borderColor: 'rgba(59, 130, 246, 0.3)',
+          onClick: props.onChatClick,
         })
       }
       break
@@ -146,10 +191,11 @@ function getActionsForStatus(
 
 export function FloatingActionBar(props: FloatingActionBarProps) {
   const { order, unreadMessages: _unreadMessages } = props
-  const actions = getActionsForStatus(order.status, order, props)
+  const canonicalStatus = (getEffectiveOrderStatus(order) ?? order.status) as OrderStatus
+  const actions = getActionsForStatus(canonicalStatus, order, props)
 
   // Don't show for cancelled orders
-  if (['cancelled', 'rejected'].includes(order.status)) {
+  if (['cancelled', 'rejected'].includes(canonicalStatus)) {
     return null
   }
 

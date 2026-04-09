@@ -21,7 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from database.models.orders import (
-    Order, OrderStatus, Conversation, ConversationType, WORK_TYPE_LABELS, WorkType
+    Order, OrderStatus, Conversation, ConversationType, WORK_TYPE_LABELS, WorkType,
+    canonicalize_order_status,
 )
 from database.models.users import User
 from bot.services.order_message_formatter import build_admin_topic_header_text
@@ -59,7 +60,6 @@ STATUS_EMOJI = {
     OrderStatus.WAITING_ESTIMATION.value: "🔴",
     OrderStatus.DRAFT.value: "🔴",
     OrderStatus.WAITING_PAYMENT.value: "🟡",
-    OrderStatus.CONFIRMED.value: "🟡",
     OrderStatus.VERIFICATION_PENDING.value: "🟠",
     OrderStatus.PAID.value: "🔵",
     OrderStatus.PAID_FULL.value: "🔵",
@@ -259,7 +259,7 @@ async def create_order_topic(
         client_username = None
 
     # Формируем имя топика
-    status_emoji = STATUS_EMOJI.get(order.status, "🔴")
+    status_emoji = STATUS_EMOJI.get(canonicalize_order_status(order.status) or order.status, "🔴")
     topic_name = f"{status_emoji} [#{order.id}] {client_name}"[:128]
 
     # Создаём топик
@@ -359,7 +359,7 @@ async def post_to_feed(
         return
 
     # Формируем мини-карточку (поддерживаем и Telegram User и DB User)
-    status_emoji = STATUS_EMOJI.get(order.status, "🔴")
+    status_emoji = STATUS_EMOJI.get(canonicalize_order_status(order.status) or order.status, "🔴")
     client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or f"ID:{order.user_id}" if user else f"ID:{order.user_id}"
     client_username = getattr(user, 'username', None) if user else None
     username = f"@{client_username}" if client_username else ""
@@ -424,7 +424,7 @@ async def update_topic_name(
         return
 
     # Формируем новое имя
-    status_emoji = STATUS_EMOJI.get(order.status, "🔴")
+    status_emoji = STATUS_EMOJI.get(canonicalize_order_status(order.status) or order.status, "🔴")
 
     if not user:
         user_query = select(User).where(User.telegram_id == order.user_id)

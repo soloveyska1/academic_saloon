@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 WebSocket handler for real-time updates to Mini App clients
 """
@@ -115,6 +117,9 @@ async def websocket_endpoint(
     - order_update: Order status changed
     - balance_update: User balance changed
     - notification: General notification
+    - revision_round_opened: Client opened a new revision round
+    - revision_round_updated: Client added details to an open revision round
+    - revision_round_fulfilled: Manager closed revision round with a new version
     - ping: Keep-alive ping
     """
     # Authenticate via initData
@@ -315,6 +320,8 @@ async def notify_admin_payment_pending(
     amount: float,
     payment_method: str,
     payment_phase: str = "initial",
+    work_type_label: Optional[str] = None,
+    subject: Optional[str] = None,
 ):
     """
     Notify admins when a payment is pending verification.
@@ -326,6 +333,8 @@ async def notify_admin_payment_pending(
         "amount": amount,
         "payment_method": payment_method,
         "payment_phase": payment_phase,
+        "work_type_label": work_type_label,
+        "subject": subject,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     sent_to = []
@@ -334,6 +343,37 @@ async def notify_admin_payment_pending(
             sent_to.append(admin_id)
     if sent_to:
         logger.info(f"[WS Admin] Notified admins about payment pending for order #{order_id}")
+    return len(sent_to) > 0
+
+
+async def notify_admin_batch_payment_pending(
+    *,
+    user_fullname: str,
+    user_username: Optional[str],
+    payment_method: str,
+    payment_scheme: str,
+    processed_orders: list[dict],
+    total_amount: float,
+) -> bool:
+    message = {
+        "type": "admin_payment_pending",
+        "is_batch": True,
+        "user_fullname": user_fullname,
+        "user_username": user_username,
+        "payment_method": payment_method,
+        "payment_scheme": payment_scheme,
+        "orders_count": len(processed_orders),
+        "total_amount": total_amount,
+        "orders": processed_orders,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    sent_to = []
+    for admin_id in _admin_ids:
+        if await manager.send_to_user(admin_id, message):
+            sent_to.append(admin_id)
+    if sent_to:
+        logger.info("[WS Admin] Notified admins about batch payment pending: %s orders", len(processed_orders))
     return len(sent_to) > 0
 
 async def notify_admin_event(event_type: str, data: dict):
@@ -372,4 +412,145 @@ async def notify_file_delivery(telegram_id: int, order_id: int, file_count: int,
     success = await manager.send_to_user(telegram_id, message)
     if success:
         logger.info(f"[WS] Notified user {telegram_id} about file delivery for order #{order_id}")
+    return success
+
+
+async def notify_delivery_update(
+    telegram_id: int,
+    order_id: int,
+    delivery_batch_id: int,
+    version_number: int,
+    revision_count_snapshot: int,
+    manager_comment: str | None,
+    file_count: int,
+    files_url: str,
+    *,
+    title: str | None = None,
+    message: str | None = None,
+):
+    ws_message = {
+        "type": "delivery_update",
+        "order_id": order_id,
+        "delivery_batch_id": delivery_batch_id,
+        "version_number": version_number,
+        "revision_count_snapshot": revision_count_snapshot,
+        "manager_comment": manager_comment,
+        "file_count": file_count,
+        "files_url": files_url,
+        "title": title or "Исправленная версия готова",
+        "message": message or f"Версия {version_number} по заказу #{order_id} отправлена",
+        "icon": "download",
+        "color": "#22c55e",
+        "priority": "high",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    success = await manager.send_to_user(telegram_id, ws_message)
+    if success:
+        logger.info(
+            "[WS] Notified user %s about delivery update v%s for order #%s",
+            telegram_id,
+            version_number,
+            order_id,
+        )
+    return success
+
+
+async def notify_revision_round_opened(
+    telegram_id: int,
+    order_id: int,
+    revision_round_id: int,
+    round_number: int,
+    *,
+    initial_comment: str | None = None,
+):
+    message = {
+        "type": "revision_round_opened",
+        "order_id": order_id,
+        "revision_round_id": revision_round_id,
+        "round_number": round_number,
+        "initial_comment": initial_comment,
+        "title": f"Правка #{round_number} открыта",
+        "message": f"Комментарий по заказу #{order_id} отправлен и ждёт следующую версию.",
+        "icon": "edit",
+        "color": "#f59e0b",
+        "priority": "low",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    success = await manager.send_to_user(telegram_id, message)
+    if success:
+        logger.info(
+            "[WS] Notified user %s about opened revision round #%s for order #%s",
+            telegram_id,
+            round_number,
+            order_id,
+        )
+    return success
+
+
+async def notify_revision_round_updated(
+    telegram_id: int,
+    order_id: int,
+    revision_round_id: int,
+    round_number: int,
+    *,
+    latest_comment: str | None = None,
+):
+    message = {
+        "type": "revision_round_updated",
+        "order_id": order_id,
+        "revision_round_id": revision_round_id,
+        "round_number": round_number,
+        "latest_comment": latest_comment,
+        "title": f"Правка #{round_number} обновлена",
+        "message": f"Материалы к правке по заказу #{order_id} обновлены.",
+        "icon": "edit",
+        "color": "#f59e0b",
+        "priority": "low",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    success = await manager.send_to_user(telegram_id, message)
+    if success:
+        logger.info(
+            "[WS] Notified user %s about updated revision round #%s for order #%s",
+            telegram_id,
+            round_number,
+            order_id,
+        )
+    return success
+
+
+async def notify_revision_round_fulfilled(
+    telegram_id: int,
+    order_id: int,
+    revision_round_id: int,
+    round_number: int,
+    *,
+    delivery_batch_id: int | None = None,
+    version_number: int | None = None,
+):
+    message = {
+        "type": "revision_round_fulfilled",
+        "order_id": order_id,
+        "revision_round_id": revision_round_id,
+        "round_number": round_number,
+        "delivery_batch_id": delivery_batch_id,
+        "version_number": version_number,
+        "title": f"Правка #{round_number} закрыта новой версией",
+        "message": (
+            f"По заказу #{order_id} отправлена "
+            f"{f'версия {version_number}' if version_number else 'новая версия'}."
+        ),
+        "icon": "check-circle",
+        "color": "#22c55e",
+        "priority": "low",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    success = await manager.send_to_user(telegram_id, message)
+    if success:
+        logger.info(
+            "[WS] Notified user %s about fulfilled revision round #%s for order #%s",
+            telegram_id,
+            round_number,
+            order_id,
+        )
     return success

@@ -5,7 +5,7 @@ import html
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +26,102 @@ from bot.bot_instance import get_bot
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Chat"])
+
+CHAT_PREVIEW_LIMIT = 100
+
+
+def _build_chat_preview(
+    *,
+    text: str | None = None,
+    file_type: str | None = None,
+    file_name: str | None = None,
+) -> str:
+    if text:
+        return text.strip()[:CHAT_PREVIEW_LIMIT]
+    if file_type == "voice":
+        return "🎤 Голосовое сообщение"
+    if file_type == "photo":
+        return f"🖼️ {file_name}"[:CHAT_PREVIEW_LIMIT] if file_name else "🖼️ Фото"
+    if file_type == "video":
+        return f"🎬 {file_name}"[:CHAT_PREVIEW_LIMIT] if file_name else "🎬 Видео"
+    if file_name:
+        return f"📎 {file_name}"[:CHAT_PREVIEW_LIMIT]
+    return "📎 Файл"
+
+
+async def _sync_client_conversation(
+    *,
+    session: AsyncSession,
+    bot,
+    user_id: int,
+    order_id: int,
+    conv_type: str,
+    preview_text: str,
+    order: Order | None = None,
+    user: User | None = None,
+) -> int | None:
+    from bot.handlers.order_chat import get_or_create_topic, maybe_refresh_topic_header, update_conversation
+
+    conv, topic_id = await get_or_create_topic(
+        bot,
+        session,
+        user_id,
+        order_id,
+        conv_type,
+    )
+    await update_conversation(
+        session,
+        conv,
+        last_message=preview_text,
+        sender=MessageSender.CLIENT.value,
+        increment_unread=True,
+    )
+
+    if conv_type == ConversationType.ORDER_CHAT.value:
+        current_order = order or await session.get(Order, order_id)
+        current_user = user
+        if current_order is not None and current_user is None:
+            user_result = await session.execute(select(User).where(User.telegram_id == user_id))
+            current_user = user_result.scalar_one_or_none()
+        if current_order is not None:
+            await maybe_refresh_topic_header(bot, session, conv, current_order, current_user)
+    return topic_id
+
+
+async def _backup_order_chat_history(
+    *,
+    session: AsyncSession,
+    order: Order,
+    user: User | None,
+) -> None:
+    from bot.handlers.order_chat import backup_chat_to_yadisk
+
+    await backup_chat_to_yadisk(
+        order=order,
+        client_name=user.fullname if user and user.fullname else "Client",
+        telegram_id=order.user_id,
+        session=session,
+        client_username=user.username if user else None,
+    )
+
+
+async def _bind_client_revision_round(
+    *,
+    session: AsyncSession,
+    order: Order,
+    user_id: int,
+    latest_comment: str | None = None,
+):
+    from bot.services.order_revision_round_service import bind_order_to_revision_round
+
+    binding = await bind_order_to_revision_round(
+        session,
+        order,
+        requested_by_user_id=user_id,
+        initial_comment=latest_comment,
+        create_if_missing=order.status == OrderStatus.REVISION.value,
+    )
+    return binding.revision_round if binding else None
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  ORDER CHAT
@@ -85,28 +181,46 @@ async def send_order_message(
     if not order or order.user_id != tg_user.id:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    text = data.text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Empty message")
+    text = data.text
 
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
+    revision_round = await _bind_client_revision_round(
+        session=session,
+        order=order,
+        user_id=tg_user.id,
+        latest_comment=text,
+    )
 
     message = OrderMessage(
         order_id=order_id, sender_type='client', sender_id=tg_user.id,
-        message_text=text, is_read=False,
+        message_text=text, revision_round_id=revision_round.id if revision_round else None, is_read=False,
     )
     session.add(message)
     await session.commit()
     await session.refresh(message)
+    await _backup_order_chat_history(session=session, order=order, user=user)
 
     try:
         bot = get_bot()
-        from bot.handlers.order_chat import get_or_create_topic
-        conv, topic_id = await get_or_create_topic(bot, session, tg_user.id, order_id)
+        topic_id = await _sync_client_conversation(
+            session=session,
+            bot=bot,
+            user_id=tg_user.id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+            preview_text=_build_chat_preview(text=text),
+            order=order,
+            user=user,
+        )
         if topic_id:
             user_name = html.escape(user.fullname if user else tg_user.first_name)
-            admin_text = f"💬 <b>Сообщение от клиента</b> (Mini App)\n👤 {user_name}\n\n{html.escape(text)}"
+            revision_label = (
+                f"\n✏️ Правка #{int(revision_round.round_number or 0)}"
+                if revision_round is not None
+                else ""
+            )
+            admin_text = f"💬 <b>Сообщение от клиента</b> (Mini App)\n👤 {user_name}{revision_label}\n\n{html.escape(text)}"
             await bot.send_message(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, text=admin_text)
     except Exception as e:
         logger.error(f"Chat Send Error: {e}")
@@ -127,6 +241,11 @@ async def upload_chat_file(
 
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
+    revision_round = await _bind_client_revision_round(
+        session=session,
+        order=order,
+        user_id=tg_user.id,
+    )
 
     content = await file.read()
     if len(content) > 20 * 1024 * 1024:
@@ -141,27 +260,55 @@ async def upload_chat_file(
     else: file_type = "document"
 
     file_url = None
+    folder_url = None
     if yandex_disk_service.is_available:
         result = await yandex_disk_service.upload_chat_file(
-            content, filename, order_id, user.fullname if user else "Client", tg_user.id
+            content,
+            filename,
+            order_id,
+            user.fullname if user else "Client",
+            tg_user.id,
+            work_type=order.work_type,
+            client_username=user.username if user else None,
+            order_meta=yandex_disk_service.build_order_meta(order),
         )
-        if result.success: file_url = result.public_url
+        if result.success:
+            file_url = result.public_url
+            folder_url = result.folder_url
 
     message = OrderMessage(
         order_id=order_id, sender_type='client', sender_id=tg_user.id,
-        file_type=file_type, file_name=filename, yadisk_url=file_url, is_read=False,
+        file_type=file_type, file_name=filename, yadisk_url=file_url,
+        revision_round_id=revision_round.id if revision_round else None,
+        is_read=False,
     )
     session.add(message)
+    if folder_url and order.files_url != folder_url:
+        order.files_url = folder_url
     await session.commit()
     await session.refresh(message)
+    await _backup_order_chat_history(session=session, order=order, user=user)
 
     try:
         bot = get_bot()
-        from bot.handlers.order_chat import get_or_create_topic
-        conv, topic_id = await get_or_create_topic(bot, session, tg_user.id, order_id)
+        topic_id = await _sync_client_conversation(
+            session=session,
+            bot=bot,
+            user_id=tg_user.id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+            preview_text=_build_chat_preview(file_type=file_type, file_name=filename),
+            order=order,
+            user=user,
+        )
         if topic_id:
             user_name = html.escape(user.fullname if user else tg_user.first_name)
-            caption = f"📎 <b>Файл от клиента</b>\n👤 {user_name}\n📁 {html.escape(filename)}"
+            revision_label = (
+                f"\n✏️ Правка #{int(revision_round.round_number or 0)}"
+                if revision_round is not None
+                else ""
+            )
+            caption = f"📎 <b>Файл от клиента</b>\n👤 {user_name}{revision_label}\n📁 {html.escape(filename)}"
             if file_url: caption += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
             
             input_file = BufferedInputFile(content, filename=filename)
@@ -186,6 +333,11 @@ async def upload_voice_message(
         
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
+    revision_round = await _bind_client_revision_round(
+        session=session,
+        order=order,
+        user_id=tg_user.id,
+    )
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
@@ -195,25 +347,55 @@ async def upload_voice_message(
     filename = f"voice_{timestamp}.ogg"
 
     file_url = None
+    folder_url = None
     if yandex_disk_service.is_available:
-        result = await yandex_disk_service.upload_chat_file(content, filename, order_id, user.fullname if user else "Client", tg_user.id)
-        if result.success: file_url = result.public_url
+        result = await yandex_disk_service.upload_chat_file(
+            content,
+            filename,
+            order_id,
+            user.fullname if user else "Client",
+            tg_user.id,
+            work_type=order.work_type,
+            client_username=user.username if user else None,
+            order_meta=yandex_disk_service.build_order_meta(order),
+        )
+        if result.success:
+            file_url = result.public_url
+            folder_url = result.folder_url
 
     message = OrderMessage(
         order_id=order_id, sender_type='client', sender_id=tg_user.id,
-        file_type='voice', file_name=filename, yadisk_url=file_url, is_read=False,
+        file_type='voice', file_name=filename, yadisk_url=file_url,
+        revision_round_id=revision_round.id if revision_round else None,
+        is_read=False,
     )
     session.add(message)
+    if folder_url and order.files_url != folder_url:
+        order.files_url = folder_url
     await session.commit()
     await session.refresh(message)
+    await _backup_order_chat_history(session=session, order=order, user=user)
 
     try:
         bot = get_bot()
-        from bot.handlers.order_chat import get_or_create_topic
-        conv, topic_id = await get_or_create_topic(bot, session, tg_user.id, order_id)
+        topic_id = await _sync_client_conversation(
+            session=session,
+            bot=bot,
+            user_id=tg_user.id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+            preview_text=_build_chat_preview(file_type='voice'),
+            order=order,
+            user=user,
+        )
         if topic_id:
             user_name = html.escape(user.fullname if user else tg_user.first_name)
-            caption = f"🎤 <b>Голосовое от клиента</b>\n👤 {user_name}"
+            revision_label = (
+                f"\n✏️ Правка #{int(revision_round.round_number or 0)}"
+                if revision_round is not None
+                else ""
+            )
+            caption = f"🎤 <b>Голосовое от клиента</b>\n👤 {user_name}{revision_label}"
             if file_url: caption += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
             
             input_file = BufferedInputFile(content, filename=filename)
@@ -305,14 +487,11 @@ async def get_support_messages(
 
 @router.post("/support/messages", response_model=SendMessageResponse)
 async def send_support_message(
-    request: Request,
+    data: SendMessageRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    data = await request.json()
-    text = data.get("text")
-    if not text:
-        raise HTTPException(status_code=400, detail="Text required")
+    text = data.text
 
     result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = result.scalar_one_or_none()
@@ -329,12 +508,17 @@ async def send_support_message(
     await session.refresh(message)
 
     try:
-        from bot.handlers.order_chat import get_or_create_topic, update_conversation
         bot = get_bot()
-        conv, topic_id = await get_or_create_topic(bot, session, user.telegram_id, order.id, ConversationType.SUPPORT.value)
-        
+        topic_id = await _sync_client_conversation(
+            session=session,
+            bot=bot,
+            user_id=user.telegram_id,
+            order_id=order.id,
+            conv_type=ConversationType.SUPPORT.value,
+            preview_text=_build_chat_preview(text=text),
+        )
+
         await bot.send_message(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, text=f"✉️ <b>Сообщение от клиента:</b>\n{html.escape(text)}", parse_mode="HTML")
-        await update_conversation(session, conv, last_message=text[:100], sender=MessageSender.CLIENT.value, increment_unread=True)
     except Exception as e:
         logger.error(f"Support Notify Error: {e}")
 
