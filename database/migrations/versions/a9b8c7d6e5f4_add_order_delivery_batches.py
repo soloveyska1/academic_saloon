@@ -198,22 +198,37 @@ def upgrade() -> None:
                 ),
                 None,
             )
-            insert_result = bind.execute(
-                delivery_batches.insert().values(
-                    order_id=order_id,
-                    status="sent",
-                    version_number=version_number,
-                    revision_count_snapshot=min(max(version_number - 1, 0), revision_count),
-                    manager_comment=manager_comment,
-                    source="legacy_backfill",
-                    files_url=order_row.files_url if order_row else None,
-                    file_count=len(group),
-                    file_manifest=[_build_manifest_item(row) for row in group],
-                    created_at=created_at,
-                    sent_at=sent_at,
-                )
-            )
-            batch_id = insert_result.inserted_primary_key[0]
+            insert_values = {
+                "order_id": order_id,
+                "status": "sent",
+                "version_number": version_number,
+                "revision_count_snapshot": min(max(version_number - 1, 0), revision_count),
+                "manager_comment": manager_comment,
+                "source": "legacy_backfill",
+                "files_url": order_row.files_url if order_row else None,
+                "file_count": len(group),
+                "file_manifest": [_build_manifest_item(row) for row in group],
+                "created_at": created_at,
+                "sent_at": sent_at,
+            }
+            insert_stmt = delivery_batches.insert().values(**insert_values)
+            if bind.dialect.name == "postgresql":
+                batch_id = bind.execute(
+                    insert_stmt.returning(delivery_batches.c.id)
+                ).scalar_one()
+            else:
+                insert_result = bind.execute(insert_stmt)
+                batch_id = insert_result.inserted_primary_key[0]
+                if batch_id is None:
+                    batch_id = bind.execute(
+                        sa.select(delivery_batches.c.id)
+                        .where(
+                            delivery_batches.c.order_id == order_id,
+                            delivery_batches.c.version_number == version_number,
+                        )
+                        .order_by(delivery_batches.c.id.desc())
+                        .limit(1)
+                    ).scalar_one()
             message_ids = [int(row.id) for row in group]
             bind.execute(
                 order_messages.update()
