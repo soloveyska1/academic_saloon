@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import hashlib
 import html
 import json
@@ -11,7 +12,7 @@ import time
 import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import urllib.error
@@ -108,6 +109,17 @@ TELEGRAM_PREVIEW_IMAGE_URL = os.environ.get(
     f"{SITE_ORIGIN.rstrip('/')}/og-image.png",
 ).strip()
 TELEGRAM_AUTO_POST = os.environ.get("SALON_TELEGRAM_AUTO_POST", "").strip().lower() in {"1", "true", "yes", "on", "да"}
+ACADEMIC_SALON_REPO_TOKEN = os.environ.get("ACADEMIC_SALON_REPO_TOKEN", "").strip()
+ACADEMIC_SALON_REPO = os.environ.get("ACADEMIC_SALON_REPO", "soloveyska1/academic-salon").strip()
+ACADEMIC_SALON_BRANCH = os.environ.get("ACADEMIC_SALON_BRANCH", "main").strip() or "main"
+ACADEMIC_SALON_CATALOG_PATH = os.environ.get(
+    "ACADEMIC_SALON_CATALOG_PATH",
+    "astro-site/src/data/catalog.js",
+).strip()
+CATALOG_SYNC_MAX_INLINE_RETRIES = int(os.environ.get("SALON_CATALOG_SYNC_INLINE_RETRIES", "3") or "3")
+CATALOG_SYNC_RETRY_ALERT_AFTER = int(os.environ.get("SALON_CATALOG_SYNC_ALERT_AFTER", str(60 * 60)) or str(60 * 60))
+CATALOG_SYNC_WAIT_SECONDS = int(os.environ.get("SALON_CATALOG_SYNC_WAIT_SECONDS", "180") or "180")
+CATALOG_SYNC_WAIT_INTERVAL = int(os.environ.get("SALON_CATALOG_SYNC_WAIT_INTERVAL", "5") or "5")
 CONTRIBUTION_ALLOWED_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".txt", ".rtf", ".odt", ".ods", ".odp",
@@ -205,6 +217,10 @@ def get_client_ip(handler: BaseHTTPRequestHandler) -> str:
 
 # ===== CATALOG MANAGEMENT =====
 _catalog_lock = threading.Lock()
+_catalog_sync_lock = threading.Lock()
+_catalog_sync_retry_lock = threading.Lock()
+_catalog_sync_retry_job: dict[str, object] | None = None
+_catalog_sync_retry_running = False
 
 
 def load_catalog() -> list[dict]:
@@ -221,10 +237,6 @@ def save_catalog(catalog: list[dict]) -> None:
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=None, separators=(",", ":"))
     os.replace(tmp_path, CATALOG_PATH)
-    try:
-        refresh_static_catalog(catalog)
-    except Exception:
-        pass
 
 
 def find_doc_index(catalog: list[dict], file_path: str) -> int:
@@ -239,19 +251,203 @@ def ensure_parent_dir(path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
 
-def write_text_if_changed(path: str, content: str) -> bool:
+class CatalogSyncError(RuntimeError):
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
+
+
+def log_catalog_sync(message: str) -> None:
+    print(f"[catalog-sync] {message}", flush=True)
+
+
+def snapshot_catalog(catalog: list[dict]) -> list[dict]:
+    return json.loads(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")))
+
+
+def build_catalog_js_content(catalog: list[dict]) -> str:
+    data = json.dumps(catalog, ensure_ascii=False, separators=(",", ":"))
+    return (
+        "// Document catalog data — auto-extracted from index.html\n"
+        "// WARNING: Do not edit manually. This is synced from catalog.json\n"
+        f"export let D={data};\n"
+    )
+
+
+def normalize_commit_message(message: str) -> str:
+    return re.sub(r"\s+", " ", str(message or "").replace("\x00", " ")).strip()[:180]
+
+
+def github_contents_url() -> str:
+    repo = ACADEMIC_SALON_REPO.strip("/")
+    path = quote(ACADEMIC_SALON_CATALOG_PATH.strip("/"), safe="/")
+    return f"https://api.github.com/repos/{repo}/contents/{path}"
+
+
+def github_contents_request(method: str, payload: dict | None = None, query: dict | None = None) -> dict:
+    if not ACADEMIC_SALON_REPO_TOKEN:
+        raise CatalogSyncError("ACADEMIC_SALON_REPO_TOKEN is not configured")
+    url = github_contents_url()
+    if query:
+        url = f"{url}?{urlencode(query)}"
+    body = None
+    if payload is not None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {ACADEMIC_SALON_REPO_TOKEN}",
+            "Content-Type": "application/json",
+            "User-Agent": "bibliosaloon-catalog-sync",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method=method,
+    )
     try:
-        with open(path, "r", encoding="utf-8") as handle:
-            if handle.read() == content:
-                return False
-    except FileNotFoundError:
-        pass
-    ensure_parent_dir(path)
-    tmp_path = f"{path}.tmp"
-    with open(tmp_path, "w", encoding="utf-8") as handle:
-        handle.write(content)
-    os.replace(tmp_path, path)
-    return True
+        with urllib.request.urlopen(req, timeout=25) as response:
+            raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise CatalogSyncError(f"GitHub API error {exc.code}: {detail[:500]}", exc.code) from exc
+    except urllib.error.URLError as exc:
+        raise CatalogSyncError(f"GitHub API network error: {exc}") from exc
+    return json.loads(raw) if raw else {}
+
+
+def fetch_catalog_js_state() -> tuple[str | None, str | None]:
+    try:
+        result = github_contents_request("GET", query={"ref": ACADEMIC_SALON_BRANCH})
+    except CatalogSyncError as exc:
+        if exc.status == 404:
+            return None, None
+        raise
+    sha = result.get("sha")
+    current = None
+    if result.get("encoding") == "base64" and result.get("content"):
+        try:
+            current = base64.b64decode(str(result["content"]).encode("ascii")).decode("utf-8")
+        except Exception:
+            current = None
+    return (str(sha) if sha else None), current
+
+
+def put_catalog_js_once(catalog: list[dict], commit_message: str) -> dict:
+    content = build_catalog_js_content(catalog)
+    sha, current_content = fetch_catalog_js_state()
+    if sha and current_content == content:
+        return {"commit": {"sha": sha}, "unchanged": True}
+    payload: dict[str, object] = {
+        "message": normalize_commit_message(commit_message),
+        "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
+        "branch": ACADEMIC_SALON_BRANCH,
+    }
+    if sha:
+        payload["sha"] = sha
+    return github_contents_request("PUT", payload=payload)
+
+
+def is_retryable_catalog_sync_error(exc: CatalogSyncError) -> bool:
+    return exc.status in {None, 403, 409, 429, 500, 502, 503, 504}
+
+
+def sync_catalog_js_with_retries(catalog: list[dict], commit_message: str, attempts: int = 1) -> dict:
+    if not ACADEMIC_SALON_REPO_TOKEN:
+        return {"ok": False, "error": "ACADEMIC_SALON_REPO_TOKEN is not configured"}
+    attempts = max(1, attempts)
+    delay = 1.0
+    last_error = ""
+    with _catalog_sync_lock:
+        for attempt in range(1, attempts + 1):
+            try:
+                result = put_catalog_js_once(catalog, commit_message)
+                commit = (result.get("commit") or {}) if isinstance(result, dict) else {}
+                log_catalog_sync(f"synced {ACADEMIC_SALON_CATALOG_PATH} to {ACADEMIC_SALON_REPO}@{ACADEMIC_SALON_BRANCH}")
+                return {
+                    "ok": True,
+                    "path": ACADEMIC_SALON_CATALOG_PATH,
+                    "repo": ACADEMIC_SALON_REPO,
+                    "branch": ACADEMIC_SALON_BRANCH,
+                    "sha": commit.get("sha"),
+                }
+            except CatalogSyncError as exc:
+                last_error = str(exc)
+                log_catalog_sync(f"attempt {attempt}/{attempts} failed: {last_error}")
+                if attempt >= attempts or not is_retryable_catalog_sync_error(exc):
+                    break
+                time.sleep(delay)
+                delay = min(delay * 2, 30.0)
+    return {"ok": False, "error": last_error or "Catalog sync failed"}
+
+
+def queue_catalog_js_sync(catalog: list[dict], commit_message: str, last_error: str = "") -> None:
+    global _catalog_sync_retry_job, _catalog_sync_retry_running
+    if not ACADEMIC_SALON_REPO_TOKEN:
+        log_catalog_sync("retry skipped: ACADEMIC_SALON_REPO_TOKEN is not configured")
+        return
+    with _catalog_sync_retry_lock:
+        _catalog_sync_retry_job = {
+            "message": normalize_commit_message(commit_message),
+            "queued_at": time.time(),
+            "alerted": False,
+            "last_error": last_error,
+        }
+        if _catalog_sync_retry_running:
+            return
+        _catalog_sync_retry_running = True
+    thread = threading.Thread(target=catalog_sync_retry_worker, daemon=True)
+    thread.start()
+
+
+def catalog_sync_retry_worker() -> None:
+    global _catalog_sync_retry_job, _catalog_sync_retry_running
+    delay = 5.0
+    while True:
+        with _catalog_sync_retry_lock:
+            job = _catalog_sync_retry_job
+            if not job:
+                _catalog_sync_retry_running = False
+                return
+        with _catalog_lock:
+            catalog = load_catalog()
+        result = sync_catalog_js_with_retries(
+            catalog,
+            str(job["message"]),
+            attempts=1,
+        )
+        if result.get("ok"):
+            with _catalog_sync_retry_lock:
+                if _catalog_sync_retry_job is job:
+                    _catalog_sync_retry_job = None
+            delay = 5.0
+            continue
+        age = time.time() - float(job.get("queued_at") or time.time())
+        if age >= CATALOG_SYNC_RETRY_ALERT_AFTER and not job.get("alerted"):
+            job["alerted"] = True
+            email_notify(
+                "Bibliosaloon catalog.js sync is still failing",
+                f"catalog.js sync has been retrying for {int(age)} seconds.\nLast error: {result.get('error')}",
+            )
+        time.sleep(delay)
+        delay = min(delay * 2, 300.0)
+
+
+def sync_catalog_js_after_change(catalog: list[dict], commit_message: str) -> dict:
+    global _catalog_sync_retry_job
+    catalog_snapshot = snapshot_catalog(catalog)
+    result = sync_catalog_js_with_retries(
+        catalog_snapshot,
+        commit_message,
+        attempts=CATALOG_SYNC_MAX_INLINE_RETRIES,
+    )
+    if not result.get("ok"):
+        queue_catalog_js_sync(catalog_snapshot, commit_message, str(result.get("error") or ""))
+    else:
+        with _catalog_sync_retry_lock:
+            if _catalog_sync_retry_job:
+                _catalog_sync_retry_job = None
+    return result
 
 
 def get_db() -> sqlite3.Connection:
@@ -657,31 +853,17 @@ def resolve_catalog_document_url(doc: dict) -> str:
     return f"{SITE_ORIGIN.rstrip('/')}/catalog/?entry={quote(catalog_doc_file(doc), safe='')}"
 
 
-def resolve_document_preview_url(doc: dict) -> str:
-    preview = clean_url(doc.get("previewImage"), 500)
-    if preview:
-        return preview
-    return f"{resolve_document_url(doc)}og.svg"
-
-
-def resolve_document_page_dir(doc: dict) -> str:
-    return os.path.normpath(os.path.join(BASE_DIR, "doc", catalog_doc_file(doc)))
-
-
-def doc_extension(doc: dict) -> str:
-    source = str(doc.get("filename") or doc.get("file") or "")
-    ext = source.rsplit(".", 1)[-1].strip().upper() if "." in source else ""
-    if ext == "DOCX":
-        return "DOC"
-    return ext or "DOC"
-
-
 def doc_title(doc: dict) -> str:
     return clean_text(doc.get("catalogTitle") or doc.get("title") or doc.get("filename") or "Документ", 160)
 
 
 def doc_description(doc: dict) -> str:
     return clean_text(doc.get("catalogDescription") or doc.get("description") or doc.get("text") or "", 420)
+
+
+def catalog_sync_commit_message(action: str, doc: dict | None = None) -> str:
+    title = doc_title(doc or {}) if doc else "catalog"
+    return normalize_commit_message(f"chore(catalog): sync after {action} — {title}")
 
 
 def telegram_hashtag(value: object) -> str:
@@ -709,550 +891,6 @@ def document_hashtags(doc: dict, limit: int = 8) -> str:
         if len(result) >= limit:
             break
     return " ".join(result)
-
-
-def build_document_og_svg(doc: dict) -> str:
-    title = html.escape(clean_text(doc_title(doc), 96))
-    subject = html.escape(clean_text(doc.get("subject") or doc.get("category") or "Библиотека Салона", 64))
-    doc_type = html.escape(clean_text(doc.get("docType") or doc.get("category") or "Документ", 42))
-    ext = html.escape(doc_extension(doc))
-    size = html.escape(clean_text(doc.get("size") or "", 20))
-    title_lines: list[str] = []
-    words = title.split()
-    current = ""
-    for word in words:
-        candidate = f"{current} {word}".strip()
-        if len(candidate) <= 30 or not current:
-            current = candidate
-        else:
-            title_lines.append(current)
-            current = word
-        if len(title_lines) == 2:
-            break
-    if current and len(title_lines) < 3:
-        title_lines.append(current)
-    if not title_lines:
-        title_lines = [title]
-    title_svg = "\n  ".join(
-        f'<text x="82" y="{228 + index * 68}" fill="#f5f2ea" '
-        f'font-family="Georgia, Times New Roman, serif" font-size="56" font-weight="700">{line}</text>'
-        for index, line in enumerate(title_lines[:3])
-    )
-    info = " · ".join(part for part in [doc_type, ext, size] if part)
-    return f'''<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#08070b"/>
-  <rect x="28" y="28" width="1144" height="574" rx="34" fill="#121019"/>
-  <rect x="28" y="28" width="1144" height="574" rx="34" stroke="#d7b35a" stroke-opacity=".22"/>
-  <circle cx="1030" cy="118" r="170" fill="#d7b35a" fill-opacity=".08"/>
-  <circle cx="190" cy="572" r="230" fill="#f1d99d" fill-opacity=".06"/>
-  <text x="82" y="108" fill="#f1d99d" font-family="Arial, sans-serif" font-size="22" font-weight="800" letter-spacing=".14em">БИБЛИОТЕКА САЛОНА</text>
-  <text x="82" y="166" fill="#c8bda1" font-family="Arial, sans-serif" font-size="28" font-weight="700">{subject}</text>
-  {title_svg}
-  <rect x="82" y="456" width="640" height="74" rx="22" fill="#ffffff" fill-opacity=".045"/>
-  <text x="116" y="504" fill="#f1d99d" font-family="Arial, sans-serif" font-size="25" font-weight="800">{html.escape(info)}</text>
-  <text x="82" y="574" fill="#c8bda1" font-family="Arial, sans-serif" font-size="22" font-weight="700">bibliosaloon.ru · готовые учебные материалы</text>
-</svg>'''
-
-
-def build_document_page(doc: dict, total_count: int) -> str:
-    title = doc_title(doc)
-    description = doc_description(doc) or "Документ из Библиотеки Салона."
-    doc_url = resolve_document_url(doc)
-    file_url = resolve_document_file_url(doc)
-    catalog_url = resolve_catalog_document_url(doc)
-    og_url = resolve_document_preview_url(doc)
-    og_type = "image/png" if og_url.lower().split("?", 1)[0].endswith(".png") else "image/svg+xml"
-    doc_type = clean_text(doc.get("docType") or doc.get("category") or "Документ", 48)
-    subject_label = clean_text(doc.get("subject") or "", 48)
-    category_label = clean_text(doc.get("category") or "", 48)
-    file_label = " · ".join(part for part in [doc_type, doc_extension(doc), clean_text(doc.get("size") or "", 20)] if part)
-    info_line = " · ".join(
-        part
-        for part in [doc_type, subject_label, doc_extension(doc), clean_text(doc.get("size") or "", 20)]
-        if part
-    )
-    tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
-    meta_items = [subject_label, category_label, file_label]
-    meta_html = "".join(f"<span>{html.escape(item)}</span>" for item in meta_items if item)
-    tags_html = "".join(f"<span>{html.escape(clean_text(tag, 48))}</span>" for tag in tags[:7])
-    if not tags_html:
-        tags_html = "".join(
-            f"<span>{html.escape(item)}</span>"
-            for item in [subject_label, category_label, doc_type]
-            if item
-        )
-    schema = {
-        "@context": "https://schema.org",
-        "@type": ["ScholarlyArticle", "LearningResource"],
-        "headline": title,
-        "name": title,
-        "description": description,
-        "datePublished": "2026-01-01",
-        "inLanguage": "ru",
-        "learningResourceType": clean_text(doc.get("docType") or doc.get("category") or "Документ", 80),
-        "educationalLevel": "Высшее образование",
-        "author": {"@type": "Organization", "name": "Академический Салон", "url": SITE_ORIGIN.rstrip("/")},
-        "publisher": {"@type": "Organization", "name": "Академический Салон", "url": SITE_ORIGIN.rstrip("/")},
-        "about": {"@type": "Thing", "name": clean_text(doc.get("subject") or doc.get("category") or "Общее", 80)},
-        "keywords": ", ".join(str(tag) for tag in tags),
-        "url": doc_url,
-        "mainEntityOfPage": doc_url,
-        "isAccessibleForFree": True,
-    }
-    schema_json = json.dumps(schema, ensure_ascii=False).replace("</", "<\\/")
-    return f'''<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{html.escape(title)} - Библиотека академического салона</title>
-  <meta name="description" content="{html.escape(description)}">
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="ru_RU">
-  <meta property="og:site_name" content="Библиотека академического салона">
-  <meta property="og:title" content="{html.escape(title)}">
-  <meta property="og:description" content="{html.escape(info_line or description)}">
-  <meta property="og:url" content="{html.escape(doc_url)}">
-  <meta property="og:image" content="{html.escape(og_url)}">
-  <meta property="og:image:type" content="{og_type}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{html.escape(title)}">
-  <meta name="twitter:description" content="{html.escape(info_line or description)}">
-  <meta name="twitter:image" content="{html.escape(og_url)}">
-  <link rel="canonical" href="{html.escape(doc_url)}">
-  <script type="application/ld+json">{schema_json}</script>
-  <style>
-    @font-face{{
-      font-family:'Cormorant Fallback';
-      src:local('Georgia'),local('Times New Roman'),local('Times');
-      size-adjust:106%;
-      ascent-override:95%;
-      descent-override:28%;
-      line-gap-override:0%;
-    }}
-    @font-face{{
-      font-family:'Inter Fallback';
-      src:local('Arial'),local('Helvetica Neue'),local('Helvetica');
-      size-adjust:107%;
-      ascent-override:90%;
-      descent-override:22%;
-      line-gap-override:0%;
-    }}
-    :root{{
-      --bg:#08070b;--bg-soft:rgba(18,16,24,.72);
-      --panel:rgba(20,18,27,.76);--panel-strong:rgba(255,255,255,.06);
-      --panel-border:rgba(230,207,146,.12);
-      --line:rgba(255,255,255,.08);
-      --text:#f7f3e7;--text-muted:#c8bda1;--text-dim:#8f856f;
-      --accent:#d7b35a;--accent-strong:#f0dba1;--accent-soft:rgba(215,179,90,.14);
-      --shadow:0 24px 80px rgba(0,0,0,.36);
-      --radius-xl:28px;--radius-surface:22px;--radius-card:18px;--radius-pill:999px;
-      --gold-rich:#f0c661;--gold-bright:#ffefba;--gold-deep:#a96d12;--gold-ink:#201405;
-      --gold-border-soft:rgba(240,198,97,.12);--gold-border-strong:rgba(240,198,97,.22);
-      --gold-glow-soft:rgba(240,198,97,.14);--gold-glow-strong:rgba(240,198,97,.28);
-      --fd:'Playfair Display','Cormorant Fallback',Georgia,serif;
-      --fi:Inter,'Inter Fallback',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      color-scheme:dark;
-    }}
-    *{{box-sizing:border-box;margin:0;padding:0}}
-    html,body{{min-height:100%;background:var(--bg);color:var(--text)}}
-    body{{
-      font-family:var(--fi);
-      overflow-x:hidden;
-      -webkit-font-smoothing:antialiased;
-      background:
-        radial-gradient(circle at 14% 0%,rgba(240,198,97,.20),transparent 18%),
-        radial-gradient(circle at 88% 8%,rgba(146,96,22,.14),transparent 16%),
-        radial-gradient(circle at 50% 108%,rgba(240,198,97,.10),transparent 24%),
-        linear-gradient(180deg,#07060a 0%,#030306 58%,#010103 100%);
-    }}
-    main{{width:min(100%,760px);min-height:100vh;margin:0 auto;padding:28px 20px 40px;display:grid;align-content:center}}
-    .surface{{
-      position:relative;
-      padding:28px 22px 22px;
-      border-radius:var(--radius-xl);
-      border:1px solid var(--gold-border-strong);
-      background:
-        radial-gradient(circle at 12% 0%,rgba(240,198,97,.18),transparent 28%),
-        radial-gradient(circle at 88% 12%,rgba(162,107,24,.11),transparent 24%),
-        linear-gradient(180deg,rgba(22,17,21,.98),rgba(7,7,11,.99));
-      box-shadow:0 24px 58px rgba(0,0,0,.38),0 16px 36px var(--gold-glow-soft),inset 0 1px 0 rgba(255,255,255,.04);
-    }}
-    .eyebrow,.meta span,.section-label{{letter-spacing:.08em;text-transform:uppercase;font-weight:800}}
-    .eyebrow{{
-      display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border-radius:var(--radius-pill);
-      background:rgba(215,179,90,.12);color:rgba(236,214,163,.84);font-size:12px;
-    }}
-    h1{{margin:18px 0 0;font-family:var(--fd);font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:.96;letter-spacing:0;color:transparent;background:linear-gradient(180deg,#fff4d6 0%,var(--gold-bright) 28%,var(--gold-rich) 72%,#c98f2f 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 12px 26px rgba(240,198,97,.07))}}
-    .lead{{margin:14px 0 0;max-width:42rem;color:rgba(247,243,231,.72);font-size:1rem;line-height:1.55}}
-    .meta,.tags{{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}}
-    .meta span{{
-      display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:var(--radius-pill);
-      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
-      color:var(--text-muted);font-size:11px;
-    }}
-    .facts{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;border-radius:var(--radius-surface);overflow:hidden;background:linear-gradient(180deg,rgba(15,12,18,.98),rgba(6,6,10,.99));border:1px solid var(--gold-border-soft)}}
-    .facts div{{min-width:0;padding:14px 14px 13px;border-right:1px solid rgba(255,255,255,.06)}}
-    .facts div:last-child{{border-right:0}}
-    .facts span,.facts strong{{display:block}}
-    .facts span{{color:var(--text-muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}}
-    .facts strong{{margin-top:7px;font-size:.92rem;line-height:1.22;color:var(--text)}}
-    .section-label{{display:block;margin-top:22px;color:var(--gold-bright);font-size:11px}}
-    .tags{{margin-top:10px}}
-    .tags span{{
-      display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:var(--radius-pill);
-      border:1px solid var(--gold-border-soft);background:rgba(255,255,255,.035);
-      color:rgba(247,243,231,.72);font-size:.84rem;line-height:1;
-    }}
-    .actions{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}}
-    a{{color:inherit;text-decoration:none}}
-    .primary,.secondary{{
-      min-height:54px;border-radius:var(--radius-card);display:inline-flex;align-items:center;justify-content:center;
-      text-align:center;padding:0 18px;font-weight:760;
-    }}
-    .primary{{background:linear-gradient(180deg,#fff4cb 0%,var(--gold-bright) 24%,var(--gold-rich) 68%,var(--gold-deep) 100%);color:var(--gold-ink);box-shadow:0 18px 34px rgba(240,198,97,.24),inset 0 1px 0 rgba(255,255,255,.36)}}
-    .secondary{{background:linear-gradient(180deg,rgba(15,13,18,.97),rgba(7,7,10,.99));border:1px solid var(--gold-border-soft);color:var(--gold-bright)}}
-    .foot{{margin-top:16px;color:rgba(247,243,231,.52);font-size:.84rem;line-height:1.45}}
-    @media (max-width:640px){{
-      main{{padding:14px 12px 26px;align-content:start}}
-      .surface{{border-radius:24px;padding:22px 16px 18px}}
-      h1{{font-size:clamp(2.15rem,13vw,3.35rem)}}
-      .lead{{font-size:.96rem}}
-      .facts,.actions{{grid-template-columns:1fr}}
-      .facts div{{border-right:0;border-bottom:1px solid rgba(255,255,255,.06)}}
-      .facts div:last-child{{border-bottom:0}}
-    }}
-  </style>
-</head>
-<body>
-  <main>
-    <section class="surface">
-      <div class="eyebrow">Библиотека Салона</div>
-      <h1>{html.escape(title)}</h1>
-      <p class="lead">{html.escape(description)}</p>
-      <div class="meta">{meta_html}</div>
-      <div class="facts">
-        <div><span>Файл</span><strong>{html.escape(file_label)}</strong></div>
-        <div><span>Раздел</span><strong>{html.escape(category_label or "Каталог")}</strong></div>
-        <div><span>В библиотеке</span><strong>{total_count}+ материалов</strong></div>
-      </div>
-      <span class="section-label">Теги</span>
-      <div class="tags">{tags_html}</div>
-      <div class="actions">
-        <a class="primary" href="{html.escape(file_url)}">Скачать файл</a>
-        <a class="secondary" href="{html.escape(catalog_url)}">Открыть каталог</a>
-      </div>
-      <p class="foot">Материал опубликован как учебный пример. Используйте его как ориентир для собственной работы.</p>
-    </section>
-  </main>
-</body>
-</html>'''
-
-
-def write_document_page(doc: dict, total_count: int) -> None:
-    page_dir = resolve_document_page_dir(doc)
-    os.makedirs(page_dir, exist_ok=True)
-    write_text_if_changed(os.path.join(page_dir, "index.html"), build_document_page(doc, total_count))
-    write_text_if_changed(os.path.join(page_dir, "og.svg"), build_document_og_svg(doc))
-
-
-CATEGORY_LABELS = {
-    "Самостоятельные работы": "Самост.",
-    "Методические материалы": "Методич.",
-    "Отчёты по практике": "Практика",
-    "ВКР и дипломы": "ВКР",
-    "Курсовые": "Курсовые",
-    "Конспекты лекций": "Конспекты",
-    "НПР": "НПР",
-    "Рефераты": "Рефераты",
-    "Эссе": "Эссе",
-    "Другое": "Другое",
-}
-CATEGORY_ORDER = list(CATEGORY_LABELS)
-
-
-def catalog_display_year(doc: dict) -> str:
-    added_at = str(doc.get("addedAt") or "").strip()
-    year_match = re.match(r"^(\d{4})", added_at)
-    if year_match:
-        return year_match.group(1)
-    return str(datetime.now(MOSCOW_TZ).year)
-
-
-def catalog_attr(value: object, limit: int = 500) -> str:
-    return html.escape(clean_text(value, limit), quote=True)
-
-
-def build_catalog_row(doc: dict, index: int, cid_attr: str) -> str:
-    file_value = catalog_doc_file(doc)
-    title = doc_title(doc)
-    description = doc_description(doc)
-    subject = clean_text(doc.get("subject") or doc.get("category") or "Общее", 80)
-    category = clean_text(doc.get("category") or "Другое", 80)
-    doc_type = clean_text(doc.get("docType") or category or "Документ", 80)
-    source = clean_text(doc.get("filename") or file_value, 220)
-    ext = source.rsplit(".", 1)[-1].lower() if "." in source else "doc"
-    size = clean_text(doc.get("size") or "", 24)
-    tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
-    search_tags = " ".join(clean_text(tag, 80) for tag in tags)
-    data_title = title.lower()
-    data_subject = subject.lower()
-    href = f"/doc/{file_value}"
-    fmt = " · ".join(part for part in [ext, size] if part)
-    subject_year = " · ".join(part for part in [subject, catalog_display_year(doc)] if part)
-    return (
-        f' <a href="{html.escape(href, quote=True)}" class="row"'
-        f' data-t="{catalog_attr(data_title)}"'
-        f' data-s="{catalog_attr(data_subject)}"'
-        f' data-c="{catalog_attr(category)}"'
-        f' data-i="{index}"'
-        f' data-tags="{catalog_attr(search_tags.lower(), 900)}"'
-        f' data-desc="{catalog_attr(description.lower(), 900)}"{cid_attr}>'
-        f' <span class="td td-type"{cid_attr}>{html.escape(doc_type)}</span>'
-        f' <span class="td td-title"{cid_attr}>{html.escape(title)}</span>'
-        f' <span class="td td-subj"{cid_attr}>{html.escape(subject_year)}</span>'
-        f' <span class="td td-fmt"{cid_attr}>{html.escape(fmt)}</span>'
-        f' <button class="td-fav" data-file="{html.escape(file_value, quote=True)}"'
-        f' type="button" aria-label="В избранное"{cid_attr}>'
-        f' <svg width="13" height="13" viewBox="0 0 24 24" fill="none"'
-        f' stroke="currentColor" stroke-width="2"{cid_attr}>'
-        f'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"{cid_attr}></polygon>'
-        f'</svg> </button> </a>'
-    )
-
-
-def build_catalog_tabs(catalog: list[dict], cid_attr: str) -> str:
-    counts: dict[str, int] = {}
-    for doc in catalog:
-        category = clean_text(doc.get("category") or "Другое", 80)
-        counts[category] = counts.get(category, 0) + 1
-    categories = [cat for cat in CATEGORY_ORDER if counts.get(cat)]
-    categories.extend(sorted(cat for cat in counts if cat not in CATEGORY_LABELS))
-    items = [
-        f' <button class="tab active" data-cat="all"{cid_attr}>Все <span class="tab-n"{cid_attr}>{len(catalog)}</span></button>'
-    ]
-    for category in categories:
-        label = CATEGORY_LABELS.get(category, category)
-        items.append(
-            f'<button class="tab" data-cat="{html.escape(category, quote=True)}"{cid_attr}>'
-            f'{html.escape(label)} <span class="tab-n"{cid_attr}>{counts[category]}</span></button>'
-        )
-    items.append(
-        f' <button class="tab tab--fav" data-cat="__fav"{cid_attr}>'
-        f' <svg width="12" height="12" viewBox="0 0 24 24" fill="none"'
-        f' stroke="currentColor" stroke-width="2"{cid_attr}>'
-        f'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"{cid_attr}></polygon>'
-        f'</svg> <span class="tab-n" id="favTabCount"{cid_attr}>0</span> </button>'
-    )
-    return "".join(items)
-
-
-def build_catalog_item_list_schema(catalog: list[dict]) -> str:
-    schema = {
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        "name": "Архив студенческих работ — Академический Салон",
-        "description": f"Каталог из {len(catalog)} работ: курсовые, ВКР, рефераты, отчёты по практике.",
-        "numberOfItems": len(catalog),
-        "itemListOrder": "https://schema.org/ItemListUnordered",
-        "itemListElement": [
-            {
-                "@type": "ListItem",
-                "position": index + 1,
-                "url": resolve_document_url(doc),
-                "name": doc_title(doc),
-            }
-            for index, doc in enumerate(catalog)
-        ],
-    }
-    return json.dumps(schema, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-
-
-def update_catalog_count_copy(page: str, total: int) -> str:
-    page = re.sub(r"\b\d+\s+работ в каталоге\b", f"{total} работ в каталоге", page)
-    page = re.sub(r"\b\d+\+\s+(текстов|материалов|документов)\b", rf"{total}+ \1", page)
-    page = re.sub(r"Каталог из \d+ работ", f"Каталог из {total} работ", page)
-    return page
-
-
-def patch_catalog_sort_assets() -> None:
-    assets_dir = os.path.join(BASE_DIR, "_assets")
-    if not os.path.isdir(assets_dir):
-        return
-    replacements = [
-        (
-            'c==="az"?r.sort((f,h)=>(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="za"?r.sort((f,h)=>(h.dataset.t||"").localeCompare(f.dataset.t||"","ru")):c==="subj"&&r.sort((f,h)=>(f.dataset.s||"").localeCompare(h.dataset.s||"","ru")||(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")),r.forEach(f=>o?.appendChild(f))',
-            'c==="az"?r.sort((f,h)=>(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="za"?r.sort((f,h)=>(h.dataset.t||"").localeCompare(f.dataset.t||"","ru")):c==="subj"?r.sort((f,h)=>(f.dataset.s||"").localeCompare(h.dataset.s||"","ru")||(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="new"&&r.sort((f,h)=>Number(h.dataset.i||0)-Number(f.dataset.i||0)),r.forEach(f=>o?.appendChild(f))',
-        ),
-        (
-            't==="az"?a.sort((e,s)=>(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")):t==="za"?a.sort((e,s)=>(s.dataset.t||"").localeCompare(e.dataset.t||"","ru")):t==="subj"?a.sort((e,s)=>{const l=(e.dataset.s||"").localeCompare(s.dataset.s||"","ru");return l!==0?l:(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")}):a.sort((e,s)=>Number(e.dataset.i||0)-Number(s.dataset.i||0)),o.querySelectorAll(".letter-sep").forEach',
-            't==="az"?a.sort((e,s)=>(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")):t==="za"?a.sort((e,s)=>(s.dataset.t||"").localeCompare(e.dataset.t||"","ru")):t==="subj"?a.sort((e,s)=>{const l=(e.dataset.s||"").localeCompare(s.dataset.s||"","ru");return l!==0?l:(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")}):t==="new"?a.sort((e,s)=>Number(s.dataset.i||0)-Number(e.dataset.i||0)):a.sort((e,s)=>Number(e.dataset.i||0)-Number(s.dataset.i||0)),o.querySelectorAll(".letter-sep").forEach',
-        ),
-        ('const gt=["default","az","za","subj"];', 'const gt=["default","new","az","za","subj"];'),
-    ]
-    for name in os.listdir(assets_dir):
-        if not name.startswith("catalog") or not name.endswith(".js"):
-            continue
-        path = os.path.join(assets_dir, name)
-        with open(path, "r", encoding="utf-8") as f:
-            source = f.read()
-        updated = source
-        for old, new in replacements:
-            updated = updated.replace(old, new)
-        if updated != source:
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(updated)
-
-
-def write_catalog_entry_script() -> None:
-    scripts_dir = os.path.join(BASE_DIR, "scripts")
-    os.makedirs(scripts_dir, exist_ok=True)
-    script_path = os.path.join(scripts_dir, "catalog-entry.js")
-    script = r'''(function () {
-  function normalize(value) {
-    try { value = decodeURIComponent(value || ''); } catch (_) { value = value || ''; }
-    return String(value)
-      .replace(/^https?:\/\/[^/]+\/(?:doc\/)?/i, '')
-      .replace(/^\/+/, '')
-      .replace(/^doc\//, '')
-      .replace(/\/$/, '');
-  }
-
-  function rowFile(row) {
-    var fav = row.querySelector('.td-fav');
-    if (fav && fav.dataset.file) return normalize(fav.dataset.file);
-    try {
-      var url = new URL(row.getAttribute('href') || '', window.location.origin);
-      return normalize(url.pathname);
-    } catch (_) {
-      return normalize(row.getAttribute('href') || '');
-    }
-  }
-
-  function ensureStyle() {
-    if (document.getElementById('catalog-entry-style')) return;
-    var style = document.createElement('style');
-    style.id = 'catalog-entry-style';
-    style.textContent = '.row.is-entry-target{outline:2px solid rgba(215,179,90,.95);outline-offset:-2px;background:rgba(215,179,90,.13)!important;box-shadow:inset 4px 0 0 #d7b35a}';
-    document.head.appendChild(style);
-  }
-
-  function revealEntry() {
-    var params = new URLSearchParams(window.location.search);
-    var target = normalize(params.get('entry') || params.get('file') || params.get('doc'));
-    if (!target) return;
-
-    ensureStyle();
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.row'));
-    var row = rows.find(function (item) {
-      var file = rowFile(item);
-      return file === target || file.endsWith('/' + target) || target.endsWith('/' + file);
-    });
-    if (!row) return;
-
-    var table = document.getElementById('tableBody');
-    var query = document.getElementById('q');
-    if (query && query.value) {
-      query.value = '';
-      query.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    row.classList.remove('hid');
-    row.classList.add('is-entry-target');
-    row.setAttribute('tabindex', '-1');
-
-    window.setTimeout(function () {
-      if (table) {
-        table.scrollTop = Math.max(0, row.offsetTop - table.clientHeight / 2 + row.clientHeight / 2);
-      } else {
-        row.scrollIntoView({ block: 'center' });
-      }
-      try { row.focus({ preventScroll: true }); } catch (_) {}
-    }, 180);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', revealEntry);
-  } else {
-    revealEntry();
-  }
-  document.addEventListener('astro:page-load', revealEntry);
-})();'''
-    with open(script_path, "w", encoding="utf-8") as f:
-        f.write(script)
-
-
-def refresh_static_catalog(catalog: list[dict]) -> None:
-    total = len(catalog)
-    catalog_page = os.path.join(BASE_DIR, "catalog", "index.html")
-    if os.path.exists(catalog_page):
-        with open(catalog_page, "r", encoding="utf-8") as f:
-            page = f.read()
-        cid_match = re.search(r'<div class="table-body" id="tableBody"[^>]*(data-astro-cid-[^\s>]+)', page)
-        cid_attr = f" {cid_match.group(1)}" if cid_match else ""
-        rows = "".join(build_catalog_row(doc, index, cid_attr) for index, doc in enumerate(catalog))
-        page = re.sub(
-            r'(<div class="table-body" id="tableBody"[^>]*>)(.*?)(</div>\s*</div>\s*<!-- EMPTY STATE -->)',
-            lambda match: f"{match.group(1)}{rows} {match.group(3)}",
-            page,
-            count=1,
-            flags=re.S,
-        )
-        tabs = build_catalog_tabs(catalog, cid_attr)
-        page = re.sub(
-            r'(<div class="tabs" id="tabs"[^>]*>)(.*?)(</div>\s*(?:<!--[^>]*-->\s*)?<div class="table-wrap")',
-            lambda match: f"{match.group(1)}{tabs} {match.group(3)}",
-            page,
-            count=1,
-            flags=re.S,
-        )
-        if 'data-sort="new"' not in page:
-            page = page.replace(
-                f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button>',
-                f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button> '
-                f'<button class="sort-opt" data-sort="new"{cid_attr}>Сначала новые</button>',
-                1,
-            )
-        if "/scripts/catalog-entry.js" not in page:
-            page = page.replace(
-                "</body>",
-                '<script defer src="/scripts/catalog-entry.js"></script></body>',
-                1,
-            )
-        page = re.sub(r'(<span id="visCount"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
-        page = re.sub(r'(<span id="totalCount"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
-        page = re.sub(r'(<span id="visCountFoot"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
-        page = re.sub(r"(из <b[^>]*>)\d+(</b> работ)", rf"\g<1>{total}\g<2>", page, count=1)
-        item_list_schema = build_catalog_item_list_schema(catalog)
-        page = re.sub(
-            r'(<script type="application/ld\+json">)(\{"@context":"https://schema\.org","@type":"ItemList".*?\})(</script>)',
-            lambda match: f"{match.group(1)}{item_list_schema}{match.group(3)}",
-            page,
-            count=1,
-            flags=re.S,
-        )
-        page = update_catalog_count_copy(page, total)
-        with open(catalog_page, "w", encoding="utf-8") as f:
-            f.write(page)
-
-    for root, _, files in os.walk(BASE_DIR):
-        for name in files:
-            if name != "index.html":
-                continue
-            path = os.path.join(root, name)
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    source = f.read()
-                updated = update_catalog_count_copy(source, total)
-                if updated != source:
-                    with open(path, "w", encoding="utf-8") as f:
-                        f.write(updated)
-            except OSError:
-                continue
-    patch_catalog_sort_assets()
-    write_catalog_entry_script()
 
 
 def build_telegram_document_text(doc: dict) -> str:
@@ -1290,6 +928,40 @@ def telegram_api_request(method: str, payload: dict) -> dict:
     if not result.get("ok"):
         raise RuntimeError(f"Telegram API error: {result}")
     return result
+
+
+def document_page_is_ready(doc: dict) -> bool:
+    req = urllib.request.Request(
+        resolve_document_url(doc),
+        headers={
+            "Cache-Control": "no-cache",
+            "User-Agent": "bibliosaloon-doc-ready-check",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return 200 <= response.status < 400
+    except urllib.error.HTTPError as exc:
+        return 200 <= exc.code < 400
+    except urllib.error.URLError:
+        return False
+
+
+def wait_for_document_page(doc: dict, max_seconds: int = CATALOG_SYNC_WAIT_SECONDS) -> dict:
+    started = time.time()
+    deadline = started + max(0, max_seconds)
+    interval = max(1, CATALOG_SYNC_WAIT_INTERVAL)
+    while True:
+        if document_page_is_ready(doc):
+            return {"ok": True, "url": resolve_document_url(doc), "waitedSeconds": int(time.time() - started)}
+        if time.time() >= deadline:
+            return {
+                "ok": False,
+                "url": resolve_document_url(doc),
+                "error": f"Document page was not ready after {max_seconds}s",
+            }
+        time.sleep(interval)
 
 
 def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
@@ -2975,11 +2647,6 @@ class StatsHandler(BaseHTTPRequestHandler):
                     self._send_json(404, {"ok": False, "error": "Document not found"})
                     return
                 doc = catalog[idx]
-            try:
-                write_document_page(doc, len(catalog))
-            except Exception as exc:
-                self._send_json(500, {"ok": False, "error": f"Document page was not generated: {exc}"})
-                return
             post_text = build_telegram_document_text(doc)
             if parse_truthy(payload.get("dryRun"), False):
                 self._send_json(
@@ -2995,6 +2662,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                     },
                 )
                 return
+            page_ready = wait_for_document_page(doc)
             try:
                 result = telegram_publish_document(doc, payload.get("chatId") or payload.get("chat_id"))
             except Exception as exc:
@@ -3008,6 +2676,8 @@ class StatsHandler(BaseHTTPRequestHandler):
                     "catalogUrl": resolve_catalog_document_url(doc),
                     "fileUrl": resolve_document_file_url(doc),
                     "text": post_text,
+                    "pageReady": page_ready,
+                    "warning": None if page_ready.get("ok") else page_ready.get("error"),
                     "telegram": result,
                 },
             )
@@ -3018,19 +2688,15 @@ class StatsHandler(BaseHTTPRequestHandler):
                 return
             with _catalog_lock:
                 catalog = load_catalog()
-            generated = 0
-            errors = []
-            for doc in catalog:
-                try:
-                    write_document_page(doc, len(catalog))
-                    generated += 1
-                except Exception as exc:
-                    errors.append({"file": doc.get("file"), "error": str(exc)})
-            try:
-                refresh_static_catalog(catalog)
-            except Exception as exc:
-                errors.append({"file": "catalog/index.html", "error": str(exc)})
-            self._send_json(200, {"ok": True, "generated": generated, "errors": errors[:20]})
+            sync_result = sync_catalog_js_after_change(catalog, "chore(catalog): sync catalog rebuild")
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "message": "Document pages are generated by Astro deploy from catalog.js",
+                    "catalogSync": sync_result,
+                },
+            )
             return
 
         if parsed.path == "/api/admin/rebuild":
@@ -3069,11 +2735,12 @@ class StatsHandler(BaseHTTPRequestHandler):
                     if key in allowed_fields:
                         catalog[idx][key] = val
                 save_catalog(catalog)
-            try:
-                write_document_page(catalog[idx], len(catalog))
-            except Exception:
-                pass
-            self._send_json(200, {"ok": True, "doc": catalog[idx]})
+                updated_doc = catalog[idx]
+            sync_result = sync_catalog_js_after_change(
+                catalog,
+                catalog_sync_commit_message("update", updated_doc),
+            )
+            self._send_json(200, {"ok": True, "doc": updated_doc, "catalogSync": sync_result})
             return
         if parsed.path == "/api/admin/orders":
             if not self._require_admin():
@@ -3158,6 +2825,10 @@ class StatsHandler(BaseHTTPRequestHandler):
                     return
                 removed = catalog.pop(idx)
                 save_catalog(catalog)
+            sync_result = sync_catalog_js_after_change(
+                catalog,
+                catalog_sync_commit_message("delete", removed),
+            )
             # Optionally remove file from disk
             disk_path = os.path.normpath(os.path.join(BASE_DIR, file_path))
             files_root = os.path.normpath(UPLOAD_DIR)
@@ -3166,7 +2837,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                     os.remove(disk_path)
                 except OSError:
                     pass
-            self._send_json(200, {"ok": True, "removed": removed.get("title", file_path)})
+            self._send_json(200, {"ok": True, "removed": removed.get("title", file_path), "catalogSync": sync_result})
             return
         self._send_json(404, {"ok": False, "error": "Not found"})
 
@@ -3269,17 +2940,30 @@ class StatsHandler(BaseHTTPRequestHandler):
             catalog = load_catalog()
             catalog.append(doc_entry)
             save_catalog(catalog)
+        sync_result = sync_catalog_js_after_change(
+            catalog,
+            catalog_sync_commit_message("upload", doc_entry),
+        )
         publish_result = None
-        publish_error = None
-        try:
-            write_document_page(doc_entry, len(catalog))
-        except Exception as exc:
-            publish_error = f"Document page was not generated: {exc}"
+        warnings: list[str] = []
+        page_ready = None
+        if not sync_result.get("ok"):
+            warnings.append(str(sync_result.get("error") or "catalog.js sync failed"))
         if parse_truthy(metadata.get("publishTelegram"), TELEGRAM_AUTO_POST):
+            if sync_result.get("ok"):
+                page_ready = wait_for_document_page(doc_entry)
+                if not page_ready.get("ok"):
+                    warnings.append(str(page_ready.get("error") or "Document page is not ready"))
+            else:
+                page_ready = {
+                    "ok": False,
+                    "url": resolve_document_url(doc_entry),
+                    "error": "catalog.js sync failed; Astro deploy may not have started",
+                }
             try:
                 publish_result = telegram_publish_document(doc_entry, metadata.get("telegramChatId"))
             except Exception as exc:
-                publish_error = str(exc)
+                warnings.append(str(exc))
         self._send_json(
             200,
             {
@@ -3288,8 +2972,10 @@ class StatsHandler(BaseHTTPRequestHandler):
                 "totalDocs": len(catalog),
                 "docUrl": resolve_document_url(doc_entry),
                 "catalogUrl": resolve_catalog_document_url(doc_entry),
+                "catalogSync": sync_result,
+                "pageReady": page_ready,
                 "telegram": publish_result,
-                "warning": publish_error,
+                "warning": "; ".join(warnings) if warnings else None,
             },
         )
 
