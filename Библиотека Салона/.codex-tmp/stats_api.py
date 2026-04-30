@@ -81,6 +81,11 @@ MAX_BATCH = 400
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
 CONSENT_VERSION = os.environ.get("SALON_CONSENT_VERSION", "2026-04-29")
 CONSENT_DOCUMENT_URL = os.environ.get("SALON_CONSENT_URL", f"{SITE_ORIGIN.rstrip('/')}/consent")
+ME_COOKIE_NAME = os.environ.get("SALON_ME_COOKIE", "salon_me")
+ME_SESSION_TTL = int(os.environ.get("SALON_ME_SESSION_TTL", str(30 * 24 * 60 * 60)))
+ME_RATE_WINDOW = 60 * 60
+ME_RATE_MAX = 5
+ME_TG_BOT_USERNAME = os.environ.get("SALON_TG_BOT_USERNAME", "").strip().lstrip("@")
 CONTRIBUTION_ALLOWED_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".txt", ".rtf", ".odt", ".ods", ".odp",
@@ -257,6 +262,7 @@ def init_db() -> None:
         )
         ensure_orders_table(db)
         ensure_contributions_table(db)
+        ensure_me_tables(db)
 
 
 ORDER_SOURCE_LABELS = {
@@ -406,6 +412,138 @@ def ensure_contributions_table(db: sqlite3.Connection) -> None:
             db.execute(f"ALTER TABLE contributions ADD COLUMN {column_name} {column_type}")
 
     db.execute("CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON contributions(created_at)")
+
+
+def table_columns(db: sqlite3.Connection, table_name: str) -> set[str]:
+    return {row["name"] for row in db.execute(f"PRAGMA table_info({table_name})").fetchall()}
+
+
+def backup_legacy_table(db: sqlite3.Connection, table_name: str, required_columns: set[str]) -> str:
+    columns = table_columns(db, table_name)
+    if not columns or required_columns.issubset(columns):
+        return ""
+
+    suffix = int(time.time())
+    backup_name = f"{table_name}_legacy_{suffix}"
+    counter = 1
+    while db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (backup_name,),
+    ).fetchone():
+        counter += 1
+        backup_name = f"{table_name}_legacy_{suffix}_{counter}"
+    db.execute(f"ALTER TABLE {table_name} RENAME TO {backup_name}")
+    return backup_name
+
+
+def migrate_legacy_me_items(db: sqlite3.Connection, legacy_table: str, target_table: str, time_column: str) -> None:
+    if not legacy_table:
+        return
+    db.execute(
+        f"""
+        INSERT OR IGNORE INTO me_profiles (
+            contact, contact_norm, channel, created_at, last_seen_at,
+            consent_pd, consent_at, consent_version, ip, user_agent
+        )
+        SELECT
+            contact,
+            LOWER(contact),
+            CASE
+                WHEN contact LIKE '@%' THEN 'telegram'
+                WHEN contact LIKE '%@%.%' THEN 'email'
+                ELSE ''
+            END,
+            COALESCE(MIN({time_column}), strftime('%s','now')),
+            strftime('%s','now'),
+            0,
+            NULL,
+            '',
+            '',
+            ''
+        FROM {legacy_table}
+        WHERE contact IS NOT NULL AND TRIM(contact) <> ''
+        GROUP BY LOWER(contact)
+        """
+    )
+    db.execute(
+        f"""
+        INSERT OR IGNORE INTO {target_table} (profile_id, file, {time_column})
+        SELECT p.id, legacy.file, COALESCE(legacy.{time_column}, strftime('%s','now'))
+        FROM {legacy_table} legacy
+        JOIN me_profiles p ON p.contact_norm = LOWER(legacy.contact)
+        WHERE legacy.file IS NOT NULL AND TRIM(legacy.file) <> ''
+        """
+    )
+
+
+def ensure_me_tables(db: sqlite3.Connection) -> None:
+    backup_legacy_table(db, "me_sessions", {"token_hash", "profile_id"})
+    legacy_favorites = backup_legacy_table(db, "me_favorites", {"profile_id", "file", "added_at"})
+    legacy_downloads = backup_legacy_table(db, "me_downloads", {"profile_id", "file", "downloaded_at"})
+    backup_legacy_table(db, "me_messages", {"profile_id", "order_id", "author", "body"})
+
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS me_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contact TEXT NOT NULL,
+            contact_norm TEXT NOT NULL UNIQUE,
+            channel TEXT,
+            created_at INTEGER NOT NULL,
+            last_seen_at INTEGER NOT NULL,
+            consent_pd INTEGER NOT NULL DEFAULT 0,
+            consent_at INTEGER,
+            consent_version TEXT,
+            ip TEXT,
+            user_agent TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS me_sessions (
+            token_hash TEXT PRIMARY KEY,
+            profile_id INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            expires_at INTEGER NOT NULL,
+            ip TEXT,
+            user_agent TEXT,
+            FOREIGN KEY(profile_id) REFERENCES me_profiles(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS me_favorites (
+            profile_id INTEGER NOT NULL,
+            file TEXT NOT NULL,
+            added_at INTEGER NOT NULL,
+            PRIMARY KEY(profile_id, file),
+            FOREIGN KEY(profile_id) REFERENCES me_profiles(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS me_downloads (
+            profile_id INTEGER NOT NULL,
+            file TEXT NOT NULL,
+            downloaded_at INTEGER NOT NULL,
+            PRIMARY KEY(profile_id, file),
+            FOREIGN KEY(profile_id) REFERENCES me_profiles(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS me_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            profile_id INTEGER NOT NULL,
+            order_id INTEGER NOT NULL,
+            author TEXT NOT NULL DEFAULT 'client',
+            body TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY(profile_id) REFERENCES me_profiles(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_me_sessions_expires_at
+            ON me_sessions(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_me_downloads_profile_time
+            ON me_downloads(profile_id, downloaded_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_me_messages_order_time
+            ON me_messages(order_id, created_at);
+        """
+    )
+    migrate_legacy_me_items(db, legacy_favorites, "me_favorites", "added_at")
+    migrate_legacy_me_items(db, legacy_downloads, "me_downloads", "downloaded_at")
 
 
 def clean_text(value: object, limit: int) -> str:
@@ -758,6 +896,281 @@ def build_contribution_notification(contribution: dict, contact_repeat_count: in
     return "\n".join(lines)
 
 
+def normalize_me_contact(value: object) -> tuple[str, str, str]:
+    raw = clean_text(value, 200)
+    if not raw:
+        return "", "", ""
+
+    email_match = re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", raw)
+    if email_match:
+        contact = raw.lower()
+        return contact, "email", contact
+
+    normalized = raw.strip()
+    lowered = normalized.lower()
+    if lowered.startswith("https://t.me/"):
+        normalized = normalized[13:]
+    elif lowered.startswith("http://t.me/"):
+        normalized = normalized[12:]
+    elif lowered.startswith("t.me/"):
+        normalized = normalized[5:]
+    elif lowered.startswith("tg:"):
+        normalized = normalized[3:].strip()
+    normalized = normalized.split("?", 1)[0].strip()
+    if re.fullmatch(r"@?[A-Za-z0-9_]{4,32}", normalized):
+        handle = normalized.lstrip("@")
+        contact = "@" + handle
+        return contact, "telegram", contact.lower()
+
+    if any(marker in lowered for marker in ("vk.com", "vk:", "vkontakte")):
+        return raw, "vk", raw.lower()
+
+    return raw, "", raw.lower()
+
+
+def me_contact_variants(contact: str, channel: str = "") -> list[str]:
+    base = clean_text(contact, 200).lower()
+    if not base:
+        return []
+    variants = {base}
+    if channel == "telegram" or re.fullmatch(r"@?[a-z0-9_]{4,32}", base):
+        handle = base.lstrip("@")
+        variants.add(handle)
+        variants.add("@" + handle)
+    return [item for item in variants if item]
+
+
+def me_order_where_clause(profile: dict) -> tuple[str, list[str]]:
+    variants = me_contact_variants(profile.get("contact", ""), profile.get("channel", ""))
+    if not variants:
+        return "0", []
+    clauses: list[str] = []
+    params: list[str] = []
+    for variant in variants:
+        clauses.append("LOWER(COALESCE(contact,'')) = ?")
+        params.append(variant)
+    for variant in variants:
+        if len(variant) >= 4:
+            clauses.append("LOWER(COALESCE(contact,'')) LIKE ?")
+            params.append(f"%{variant}%")
+    return "(" + " OR ".join(clauses) + ")", params
+
+
+def hash_me_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def get_cookie_value(handler: BaseHTTPRequestHandler, name: str) -> str:
+    header = handler.headers.get("Cookie", "")
+    for part in header.split(";"):
+        if "=" not in part:
+            continue
+        key, value = part.split("=", 1)
+        if key.strip() == name:
+            return value.strip()
+    return ""
+
+
+def make_me_cookie(token: str) -> str:
+    return (
+        f"{ME_COOKIE_NAME}={token}; Path=/; Max-Age={ME_SESSION_TTL}; "
+        "HttpOnly; SameSite=Lax; Secure"
+    )
+
+
+def clear_me_cookie() -> str:
+    return f"{ME_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure"
+
+
+def ensure_me_profile(
+    db: sqlite3.Connection,
+    *,
+    contact: str,
+    contact_norm: str,
+    channel: str,
+    consent_pd: bool,
+    ip: str,
+    user_agent: str,
+    now: int,
+) -> dict | None:
+    row = db.execute(
+        "SELECT * FROM me_profiles WHERE contact_norm = ?",
+        (contact_norm,),
+    ).fetchone()
+    if row:
+        consent_at = now if consent_pd else row["consent_at"]
+        db.execute(
+            """
+            UPDATE me_profiles
+            SET contact = ?,
+                channel = ?,
+                last_seen_at = ?,
+                consent_pd = CASE WHEN ? THEN 1 ELSE consent_pd END,
+                consent_at = ?,
+                consent_version = CASE WHEN ? THEN ? ELSE consent_version END,
+                ip = ?,
+                user_agent = ?
+            WHERE id = ?
+            """,
+            (
+                contact,
+                channel or row["channel"],
+                now,
+                1 if consent_pd else 0,
+                consent_at,
+                1 if consent_pd else 0,
+                CONSENT_VERSION,
+                ip,
+                user_agent,
+                row["id"],
+            ),
+        )
+        updated = db.execute("SELECT * FROM me_profiles WHERE id = ?", (row["id"],)).fetchone()
+        return dict(updated) if updated else None
+
+    cursor = db.execute(
+        """
+        INSERT INTO me_profiles (
+            contact, contact_norm, channel, created_at, last_seen_at,
+            consent_pd, consent_at, consent_version, ip, user_agent
+        ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        """,
+        (
+            contact,
+            contact_norm,
+            channel,
+            now,
+            now,
+            1 if consent_pd else 0,
+            now if consent_pd else None,
+            CONSENT_VERSION if consent_pd else "",
+            ip,
+            user_agent,
+        ),
+    )
+    created = db.execute("SELECT * FROM me_profiles WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    return dict(created) if created else None
+
+
+def create_me_session(db: sqlite3.Connection, profile_id: int, handler: BaseHTTPRequestHandler, now: int) -> str:
+    token = secrets.token_urlsafe(32)
+    db.execute("DELETE FROM me_sessions WHERE expires_at <= ?", (now,))
+    db.execute(
+        """
+        INSERT INTO me_sessions (token_hash, profile_id, created_at, expires_at, ip, user_agent)
+        VALUES (?,?,?,?,?,?)
+        """,
+        (
+            hash_me_token(token),
+            profile_id,
+            now,
+            now + ME_SESSION_TTL,
+            get_client_ip(handler),
+            clean_text(handler.headers.get("User-Agent"), 280),
+        ),
+    )
+    return token
+
+
+def get_me_profile_from_request(handler: BaseHTTPRequestHandler) -> dict | None:
+    token = get_cookie_value(handler, ME_COOKIE_NAME)
+    if not token:
+        return None
+    now = int(time.time())
+    token_hash = hash_me_token(token)
+    with get_db() as db:
+        ensure_me_tables(db)
+        row = db.execute(
+            """
+            SELECT p.*
+            FROM me_sessions s
+            JOIN me_profiles p ON p.id = s.profile_id
+            WHERE s.token_hash = ? AND s.expires_at > ?
+            """,
+            (token_hash, now),
+        ).fetchone()
+        if not row:
+            db.execute("DELETE FROM me_sessions WHERE token_hash = ? OR expires_at <= ?", (token_hash, now))
+            return None
+        db.execute("UPDATE me_profiles SET last_seen_at = ? WHERE id = ?", (now, row["id"]))
+        return dict(row)
+
+
+def destroy_me_session(handler: BaseHTTPRequestHandler) -> None:
+    token = get_cookie_value(handler, ME_COOKIE_NAME)
+    if not token:
+        return
+    with get_db() as db:
+        ensure_me_tables(db)
+        db.execute("DELETE FROM me_sessions WHERE token_hash = ?", (hash_me_token(token),))
+
+
+def build_me_profile_payload(profile: dict) -> dict:
+    return {
+        "id": profile.get("id"),
+        "contact": profile.get("contact", ""),
+        "channel": profile.get("channel", "") or "email",
+    }
+
+
+def build_me_request_notification(profile: dict, ip: str, user_agent: str) -> str:
+    lines = ["🔐 Запрос личного кабинета"]
+    created_label = format_admin_timestamp(int(profile.get("last_seen_at") or time.time()))
+    if created_label:
+        lines.append(f"Когда: {created_label} (МСК)")
+    lines.append("")
+    lines.append("👤 Кто")
+    lines.append(f"• Контакт: {profile.get('contact') or 'не указан'}")
+    if profile.get("channel"):
+        lines.append(f"• Канал: {profile['channel']}")
+    masked_ip = mask_ip(ip)
+    if masked_ip:
+        lines.append(f"• IP: {masked_ip}")
+    device_label = summarize_user_agent(user_agent)
+    if device_label:
+        lines.append(f"• Устройство: {device_label}")
+    lines.append("")
+    lines.append("✅ Согласия")
+    lines.append("• Обработка ПДн: да")
+    if profile.get("consent_at"):
+        lines.append(f"• Время: {format_admin_timestamp(int(profile['consent_at']))} (МСК)")
+    if profile.get("consent_version"):
+        lines.append(f"• Версия: {profile['consent_version']} · {CONSENT_DOCUMENT_URL}")
+    return "\n".join(lines)
+
+
+def build_me_message_notification(profile: dict, order_id: int, body: str) -> str:
+    lines = [f"💬 Сообщение по заявке #{order_id}"]
+    lines.append(f"• Контакт: {profile.get('contact') or 'не указан'}")
+    lines.append("")
+    lines.append(clean_text(body, 4000))
+    return "\n".join(lines)
+
+
+def me_referral_code(profile: dict) -> str:
+    source = profile.get("contact_norm") or profile.get("contact") or str(profile.get("id", ""))
+    digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8].upper()
+    return "BS" + digest
+
+
+def record_me_download_if_logged(handler: BaseHTTPRequestHandler, file_value: str) -> None:
+    profile = get_me_profile_from_request(handler)
+    if not profile:
+        return
+    now = int(time.time())
+    with get_db() as db:
+        ensure_me_tables(db)
+        db.execute(
+            """
+            INSERT INTO me_downloads (profile_id, file, downloaded_at)
+            VALUES (?,?,?)
+            ON CONFLICT(profile_id, file)
+            DO UPDATE SET downloaded_at = excluded.downloaded_at
+            """,
+            (profile["id"], file_value, now),
+        )
+
+
 def cleanup_old_rows(db: sqlite3.Connection) -> None:
     if random.random() > 0.04:
         return
@@ -967,12 +1380,14 @@ class StatsHandler(BaseHTTPRequestHandler):
             % (self.address_string(), self.log_date_time_string(), fmt % args)
         )
 
-    def _send_json(self, status: int, payload: dict) -> None:
+    def _send_json(self, status: int, payload: dict, extra_headers: list[tuple[str, str]] | None = None) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for header_name, header_value in extra_headers or []:
+            self.send_header(header_name, header_value)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -1052,8 +1467,289 @@ class StatsHandler(BaseHTTPRequestHandler):
         self._send_json(401, {"ok": False, "error": "Unauthorized"})
         return False
 
+    def _require_me_profile(self) -> dict | None:
+        profile = get_me_profile_from_request(self)
+        if profile:
+            return profile
+        self._send_json(401, {"ok": False, "loggedIn": False, "error": "Unauthorized"})
+        return None
+
+    def _handle_me_get(self, parsed) -> None:
+        path = parsed.path.rstrip("/") or "/"
+
+        if path == "/api/me/whoami":
+            profile = get_me_profile_from_request(self)
+            if not profile:
+                self._send_json(200, {"ok": True, "loggedIn": False})
+                return
+            public_profile = build_me_profile_payload(profile)
+            self._send_json(200, {"ok": True, "loggedIn": True, **public_profile, "profile": public_profile})
+            return
+
+        if path == "/api/me/telegram-config":
+            self._send_json(
+                200,
+                {"ok": True, "enabled": bool(ME_TG_BOT_USERNAME), "botUsername": ME_TG_BOT_USERNAME},
+            )
+            return
+
+        if path == "/api/me/vk-config":
+            self._send_json(200, {"ok": True, "enabled": False})
+            return
+
+        if path == "/api/me/verify":
+            self.send_response(302)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Location", "/me?err=unknown")
+            self.end_headers()
+            return
+
+        profile = self._require_me_profile()
+        if not profile:
+            return
+
+        if path == "/api/me/favorites":
+            with get_db() as db:
+                ensure_me_tables(db)
+                rows = db.execute(
+                    """
+                    SELECT file, added_at
+                    FROM me_favorites
+                    WHERE profile_id = ?
+                    ORDER BY added_at DESC
+                    LIMIT 200
+                    """,
+                    (profile["id"],),
+                ).fetchall()
+            self._send_json(200, {"ok": True, "favorites": [dict(row) for row in rows]})
+            return
+
+        if path == "/api/me/downloads":
+            with get_db() as db:
+                ensure_me_tables(db)
+                rows = db.execute(
+                    """
+                    SELECT file, downloaded_at
+                    FROM me_downloads
+                    WHERE profile_id = ?
+                    ORDER BY downloaded_at DESC
+                    LIMIT 40
+                    """,
+                    (profile["id"],),
+                ).fetchall()
+            self._send_json(200, {"ok": True, "downloads": [dict(row) for row in rows]})
+            return
+
+        if path == "/api/me/orders":
+            where_sql, params = me_order_where_clause(profile)
+            with get_db() as db:
+                ensure_orders_table(db)
+                rows = db.execute(
+                    f"""
+                    SELECT id, work_type, topic, subject, deadline, status, created_at
+                    FROM orders
+                    WHERE {where_sql}
+                    ORDER BY created_at DESC
+                    LIMIT 100
+                    """,
+                    params,
+                ).fetchall()
+            self._send_json(200, {"ok": True, "orders": [dict(row) for row in rows]})
+            return
+
+        message_match = re.fullmatch(r"/api/me/orders/(\d+)/messages", path)
+        if message_match:
+            order_id = int(message_match.group(1))
+            where_sql, params = me_order_where_clause(profile)
+            with get_db() as db:
+                ensure_orders_table(db)
+                ensure_me_tables(db)
+                order = db.execute(
+                    f"SELECT id FROM orders WHERE id = ? AND {where_sql}",
+                    [order_id, *params],
+                ).fetchone()
+                if not order:
+                    self._send_json(404, {"ok": False, "error": "Order not found"})
+                    return
+                rows = db.execute(
+                    """
+                    SELECT id, author, body, created_at
+                    FROM me_messages
+                    WHERE profile_id = ? AND order_id = ?
+                    ORDER BY created_at ASC
+                    LIMIT 200
+                    """,
+                    (profile["id"], order_id),
+                ).fetchall()
+            self._send_json(200, {"ok": True, "messages": [dict(row) for row in rows]})
+            return
+
+        if path == "/api/me/referral":
+            code = me_referral_code(profile)
+            share_url = f"{SITE_ORIGIN.rstrip('/')}/?ref={quote(code)}"
+            with get_db() as db:
+                ensure_orders_table(db)
+                attributed = db.execute(
+                    """
+                    SELECT COUNT(*) AS c
+                    FROM orders
+                    WHERE entry_url LIKE ? OR referrer LIKE ?
+                    """,
+                    (f"%ref={code}%", f"%ref={code}%"),
+                ).fetchone()["c"]
+            self._send_json(200, {"ok": True, "code": code, "shareUrl": share_url, "attributedCount": int(attributed)})
+            return
+
+        self._send_json(404, {"ok": False, "error": "Not found"})
+
+    def _handle_me_post(self, path: str, payload: dict) -> None:
+        if path == "/api/me/request-link":
+            ip = get_client_ip(self)
+            now_float = time.time()
+            rate_key = f"me:{ip}"
+            attempts = _login_attempts.get(rate_key, [])
+            attempts = [attempt for attempt in attempts if now_float - attempt < ME_RATE_WINDOW]
+            _login_attempts[rate_key] = attempts
+            if len(attempts) >= ME_RATE_MAX:
+                self._send_json(429, {"ok": False, "error": "Слишком много заявок. Попробуйте позже."})
+                return
+            _login_attempts[rate_key].append(now_float)
+
+            contact, channel, contact_norm = normalize_me_contact(payload.get("contact"))
+            if not contact or channel not in {"email", "telegram", "vk"}:
+                self._send_json(400, {"ok": False, "error": "Укажите Telegram или email"})
+                return
+            if not parse_bool_field(payload.get("consent_pd")):
+                self._send_json(400, {"ok": False, "error": "Подтвердите согласие на обработку персональных данных"})
+                return
+
+            now = int(now_float)
+            user_agent = clean_text(self.headers.get("User-Agent"), 280)
+            with get_db() as db:
+                ensure_me_tables(db)
+                profile = ensure_me_profile(
+                    db,
+                    contact=contact,
+                    contact_norm=contact_norm,
+                    channel=channel,
+                    consent_pd=True,
+                    ip=ip,
+                    user_agent=user_agent,
+                    now=now,
+                )
+                if not profile:
+                    self._send_json(500, {"ok": False, "error": "Не удалось создать профиль"})
+                    return
+                token = create_me_session(db, int(profile["id"]), self, now)
+
+            notification = build_me_request_notification(profile, ip, user_agent)
+            vk_notify(notification)
+            email_notify("БиблиоСалон: запрос личного кабинета", notification)
+
+            public_profile = build_me_profile_payload(profile)
+            self._send_json(
+                200,
+                {"ok": True, "auto": True, "session": True, "loggedIn": True, **public_profile, "profile": public_profile},
+                [("Set-Cookie", make_me_cookie(token))],
+            )
+            return
+
+        if path == "/api/me/logout":
+            destroy_me_session(self)
+            self._send_json(200, {"ok": True}, [("Set-Cookie", clear_me_cookie())])
+            return
+
+        if path == "/api/me/telegram-login":
+            self._send_json(503, {"ok": False, "error": "Telegram login is not configured"})
+            return
+
+        profile = self._require_me_profile()
+        if not profile:
+            return
+
+        if path == "/api/me/favorites":
+            raw_files = payload.get("files")
+            if not isinstance(raw_files, list):
+                raw_files = [payload.get("file")]
+            now = int(time.time())
+            valid_files: list[str] = []
+            for raw_file in raw_files[:200]:
+                file_value = sanitize_file(raw_file)
+                if file_value and file_value not in valid_files:
+                    valid_files.append(file_value)
+            with get_db() as db:
+                ensure_me_tables(db)
+                for file_value in valid_files:
+                    db.execute(
+                        "INSERT OR IGNORE INTO me_favorites (profile_id, file, added_at) VALUES (?,?,?)",
+                        (profile["id"], file_value, now),
+                    )
+            self._send_json(200, {"ok": True, "saved": len(valid_files)})
+            return
+
+        message_match = re.fullmatch(r"/api/me/orders/(\d+)/messages", path)
+        if message_match:
+            order_id = int(message_match.group(1))
+            body = clean_text(payload.get("body"), 4000)
+            if not body:
+                self._send_json(400, {"ok": False, "error": "Message is empty"})
+                return
+            where_sql, params = me_order_where_clause(profile)
+            now = int(time.time())
+            with get_db() as db:
+                ensure_orders_table(db)
+                ensure_me_tables(db)
+                order = db.execute(
+                    f"SELECT id FROM orders WHERE id = ? AND {where_sql}",
+                    [order_id, *params],
+                ).fetchone()
+                if not order:
+                    self._send_json(404, {"ok": False, "error": "Order not found"})
+                    return
+                cursor = db.execute(
+                    """
+                    INSERT INTO me_messages (profile_id, order_id, author, body, created_at)
+                    VALUES (?,?,?,?,?)
+                    """,
+                    (profile["id"], order_id, "client", body, now),
+                )
+                message = {
+                    "id": cursor.lastrowid,
+                    "author": "client",
+                    "body": body,
+                    "created_at": now,
+                }
+            vk_notify(build_me_message_notification(profile, order_id, body))
+            self._send_json(200, {"ok": True, "message": message})
+            return
+
+        self._send_json(404, {"ok": False, "error": "Not found"})
+
+    def _handle_me_delete(self, path: str, payload: dict) -> bool:
+        if path != "/api/me/favorites":
+            return False
+        profile = self._require_me_profile()
+        if not profile:
+            return True
+        raw_file = clean_text(payload.get("file"), 500)
+        file_value = raw_file.replace("\\", "/")
+        if not file_value.startswith("files/") or ".." in file_value.split("/"):
+            self._send_json(400, {"ok": False, "error": "Invalid file"})
+            return True
+        with get_db() as db:
+            ensure_me_tables(db)
+            db.execute(
+                "DELETE FROM me_favorites WHERE profile_id = ? AND file = ?",
+                (profile["id"], file_value),
+            )
+        self._send_json(200, {"ok": True})
+        return True
+
     def _handle_get(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/me/"):
+            self._handle_me_get(parsed)
+            return
         if parsed.path == "/api/doc-stats/health":
             self._send_json(200, {"ok": True, "service": "doc-stats"})
             return
@@ -1071,6 +1767,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                     except Exception as exc:
                         self._send_json(500, {"ok": False, "error": str(exc)})
                         return
+                record_me_download_if_logged(self, file_value)
             self.send_response(302)
             self.send_header("Cache-Control", "no-store")
             self.send_header("Location", "/" + quote(file_value, safe="/"))
@@ -1422,6 +2119,21 @@ class StatsHandler(BaseHTTPRequestHandler):
                 self._handle_public_contribution(payload, files)
             return
 
+        if normalized_path.startswith("/api/me/"):
+            try:
+                payload, _files = self._read_form_payload(max_size=64 * 1024)
+            except json.JSONDecodeError:
+                self._send_json(400, {"ok": False, "error": "Invalid JSON"})
+                return
+            except (UnicodeDecodeError, ValueError) as exc:
+                self._send_json(400, {"ok": False, "error": str(exc)})
+                return
+            if not isinstance(payload, dict):
+                self._send_json(400, {"ok": False, "error": "Invalid payload"})
+                return
+            self._handle_me_post(normalized_path, payload)
+            return
+
         # Upload must be handled BEFORE _read_json() since it's multipart
         if parsed.path == "/api/admin/upload":
             if not self._require_admin():
@@ -1464,6 +2176,8 @@ class StatsHandler(BaseHTTPRequestHandler):
                 except Exception as exc:
                     self._send_json(500, {"ok": False, "error": str(exc)})
                     return
+            if action == "download" and counted:
+                record_me_download_if_logged(self, file_value)
             self._send_json(200, {"ok": True, "counted": counted, "stat": stat})
             return
         if parsed.path == "/api/doc-stats/reaction":
@@ -1601,6 +2315,15 @@ class StatsHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self) -> None:
         parsed = urlparse(self.path)
+        normalized_path = parsed.path.rstrip("/") or "/"
+        if normalized_path.startswith("/api/me/"):
+            try:
+                payload = self._read_json()
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                self._send_json(400, {"ok": False, "error": "Invalid JSON"})
+                return
+            if self._handle_me_delete(normalized_path, payload):
+                return
         if parsed.path == "/api/admin/docs":
             if not self._require_admin():
                 return
