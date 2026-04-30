@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
+import html
 import json
 import os
 import random
@@ -13,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlparse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import urllib.error
 import urllib.request
 from zoneinfo import ZoneInfo
 
@@ -89,6 +91,23 @@ ME_SESSION_TTL = int(os.environ.get("SALON_ME_SESSION_TTL", str(30 * 24 * 60 * 6
 ME_RATE_WINDOW = 60 * 60
 ME_RATE_MAX = 5
 ME_TG_BOT_USERNAME = os.environ.get("SALON_TG_BOT_USERNAME", "").strip().lstrip("@")
+TELEGRAM_BOT_TOKEN = (
+    os.environ.get("SALON_TG_BOT_TOKEN")
+    or os.environ.get("SALON_TELEGRAM_BOT_TOKEN")
+    or os.environ.get("TELEGRAM_BOT_TOKEN")
+    or ""
+).strip()
+TELEGRAM_CHANNEL_ID = (
+    os.environ.get("SALON_TG_CHANNEL_ID")
+    or os.environ.get("SALON_TELEGRAM_CHANNEL_ID")
+    or os.environ.get("TELEGRAM_CHANNEL_ID")
+    or ""
+).strip()
+TELEGRAM_PREVIEW_IMAGE_URL = os.environ.get(
+    "SALON_TELEGRAM_PREVIEW_IMAGE_URL",
+    f"{SITE_ORIGIN.rstrip('/')}/og-image.png",
+).strip()
+TELEGRAM_AUTO_POST = os.environ.get("SALON_TELEGRAM_AUTO_POST", "").strip().lower() in {"1", "true", "yes", "on", "да"}
 CONTRIBUTION_ALLOWED_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".txt", ".rtf", ".odt", ".ods", ".odp",
@@ -590,6 +609,320 @@ def parse_bool_field(value: object) -> bool:
         return value != 0
     normalized = str(value).strip().lower()
     return normalized in {"1", "true", "yes", "y", "on", "accepted", "agree", "agreed", "да"}
+
+
+def parse_truthy(value: object, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, str) and not value.strip():
+        return default
+    return parse_bool_field(value)
+
+
+def catalog_doc_file(doc: dict) -> str:
+    file_value = str(doc.get("file") or "").strip().replace("\\", "/").lstrip("/")
+    if not file_value.startswith("files/") or ".." in file_value.split("/"):
+        raise ValueError("Invalid document file")
+    return file_value
+
+
+def resolve_document_url(doc: dict) -> str:
+    return f"{SITE_ORIGIN.rstrip('/')}/doc/{quote(catalog_doc_file(doc), safe='/')}/"
+
+
+def resolve_document_file_url(doc: dict) -> str:
+    return f"{SITE_ORIGIN.rstrip('/')}/{quote(catalog_doc_file(doc), safe='/')}"
+
+
+def resolve_document_preview_url(doc: dict) -> str:
+    preview = clean_url(doc.get("previewImage"), 500)
+    if preview:
+        return preview
+    return f"{resolve_document_url(doc)}og.svg"
+
+
+def resolve_document_page_dir(doc: dict) -> str:
+    return os.path.normpath(os.path.join(BASE_DIR, "doc", catalog_doc_file(doc)))
+
+
+def doc_extension(doc: dict) -> str:
+    source = str(doc.get("filename") or doc.get("file") or "")
+    ext = source.rsplit(".", 1)[-1].strip().upper() if "." in source else ""
+    if ext == "DOCX":
+        return "DOC"
+    return ext or "DOC"
+
+
+def doc_title(doc: dict) -> str:
+    return clean_text(doc.get("catalogTitle") or doc.get("title") or doc.get("filename") or "Документ", 160)
+
+
+def doc_description(doc: dict) -> str:
+    return clean_text(doc.get("catalogDescription") or doc.get("description") or doc.get("text") or "", 420)
+
+
+def telegram_hashtag(value: object) -> str:
+    words = re.findall(r"[A-Za-zА-Яа-яЁё0-9]+", str(value or ""))
+    if not words:
+        return ""
+    tag = "#" + "".join(word[:1].upper() + word[1:] for word in words)
+    return tag[:64]
+
+
+def document_hashtags(doc: dict, limit: int = 8) -> str:
+    raw_values = [
+        doc.get("subject"),
+        doc.get("docType"),
+        *(doc.get("tags") if isinstance(doc.get("tags"), list) else []),
+    ]
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in raw_values:
+        tag = telegram_hashtag(value)
+        if not tag or tag.lower() in seen:
+            continue
+        seen.add(tag.lower())
+        result.append(tag)
+        if len(result) >= limit:
+            break
+    return " ".join(result)
+
+
+def build_document_og_svg(doc: dict) -> str:
+    title = html.escape(clean_text(doc_title(doc), 96))
+    subject = html.escape(clean_text(doc.get("subject") or doc.get("category") or "Библиотека Салона", 64))
+    doc_type = html.escape(clean_text(doc.get("docType") or doc.get("category") or "Документ", 42))
+    ext = html.escape(doc_extension(doc))
+    size = html.escape(clean_text(doc.get("size") or "", 20))
+    title_lines: list[str] = []
+    words = title.split()
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if len(candidate) <= 30 or not current:
+            current = candidate
+        else:
+            title_lines.append(current)
+            current = word
+        if len(title_lines) == 2:
+            break
+    if current and len(title_lines) < 3:
+        title_lines.append(current)
+    if not title_lines:
+        title_lines = [title]
+    title_svg = "\n  ".join(
+        f'<text x="82" y="{228 + index * 68}" fill="#f5f2ea" '
+        f'font-family="Georgia, Times New Roman, serif" font-size="56" font-weight="700">{line}</text>'
+        for index, line in enumerate(title_lines[:3])
+    )
+    info = " · ".join(part for part in [doc_type, ext, size] if part)
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#08070b"/>
+  <rect x="28" y="28" width="1144" height="574" rx="34" fill="#121019"/>
+  <rect x="28" y="28" width="1144" height="574" rx="34" stroke="#d7b35a" stroke-opacity=".22"/>
+  <circle cx="1030" cy="118" r="170" fill="#d7b35a" fill-opacity=".08"/>
+  <circle cx="190" cy="572" r="230" fill="#f1d99d" fill-opacity=".06"/>
+  <text x="82" y="108" fill="#f1d99d" font-family="Arial, sans-serif" font-size="22" font-weight="800" letter-spacing=".14em">БИБЛИОТЕКА САЛОНА</text>
+  <text x="82" y="166" fill="#c8bda1" font-family="Arial, sans-serif" font-size="28" font-weight="700">{subject}</text>
+  {title_svg}
+  <rect x="82" y="456" width="640" height="74" rx="22" fill="#ffffff" fill-opacity=".045"/>
+  <text x="116" y="504" fill="#f1d99d" font-family="Arial, sans-serif" font-size="25" font-weight="800">{html.escape(info)}</text>
+  <text x="82" y="574" fill="#c8bda1" font-family="Arial, sans-serif" font-size="22" font-weight="700">bibliosaloon.ru · готовые учебные материалы</text>
+</svg>'''
+
+
+def build_document_page(doc: dict, total_count: int) -> str:
+    title = doc_title(doc)
+    description = doc_description(doc) or "Документ из Библиотеки Салона."
+    doc_url = resolve_document_url(doc)
+    file_url = resolve_document_file_url(doc)
+    og_url = resolve_document_preview_url(doc)
+    og_type = "image/png" if og_url.lower().split("?", 1)[0].endswith(".png") else "image/svg+xml"
+    info_line = " · ".join(
+        part
+        for part in [
+            clean_text(doc.get("docType") or doc.get("category") or "Документ", 48),
+            clean_text(doc.get("subject") or "", 48),
+            doc_extension(doc),
+            clean_text(doc.get("size") or "", 20),
+        ]
+        if part
+    )
+    tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
+    tags_html = "".join(f"<span>{html.escape(clean_text(tag, 48))}</span>" for tag in tags[:8])
+    schema = {
+        "@context": "https://schema.org",
+        "@type": ["ScholarlyArticle", "LearningResource"],
+        "headline": title,
+        "name": title,
+        "description": description,
+        "datePublished": "2026-01-01",
+        "inLanguage": "ru",
+        "learningResourceType": clean_text(doc.get("docType") or doc.get("category") or "Документ", 80),
+        "educationalLevel": "Высшее образование",
+        "author": {"@type": "Organization", "name": "Академический Салон", "url": SITE_ORIGIN.rstrip("/")},
+        "publisher": {"@type": "Organization", "name": "Академический Салон", "url": SITE_ORIGIN.rstrip("/")},
+        "about": {"@type": "Thing", "name": clean_text(doc.get("subject") or doc.get("category") or "Общее", 80)},
+        "keywords": ", ".join(str(tag) for tag in tags),
+        "url": doc_url,
+        "mainEntityOfPage": doc_url,
+        "isAccessibleForFree": True,
+    }
+    schema_json = json.dumps(schema, ensure_ascii=False).replace("</", "<\\/")
+    return f'''<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{html.escape(title)} - Библиотека академического салона</title>
+  <meta name="description" content="{html.escape(description)}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="Библиотека академического салона">
+  <meta property="og:title" content="{html.escape(title)}">
+  <meta property="og:description" content="{html.escape(info_line or description)}">
+  <meta property="og:url" content="{html.escape(doc_url)}">
+  <meta property="og:image" content="{html.escape(og_url)}">
+  <meta property="og:image:type" content="{og_type}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{html.escape(title)}">
+  <meta name="twitter:description" content="{html.escape(info_line or description)}">
+  <meta name="twitter:image" content="{html.escape(og_url)}">
+  <link rel="canonical" href="{html.escape(doc_url)}">
+  <script type="application/ld+json">{schema_json}</script>
+  <style>
+    :root {{ color-scheme: dark; --bg:#08070b; --panel:#121019; --text:#f5f2ea; --muted:#c8bda1; --accent:#d7b35a; --line:rgba(255,255,255,.10); }}
+    * {{ box-sizing:border-box; }}
+    body {{ margin:0; min-height:100vh; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at top right,rgba(215,179,90,.18),transparent 34%),var(--bg); color:var(--text); }}
+    main {{ width:min(100%,860px); margin:0 auto; min-height:100vh; padding:28px 18px; display:grid; align-content:center; }}
+    .card {{ border:1px solid var(--line); background:linear-gradient(180deg,rgba(18,16,25,.97),rgba(8,7,11,.97)); border-radius:28px; padding:30px; box-shadow:0 30px 80px rgba(0,0,0,.35); }}
+    .eyebrow {{ display:inline-flex; padding:9px 13px; border-radius:999px; background:rgba(215,179,90,.12); color:#f1d99d; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }}
+    h1 {{ margin:22px 0 14px; font-family:Georgia,"Times New Roman",serif; font-size:clamp(34px,7vw,64px); line-height:.98; letter-spacing:0; }}
+    p {{ margin:0; color:rgba(245,242,234,.78); line-height:1.62; font-size:16px; }}
+    .meta {{ margin:18px 0 22px; color:var(--muted); font-weight:700; }}
+    .tags {{ display:flex; flex-wrap:wrap; gap:8px; margin:22px 0; }}
+    .tags span {{ border:1px solid var(--line); border-radius:999px; padding:7px 10px; color:var(--muted); font-size:13px; }}
+    .actions {{ display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }}
+    a {{ color:inherit; text-decoration:none; }}
+    .primary,.secondary {{ min-height:48px; display:inline-flex; align-items:center; justify-content:center; border-radius:14px; padding:0 18px; font-weight:800; }}
+    .primary {{ background:linear-gradient(135deg,#f1d99d,#d7b35a); color:#121019; }}
+    .secondary {{ border:1px solid var(--line); color:#f1d99d; }}
+    .foot {{ margin-top:22px; color:rgba(245,242,234,.46); font-size:13px; }}
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <span class="eyebrow">Библиотека Салона · {total_count}+ материалов</span>
+      <h1>{html.escape(title)}</h1>
+      <p class="meta">{html.escape(info_line)}</p>
+      <p>{html.escape(description)}</p>
+      <div class="tags">{tags_html}</div>
+      <div class="actions">
+        <a class="primary" href="{html.escape(file_url)}">Скачать файл</a>
+        <a class="secondary" href="/catalog">Открыть каталог</a>
+      </div>
+      <p class="foot">Материал опубликован как учебный пример. Используйте его как ориентир для собственной работы.</p>
+    </section>
+  </main>
+</body>
+</html>'''
+
+
+def write_document_page(doc: dict, total_count: int) -> None:
+    page_dir = resolve_document_page_dir(doc)
+    os.makedirs(page_dir, exist_ok=True)
+    with open(os.path.join(page_dir, "index.html"), "w", encoding="utf-8") as f:
+        f.write(build_document_page(doc, total_count))
+    with open(os.path.join(page_dir, "og.svg"), "w", encoding="utf-8") as f:
+        f.write(build_document_og_svg(doc))
+
+
+def build_telegram_document_text(doc: dict) -> str:
+    title = html.escape(doc_title(doc))
+    description = html.escape(doc_description(doc))
+    meta = " · ".join(
+        part
+        for part in [
+            clean_text(doc.get("docType") or doc.get("category") or "Документ", 48),
+            clean_text(doc.get("subject") or "", 48),
+            doc_extension(doc),
+            clean_text(doc.get("size") or "", 20),
+        ]
+        if part
+    )
+    lines = [
+        "<b>Новая работа в библиотеке</b>",
+        "",
+        f"<b>{title}</b>",
+    ]
+    if meta:
+        lines.append(html.escape(meta))
+    if description:
+        lines.extend(["", description])
+    lines.extend(["", "Открыть карточку и скачать файл можно по кнопкам ниже."])
+    hashtags = document_hashtags(doc)
+    if hashtags:
+        lines.extend(["", hashtags])
+    return "\n".join(lines).replace("\x00", " ").strip()[:1000]
+
+
+def telegram_api_request(method: str, payload: dict) -> dict:
+    if not TELEGRAM_BOT_TOKEN:
+        raise RuntimeError("Telegram bot token is not configured")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Telegram API error {exc.code}: {body[:400]}") from exc
+    if not result.get("ok"):
+        raise RuntimeError(f"Telegram API error: {result}")
+    return result
+
+
+def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
+    target_chat_id = clean_text(chat_id or TELEGRAM_CHANNEL_ID, 120)
+    if not target_chat_id:
+        raise RuntimeError("Telegram channel is not configured")
+    text = build_telegram_document_text(doc)
+    reply_markup = {
+        "inline_keyboard": [
+            [{"text": "Открыть в библиотеке", "url": resolve_document_url(doc)}],
+            [{"text": "Скачать файл", "url": resolve_document_file_url(doc)}],
+        ]
+    }
+    preview_url = clean_url(doc.get("previewImage") or TELEGRAM_PREVIEW_IMAGE_URL, 500)
+    if preview_url:
+        return telegram_api_request(
+            "sendPhoto",
+            {
+                "chat_id": target_chat_id,
+                "photo": preview_url,
+                "caption": text[:1024],
+                "parse_mode": "HTML",
+                "reply_markup": reply_markup,
+            },
+        )
+    return telegram_api_request(
+        "sendMessage",
+        {
+            "chat_id": target_chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": False,
+            "reply_markup": reply_markup,
+        },
+    )
 
 
 def build_consent_fields(payload: dict, consent_at: int) -> dict[str, object]:
@@ -2226,6 +2559,72 @@ class StatsHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": True})
             return
 
+        if parsed.path == "/api/admin/docs/publish-telegram":
+            if not self._require_admin():
+                return
+            file_path = payload.get("file")
+            if not file_path:
+                self._send_json(400, {"ok": False, "error": "file required"})
+                return
+            with _catalog_lock:
+                catalog = load_catalog()
+                idx = find_doc_index(catalog, file_path)
+                if idx < 0:
+                    self._send_json(404, {"ok": False, "error": "Document not found"})
+                    return
+                doc = catalog[idx]
+            try:
+                write_document_page(doc, len(catalog))
+            except Exception as exc:
+                self._send_json(500, {"ok": False, "error": f"Document page was not generated: {exc}"})
+                return
+            post_text = build_telegram_document_text(doc)
+            if parse_truthy(payload.get("dryRun"), False):
+                self._send_json(
+                    200,
+                    {
+                        "ok": True,
+                        "dryRun": True,
+                        "doc": doc,
+                        "docUrl": resolve_document_url(doc),
+                        "fileUrl": resolve_document_file_url(doc),
+                        "text": post_text,
+                    },
+                )
+                return
+            try:
+                result = telegram_publish_document(doc, payload.get("chatId") or payload.get("chat_id"))
+            except Exception as exc:
+                self._send_json(502, {"ok": False, "error": str(exc), "text": post_text})
+                return
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "docUrl": resolve_document_url(doc),
+                    "fileUrl": resolve_document_file_url(doc),
+                    "text": post_text,
+                    "telegram": result,
+                },
+            )
+            return
+
+        if parsed.path == "/api/admin/docs/rebuild-pages":
+            if not self._require_admin():
+                return
+            with _catalog_lock:
+                catalog = load_catalog()
+            generated = 0
+            errors = []
+            for doc in catalog:
+                try:
+                    write_document_page(doc, len(catalog))
+                    generated += 1
+                except Exception as exc:
+                    errors.append({"file": doc.get("file"), "error": str(exc)})
+            self._send_json(200, {"ok": True, "generated": generated, "errors": errors[:20]})
+            return
+
         if parsed.path == "/api/admin/rebuild":
             if not self._require_admin():
                 return
@@ -2251,7 +2650,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"ok": False, "error": "file and updates required"})
                 return
             allowed_fields = {"title", "description", "category", "subject", "course", "docType",
-                              "catalogTitle", "catalogDescription", "tags"}
+                              "catalogTitle", "catalogDescription", "tags", "previewImage"}
             with _catalog_lock:
                 catalog = load_catalog()
                 idx = find_doc_index(catalog, file_path)
@@ -2262,6 +2661,10 @@ class StatsHandler(BaseHTTPRequestHandler):
                     if key in allowed_fields:
                         catalog[idx][key] = val
                 save_catalog(catalog)
+            try:
+                write_document_page(catalog[idx], len(catalog))
+            except Exception:
+                pass
             self._send_json(200, {"ok": True, "doc": catalog[idx]})
             return
         if parsed.path == "/api/admin/orders":
@@ -2451,11 +2854,34 @@ class StatsHandler(BaseHTTPRequestHandler):
             "catalogDescription": metadata.get("description", ""),
             "docType": metadata.get("docType", metadata.get("category", "Другое")),
         }
+        if metadata.get("previewImage"):
+            doc_entry["previewImage"] = clean_url(metadata.get("previewImage"), 500)
         with _catalog_lock:
             catalog = load_catalog()
             catalog.append(doc_entry)
             save_catalog(catalog)
-        self._send_json(200, {"ok": True, "doc": doc_entry, "totalDocs": len(catalog)})
+        publish_result = None
+        publish_error = None
+        try:
+            write_document_page(doc_entry, len(catalog))
+        except Exception as exc:
+            publish_error = f"Document page was not generated: {exc}"
+        if parse_truthy(metadata.get("publishTelegram"), TELEGRAM_AUTO_POST):
+            try:
+                publish_result = telegram_publish_document(doc_entry, metadata.get("telegramChatId"))
+            except Exception as exc:
+                publish_error = str(exc)
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "doc": doc_entry,
+                "totalDocs": len(catalog),
+                "docUrl": resolve_document_url(doc_entry),
+                "telegram": publish_result,
+                "warning": publish_error,
+            },
+        )
 
 
 def main() -> None:
