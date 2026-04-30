@@ -221,6 +221,10 @@ def save_catalog(catalog: list[dict]) -> None:
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=None, separators=(",", ":"))
     os.replace(tmp_path, CATALOG_PATH)
+    try:
+        refresh_static_catalog(catalog)
+    except Exception:
+        pass
 
 
 def find_doc_index(catalog: list[dict], file_path: str) -> int:
@@ -841,26 +845,226 @@ def write_document_page(doc: dict, total_count: int) -> None:
         f.write(build_document_og_svg(doc))
 
 
+CATEGORY_LABELS = {
+    "Самостоятельные работы": "Самост.",
+    "Методические материалы": "Методич.",
+    "Отчёты по практике": "Практика",
+    "ВКР и дипломы": "ВКР",
+    "Курсовые": "Курсовые",
+    "Конспекты лекций": "Конспекты",
+    "НПР": "НПР",
+    "Рефераты": "Рефераты",
+    "Эссе": "Эссе",
+    "Другое": "Другое",
+}
+CATEGORY_ORDER = list(CATEGORY_LABELS)
+
+
+def catalog_display_year(doc: dict) -> str:
+    added_at = str(doc.get("addedAt") or "").strip()
+    year_match = re.match(r"^(\d{4})", added_at)
+    if year_match:
+        return year_match.group(1)
+    return str(datetime.now(MOSCOW_TZ).year)
+
+
+def catalog_attr(value: object, limit: int = 500) -> str:
+    return html.escape(clean_text(value, limit), quote=True)
+
+
+def build_catalog_row(doc: dict, index: int, cid_attr: str) -> str:
+    file_value = catalog_doc_file(doc)
+    title = doc_title(doc)
+    description = doc_description(doc)
+    subject = clean_text(doc.get("subject") or doc.get("category") or "Общее", 80)
+    category = clean_text(doc.get("category") or "Другое", 80)
+    doc_type = clean_text(doc.get("docType") or category or "Документ", 80)
+    source = clean_text(doc.get("filename") or file_value, 220)
+    ext = source.rsplit(".", 1)[-1].lower() if "." in source else "doc"
+    size = clean_text(doc.get("size") or "", 24)
+    tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
+    search_tags = " ".join(clean_text(tag, 80) for tag in tags)
+    data_title = title.lower()
+    data_subject = subject.lower()
+    href = f"/doc/{file_value}"
+    fmt = " · ".join(part for part in [ext, size] if part)
+    subject_year = " · ".join(part for part in [subject, catalog_display_year(doc)] if part)
+    return (
+        f' <a href="{html.escape(href, quote=True)}" class="row"'
+        f' data-t="{catalog_attr(data_title)}"'
+        f' data-s="{catalog_attr(data_subject)}"'
+        f' data-c="{catalog_attr(category)}"'
+        f' data-i="{index}"'
+        f' data-tags="{catalog_attr(search_tags.lower(), 900)}"'
+        f' data-desc="{catalog_attr(description.lower(), 900)}"{cid_attr}>'
+        f' <span class="td td-type"{cid_attr}>{html.escape(doc_type)}</span>'
+        f' <span class="td td-title"{cid_attr}>{html.escape(title)}</span>'
+        f' <span class="td td-subj"{cid_attr}>{html.escape(subject_year)}</span>'
+        f' <span class="td td-fmt"{cid_attr}>{html.escape(fmt)}</span>'
+        f' <button class="td-fav" data-file="{html.escape(file_value, quote=True)}"'
+        f' type="button" aria-label="В избранное"{cid_attr}>'
+        f' <svg width="13" height="13" viewBox="0 0 24 24" fill="none"'
+        f' stroke="currentColor" stroke-width="2"{cid_attr}>'
+        f'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"{cid_attr}></polygon>'
+        f'</svg> </button> </a>'
+    )
+
+
+def build_catalog_tabs(catalog: list[dict], cid_attr: str) -> str:
+    counts: dict[str, int] = {}
+    for doc in catalog:
+        category = clean_text(doc.get("category") or "Другое", 80)
+        counts[category] = counts.get(category, 0) + 1
+    categories = [cat for cat in CATEGORY_ORDER if counts.get(cat)]
+    categories.extend(sorted(cat for cat in counts if cat not in CATEGORY_LABELS))
+    items = [
+        f' <button class="tab active" data-cat="all"{cid_attr}>Все <span class="tab-n"{cid_attr}>{len(catalog)}</span></button>'
+    ]
+    for category in categories:
+        label = CATEGORY_LABELS.get(category, category)
+        items.append(
+            f'<button class="tab" data-cat="{html.escape(category, quote=True)}"{cid_attr}>'
+            f'{html.escape(label)} <span class="tab-n"{cid_attr}>{counts[category]}</span></button>'
+        )
+    items.append(
+        f' <button class="tab tab--fav" data-cat="__fav"{cid_attr}>'
+        f' <svg width="12" height="12" viewBox="0 0 24 24" fill="none"'
+        f' stroke="currentColor" stroke-width="2"{cid_attr}>'
+        f'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"{cid_attr}></polygon>'
+        f'</svg> <span class="tab-n" id="favTabCount"{cid_attr}>0</span> </button>'
+    )
+    return "".join(items)
+
+
+def build_catalog_item_list_schema(catalog: list[dict]) -> str:
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Архив студенческих работ — Академический Салон",
+        "description": f"Каталог из {len(catalog)} работ: курсовые, ВКР, рефераты, отчёты по практике.",
+        "numberOfItems": len(catalog),
+        "itemListOrder": "https://schema.org/ItemListUnordered",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": index + 1,
+                "url": resolve_document_url(doc),
+                "name": doc_title(doc),
+            }
+            for index, doc in enumerate(catalog)
+        ],
+    }
+    return json.dumps(schema, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
+
+def update_catalog_count_copy(page: str, total: int) -> str:
+    page = re.sub(r"\b\d+\s+работ в каталоге\b", f"{total} работ в каталоге", page)
+    page = re.sub(r"\b\d+\+\s+(текстов|материалов|документов)\b", rf"{total}+ \1", page)
+    page = re.sub(r"Каталог из \d+ работ", f"Каталог из {total} работ", page)
+    return page
+
+
+def patch_catalog_sort_assets() -> None:
+    assets_dir = os.path.join(BASE_DIR, "_assets")
+    if not os.path.isdir(assets_dir):
+        return
+    replacements = [
+        (
+            'c==="az"?r.sort((f,h)=>(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="za"?r.sort((f,h)=>(h.dataset.t||"").localeCompare(f.dataset.t||"","ru")):c==="subj"&&r.sort((f,h)=>(f.dataset.s||"").localeCompare(h.dataset.s||"","ru")||(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")),r.forEach(f=>o?.appendChild(f))',
+            'c==="az"?r.sort((f,h)=>(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="za"?r.sort((f,h)=>(h.dataset.t||"").localeCompare(f.dataset.t||"","ru")):c==="subj"?r.sort((f,h)=>(f.dataset.s||"").localeCompare(h.dataset.s||"","ru")||(f.dataset.t||"").localeCompare(h.dataset.t||"","ru")):c==="new"&&r.sort((f,h)=>Number(h.dataset.i||0)-Number(f.dataset.i||0)),r.forEach(f=>o?.appendChild(f))',
+        ),
+        (
+            't==="az"?a.sort((e,s)=>(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")):t==="za"?a.sort((e,s)=>(s.dataset.t||"").localeCompare(e.dataset.t||"","ru")):t==="subj"?a.sort((e,s)=>{const l=(e.dataset.s||"").localeCompare(s.dataset.s||"","ru");return l!==0?l:(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")}):a.sort((e,s)=>Number(e.dataset.i||0)-Number(s.dataset.i||0)),o.querySelectorAll(".letter-sep").forEach',
+            't==="az"?a.sort((e,s)=>(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")):t==="za"?a.sort((e,s)=>(s.dataset.t||"").localeCompare(e.dataset.t||"","ru")):t==="subj"?a.sort((e,s)=>{const l=(e.dataset.s||"").localeCompare(s.dataset.s||"","ru");return l!==0?l:(e.dataset.t||"").localeCompare(s.dataset.t||"","ru")}):t==="new"?a.sort((e,s)=>Number(s.dataset.i||0)-Number(e.dataset.i||0)):a.sort((e,s)=>Number(e.dataset.i||0)-Number(s.dataset.i||0)),o.querySelectorAll(".letter-sep").forEach',
+        ),
+        ('const gt=["default","az","za","subj"];', 'const gt=["default","new","az","za","subj"];'),
+    ]
+    for name in os.listdir(assets_dir):
+        if not name.startswith("catalog") or not name.endswith(".js"):
+            continue
+        path = os.path.join(assets_dir, name)
+        with open(path, "r", encoding="utf-8") as f:
+            source = f.read()
+        updated = source
+        for old, new in replacements:
+            updated = updated.replace(old, new)
+        if updated != source:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(updated)
+
+
+def refresh_static_catalog(catalog: list[dict]) -> None:
+    total = len(catalog)
+    catalog_page = os.path.join(BASE_DIR, "catalog", "index.html")
+    if os.path.exists(catalog_page):
+        with open(catalog_page, "r", encoding="utf-8") as f:
+            page = f.read()
+        cid_match = re.search(r'<div class="table-body" id="tableBody"[^>]*(data-astro-cid-[^\s>]+)', page)
+        cid_attr = f" {cid_match.group(1)}" if cid_match else ""
+        rows = "".join(build_catalog_row(doc, index, cid_attr) for index, doc in enumerate(catalog))
+        page = re.sub(
+            r'(<div class="table-body" id="tableBody"[^>]*>)(.*?)(</div>\s*</div>\s*<!-- EMPTY STATE -->)',
+            lambda match: f"{match.group(1)}{rows} {match.group(3)}",
+            page,
+            count=1,
+            flags=re.S,
+        )
+        tabs = build_catalog_tabs(catalog, cid_attr)
+        page = re.sub(
+            r'(<div class="tabs" id="tabs"[^>]*>)(.*?)(</div>\s*(?:<!--[^>]*-->\s*)?<div class="table-wrap")',
+            lambda match: f"{match.group(1)}{tabs} {match.group(3)}",
+            page,
+            count=1,
+            flags=re.S,
+        )
+        if 'data-sort="new"' not in page:
+            page = page.replace(
+                f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button>',
+                f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button> '
+                f'<button class="sort-opt" data-sort="new"{cid_attr}>Сначала новые</button>',
+                1,
+            )
+        page = re.sub(r'(<span id="visCount"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
+        page = re.sub(r'(<span id="totalCount"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
+        page = re.sub(r'(<span id="visCountFoot"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
+        page = re.sub(r"(из <b[^>]*>)\d+(</b> работ)", rf"\g<1>{total}\g<2>", page, count=1)
+        item_list_schema = build_catalog_item_list_schema(catalog)
+        page = re.sub(
+            r'(<script type="application/ld\+json">)(\{"@context":"https://schema\.org","@type":"ItemList".*?\})(</script>)',
+            lambda match: f"{match.group(1)}{item_list_schema}{match.group(3)}",
+            page,
+            count=1,
+            flags=re.S,
+        )
+        page = update_catalog_count_copy(page, total)
+        with open(catalog_page, "w", encoding="utf-8") as f:
+            f.write(page)
+
+    for root, _, files in os.walk(BASE_DIR):
+        for name in files:
+            if name != "index.html":
+                continue
+            path = os.path.join(root, name)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    source = f.read()
+                updated = update_catalog_count_copy(source, total)
+                if updated != source:
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(updated)
+            except OSError:
+                continue
+    patch_catalog_sort_assets()
+
+
 def build_telegram_document_text(doc: dict) -> str:
     title = html.escape(doc_title(doc))
     description = html.escape(doc_description(doc))
-    meta = " · ".join(
-        part
-        for part in [
-            clean_text(doc.get("docType") or doc.get("category") or "Документ", 48),
-            clean_text(doc.get("subject") or "", 48),
-            doc_extension(doc),
-            clean_text(doc.get("size") or "", 20),
-        ]
-        if part
-    )
     lines = [
         "<b>Новая работа в библиотеке</b>",
         "",
         f"<b>{title}</b>",
     ]
-    if meta:
-        lines.append(html.escape(meta))
     if description:
         lines.extend(["", description])
     lines.extend(["", "Открыть карточку и скачать файл можно по кнопкам ниже."])
@@ -2622,6 +2826,10 @@ class StatsHandler(BaseHTTPRequestHandler):
                     generated += 1
                 except Exception as exc:
                     errors.append({"file": doc.get("file"), "error": str(exc)})
+            try:
+                refresh_static_catalog(catalog)
+            except Exception as exc:
+                errors.append({"file": "catalog/index.html", "error": str(exc)})
             self._send_json(200, {"ok": True, "generated": generated, "errors": errors[:20]})
             return
 
@@ -2650,7 +2858,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"ok": False, "error": "file and updates required"})
                 return
             allowed_fields = {"title", "description", "category", "subject", "course", "docType",
-                              "catalogTitle", "catalogDescription", "tags", "previewImage"}
+                              "catalogTitle", "catalogDescription", "tags", "previewImage", "addedAt"}
             with _catalog_lock:
                 catalog = load_catalog()
                 idx = find_doc_index(catalog, file_path)
@@ -2853,6 +3061,7 @@ class StatsHandler(BaseHTTPRequestHandler):
             "catalogTitle": metadata.get("title", os.path.splitext(safe_name)[0]),
             "catalogDescription": metadata.get("description", ""),
             "docType": metadata.get("docType", metadata.get("category", "Другое")),
+            "addedAt": datetime.now(MOSCOW_TZ).isoformat(timespec="seconds"),
         }
         if metadata.get("previewImage"):
             doc_entry["previewImage"] = clean_url(metadata.get("previewImage"), 500)
