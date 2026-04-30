@@ -1291,8 +1291,7 @@ def build_telegram_digest_text(items: list[dict], kind: str) -> str:
             clean_text(doc.get("docType") or item.get("docType") or "", 60),
             clean_text(doc.get("subject") or item.get("subject") or "", 60),
         ] if part)
-        url = telegram_tracked_url(resolve_document_url(doc), f"{kind}_digest", f"doc_{index}")
-        lines.append(f"{index}. <a href=\"{html.escape(url, quote=True)}\">{item_title}</a>")
+        lines.append(f"{index}. {item_title}")
         if meta:
             lines.append(f"   {html.escape(meta)}")
 
@@ -1312,6 +1311,28 @@ def build_telegram_digest_text(items: list[dict], kind: str) -> str:
     return "\n".join(lines).replace("\x00", " ").strip()[:4090]
 
 
+def telegram_digest_keyboard(items: list[dict], kind: str) -> dict:
+    doc_buttons: list[dict] = []
+    for index, item in enumerate(items[:TELEGRAM_DIGEST_MAX_ITEMS], 1):
+        doc = item.get("doc") or {}
+        try:
+            url = telegram_tracked_url(resolve_document_url(doc), f"{kind}_digest", f"doc_{index}")
+        except Exception:
+            continue
+        doc_buttons.append({"text": str(index), "url": url})
+
+    keyboard: list[list[dict]] = []
+    for offset in range(0, len(doc_buttons), 5):
+        keyboard.append(doc_buttons[offset:offset + 5])
+    keyboard.extend([
+        [{"text": "Открыть каталог", "url": digest_catalog_url(kind)}],
+        [{"text": "Заказать работу", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/order", f"{kind}_digest", "order")}],
+        [{"text": "Антиплагиат 2.0", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/anti-ai", f"{kind}_digest", "anti_ai")}],
+        [{"text": "Написать", "url": digest_contact_url(kind)}],
+    ])
+    return {"inline_keyboard": keyboard}
+
+
 def telegram_publish_digest(kind: str, chat_id: object | None = None, dry_run: bool = False) -> dict:
     target_chat_id = clean_text(chat_id or TELEGRAM_CHANNEL_ID, 120)
     if not target_chat_id and not dry_run:
@@ -1329,14 +1350,7 @@ def telegram_publish_digest(kind: str, chat_id: object | None = None, dry_run: b
             "reason": "No ready digest items" if pending else "No digest items",
             "pending": pending,
         }
-    reply_markup = {
-        "inline_keyboard": [
-            [{"text": "Открыть каталог", "url": digest_catalog_url(kind)}],
-            [{"text": "Заказать работу", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/order", f"{kind}_digest", "order")}],
-            [{"text": "Антиплагиат 2.0", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/anti-ai", f"{kind}_digest", "anti_ai")}],
-            [{"text": "Написать", "url": digest_contact_url(kind)}],
-        ]
-    }
+    reply_markup = telegram_digest_keyboard(items, kind)
     result = telegram_api_request(
         "sendMessage",
         {
