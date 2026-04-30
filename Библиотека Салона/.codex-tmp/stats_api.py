@@ -76,8 +76,15 @@ CATALOG_PATH = os.environ.get("SALON_CATALOG", os.path.join(BASE_DIR, "catalog.j
 SITE_ORIGIN = os.environ.get("SALON_SITE_ORIGIN", "https://bibliosaloon.ru")
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 UPLOAD_DIR = os.path.join(BASE_DIR, "files")
+CONTRIBUTIONS_DIR = os.environ.get("SALON_CONTRIBUTIONS_DIR", "/var/lib/bibliosaloon/contributions")
 MAX_BATCH = 400
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+CONSENT_VERSION = os.environ.get("SALON_CONSENT_VERSION", "2026-04-29")
+CONSENT_DOCUMENT_URL = os.environ.get("SALON_CONSENT_URL", f"{SITE_ORIGIN.rstrip('/')}/consent")
+CONTRIBUTION_ALLOWED_EXTENSIONS = {
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".rtf", ".odt", ".ods", ".odp",
+}
 EVENT_WINDOWS = {
     "view": 6 * 60 * 60,
     "download": 30,
@@ -249,6 +256,7 @@ def init_db() -> None:
             """
         )
         ensure_orders_table(db)
+        ensure_contributions_table(db)
 
 
 ORDER_SOURCE_LABELS = {
@@ -278,6 +286,31 @@ ORDER_EXTRA_COLUMNS = {
     "meta_json": "TEXT",
     "manager_note": "TEXT",
     "manager_updated_at": "INTEGER",
+    "consent_terms": "INTEGER NOT NULL DEFAULT 0",
+    "consent_pd": "INTEGER NOT NULL DEFAULT 0",
+    "consent_rights": "INTEGER NOT NULL DEFAULT 0",
+    "consent_at": "INTEGER",
+    "consent_version": "TEXT",
+}
+
+CONTRIBUTION_EXTRA_COLUMNS = {
+    "title": "TEXT",
+    "subject": "TEXT",
+    "category": "TEXT",
+    "contact": "TEXT",
+    "description": "TEXT",
+    "file_name": "TEXT",
+    "file_path": "TEXT",
+    "file_size": "INTEGER",
+    "ip": "TEXT",
+    "user_agent": "TEXT",
+    "created_at": "INTEGER",
+    "status": "TEXT DEFAULT 'new'",
+    "consent_terms": "INTEGER NOT NULL DEFAULT 0",
+    "consent_pd": "INTEGER NOT NULL DEFAULT 0",
+    "consent_rights": "INTEGER NOT NULL DEFAULT 0",
+    "consent_at": "INTEGER",
+    "consent_version": "TEXT",
 }
 
 ADMIN_ORDER_ALLOWED_STATUSES = {
@@ -318,7 +351,12 @@ def ensure_orders_table(db: sqlite3.Connection) -> None:
             sample_type TEXT,
             sample_subject TEXT,
             sample_category TEXT,
-            meta_json TEXT
+            meta_json TEXT,
+            consent_terms INTEGER NOT NULL DEFAULT 0,
+            consent_pd INTEGER NOT NULL DEFAULT 0,
+            consent_rights INTEGER NOT NULL DEFAULT 0,
+            consent_at INTEGER,
+            consent_version TEXT
         )
         """
     )
@@ -331,6 +369,43 @@ def ensure_orders_table(db: sqlite3.Connection) -> None:
     for column_name, column_type in ORDER_EXTRA_COLUMNS.items():
         if column_name not in existing_columns:
             db.execute(f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}")
+
+
+def ensure_contributions_table(db: sqlite3.Connection) -> None:
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS contributions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            subject TEXT,
+            category TEXT,
+            contact TEXT,
+            description TEXT,
+            file_name TEXT,
+            file_path TEXT,
+            file_size INTEGER,
+            ip TEXT,
+            user_agent TEXT,
+            created_at INTEGER DEFAULT (strftime('%s','now')),
+            status TEXT DEFAULT 'new',
+            consent_terms INTEGER NOT NULL DEFAULT 0,
+            consent_pd INTEGER NOT NULL DEFAULT 0,
+            consent_rights INTEGER NOT NULL DEFAULT 0,
+            consent_at INTEGER,
+            consent_version TEXT
+        )
+        """
+    )
+
+    existing_columns = {
+        row["name"]
+        for row in db.execute("PRAGMA table_info(contributions)").fetchall()
+    }
+    for column_name, column_type in CONTRIBUTION_EXTRA_COLUMNS.items():
+        if column_name not in existing_columns:
+            db.execute(f"ALTER TABLE contributions ADD COLUMN {column_name} {column_type}")
+
+    db.execute("CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON contributions(created_at)")
 
 
 def clean_text(value: object, limit: int) -> str:
@@ -352,6 +427,68 @@ def clean_url(value: object, limit: int = 500) -> str:
     return text[:limit]
 
 
+def safe_upload_name(value: object, fallback: str = "upload") -> str:
+    original = os.path.basename(str(value or fallback))
+    cleaned = original.replace("\x00", "").replace("/", "_").replace("\\", "_").replace("..", "_").strip()
+    cleaned = re.sub(r"[^A-Za-zА-Яа-яЁё0-9._ -]+", "_", cleaned)
+    cleaned = cleaned.strip(" ._")
+    return cleaned or fallback
+
+
+def is_allowed_contribution_file(filename: str) -> bool:
+    _, ext = os.path.splitext(filename.lower())
+    return ext in CONTRIBUTION_ALLOWED_EXTENSIONS
+
+
+def parse_bool_field(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    normalized = str(value).strip().lower()
+    return normalized in {"1", "true", "yes", "y", "on", "accepted", "agree", "agreed", "да"}
+
+
+def build_consent_fields(payload: dict, consent_at: int) -> dict[str, object]:
+    has_any_consent_field = any(
+        key in payload
+        for key in ("consent_terms", "consent_pd", "consent_rights")
+    )
+    consent_terms = parse_bool_field(payload.get("consent_terms"))
+    consent_pd = parse_bool_field(payload.get("consent_pd"))
+    consent_rights = parse_bool_field(payload.get("consent_rights"))
+    return {
+        "consent_terms": int(consent_terms),
+        "consent_pd": int(consent_pd),
+        "consent_rights": int(consent_rights),
+        "consent_at": consent_at if has_any_consent_field else None,
+        "consent_version": CONSENT_VERSION if has_any_consent_field else "",
+    }
+
+
+def format_consent_label(value: object) -> str:
+    return "да" if parse_bool_field(value) else "нет"
+
+
+def format_consent_lines(entity: dict) -> list[str]:
+    if not any(entity.get(key) for key in ("consent_terms", "consent_pd", "consent_rights")):
+        return ["• Статус: не получено или старая форма без полей согласия"]
+
+    lines = [
+        f"• Условия/оферта: {format_consent_label(entity.get('consent_terms'))}",
+        f"• Обработка ПДн: {format_consent_label(entity.get('consent_pd'))}",
+        f"• Права/публикация: {format_consent_label(entity.get('consent_rights'))}",
+    ]
+    consent_at = entity.get("consent_at")
+    if consent_at:
+        lines.append(f"• Время: {format_admin_timestamp(int(consent_at))} (МСК)")
+    if entity.get("consent_version"):
+        lines.append(f"• Версия: {entity['consent_version']} · {CONSENT_DOCUMENT_URL}")
+    return lines
+
+
 def normalize_int(value: object, *, min_value: int | None = None, max_value: int | None = None) -> int | None:
     if value in (None, ""):
         return None
@@ -371,6 +508,14 @@ def format_money(value: int | None) -> str:
     if value is None:
         return ""
     return f"{value:,}".replace(",", " ") + " ₽"
+
+
+def format_file_size(value: int) -> str:
+    if value < 1024:
+        return f"{value} B"
+    if value < 1024 * 1024:
+        return f"{value / 1024:.1f} KB"
+    return f"{value / (1024 * 1024):.1f} MB"
 
 
 def format_count_ru(value: int, one: str, few: str, many: str) -> str:
@@ -559,10 +704,56 @@ def build_order_notification(order: dict, contact_repeat_count: int, ip_repeat_c
     if order.get("referrer"):
         lines.append(f"• Переход: {order['referrer']}")
 
+    lines.append("")
+    lines.append("✅ Согласия")
+    lines.extend(format_consent_lines(order))
+
     if order.get("comment"):
         lines.append("")
         lines.append("💬 Комментарий")
         lines.append(order["comment"])
+
+    return "\n".join(lines)
+
+
+def build_contribution_notification(contribution: dict, contact_repeat_count: int, ip_repeat_count: int) -> str:
+    lines = [f"📚 Материал на модерацию #{contribution['id']}"]
+    created_label = format_admin_timestamp(contribution.get("created_at"))
+    if created_label:
+        lines.append(f"Когда: {created_label} (МСК)")
+
+    lines.append("")
+    lines.append("👤 Кто")
+    lines.append(f"• Контакт: {contribution.get('contact') or 'не указан'}")
+    lines.append(f"• История: {describe_repeat_orders(contact_repeat_count, ip_repeat_count)}")
+    masked_ip = mask_ip(contribution.get("ip", ""))
+    if masked_ip:
+        lines.append(f"• IP: {masked_ip}")
+    device_label = summarize_user_agent(contribution.get("user_agent", ""))
+    if device_label:
+        lines.append(f"• Устройство: {device_label}")
+
+    lines.append("")
+    lines.append("📄 Файл")
+    lines.append(f"• Имя: {contribution.get('file_name') or 'не указано'}")
+    file_size = contribution.get("file_size")
+    if file_size is not None:
+        lines.append(f"• Размер: {format_file_size(int(file_size))}")
+    if contribution.get("title"):
+        lines.append(f"• Название: {contribution['title']}")
+    if contribution.get("subject"):
+        lines.append(f"• Предмет: {contribution['subject']}")
+    if contribution.get("category"):
+        lines.append(f"• Тип: {contribution['category']}")
+
+    lines.append("")
+    lines.append("✅ Согласия")
+    lines.extend(format_consent_lines(contribution))
+
+    if contribution.get("description"):
+        lines.append("")
+        lines.append("💬 Описание")
+        lines.append(contribution["description"])
 
     return "\n".join(lines)
 
@@ -795,6 +986,64 @@ class StatsHandler(BaseHTTPRequestHandler):
             return {}
         return json.loads(raw.decode("utf-8"))
 
+    def _read_form_payload(self, *, max_size: int = MAX_UPLOAD_SIZE) -> tuple[dict, dict]:
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        if length <= 0:
+            return {}, {}
+        if length > max_size:
+            raise ValueError("Request too large")
+
+        raw = self.rfile.read(length)
+        if not raw:
+            return {}, {}
+
+        content_type = self.headers.get("Content-Type", "")
+        mime_type = content_type.split(";", 1)[0].strip().lower()
+
+        if mime_type in ("", "application/json"):
+            return json.loads(raw.decode("utf-8")), {}
+
+        if mime_type == "application/x-www-form-urlencoded":
+            parsed = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+            return {key: values[-1] if values else "" for key, values in parsed.items()}, {}
+
+        if mime_type == "multipart/form-data":
+            boundary_match = re.search(r'boundary=(?:"([^"]+)"|([^;]+))', content_type)
+            if not boundary_match:
+                raise ValueError("Missing multipart boundary")
+            boundary = (boundary_match.group(1) or boundary_match.group(2) or "").strip()
+            if not boundary:
+                raise ValueError("Missing multipart boundary")
+
+            fields: dict[str, str] = {}
+            files: dict[str, dict] = {}
+            for part in raw.split(f"--{boundary}".encode("utf-8")):
+                part = part.strip(b"\r\n")
+                if not part or part == b"--":
+                    continue
+                header_end = part.find(b"\r\n\r\n")
+                if header_end < 0:
+                    continue
+                header = part[:header_end].decode("utf-8", errors="replace")
+                data = part[header_end + 4:]
+                if data.endswith(b"\r\n"):
+                    data = data[:-2]
+
+                name_match = re.search(r'name="([^"]+)"', header)
+                if not name_match:
+                    continue
+                field_name = name_match.group(1)
+                filename_match = re.search(r'filename="([^"]*)"', header)
+                if filename_match:
+                    filename = filename_match.group(1)
+                    if filename:
+                        files[field_name] = {"filename": filename, "content": data}
+                    continue
+                fields[field_name] = data.decode("utf-8", errors="replace")
+            return fields, files
+
+        raise ValueError("Unsupported content type")
+
     def _require_admin(self) -> bool:
         """Check admin auth. Returns True if authorized, sends 401 and returns False otherwise."""
         token = get_bearer_token(self)
@@ -851,6 +1100,15 @@ class StatsHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": True, "orders": [dict(r) for r in rows]})
             return
 
+        if parsed.path == "/api/admin/contributions":
+            if not self._require_admin():
+                return
+            with get_db() as db:
+                ensure_contributions_table(db)
+                rows = db.execute("SELECT * FROM contributions ORDER BY created_at DESC LIMIT 100").fetchall()
+            self._send_json(200, {"ok": True, "contributions": [dict(r) for r in rows]})
+            return
+
         if parsed.path == "/api/admin/analytics":
             if not self._require_admin():
                 return
@@ -891,8 +1149,279 @@ class StatsHandler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         self._handle_get()
 
+    def _handle_public_order(self, payload: dict) -> None:
+        ip = get_client_ip(self)
+        # Rate limit: 3 orders per hour per IP
+        now = time.time()
+        order_key = f"order:{ip}"
+        attempts = _login_attempts.get(order_key, [])
+        attempts = [t for t in attempts if now - t < 3600]
+        _login_attempts[order_key] = attempts
+        if len(attempts) >= 3:
+            self._send_json(429, {"ok": False, "error": "Слишком много заявок. Попробуйте позже."})
+            return
+        _login_attempts[order_key].append(now)
+
+        # Validate
+        work_type = clean_text(payload.get("workType") or payload.get("work_type"), 100)
+        topic = clean_text(payload.get("topic"), 500)
+        subject = clean_text(payload.get("subject"), 100)
+        deadline = clean_text(payload.get("deadline"), 100)
+        contact = clean_text(payload.get("contact"), 200)
+        comment = clean_text(payload.get("comment"), 700)
+        source = clean_text(payload.get("source"), 80)
+        source_label = clean_text(payload.get("sourceLabel") or payload.get("source_label"), 160)
+        source_path = clean_text(payload.get("sourcePath") or payload.get("source_path"), 240)
+        entry_url = clean_url(payload.get("entryUrl") or payload.get("entry_url"))
+        referrer = clean_url(payload.get("referrer") or self.headers.get("Referer"))
+        user_agent = clean_text(self.headers.get("User-Agent"), 280)
+        contact_channel = clean_text(payload.get("contactChannel") or payload.get("contact_channel"), 80) or detect_contact_channel(contact)
+        estimated_price = normalize_int(payload.get("estimatedPrice") or payload.get("estimated_price"), min_value=0, max_value=500000)
+        pages = normalize_int(payload.get("pages"), min_value=1, max_value=300)
+        originality = clean_text(payload.get("originality"), 100)
+        sample_title = clean_text(payload.get("sampleTitle") or payload.get("sample_title"), 240)
+        sample_type = clean_text(payload.get("sampleType") or payload.get("sample_type"), 120)
+        sample_subject = clean_text(payload.get("sampleSubject") or payload.get("sample_subject"), 120)
+        sample_category = clean_text(payload.get("sampleCategory") or payload.get("sample_category"), 120)
+        page_title = clean_text(payload.get("pageTitle") or payload.get("page_title"), 160)
+        search_query = clean_text(payload.get("searchQuery") or payload.get("search_query"), 160)
+        source_label = build_order_source_label(source, source_label)
+        source_path = build_source_path(source_path, entry_url)
+        if not contact:
+            self._send_json(400, {"ok": False, "error": "Укажите контакт для связи"})
+            return
+
+        created_at = int(now)
+        consent = build_consent_fields(payload, created_at)
+        meta_payload = {
+            key: value
+            for key, value in {
+                "pageTitle": page_title,
+                "searchQuery": search_query,
+            }.items()
+            if value
+        }
+        meta_json = json.dumps(meta_payload, ensure_ascii=False, separators=(",", ":")) if meta_payload else ""
+
+        # Save order to SQLite
+        with get_db() as db:
+            ensure_orders_table(db)
+            cursor = db.execute(
+                """
+                INSERT INTO orders (
+                    work_type, topic, subject, deadline, contact, comment, ip, created_at,
+                    source, source_label, source_path, entry_url, referrer, user_agent,
+                    contact_channel, estimated_price, pages, originality,
+                    sample_title, sample_type, sample_subject, sample_category, meta_json,
+                    consent_terms, consent_pd, consent_rights, consent_at, consent_version
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,
+                (
+                    work_type,
+                    topic,
+                    subject,
+                    deadline,
+                    contact,
+                    comment,
+                    ip,
+                    created_at,
+                    source,
+                    source_label,
+                    source_path,
+                    entry_url,
+                    referrer,
+                    user_agent,
+                    contact_channel,
+                    estimated_price,
+                    pages,
+                    originality,
+                    sample_title,
+                    sample_type,
+                    sample_subject,
+                    sample_category,
+                    meta_json,
+                    consent["consent_terms"],
+                    consent["consent_pd"],
+                    consent["consent_rights"],
+                    consent["consent_at"],
+                    consent["consent_version"],
+                )
+            )
+            order_id = int(cursor.lastrowid or 0)
+            contact_repeat_count = 0
+            if contact:
+                contact_repeat_count = int(
+                    db.execute(
+                        "SELECT COUNT(*) AS c FROM orders WHERE contact = ? AND id <> ?",
+                        (contact, order_id),
+                    ).fetchone()["c"] or 0
+                )
+            ip_repeat_count = int(
+                db.execute(
+                    "SELECT COUNT(*) AS c FROM orders WHERE ip = ? AND id <> ?",
+                    (ip, order_id),
+                ).fetchone()["c"] or 0
+            )
+
+        order_info = {
+            "id": order_id,
+            "created_at": created_at,
+            "work_type": work_type,
+            "topic": topic,
+            "subject": subject,
+            "deadline": deadline,
+            "contact": contact,
+            "comment": comment,
+            "ip": ip,
+            "source_label": source_label,
+            "source_path": source_path,
+            "entry_url": entry_url,
+            "referrer": referrer,
+            "user_agent": user_agent,
+            "contact_channel": contact_channel,
+            "estimated_price": estimated_price,
+            "pages": pages,
+            "originality": originality,
+            "sample_title": sample_title,
+            "sample_type": sample_type,
+            "sample_subject": sample_subject,
+            "sample_category": sample_category,
+            **consent,
+        }
+        vk_notify(build_order_notification(order_info, contact_repeat_count, ip_repeat_count))
+        self._send_json(200, {"ok": True, "message": "Заявка отправлена!", "orderId": order_id})
+
+    def _handle_public_contribution(self, payload: dict, files: dict) -> None:
+        ip = get_client_ip(self)
+        now = time.time()
+        contribution_key = f"contribute:{ip}"
+        attempts = _login_attempts.get(contribution_key, [])
+        attempts = [t for t in attempts if now - t < 3600]
+        _login_attempts[contribution_key] = attempts
+        if len(attempts) >= 5:
+            self._send_json(429, {"ok": False, "error": "Слишком много загрузок. Попробуйте позже."})
+            return
+        _login_attempts[contribution_key].append(now)
+
+        title = clean_text(payload.get("title"), 240)
+        subject = clean_text(payload.get("subject"), 160)
+        category = clean_text(payload.get("category"), 120)
+        contact = clean_text(payload.get("contact"), 200)
+        description = clean_text(payload.get("description"), 1200)
+        user_agent = clean_text(self.headers.get("User-Agent"), 280)
+        uploaded_file = files.get("file") or files.get("document")
+
+        if not contact:
+            self._send_json(400, {"ok": False, "error": "Укажите контакт для обратной связи"})
+            return
+        if not uploaded_file:
+            self._send_json(400, {"ok": False, "error": "Выберите файл для загрузки"})
+            return
+
+        safe_name = safe_upload_name(uploaded_file.get("filename"), "document")
+        if not is_allowed_contribution_file(safe_name):
+            self._send_json(400, {"ok": False, "error": "Неподдерживаемый тип файла"})
+            return
+
+        file_data = uploaded_file.get("content") or b""
+        if not file_data:
+            self._send_json(400, {"ok": False, "error": "Пустой файл"})
+            return
+        if len(file_data) > MAX_UPLOAD_SIZE:
+            self._send_json(413, {"ok": False, "error": "Файл слишком большой: максимум 50 МБ"})
+            return
+
+        created_at = int(now)
+        consent = build_consent_fields(payload, created_at)
+        storage_name = f"{created_at}_{secrets.token_hex(6)}_{safe_name}"
+        os.makedirs(CONTRIBUTIONS_DIR, exist_ok=True)
+        dest_path = os.path.join(CONTRIBUTIONS_DIR, storage_name)
+        with open(dest_path, "wb") as f:
+            f.write(file_data)
+
+        with get_db() as db:
+            ensure_contributions_table(db)
+            cursor = db.execute(
+                """
+                INSERT INTO contributions (
+                    title, subject, category, contact, description,
+                    file_name, file_path, file_size, ip, user_agent, created_at,
+                    consent_terms, consent_pd, consent_rights, consent_at, consent_version
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,
+                (
+                    title,
+                    subject,
+                    category,
+                    contact,
+                    description,
+                    safe_name,
+                    dest_path,
+                    len(file_data),
+                    ip,
+                    user_agent,
+                    created_at,
+                    consent["consent_terms"],
+                    consent["consent_pd"],
+                    consent["consent_rights"],
+                    consent["consent_at"],
+                    consent["consent_version"],
+                ),
+            )
+            contribution_id = int(cursor.lastrowid or 0)
+            contact_repeat_count = int(
+                db.execute(
+                    "SELECT COUNT(*) AS c FROM contributions WHERE contact = ? AND id <> ?",
+                    (contact, contribution_id),
+                ).fetchone()["c"] or 0
+            )
+            ip_repeat_count = int(
+                db.execute(
+                    "SELECT COUNT(*) AS c FROM contributions WHERE ip = ? AND id <> ?",
+                    (ip, contribution_id),
+                ).fetchone()["c"] or 0
+            )
+
+        contribution_info = {
+            "id": contribution_id,
+            "created_at": created_at,
+            "title": title,
+            "subject": subject,
+            "category": category,
+            "contact": contact,
+            "description": description,
+            "file_name": safe_name,
+            "file_path": dest_path,
+            "file_size": len(file_data),
+            "ip": ip,
+            "user_agent": user_agent,
+            **consent,
+        }
+        vk_notify(build_contribution_notification(contribution_info, contact_repeat_count, ip_repeat_count))
+        self._send_json(200, {"ok": True, "message": "Работа отправлена на модерацию", "contributionId": contribution_id})
+
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        normalized_path = parsed.path.rstrip("/") or "/"
+
+        if normalized_path in {"/api/order", "/api/contribute"}:
+            try:
+                payload, files = self._read_form_payload()
+            except json.JSONDecodeError:
+                self._send_json(400, {"ok": False, "error": "Invalid JSON"})
+                return
+            except (UnicodeDecodeError, ValueError) as exc:
+                self._send_json(400, {"ok": False, "error": str(exc)})
+                return
+            if not isinstance(payload, dict):
+                self._send_json(400, {"ok": False, "error": "Invalid payload"})
+                return
+            if normalized_path == "/api/order":
+                self._handle_public_order(payload)
+            else:
+                self._handle_public_contribution(payload, files)
+            return
+
         # Upload must be handled BEFORE _read_json() since it's multipart
         if parsed.path == "/api/admin/upload":
             if not self._require_admin():
@@ -985,139 +1514,6 @@ class StatsHandler(BaseHTTPRequestHandler):
                 return
             admin_cleanup_sessions()
             self._send_json(200, {"ok": True, "message": "Catalog is managed via catalog.json"})
-            return
-
-        # ===== PUBLIC ORDER FORM =====
-        if parsed.path == "/api/order":
-            ip = get_client_ip(self)
-            # Rate limit: 3 orders per hour per IP
-            now = time.time()
-            order_key = f"order:{ip}"
-            attempts = _login_attempts.get(order_key, [])
-            attempts = [t for t in attempts if now - t < 3600]
-            _login_attempts[order_key] = attempts
-            if len(attempts) >= 3:
-                self._send_json(429, {"ok": False, "error": "Слишком много заявок. Попробуйте позже."})
-                return
-            _login_attempts[order_key].append(now)
-            # Validate
-            work_type = clean_text(payload.get("workType"), 100)
-            topic = clean_text(payload.get("topic"), 500)
-            subject = clean_text(payload.get("subject"), 100)
-            deadline = clean_text(payload.get("deadline"), 100)
-            contact = clean_text(payload.get("contact"), 200)
-            comment = clean_text(payload.get("comment"), 700)
-            source = clean_text(payload.get("source"), 80)
-            source_label = clean_text(payload.get("sourceLabel"), 160)
-            source_path = clean_text(payload.get("sourcePath"), 240)
-            entry_url = clean_url(payload.get("entryUrl"))
-            referrer = clean_url(payload.get("referrer") or self.headers.get("Referer"))
-            user_agent = clean_text(self.headers.get("User-Agent"), 280)
-            contact_channel = clean_text(payload.get("contactChannel"), 80) or detect_contact_channel(contact)
-            estimated_price = normalize_int(payload.get("estimatedPrice"), min_value=0, max_value=500000)
-            pages = normalize_int(payload.get("pages"), min_value=1, max_value=300)
-            originality = clean_text(payload.get("originality"), 100)
-            sample_title = clean_text(payload.get("sampleTitle"), 240)
-            sample_type = clean_text(payload.get("sampleType"), 120)
-            sample_subject = clean_text(payload.get("sampleSubject"), 120)
-            sample_category = clean_text(payload.get("sampleCategory"), 120)
-            page_title = clean_text(payload.get("pageTitle"), 160)
-            search_query = clean_text(payload.get("searchQuery"), 160)
-            source_label = build_order_source_label(source, source_label)
-            source_path = build_source_path(source_path, entry_url)
-            if not contact:
-                self._send_json(400, {"ok": False, "error": "Укажите контакт для связи"})
-                return
-            meta_payload = {
-                key: value
-                for key, value in {
-                    "pageTitle": page_title,
-                    "searchQuery": search_query,
-                }.items()
-                if value
-            }
-            meta_json = json.dumps(meta_payload, ensure_ascii=False, separators=(",", ":")) if meta_payload else ""
-            # Save order to SQLite
-            with get_db() as db:
-                ensure_orders_table(db)
-                created_at = int(now)
-                cursor = db.execute(
-                    """
-                    INSERT INTO orders (
-                        work_type, topic, subject, deadline, contact, comment, ip, created_at,
-                        source, source_label, source_path, entry_url, referrer, user_agent,
-                        contact_channel, estimated_price, pages, originality,
-                        sample_title, sample_type, sample_subject, sample_category, meta_json
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                    """,
-                    (
-                        work_type,
-                        topic,
-                        subject,
-                        deadline,
-                        contact,
-                        comment,
-                        ip,
-                        created_at,
-                        source,
-                        source_label,
-                        source_path,
-                        entry_url,
-                        referrer,
-                        user_agent,
-                        contact_channel,
-                        estimated_price,
-                        pages,
-                        originality,
-                        sample_title,
-                        sample_type,
-                        sample_subject,
-                        sample_category,
-                        meta_json,
-                    )
-                )
-                order_id = int(cursor.lastrowid or 0)
-                contact_repeat_count = 0
-                if contact:
-                    contact_repeat_count = int(
-                        db.execute(
-                            "SELECT COUNT(*) AS c FROM orders WHERE contact = ? AND id <> ?",
-                            (contact, order_id),
-                        ).fetchone()["c"] or 0
-                    )
-                ip_repeat_count = int(
-                    db.execute(
-                        "SELECT COUNT(*) AS c FROM orders WHERE ip = ? AND id <> ?",
-                        (ip, order_id),
-                    ).fetchone()["c"] or 0
-                )
-            order_info = {
-                "id": order_id,
-                "created_at": created_at,
-                "work_type": work_type,
-                "topic": topic,
-                "subject": subject,
-                "deadline": deadline,
-                "contact": contact,
-                "comment": comment,
-                "ip": ip,
-                "source_label": source_label,
-                "source_path": source_path,
-                "entry_url": entry_url,
-                "referrer": referrer,
-                "user_agent": user_agent,
-                "contact_channel": contact_channel,
-                "estimated_price": estimated_price,
-                "pages": pages,
-                "originality": originality,
-                "sample_title": sample_title,
-                "sample_type": sample_type,
-                "sample_subject": sample_subject,
-                "sample_category": sample_category,
-            }
-            # Send VK notification to admin
-            vk_notify(build_order_notification(order_info, contact_repeat_count, ip_repeat_count))
-            self._send_json(200, {"ok": True, "message": "Заявка отправлена!", "orderId": order_id})
             return
 
         self._send_json(404, {"ok": False, "error": "Not found"})
