@@ -109,6 +109,18 @@ TELEGRAM_PREVIEW_IMAGE_URL = os.environ.get(
     f"{SITE_ORIGIN.rstrip('/')}/og-image.png",
 ).strip()
 TELEGRAM_AUTO_POST = os.environ.get("SALON_TELEGRAM_AUTO_POST", "").strip().lower() in {"1", "true", "yes", "on", "да"}
+TELEGRAM_POST_MODE = os.environ.get("SALON_TELEGRAM_POST_MODE", "digest").strip().lower() or "digest"
+TELEGRAM_DIGEST_ENABLED = os.environ.get("SALON_TELEGRAM_DIGEST_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on", "да"}
+TELEGRAM_DIGEST_DAILY_HOUR = int(os.environ.get("SALON_TELEGRAM_DIGEST_DAILY_HOUR", "20") or "20")
+TELEGRAM_DIGEST_DAILY_MINUTE = int(os.environ.get("SALON_TELEGRAM_DIGEST_DAILY_MINUTE", "30") or "30")
+TELEGRAM_DIGEST_WEEKLY_WEEKDAY = int(os.environ.get("SALON_TELEGRAM_DIGEST_WEEKLY_WEEKDAY", "6") or "6")
+TELEGRAM_DIGEST_WEEKLY_HOUR = int(os.environ.get("SALON_TELEGRAM_DIGEST_WEEKLY_HOUR", "19") or "19")
+TELEGRAM_DIGEST_WEEKLY_MINUTE = int(os.environ.get("SALON_TELEGRAM_DIGEST_WEEKLY_MINUTE", "30") or "30")
+TELEGRAM_DIGEST_MAX_ITEMS = int(os.environ.get("SALON_TELEGRAM_DIGEST_MAX_ITEMS", "10") or "10")
+TELEGRAM_DIGEST_IDLE_SECONDS = int(os.environ.get("SALON_TELEGRAM_DIGEST_IDLE_SECONDS", "60") or "60")
+TELEGRAM_INCLUDE_HASHTAGS = os.environ.get("SALON_TELEGRAM_INCLUDE_HASHTAGS", "0").strip().lower() in {"1", "true", "yes", "on", "да"}
+TELEGRAM_CONTACT_USERNAME = os.environ.get("SALON_TELEGRAM_CONTACT_USERNAME", "Thisissaymoon").strip().lstrip("@")
+TELEGRAM_UTM_SOURCE = os.environ.get("SALON_TELEGRAM_UTM_SOURCE", "telegram").strip() or "telegram"
 ACADEMIC_SALON_REPO_TOKEN = os.environ.get("ACADEMIC_SALON_REPO_TOKEN", "").strip()
 ACADEMIC_SALON_REPO = os.environ.get("ACADEMIC_SALON_REPO", "soloveyska1/academic-salon").strip()
 ACADEMIC_SALON_BRANCH = os.environ.get("ACADEMIC_SALON_BRANCH", "main").strip() or "main"
@@ -495,6 +507,36 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_reactions_file
                 ON reactions(file);
+
+            CREATE TABLE IF NOT EXISTS telegram_digest_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                subject TEXT NOT NULL DEFAULT '',
+                category TEXT NOT NULL DEFAULT '',
+                doc_type TEXT NOT NULL DEFAULT '',
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                doc_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                day_key TEXT NOT NULL,
+                week_key TEXT NOT NULL,
+                daily_sent_at INTEGER,
+                weekly_sent_at INTEGER,
+                last_error TEXT NOT NULL DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS telegram_digest_state (
+                kind TEXT PRIMARY KEY,
+                last_sent_key TEXT NOT NULL DEFAULT '',
+                last_message_id INTEGER,
+                last_error TEXT NOT NULL DEFAULT '',
+                updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_telegram_digest_daily
+                ON telegram_digest_items(daily_sent_at, day_key, created_at);
+            CREATE INDEX IF NOT EXISTS idx_telegram_digest_weekly
+                ON telegram_digest_items(weekly_sent_at, week_key, created_at);
             """
         )
         ensure_orders_table(db)
@@ -861,6 +903,65 @@ def doc_description(doc: dict) -> str:
     return clean_text(doc.get("catalogDescription") or doc.get("description") or doc.get("text") or "", 420)
 
 
+def utc_now() -> int:
+    return int(time.time())
+
+
+def moscow_now() -> datetime:
+    return datetime.now(MOSCOW_TZ)
+
+
+def digest_day_key(dt: datetime | None = None) -> str:
+    return (dt or moscow_now()).strftime("%Y-%m-%d")
+
+
+def digest_week_key(dt: datetime | None = None) -> str:
+    year, week, _weekday = (dt or moscow_now()).isocalendar()
+    return f"{year}-W{week:02d}"
+
+
+def digest_keys_for_timestamp(timestamp: int) -> tuple[str, str]:
+    dt = datetime.fromtimestamp(timestamp, MOSCOW_TZ)
+    return digest_day_key(dt), digest_week_key(dt)
+
+
+def append_url_params(url: str, params: dict[str, str]) -> str:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    for key, value in params.items():
+        if value:
+            query[key] = [value]
+    encoded = urlencode(query, doseq=True)
+    return parsed._replace(query=encoded).geturl()
+
+
+def telegram_tracked_url(url: str, campaign: str, content: str = "") -> str:
+    params = {
+        "utm_source": TELEGRAM_UTM_SOURCE,
+        "utm_medium": "telegram",
+        "utm_campaign": campaign,
+    }
+    if content:
+        params["utm_content"] = content[:80]
+    return append_url_params(url, params)
+
+
+def best_related_query(doc: dict) -> str:
+    for value in doc.get("tags") if isinstance(doc.get("tags"), list) else []:
+        normalized = clean_text(value, 80)
+        if normalized and normalized.lower() not in {"психология", "самостоятельная работа", "самостоятельные работы"}:
+            return normalized
+    return clean_text(doc.get("subject") or doc.get("category") or "", 80)
+
+
+def resolve_related_documents_url(doc: dict, campaign: str = "related_docs") -> str:
+    query = best_related_query(doc)
+    base = f"{SITE_ORIGIN.rstrip('/')}/catalog/"
+    params = {"q": query} if query else {}
+    url = append_url_params(base, params)
+    return telegram_tracked_url(url, campaign, "related")
+
+
 def catalog_sync_commit_message(action: str, doc: dict | None = None) -> str:
     title = doc_title(doc or {}) if doc else "catalog"
     return normalize_commit_message(f"chore(catalog): sync after {action} — {title}")
@@ -896,15 +997,22 @@ def document_hashtags(doc: dict, limit: int = 8) -> str:
 def build_telegram_document_text(doc: dict) -> str:
     title = html.escape(doc_title(doc))
     description = html.escape(doc_description(doc))
+    headers = [
+        "Добавили в библиотеку",
+        "Свежий материал в Кладовой",
+        "Новая работа в библиотеке",
+        "Можно посмотреть как ориентир",
+    ]
+    header = headers[int(hashlib.sha256(catalog_doc_file(doc).encode("utf-8")).hexdigest()[:2], 16) % len(headers)]
     lines = [
-        "<b>Новая работа в библиотеке</b>",
+        f"<b>{html.escape(header)}</b>",
         "",
         f"<b>{title}</b>",
     ]
     if description:
         lines.extend(["", description])
-    lines.extend(["", "Открыть карточку и скачать файл можно по кнопкам ниже."])
-    hashtags = document_hashtags(doc)
+    lines.extend(["", "Карточка, скачивание и похожие материалы доступны по кнопкам ниже."])
+    hashtags = document_hashtags(doc) if TELEGRAM_INCLUDE_HASHTAGS else ""
     if hashtags:
         lines.extend(["", hashtags])
     return "\n".join(lines).replace("\x00", " ").strip()[:1000]
@@ -971,8 +1079,9 @@ def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
     text = build_telegram_document_text(doc)
     reply_markup = {
         "inline_keyboard": [
-            [{"text": "Открыть в библиотеке", "url": resolve_document_url(doc)}],
-            [{"text": "Скачать файл", "url": resolve_document_file_url(doc)}],
+            [{"text": "Открыть в библиотеке", "url": telegram_tracked_url(resolve_document_url(doc), "document_post", "open")}],
+            [{"text": "Скачать файл", "url": telegram_tracked_url(resolve_document_file_url(doc), "document_post", "download")}],
+            [{"text": "Похожие работы", "url": resolve_related_documents_url(doc, "document_post")}],
         ]
     }
     preview_url = clean_url(doc.get("previewImage") or TELEGRAM_PREVIEW_IMAGE_URL, 500)
@@ -997,6 +1106,300 @@ def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
             "reply_markup": reply_markup,
         },
     )
+
+
+def digest_item_from_row(row: sqlite3.Row) -> dict:
+    try:
+        doc = json.loads(row["doc_json"])
+    except (TypeError, json.JSONDecodeError):
+        doc = {}
+    return {
+        "id": int(row["id"]),
+        "file": row["file"],
+        "title": row["title"],
+        "subject": row["subject"],
+        "category": row["category"],
+        "docType": row["doc_type"],
+        "createdAt": int(row["created_at"]),
+        "dayKey": row["day_key"],
+        "weekKey": row["week_key"],
+        "doc": doc,
+    }
+
+
+def enqueue_telegram_digest_doc(doc: dict, created_at: int | None = None) -> dict:
+    file_value = catalog_doc_file(doc)
+    timestamp = int(created_at or utc_now())
+    day_key, week_key = digest_keys_for_timestamp(timestamp)
+    tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
+    with get_db() as db:
+        db.execute(
+            """
+            INSERT INTO telegram_digest_items (
+                file, title, subject, category, doc_type, tags_json, doc_json,
+                created_at, day_key, week_key, last_error
+            ) VALUES (?,?,?,?,?,?,?,?,?,?, '')
+            ON CONFLICT(file) DO UPDATE SET
+                title = excluded.title,
+                subject = excluded.subject,
+                category = excluded.category,
+                doc_type = excluded.doc_type,
+                tags_json = excluded.tags_json,
+                doc_json = excluded.doc_json,
+                created_at = excluded.created_at,
+                day_key = excluded.day_key,
+                week_key = excluded.week_key,
+                last_error = ''
+            """,
+            (
+                file_value,
+                doc_title(doc),
+                clean_text(doc.get("subject") or "", 80),
+                clean_text(doc.get("category") or "", 80),
+                clean_text(doc.get("docType") or "", 80),
+                json.dumps(tags, ensure_ascii=False, separators=(",", ":")),
+                json.dumps(doc, ensure_ascii=False, separators=(",", ":")),
+                timestamp,
+                day_key,
+                week_key,
+            ),
+        )
+        row = db.execute("SELECT id FROM telegram_digest_items WHERE file = ?", (file_value,)).fetchone()
+    return {"ok": True, "queued": True, "id": int(row["id"] if row else 0), "dayKey": day_key, "weekKey": week_key}
+
+
+def fetch_telegram_digest_items(kind: str, limit: int | None = None) -> list[dict]:
+    if kind not in {"daily", "weekly"}:
+        raise ValueError("kind must be daily or weekly")
+    sent_column = "daily_sent_at" if kind == "daily" else "weekly_sent_at"
+    max_items = max(1, int(limit or TELEGRAM_DIGEST_MAX_ITEMS))
+    with get_db() as db:
+        rows = db.execute(
+            f"""
+            SELECT * FROM telegram_digest_items
+            WHERE {sent_column} IS NULL
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?
+            """,
+            (max_items,),
+        ).fetchall()
+    items = [digest_item_from_row(row) for row in rows]
+    ready: list[dict] = []
+    for item in items:
+        doc = item.get("doc") or {}
+        try:
+            if document_page_is_ready(doc):
+                ready.append(item)
+        except Exception:
+            continue
+    return ready
+
+
+def count_telegram_digest_pending(kind: str) -> int:
+    if kind not in {"daily", "weekly"}:
+        raise ValueError("kind must be daily or weekly")
+    sent_column = "daily_sent_at" if kind == "daily" else "weekly_sent_at"
+    with get_db() as db:
+        row = db.execute(f"SELECT COUNT(*) AS c FROM telegram_digest_items WHERE {sent_column} IS NULL").fetchone()
+    return int(row["c"] or 0)
+
+
+def mark_telegram_digest_sent(kind: str, item_ids: list[int], message_id: int | None = None) -> None:
+    if not item_ids:
+        return
+    if kind not in {"daily", "weekly"}:
+        raise ValueError("kind must be daily or weekly")
+    sent_column = "daily_sent_at" if kind == "daily" else "weekly_sent_at"
+    placeholders = ",".join("?" for _ in item_ids)
+    now = utc_now()
+    with get_db() as db:
+        db.execute(
+            f"UPDATE telegram_digest_items SET {sent_column} = ?, last_error = '' WHERE id IN ({placeholders})",
+            (now, *item_ids),
+        )
+
+
+def get_telegram_digest_state(kind: str) -> dict:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM telegram_digest_state WHERE kind = ?", (kind,)).fetchone()
+    return dict(row) if row else {"kind": kind, "last_sent_key": "", "last_message_id": None, "last_error": "", "updated_at": 0}
+
+
+def set_telegram_digest_state(kind: str, sent_key: str, message_id: int | None = None, error: str = "") -> None:
+    with get_db() as db:
+        db.execute(
+            """
+            INSERT INTO telegram_digest_state (kind, last_sent_key, last_message_id, last_error, updated_at)
+            VALUES (?,?,?,?,?)
+            ON CONFLICT(kind) DO UPDATE SET
+                last_sent_key = excluded.last_sent_key,
+                last_message_id = excluded.last_message_id,
+                last_error = excluded.last_error,
+                updated_at = excluded.updated_at
+            """,
+            (kind, sent_key, message_id, error, utc_now()),
+        )
+
+
+def telegram_digest_status() -> dict:
+    with get_db() as db:
+        daily_pending = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE daily_sent_at IS NULL").fetchone()["c"] or 0)
+        weekly_pending = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE weekly_sent_at IS NULL").fetchone()["c"] or 0)
+        recent_rows = db.execute(
+            """
+            SELECT id, file, title, created_at, day_key, week_key, daily_sent_at, weekly_sent_at
+            FROM telegram_digest_items
+            ORDER BY created_at DESC, id DESC
+            LIMIT 20
+            """
+        ).fetchall()
+    return {
+        "ok": True,
+        "enabled": TELEGRAM_DIGEST_ENABLED,
+        "postMode": TELEGRAM_POST_MODE,
+        "dailyPending": daily_pending,
+        "weeklyPending": weekly_pending,
+        "dailyState": get_telegram_digest_state("daily"),
+        "weeklyState": get_telegram_digest_state("weekly"),
+        "recent": [dict(row) for row in recent_rows],
+    }
+
+
+def digest_catalog_url(kind: str) -> str:
+    return telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/catalog/", f"{kind}_digest", "catalog")
+
+
+def digest_contact_url(kind: str) -> str:
+    if TELEGRAM_CONTACT_USERNAME:
+        return f"https://t.me/{quote(TELEGRAM_CONTACT_USERNAME)}"
+    return telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/order", f"{kind}_digest", "order")
+
+
+def build_telegram_digest_text(items: list[dict], kind: str) -> str:
+    if kind == "weekly":
+        title = "Завоз недели в Кладовой"
+        lead = "Собрал новые материалы за неделю. Удобно сохранить или переслать в чат группы."
+    else:
+        title = "Сегодня добавлено в Кладовую"
+        lead = "Новые материалы уже в библиотеке. Можно открыть карточки и скачать файлы без регистрации."
+
+    lines = [f"<b>{html.escape(title)}</b>", "", html.escape(lead), ""]
+    for index, item in enumerate(items, 1):
+        doc = item.get("doc") or {}
+        item_title = html.escape(doc_title(doc))
+        meta = " · ".join(part for part in [
+            clean_text(doc.get("docType") or item.get("docType") or "", 60),
+            clean_text(doc.get("subject") or item.get("subject") or "", 60),
+        ] if part)
+        url = telegram_tracked_url(resolve_document_url(doc), f"{kind}_digest", f"doc_{index}")
+        lines.append(f"{index}. <a href=\"{html.escape(url, quote=True)}\">{item_title}</a>")
+        if meta:
+            lines.append(f"   {html.escape(meta)}")
+
+    if len(items) >= TELEGRAM_DIGEST_MAX_ITEMS:
+        lines.extend(["", "Это не всё: остальные новые материалы тоже доступны через каталог."])
+
+    catalog_url = html.escape(digest_catalog_url(kind), quote=True)
+    lines.extend([
+        "",
+        f"Каталог: <a href=\"{catalog_url}\">открыть библиотеку</a>",
+    ])
+    if TELEGRAM_CONTACT_USERNAME:
+        lines.extend([
+            "",
+            f"Если не нашли свою тему, пишите дисциплину, тему и срок: @{TELEGRAM_CONTACT_USERNAME}",
+        ])
+    return "\n".join(lines).replace("\x00", " ").strip()[:4090]
+
+
+def telegram_publish_digest(kind: str, chat_id: object | None = None, dry_run: bool = False) -> dict:
+    target_chat_id = clean_text(chat_id or TELEGRAM_CHANNEL_ID, 120)
+    if not target_chat_id and not dry_run:
+        raise RuntimeError("Telegram channel is not configured")
+    items = fetch_telegram_digest_items(kind)
+    text = build_telegram_digest_text(items, kind) if items else ""
+    if dry_run:
+        return {"ok": True, "dryRun": True, "kind": kind, "items": items, "text": text}
+    if not items:
+        pending = count_telegram_digest_pending(kind)
+        return {
+            "ok": True,
+            "skipped": True,
+            "kind": kind,
+            "reason": "No ready digest items" if pending else "No digest items",
+            "pending": pending,
+        }
+    reply_markup = {
+        "inline_keyboard": [
+            [{"text": "Открыть каталог", "url": digest_catalog_url(kind)}],
+            [{"text": "Заказать работу", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/order", f"{kind}_digest", "order")}],
+            [{"text": "Антиплагиат 2.0", "url": telegram_tracked_url(f"{SITE_ORIGIN.rstrip('/')}/anti-ai", f"{kind}_digest", "anti_ai")}],
+            [{"text": "Написать", "url": digest_contact_url(kind)}],
+        ]
+    }
+    result = telegram_api_request(
+        "sendMessage",
+        {
+            "chat_id": target_chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+            "reply_markup": reply_markup,
+        },
+    )
+    message_id = result.get("result", {}).get("message_id")
+    mark_telegram_digest_sent(kind, [item["id"] for item in items], message_id)
+    return {"ok": True, "kind": kind, "items": items, "messageId": message_id, "telegram": result}
+
+
+_telegram_digest_worker_lock = threading.Lock()
+_telegram_digest_worker_started = False
+
+
+def should_run_daily_digest(now: datetime) -> bool:
+    return (now.hour, now.minute) >= (TELEGRAM_DIGEST_DAILY_HOUR, TELEGRAM_DIGEST_DAILY_MINUTE)
+
+
+def should_run_weekly_digest(now: datetime) -> bool:
+    return (
+        now.weekday() == TELEGRAM_DIGEST_WEEKLY_WEEKDAY
+        and (now.hour, now.minute) >= (TELEGRAM_DIGEST_WEEKLY_HOUR, TELEGRAM_DIGEST_WEEKLY_MINUTE)
+    )
+
+
+def run_scheduled_digest(kind: str, sent_key: str) -> None:
+    state = get_telegram_digest_state(kind)
+    if state.get("last_sent_key") == sent_key:
+        return
+    try:
+        result = telegram_publish_digest(kind)
+        if result.get("skipped") and int(result.get("pending") or 0) > 0:
+            return
+        message_id = result.get("messageId")
+        set_telegram_digest_state(kind, sent_key, int(message_id) if message_id else None, "")
+    except Exception as exc:
+        set_telegram_digest_state(kind, state.get("last_sent_key") or "", state.get("last_message_id"), str(exc)[:500])
+
+
+def telegram_digest_worker() -> None:
+    while True:
+        if TELEGRAM_DIGEST_ENABLED and TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID:
+            now = moscow_now()
+            if should_run_weekly_digest(now):
+                run_scheduled_digest("weekly", digest_week_key(now))
+            if should_run_daily_digest(now):
+                run_scheduled_digest("daily", digest_day_key(now))
+        time.sleep(max(15, TELEGRAM_DIGEST_IDLE_SECONDS))
+
+
+def start_telegram_digest_worker() -> None:
+    global _telegram_digest_worker_started
+    with _telegram_digest_worker_lock:
+        if _telegram_digest_worker_started:
+            return
+        _telegram_digest_worker_started = True
+        thread = threading.Thread(target=telegram_digest_worker, name="telegram-digest-worker", daemon=True)
+        thread.start()
 
 
 def build_consent_fields(payload: dict, consent_at: int) -> dict[str, object]:
@@ -2248,6 +2651,12 @@ class StatsHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if parsed.path == "/api/admin/telegram/digest":
+            if not self._require_admin():
+                return
+            self._send_json(200, telegram_digest_status())
+            return
+
         self._send_json(404, {"ok": False, "error": "Not found"})
 
     def do_GET(self) -> None:
@@ -2683,6 +3092,47 @@ class StatsHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if parsed.path == "/api/admin/telegram/digest/send":
+            if not self._require_admin():
+                return
+            kind = clean_text(payload.get("kind") or "daily", 20)
+            if kind not in {"daily", "weekly"}:
+                self._send_json(400, {"ok": False, "error": "kind must be daily or weekly"})
+                return
+            try:
+                result = telegram_publish_digest(
+                    kind,
+                    payload.get("chatId") or payload.get("chat_id"),
+                    dry_run=parse_truthy(payload.get("dryRun"), False),
+                )
+            except Exception as exc:
+                self._send_json(502, {"ok": False, "error": str(exc)})
+                return
+            self._send_json(200, result)
+            return
+
+        if parsed.path == "/api/admin/telegram/digest/enqueue":
+            if not self._require_admin():
+                return
+            file_path = payload.get("file")
+            if not file_path:
+                self._send_json(400, {"ok": False, "error": "file required"})
+                return
+            with _catalog_lock:
+                catalog = load_catalog()
+                idx = find_doc_index(catalog, file_path)
+                if idx < 0:
+                    self._send_json(404, {"ok": False, "error": "Document not found"})
+                    return
+                doc = catalog[idx]
+            try:
+                queued = enqueue_telegram_digest_doc(doc)
+            except Exception as exc:
+                self._send_json(502, {"ok": False, "error": str(exc)})
+                return
+            self._send_json(200, {"ok": True, "doc": doc, "digest": queued})
+            return
+
         if parsed.path == "/api/admin/docs/rebuild-pages":
             if not self._require_admin():
                 return
@@ -2945,25 +3395,39 @@ class StatsHandler(BaseHTTPRequestHandler):
             catalog_sync_commit_message("upload", doc_entry),
         )
         publish_result = None
+        digest_result = None
         warnings: list[str] = []
         page_ready = None
         if not sync_result.get("ok"):
             warnings.append(str(sync_result.get("error") or "catalog.js sync failed"))
         if parse_truthy(metadata.get("publishTelegram"), TELEGRAM_AUTO_POST):
-            if sync_result.get("ok"):
-                page_ready = wait_for_document_page(doc_entry)
-                if not page_ready.get("ok"):
-                    warnings.append(str(page_ready.get("error") or "Document page is not ready"))
+            telegram_mode = clean_text(
+                metadata.get("telegramMode") or metadata.get("telegramPostMode") or TELEGRAM_POST_MODE,
+                30,
+            ).lower()
+            if telegram_mode in {"off", "none", "false", "0", "no"}:
+                publish_result = {"ok": True, "skipped": True, "mode": telegram_mode}
+            elif telegram_mode in {"digest", "queue", "queued", "daily"}:
+                try:
+                    digest_result = enqueue_telegram_digest_doc(doc_entry)
+                    publish_result = {"ok": True, "queued": True, "mode": "digest", "digest": digest_result}
+                except Exception as exc:
+                    warnings.append(str(exc))
             else:
-                page_ready = {
-                    "ok": False,
-                    "url": resolve_document_url(doc_entry),
-                    "error": "catalog.js sync failed; Astro deploy may not have started",
-                }
-            try:
-                publish_result = telegram_publish_document(doc_entry, metadata.get("telegramChatId"))
-            except Exception as exc:
-                warnings.append(str(exc))
+                if sync_result.get("ok"):
+                    page_ready = wait_for_document_page(doc_entry)
+                    if not page_ready.get("ok"):
+                        warnings.append(str(page_ready.get("error") or "Document page is not ready"))
+                else:
+                    page_ready = {
+                        "ok": False,
+                        "url": resolve_document_url(doc_entry),
+                        "error": "catalog.js sync failed; Astro deploy may not have started",
+                    }
+                try:
+                    publish_result = telegram_publish_document(doc_entry, metadata.get("telegramChatId"))
+                except Exception as exc:
+                    warnings.append(str(exc))
         self._send_json(
             200,
             {
@@ -2975,6 +3439,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                 "catalogSync": sync_result,
                 "pageReady": page_ready,
                 "telegram": publish_result,
+                "digest": digest_result,
                 "warning": "; ".join(warnings) if warnings else None,
             },
         )
@@ -2982,6 +3447,7 @@ class StatsHandler(BaseHTTPRequestHandler):
 
 def main() -> None:
     init_db()
+    start_telegram_digest_worker()
     server = ThreadingHTTPServer((HOST, PORT), StatsHandler)
     print(f"Listening on http://{HOST}:{PORT}")
     server.serve_forever()
