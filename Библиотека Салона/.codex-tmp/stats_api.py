@@ -239,6 +239,21 @@ def ensure_parent_dir(path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
 
+def write_text_if_changed(path: str, content: str) -> bool:
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            if handle.read() == content:
+                return False
+    except FileNotFoundError:
+        pass
+    ensure_parent_dir(path)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as handle:
+        handle.write(content)
+    os.replace(tmp_path, path)
+    return True
+
+
 def get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
     conn.row_factory = sqlite3.Row
@@ -748,18 +763,25 @@ def build_document_page(doc: dict, total_count: int) -> str:
     catalog_url = resolve_catalog_document_url(doc)
     og_url = resolve_document_preview_url(doc)
     og_type = "image/png" if og_url.lower().split("?", 1)[0].endswith(".png") else "image/svg+xml"
+    doc_type = clean_text(doc.get("docType") or doc.get("category") or "Документ", 48)
+    subject_label = clean_text(doc.get("subject") or "", 48)
+    category_label = clean_text(doc.get("category") or "", 48)
+    file_label = " · ".join(part for part in [doc_type, doc_extension(doc), clean_text(doc.get("size") or "", 20)] if part)
     info_line = " · ".join(
         part
-        for part in [
-            clean_text(doc.get("docType") or doc.get("category") or "Документ", 48),
-            clean_text(doc.get("subject") or "", 48),
-            doc_extension(doc),
-            clean_text(doc.get("size") or "", 20),
-        ]
+        for part in [doc_type, subject_label, doc_extension(doc), clean_text(doc.get("size") or "", 20)]
         if part
     )
     tags = doc.get("tags") if isinstance(doc.get("tags"), list) else []
-    tags_html = "".join(f"<span>{html.escape(clean_text(tag, 48))}</span>" for tag in tags[:8])
+    meta_items = [subject_label, category_label, file_label]
+    meta_html = "".join(f"<span>{html.escape(item)}</span>" for item in meta_items if item)
+    tags_html = "".join(f"<span>{html.escape(clean_text(tag, 48))}</span>" for tag in tags[:7])
+    if not tags_html:
+        tags_html = "".join(
+            f"<span>{html.escape(item)}</span>"
+            for item in [subject_label, category_label, doc_type]
+            if item
+        )
     schema = {
         "@context": "https://schema.org",
         "@type": ["ScholarlyArticle", "LearningResource"],
@@ -803,32 +825,121 @@ def build_document_page(doc: dict, total_count: int) -> str:
   <link rel="canonical" href="{html.escape(doc_url)}">
   <script type="application/ld+json">{schema_json}</script>
   <style>
-    :root {{ color-scheme: dark; --bg:#08070b; --panel:#121019; --text:#f5f2ea; --muted:#c8bda1; --accent:#d7b35a; --line:rgba(255,255,255,.10); }}
-    * {{ box-sizing:border-box; }}
-    body {{ margin:0; min-height:100vh; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at top right,rgba(215,179,90,.18),transparent 34%),var(--bg); color:var(--text); }}
-    main {{ width:min(100%,860px); margin:0 auto; min-height:100vh; padding:28px 18px; display:grid; align-content:center; }}
-    .card {{ border:1px solid var(--line); background:linear-gradient(180deg,rgba(18,16,25,.97),rgba(8,7,11,.97)); border-radius:28px; padding:30px; box-shadow:0 30px 80px rgba(0,0,0,.35); }}
-    .eyebrow {{ display:inline-flex; padding:9px 13px; border-radius:999px; background:rgba(215,179,90,.12); color:#f1d99d; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }}
-    h1 {{ margin:22px 0 14px; font-family:Georgia,"Times New Roman",serif; font-size:clamp(34px,7vw,64px); line-height:.98; letter-spacing:0; }}
-    p {{ margin:0; color:rgba(245,242,234,.78); line-height:1.62; font-size:16px; }}
-    .meta {{ margin:18px 0 22px; color:var(--muted); font-weight:700; }}
-    .tags {{ display:flex; flex-wrap:wrap; gap:8px; margin:22px 0; }}
-    .tags span {{ border:1px solid var(--line); border-radius:999px; padding:7px 10px; color:var(--muted); font-size:13px; }}
-    .actions {{ display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }}
-    a {{ color:inherit; text-decoration:none; }}
-    .primary,.secondary {{ min-height:48px; display:inline-flex; align-items:center; justify-content:center; border-radius:14px; padding:0 18px; font-weight:800; }}
-    .primary {{ background:linear-gradient(135deg,#f1d99d,#d7b35a); color:#121019; }}
-    .secondary {{ border:1px solid var(--line); color:#f1d99d; }}
-    .foot {{ margin-top:22px; color:rgba(245,242,234,.46); font-size:13px; }}
+    @font-face{{
+      font-family:'Cormorant Fallback';
+      src:local('Georgia'),local('Times New Roman'),local('Times');
+      size-adjust:106%;
+      ascent-override:95%;
+      descent-override:28%;
+      line-gap-override:0%;
+    }}
+    @font-face{{
+      font-family:'Inter Fallback';
+      src:local('Arial'),local('Helvetica Neue'),local('Helvetica');
+      size-adjust:107%;
+      ascent-override:90%;
+      descent-override:22%;
+      line-gap-override:0%;
+    }}
+    :root{{
+      --bg:#08070b;--bg-soft:rgba(18,16,24,.72);
+      --panel:rgba(20,18,27,.76);--panel-strong:rgba(255,255,255,.06);
+      --panel-border:rgba(230,207,146,.12);
+      --line:rgba(255,255,255,.08);
+      --text:#f7f3e7;--text-muted:#c8bda1;--text-dim:#8f856f;
+      --accent:#d7b35a;--accent-strong:#f0dba1;--accent-soft:rgba(215,179,90,.14);
+      --shadow:0 24px 80px rgba(0,0,0,.36);
+      --radius-xl:28px;--radius-surface:22px;--radius-card:18px;--radius-pill:999px;
+      --gold-rich:#f0c661;--gold-bright:#ffefba;--gold-deep:#a96d12;--gold-ink:#201405;
+      --gold-border-soft:rgba(240,198,97,.12);--gold-border-strong:rgba(240,198,97,.22);
+      --gold-glow-soft:rgba(240,198,97,.14);--gold-glow-strong:rgba(240,198,97,.28);
+      --fd:'Playfair Display','Cormorant Fallback',Georgia,serif;
+      --fi:Inter,'Inter Fallback',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      color-scheme:dark;
+    }}
+    *{{box-sizing:border-box;margin:0;padding:0}}
+    html,body{{min-height:100%;background:var(--bg);color:var(--text)}}
+    body{{
+      font-family:var(--fi);
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(circle at 14% 0%,rgba(240,198,97,.20),transparent 18%),
+        radial-gradient(circle at 88% 8%,rgba(146,96,22,.14),transparent 16%),
+        radial-gradient(circle at 50% 108%,rgba(240,198,97,.10),transparent 24%),
+        linear-gradient(180deg,#07060a 0%,#030306 58%,#010103 100%);
+    }}
+    main{{width:min(100%,760px);min-height:100vh;margin:0 auto;padding:28px 20px 40px;display:grid;align-content:center}}
+    .surface{{
+      position:relative;
+      padding:28px 22px 22px;
+      border-radius:var(--radius-xl);
+      border:1px solid var(--gold-border-strong);
+      background:
+        radial-gradient(circle at 12% 0%,rgba(240,198,97,.18),transparent 28%),
+        radial-gradient(circle at 88% 12%,rgba(162,107,24,.11),transparent 24%),
+        linear-gradient(180deg,rgba(22,17,21,.98),rgba(7,7,11,.99));
+      box-shadow:0 24px 58px rgba(0,0,0,.38),0 16px 36px var(--gold-glow-soft),inset 0 1px 0 rgba(255,255,255,.04);
+    }}
+    .eyebrow,.meta span,.section-label{{letter-spacing:.08em;text-transform:uppercase;font-weight:800}}
+    .eyebrow{{
+      display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border-radius:var(--radius-pill);
+      background:rgba(215,179,90,.12);color:rgba(236,214,163,.84);font-size:12px;
+    }}
+    h1{{margin:18px 0 0;font-family:var(--fd);font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:.96;letter-spacing:0;color:transparent;background:linear-gradient(180deg,#fff4d6 0%,var(--gold-bright) 28%,var(--gold-rich) 72%,#c98f2f 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 12px 26px rgba(240,198,97,.07))}}
+    .lead{{margin:14px 0 0;max-width:42rem;color:rgba(247,243,231,.72);font-size:1rem;line-height:1.55}}
+    .meta,.tags{{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}}
+    .meta span{{
+      display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:var(--radius-pill);
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+      color:var(--text-muted);font-size:11px;
+    }}
+    .facts{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;border-radius:var(--radius-surface);overflow:hidden;background:linear-gradient(180deg,rgba(15,12,18,.98),rgba(6,6,10,.99));border:1px solid var(--gold-border-soft)}}
+    .facts div{{min-width:0;padding:14px 14px 13px;border-right:1px solid rgba(255,255,255,.06)}}
+    .facts div:last-child{{border-right:0}}
+    .facts span,.facts strong{{display:block}}
+    .facts span{{color:var(--text-muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}}
+    .facts strong{{margin-top:7px;font-size:.92rem;line-height:1.22;color:var(--text)}}
+    .section-label{{display:block;margin-top:22px;color:var(--gold-bright);font-size:11px}}
+    .tags{{margin-top:10px}}
+    .tags span{{
+      display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:var(--radius-pill);
+      border:1px solid var(--gold-border-soft);background:rgba(255,255,255,.035);
+      color:rgba(247,243,231,.72);font-size:.84rem;line-height:1;
+    }}
+    .actions{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}}
+    a{{color:inherit;text-decoration:none}}
+    .primary,.secondary{{
+      min-height:54px;border-radius:var(--radius-card);display:inline-flex;align-items:center;justify-content:center;
+      text-align:center;padding:0 18px;font-weight:760;
+    }}
+    .primary{{background:linear-gradient(180deg,#fff4cb 0%,var(--gold-bright) 24%,var(--gold-rich) 68%,var(--gold-deep) 100%);color:var(--gold-ink);box-shadow:0 18px 34px rgba(240,198,97,.24),inset 0 1px 0 rgba(255,255,255,.36)}}
+    .secondary{{background:linear-gradient(180deg,rgba(15,13,18,.97),rgba(7,7,10,.99));border:1px solid var(--gold-border-soft);color:var(--gold-bright)}}
+    .foot{{margin-top:16px;color:rgba(247,243,231,.52);font-size:.84rem;line-height:1.45}}
+    @media (max-width:640px){{
+      main{{padding:14px 12px 26px;align-content:start}}
+      .surface{{border-radius:24px;padding:22px 16px 18px}}
+      h1{{font-size:clamp(2.15rem,13vw,3.35rem)}}
+      .lead{{font-size:.96rem}}
+      .facts,.actions{{grid-template-columns:1fr}}
+      .facts div{{border-right:0;border-bottom:1px solid rgba(255,255,255,.06)}}
+      .facts div:last-child{{border-bottom:0}}
+    }}
   </style>
 </head>
 <body>
   <main>
-    <section class="card">
-      <span class="eyebrow">Библиотека Салона · {total_count}+ материалов</span>
+    <section class="surface">
+      <div class="eyebrow">Библиотека Салона</div>
       <h1>{html.escape(title)}</h1>
-      <p class="meta">{html.escape(info_line)}</p>
-      <p>{html.escape(description)}</p>
+      <p class="lead">{html.escape(description)}</p>
+      <div class="meta">{meta_html}</div>
+      <div class="facts">
+        <div><span>Файл</span><strong>{html.escape(file_label)}</strong></div>
+        <div><span>Раздел</span><strong>{html.escape(category_label or "Каталог")}</strong></div>
+        <div><span>В библиотеке</span><strong>{total_count}+ материалов</strong></div>
+      </div>
+      <span class="section-label">Теги</span>
       <div class="tags">{tags_html}</div>
       <div class="actions">
         <a class="primary" href="{html.escape(file_url)}">Скачать файл</a>
@@ -844,10 +955,8 @@ def build_document_page(doc: dict, total_count: int) -> str:
 def write_document_page(doc: dict, total_count: int) -> None:
     page_dir = resolve_document_page_dir(doc)
     os.makedirs(page_dir, exist_ok=True)
-    with open(os.path.join(page_dir, "index.html"), "w", encoding="utf-8") as f:
-        f.write(build_document_page(doc, total_count))
-    with open(os.path.join(page_dir, "og.svg"), "w", encoding="utf-8") as f:
-        f.write(build_document_og_svg(doc))
+    write_text_if_changed(os.path.join(page_dir, "index.html"), build_document_page(doc, total_count))
+    write_text_if_changed(os.path.join(page_dir, "og.svg"), build_document_og_svg(doc))
 
 
 CATEGORY_LABELS = {
