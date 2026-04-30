@@ -19,8 +19,8 @@ from zoneinfo import ZoneInfo
 import bcrypt
 
 # ===== VK NOTIFICATIONS =====
-VK_TOKEN = os.environ.get("SALON_VK_TOKEN", "vk1.a.XJ_Kp52BZwH0AFJRyaQ_FqnVmQ_YBQc__ew8A04bOWJwyppO8ABXUtSwDTtDeMyArDqA3EZ-utkkgPIoxdeRV7vPUiLrW5uZxfyqFGR9iq9SSM8FvN3jjx-w3nBMdr-t2Z1o7iuzyoU7n5a2nXam42w7bpOt5zJlB5BUU8XQ18izqv2tKODHAVx4NyBnRxQco-RcsQq7NP-8yJrHBeR6Kg")
-VK_ADMIN_ID = int(os.environ.get("SALON_VK_ADMIN_ID", "76544534"))
+VK_TOKEN = os.environ.get("SALON_VK_TOKEN", "")
+VK_ADMIN_ID = int(os.environ.get("SALON_VK_ADMIN_ID", "0") or "0")
 
 
 NOTIFY_EMAIL = os.environ.get("SALON_NOTIFY_EMAIL", "academsaloon@mail.ru")
@@ -51,6 +51,9 @@ def email_notify(subject: str, body: str) -> None:
 
 def vk_notify(message: str) -> None:
     """Send notification to admin via VK community messages (fire-and-forget)."""
+    if not VK_TOKEN or not VK_ADMIN_ID:
+        return
+
     def _send():
         try:
             params = urllib.parse.urlencode({
@@ -99,7 +102,7 @@ EVENT_WINDOWS = {
 # Password hash is generated once: python3 -c "import bcrypt; print(bcrypt.hashpw(b'YOUR_PASSWORD', bcrypt.gensalt()).decode())"
 ADMIN_HASH = os.environ.get(
     "SALON_ADMIN_HASH",
-    "$2b$12$Yil6rZIDxqXoPFqBsZmW/elKhVoQpCiE8UxYQQFd7ZPrnBCPIb2Iy"
+    ""
 )
 SESSION_TTL = 24 * 60 * 60  # 24 hours
 LOGIN_RATE_WINDOW = 60  # 1 minute
