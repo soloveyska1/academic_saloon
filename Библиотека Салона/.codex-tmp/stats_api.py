@@ -638,6 +638,10 @@ def resolve_document_file_url(doc: dict) -> str:
     return f"{SITE_ORIGIN.rstrip('/')}/{quote(catalog_doc_file(doc), safe='/')}"
 
 
+def resolve_catalog_document_url(doc: dict) -> str:
+    return f"{SITE_ORIGIN.rstrip('/')}/catalog/?entry={quote(catalog_doc_file(doc), safe='')}"
+
+
 def resolve_document_preview_url(doc: dict) -> str:
     preview = clean_url(doc.get("previewImage"), 500)
     if preview:
@@ -741,6 +745,7 @@ def build_document_page(doc: dict, total_count: int) -> str:
     description = doc_description(doc) or "Документ из Библиотеки Салона."
     doc_url = resolve_document_url(doc)
     file_url = resolve_document_file_url(doc)
+    catalog_url = resolve_catalog_document_url(doc)
     og_url = resolve_document_preview_url(doc)
     og_type = "image/png" if og_url.lower().split("?", 1)[0].endswith(".png") else "image/svg+xml"
     info_line = " · ".join(
@@ -827,7 +832,7 @@ def build_document_page(doc: dict, total_count: int) -> str:
       <div class="tags">{tags_html}</div>
       <div class="actions">
         <a class="primary" href="{html.escape(file_url)}">Скачать файл</a>
-        <a class="secondary" href="/catalog">Открыть каталог</a>
+        <a class="secondary" href="{html.escape(catalog_url)}">Открыть каталог</a>
       </div>
       <p class="foot">Материал опубликован как учебный пример. Используйте его как ориентир для собственной работы.</p>
     </section>
@@ -993,6 +998,83 @@ def patch_catalog_sort_assets() -> None:
                 f.write(updated)
 
 
+def write_catalog_entry_script() -> None:
+    scripts_dir = os.path.join(BASE_DIR, "scripts")
+    os.makedirs(scripts_dir, exist_ok=True)
+    script_path = os.path.join(scripts_dir, "catalog-entry.js")
+    script = r'''(function () {
+  function normalize(value) {
+    try { value = decodeURIComponent(value || ''); } catch (_) { value = value || ''; }
+    return String(value)
+      .replace(/^https?:\/\/[^/]+\/(?:doc\/)?/i, '')
+      .replace(/^\/+/, '')
+      .replace(/^doc\//, '')
+      .replace(/\/$/, '');
+  }
+
+  function rowFile(row) {
+    var fav = row.querySelector('.td-fav');
+    if (fav && fav.dataset.file) return normalize(fav.dataset.file);
+    try {
+      var url = new URL(row.getAttribute('href') || '', window.location.origin);
+      return normalize(url.pathname);
+    } catch (_) {
+      return normalize(row.getAttribute('href') || '');
+    }
+  }
+
+  function ensureStyle() {
+    if (document.getElementById('catalog-entry-style')) return;
+    var style = document.createElement('style');
+    style.id = 'catalog-entry-style';
+    style.textContent = '.row.is-entry-target{outline:2px solid rgba(215,179,90,.95);outline-offset:-2px;background:rgba(215,179,90,.13)!important;box-shadow:inset 4px 0 0 #d7b35a}';
+    document.head.appendChild(style);
+  }
+
+  function revealEntry() {
+    var params = new URLSearchParams(window.location.search);
+    var target = normalize(params.get('entry') || params.get('file') || params.get('doc'));
+    if (!target) return;
+
+    ensureStyle();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.row'));
+    var row = rows.find(function (item) {
+      var file = rowFile(item);
+      return file === target || file.endsWith('/' + target) || target.endsWith('/' + file);
+    });
+    if (!row) return;
+
+    var table = document.getElementById('tableBody');
+    var query = document.getElementById('q');
+    if (query && query.value) {
+      query.value = '';
+      query.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    row.classList.remove('hid');
+    row.classList.add('is-entry-target');
+    row.setAttribute('tabindex', '-1');
+
+    window.setTimeout(function () {
+      if (table) {
+        table.scrollTop = Math.max(0, row.offsetTop - table.clientHeight / 2 + row.clientHeight / 2);
+      } else {
+        row.scrollIntoView({ block: 'center' });
+      }
+      try { row.focus({ preventScroll: true }); } catch (_) {}
+    }, 180);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', revealEntry);
+  } else {
+    revealEntry();
+  }
+  document.addEventListener('astro:page-load', revealEntry);
+})();'''
+    with open(script_path, "w", encoding="utf-8") as f:
+        f.write(script)
+
+
 def refresh_static_catalog(catalog: list[dict]) -> None:
     total = len(catalog)
     catalog_page = os.path.join(BASE_DIR, "catalog", "index.html")
@@ -1022,6 +1104,12 @@ def refresh_static_catalog(catalog: list[dict]) -> None:
                 f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button>',
                 f'<button class="sort-opt active" data-sort="default"{cid_attr}>По умолчанию</button> '
                 f'<button class="sort-opt" data-sort="new"{cid_attr}>Сначала новые</button>',
+                1,
+            )
+        if "/scripts/catalog-entry.js" not in page:
+            page = page.replace(
+                "</body>",
+                '<script defer src="/scripts/catalog-entry.js"></script></body>',
                 1,
             )
         page = re.sub(r'(<span id="visCount"[^>]*>)\d+(</span>)', rf"\g<1>{total}\g<2>", page, count=1)
@@ -1055,6 +1143,7 @@ def refresh_static_catalog(catalog: list[dict]) -> None:
             except OSError:
                 continue
     patch_catalog_sort_assets()
+    write_catalog_entry_script()
 
 
 def build_telegram_document_text(doc: dict) -> str:
@@ -1101,7 +1190,7 @@ def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
     text = build_telegram_document_text(doc)
     reply_markup = {
         "inline_keyboard": [
-            [{"text": "Открыть в библиотеке", "url": resolve_document_url(doc)}],
+            [{"text": "Открыть в библиотеке", "url": resolve_catalog_document_url(doc)}],
             [{"text": "Скачать файл", "url": resolve_document_file_url(doc)}],
         ]
     }
@@ -2791,6 +2880,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                         "dryRun": True,
                         "doc": doc,
                         "docUrl": resolve_document_url(doc),
+                        "catalogUrl": resolve_catalog_document_url(doc),
                         "fileUrl": resolve_document_file_url(doc),
                         "text": post_text,
                     },
@@ -2806,6 +2896,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                 {
                     "ok": True,
                     "docUrl": resolve_document_url(doc),
+                    "catalogUrl": resolve_catalog_document_url(doc),
                     "fileUrl": resolve_document_file_url(doc),
                     "text": post_text,
                     "telegram": result,
@@ -3087,6 +3178,7 @@ class StatsHandler(BaseHTTPRequestHandler):
                 "doc": doc_entry,
                 "totalDocs": len(catalog),
                 "docUrl": resolve_document_url(doc_entry),
+                "catalogUrl": resolve_catalog_document_url(doc_entry),
                 "telegram": publish_result,
                 "warning": publish_error,
             },
