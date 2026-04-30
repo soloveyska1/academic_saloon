@@ -1190,7 +1190,7 @@ def telegram_publish_document(doc: dict, chat_id: object | None = None) -> dict:
     text = build_telegram_document_text(doc)
     reply_markup = {
         "inline_keyboard": [
-            [{"text": "Открыть в библиотеке", "url": resolve_catalog_document_url(doc)}],
+            [{"text": "Открыть в библиотеке", "url": resolve_document_url(doc)}],
             [{"text": "Скачать файл", "url": resolve_document_file_url(doc)}],
         ]
     }
