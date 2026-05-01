@@ -1149,6 +1149,8 @@ def enqueue_telegram_digest_doc(doc: dict, created_at: int | None = None) -> dic
                 created_at = excluded.created_at,
                 day_key = excluded.day_key,
                 week_key = excluded.week_key,
+                daily_sent_at = NULL,
+                weekly_sent_at = NULL,
                 last_error = ''
             """,
             (
@@ -1217,6 +1219,39 @@ def mark_telegram_digest_sent(kind: str, item_ids: list[int], message_id: int | 
             f"UPDATE telegram_digest_items SET {sent_column} = ?, last_error = '' WHERE id IN ({placeholders})",
             (now, *item_ids),
         )
+
+
+def clear_telegram_digest_queue(kind: str = "all") -> dict:
+    if kind not in {"daily", "weekly", "all"}:
+        raise ValueError("kind must be daily, weekly or all")
+    now = utc_now()
+    with get_db() as db:
+        before_daily = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE daily_sent_at IS NULL").fetchone()["c"] or 0)
+        before_weekly = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE weekly_sent_at IS NULL").fetchone()["c"] or 0)
+        daily_cleared = 0
+        weekly_cleared = 0
+        if kind in {"daily", "all"}:
+            cursor = db.execute(
+                "UPDATE telegram_digest_items SET daily_sent_at = ?, last_error = '' WHERE daily_sent_at IS NULL",
+                (now,),
+            )
+            daily_cleared = int(cursor.rowcount or 0)
+        if kind in {"weekly", "all"}:
+            cursor = db.execute(
+                "UPDATE telegram_digest_items SET weekly_sent_at = ?, last_error = '' WHERE weekly_sent_at IS NULL",
+                (now,),
+            )
+            weekly_cleared = int(cursor.rowcount or 0)
+        after_daily = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE daily_sent_at IS NULL").fetchone()["c"] or 0)
+        after_weekly = int(db.execute("SELECT COUNT(*) AS c FROM telegram_digest_items WHERE weekly_sent_at IS NULL").fetchone()["c"] or 0)
+    return {
+        "ok": True,
+        "kind": kind,
+        "dailyCleared": daily_cleared,
+        "weeklyCleared": weekly_cleared,
+        "before": {"dailyPending": before_daily, "weeklyPending": before_weekly},
+        "after": {"dailyPending": after_daily, "weeklyPending": after_weekly},
+    }
 
 
 def get_telegram_digest_state(kind: str) -> dict:
@@ -3145,6 +3180,21 @@ class StatsHandler(BaseHTTPRequestHandler):
                 self._send_json(502, {"ok": False, "error": str(exc)})
                 return
             self._send_json(200, {"ok": True, "doc": doc, "digest": queued})
+            return
+
+        if parsed.path == "/api/admin/telegram/digest/clear":
+            if not self._require_admin():
+                return
+            kind = clean_text(payload.get("kind") or "all", 20)
+            if kind not in {"daily", "weekly", "all"}:
+                self._send_json(400, {"ok": False, "error": "kind must be daily, weekly or all"})
+                return
+            try:
+                result = clear_telegram_digest_queue(kind)
+            except Exception as exc:
+                self._send_json(502, {"ok": False, "error": str(exc)})
+                return
+            self._send_json(200, result)
             return
 
         if parsed.path == "/api/admin/docs/rebuild-pages":
