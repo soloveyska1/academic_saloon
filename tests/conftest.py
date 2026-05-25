@@ -1,8 +1,5 @@
 import os
 
-import pytest
-
-
 REQUIRED_ENV = {
     "BOT_TOKEN": "123456:TEST-TOKEN",
     "BOT_USERNAME": "test_bot",
