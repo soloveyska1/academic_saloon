@@ -40,7 +40,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 90s
+          command_timeout: 180s
           envs: NOTIFY_CHAT_ID,GH_RUN_URL,REMOTE_OPS_PATH
           script: |
             set -euo pipefail
