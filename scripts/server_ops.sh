@@ -28,7 +28,7 @@ send_telegram_html() {
     return
   fi
 
-  curl -s -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+  curl -s --connect-timeout 5 --max-time 10 -X POST "https://api.telegram.org/bot${token}/sendMessage" \
     --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
     --data-urlencode "parse_mode=HTML" \
     --data-urlencode "text=${message}" \
@@ -101,13 +101,26 @@ frontend_http_ok() {
   curl -fsSIL --max-time 5 http://localhost/ >/dev/null 2>&1
 }
 
+clear_backend_port() {
+  fuser -k -9 8000/tcp 2>/dev/null || true
+  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+}
+
 restart_backend() {
-  local old_pid
+  local old_pid active_state
 
   old_pid="$(service_main_pid)"
   if [ -z "$old_pid" ]; then
     old_pid="0"
   fi
+
+  active_state="$(service_active_state)"
+  if [ "$active_state" != "active" ] && lsof -ti:8000 >/dev/null 2>&1; then
+    clear_backend_port
+    sleep 1
+  fi
+
+  systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
 
   if systemctl restart "$SERVICE_NAME"; then
     if wait_for_backend_ready "$old_pid"; then
@@ -115,9 +128,9 @@ restart_backend() {
     fi
   fi
 
-  fuser -k -9 8000/tcp 2>/dev/null || true
-  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+  clear_backend_port
   sleep 1
+  systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
   systemctl restart "$SERVICE_NAME"
   wait_for_backend_ready "0"
 }
@@ -153,7 +166,10 @@ PY
   fi
 
   SSL_DAYS="?"
-  ssl_date="$(echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)"
+  ssl_date="$(
+    timeout 8 bash -c 'echo | openssl s_client -servername "$0" -connect "$0:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2' "$DOMAIN" \
+      || true
+  )"
   if [ -n "$ssl_date" ]; then
     ssl_ts="$(date -d "$ssl_date" +%s 2>/dev/null || echo 0)"
     now_ts="$(date +%s)"

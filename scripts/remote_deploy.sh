@@ -201,6 +201,11 @@ wait_for_backend_ready() {
   return 1
 }
 
+clear_backend_port() {
+  fuser -k -9 8000/tcp 2>/dev/null || true
+  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+}
+
 restart_backend() {
   local old_pid current_pid active_state sub_state
 
@@ -208,6 +213,14 @@ restart_backend() {
   if [ -z "$old_pid" ]; then
     old_pid="0"
   fi
+
+  active_state="$(service_active_state)"
+  if [ "$active_state" != "active" ] && lsof -ti:8000 >/dev/null 2>&1; then
+    clear_backend_port
+    sleep 1
+  fi
+
+  systemd_maybe_sudo systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
 
   if systemd_maybe_sudo systemctl reload-or-restart "$SERVICE_NAME" && wait_for_backend_ready "$old_pid"; then
     return 0
@@ -218,9 +231,9 @@ restart_backend() {
   sub_state="$(service_sub_state)"
   echo "Backend not ready after systemd cycle (state=${active_state}/${sub_state}, pid=${current_pid:-0}), clearing port 8000 and retrying"
 
-  fuser -k -9 8000/tcp 2>/dev/null || true
-  lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+  clear_backend_port
   sleep 1
+  systemd_maybe_sudo systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
   systemd_maybe_sudo systemctl restart "$SERVICE_NAME"
   wait_for_backend_ready "0"
 }
