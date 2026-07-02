@@ -13,7 +13,7 @@ WorkingDirectory={{REPO_DIR}}
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 EnvironmentFile={{ENV_FILE}}
-ExecStartPre=/bin/sh -c 'for i in $(seq 60); do ss -tln | grep -q ":8000 " || exit 0; sleep 0.5; done; exit 0'
+ExecStartPre=/bin/sh -c 'fuser -k 8000/tcp 2>/dev/null; sleep 1; exit 0'
 ExecStartPre={{SYSTEMD_HELPER_DIR}}/systemd_prestart.sh {{REPO_DIR}}
 ExecStart={{REPO_DIR}}/venv/bin/python {{REPO_DIR}}/main.py
 ExecReload={{SYSTEMD_HELPER_DIR}}/systemd_reload.sh HUP 45
