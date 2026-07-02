@@ -121,9 +121,41 @@ class AbandonedOrderTracker:
             except Exception as e:
                 logger.error(f"Error checking abandoned order: {e}")
 
+    async def _remind_user(self, user_id: int):
+        """Мягкое напоминание пользователю о незавершённой заявке."""
+        text = (
+            "<b>Вы начали оформлять заказ — и остановились</b>\n\n"
+            "Ничего страшного, так бывает. Заявка ни к чему не обязывает: "
+            "сначала расчёт и смета, платить нужно только после согласования.\n\n"
+            "<i>Если что-то было непонятно — просто напишите, поможем.</i>"
+        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📝 Начать заново — это 2 минуты",
+                callback_data="create_order",
+            )],
+            [InlineKeyboardButton(
+                text="💬 Задать вопрос",
+                callback_data="guide_support",
+            )],
+        ])
+
+        try:
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                reply_markup=keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send abandoned reminder to user {user_id}: {e}")
+
     async def _notify_abandoned(self, data: dict):
         """Отправить уведомление о брошенном заказе"""
         user_id = int(data.get("user_id", 0))
+
+        # Сначала — мягкое напоминание самому пользователю
+        if user_id:
+            await self._remind_user(user_id)
         username = data.get("username", "")
         fullname = data.get("fullname", "Неизвестно")
         last_step = data.get("last_step", "неизвестно")

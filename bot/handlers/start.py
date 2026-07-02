@@ -14,6 +14,7 @@ from sqlalchemy import select
 from database.models.users import User
 from database.models.orders import Order, OrderStatus, ConversationType
 from bot.keyboards.inline import get_pinned_message_keyboard, get_persistent_menu
+from bot.keyboards.guide import get_guide_menu, GUIDE_MENU_TEXT
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.utils.formatting import format_price
 from core.config import settings
@@ -651,6 +652,32 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             text=welcome_text,
             reply_markup=get_persistent_menu()
         )
+
+    # 4. Второе сообщение — меню-проводник «С чего начнём?»
+    try:
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=GUIDE_MENU_TEXT,
+            reply_markup=get_guide_menu(),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send guide menu: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+#  /menu COMMAND — меню-проводник по запросу
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("menu"))
+async def cmd_menu(message: Message, state: FSMContext):
+    """Команда /menu — показать меню-проводник."""
+    # Выходим из любых режимов (чат поддержки, wizard), чтобы меню работало предсказуемо
+    try:
+        await state.clear()
+    except Exception:
+        pass
+
+    await message.answer(GUIDE_MENU_TEXT, reply_markup=get_guide_menu())
 
 
 # ══════════════════════════════════════════════════════════════

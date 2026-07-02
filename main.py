@@ -32,6 +32,8 @@ from bot.handlers.admin_promo import router as admin_promo_router
 from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router
+from bot.handlers.tutorial import router as tutorial_router
+from bot.handlers.guide_club import router as guide_club_router
 from bot.handlers.channel_cards import router as channel_cards_router
 from bot.handlers.order_chat import router as order_chat_router
 from bot.handlers.devops import router as devops_router
@@ -206,6 +208,8 @@ async def run_bot(runtime: ServiceRuntime):
     dp.include_router(order_chat_router)  # Приватный чат по заказам
     dp.include_router(orders_router)  # FSM для заказов
     dp.include_router(my_orders_router)  # История заказов
+    dp.include_router(tutorial_router)  # Тутор «Как это работает» (/tutorial, tutorial_1..4)
+    dp.include_router(guide_club_router)  # Проводник: клуб, «Салон+», поддержка, «← Меню»
     dp.include_router(menu_router)
     # ----------------------------
 
@@ -215,9 +219,12 @@ async def run_bot(runtime: ServiceRuntime):
 
         # Настраиваем команды бота — гибридный подход
         commands = [
-            BotCommand(command="start", description="Открыть приложение"),
-            BotCommand(command="status", description="Статус заказов"),
-            BotCommand(command="support", description="Поддержка"),
+            BotCommand(command="start", description="Перезапустить бота"),
+            BotCommand(command="menu", description="Главное меню — с чего начать"),
+            BotCommand(command="status", description="Статус ваших заказов"),
+            BotCommand(command="plus", description="Подписка «Салон+» и скидки"),
+            BotCommand(command="tutorial", description="Как это работает — за 4 шага"),
+            BotCommand(command="support", description="Задать вопрос"),
             BotCommand(command="help", description="Помощь"),
         ]
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
