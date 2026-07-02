@@ -1,7 +1,9 @@
 """
 «Глаз бога» — сводка бизнеса одной командой.
 
-/boss (алиас /dashboard) — только для админов (settings.ADMIN_IDS).
+/boss — только для админов (settings.ADMIN_IDS).
+Алиаса /dashboard нет: эта команда уже занята live-карточкой
+в bot/handlers/admin.py (admin_router регистрируется раньше).
 Только чтение: одни SELECT-ы, база не меняется.
 
 Что показывает:
@@ -275,7 +277,7 @@ async def build_dashboard_text(session: AsyncSession) -> str:
     )
 
 
-@router.message(Command("boss", "dashboard"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
+@router.message(Command("boss"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_boss(message: Message, session: AsyncSession):
     """«Глаз бога»: сводка бизнеса одним сообщением."""
     try:

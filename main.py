@@ -207,11 +207,13 @@ async def run_bot(runtime: ServiceRuntime):
     dp.include_router(admin_dashboard_router)  # «Глаз бога»: /boss — сводка бизнеса (только админы)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
+    # Тутор и проводник — ДО order_chat/orders: иначе команду /tutorial глотает
+    # catch-all чата поддержки (ChatStates.in_chat) и текстовые шаги wizard-а
+    dp.include_router(tutorial_router)  # Тутор «Как это работает» (/tutorial, tutorial_1..4)
+    dp.include_router(guide_club_router)  # Проводник: клуб, «Салон+», поддержка, «← Меню»
     dp.include_router(order_chat_router)  # Приватный чат по заказам
     dp.include_router(orders_router)  # FSM для заказов
     dp.include_router(my_orders_router)  # История заказов
-    dp.include_router(tutorial_router)  # Тутор «Как это работает» (/tutorial, tutorial_1..4)
-    dp.include_router(guide_club_router)  # Проводник: клуб, «Салон+», поддержка, «← Меню»
     dp.include_router(menu_router)
     # ----------------------------
 
