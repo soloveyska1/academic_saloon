@@ -51,7 +51,7 @@ from .router import (
     DEADLINE_IMAGE_PATH,
     MAX_ATTACHMENTS,
 )
-from .utils import calculate_user_discount, format_attachments_preview, get_progress_bar
+from .utils import calculate_total_discount, format_attachments_preview, get_progress_bar
 from .task import show_task_input_screen
 
 
@@ -185,7 +185,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    discount = calculate_user_discount(user)
+    discount = await calculate_total_discount(session, user)
     discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""<b>Оформление заказа</b>

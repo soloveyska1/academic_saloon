@@ -298,6 +298,31 @@ def calculate_user_discount(user: User | None) -> int:
     return discount
 
 
+# Потолок суммарной скидки (лояльность + рефералка + подписка «Салон+»)
+MAX_TOTAL_DISCOUNT = 25
+
+
+async def calculate_total_discount(session, user: User | None) -> int:
+    """
+    Полная скидка пользователя: базовая (calculate_user_discount:
+    лояльность + рефералка) + скидка подписки «Салон+».
+    Итог не превышает MAX_TOTAL_DISCOUNT%.
+
+    Использовать там, где доступна сессия БД (расчёт цены заказа).
+    """
+    discount = calculate_user_discount(user)
+
+    if user is not None and session is not None:
+        try:
+            from bot.services.subscription_service import subscription_discount_percent
+            discount += await subscription_discount_percent(session, user.telegram_id)
+        except Exception as e:
+            from .router import logger
+            logger.warning(f"[Salon+] Не удалось получить скидку подписки для {user.telegram_id}: {e}")
+
+    return min(discount, MAX_TOTAL_DISCOUNT)
+
+
 # ══════════════════════════════════════════════════════════════
 #                    DEADLINE PARSING
 # ══════════════════════════════════════════════════════════════

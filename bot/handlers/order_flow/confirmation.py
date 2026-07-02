@@ -39,7 +39,7 @@ from .router import (
     IMG_DRAFT_REVIEW,
     CHECKING_PAYMENT_IMAGE_PATH,
 )
-from .utils import calculate_user_discount
+from .utils import calculate_total_discount
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -229,7 +229,7 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     result = await session.execute(user_query)
     user = result.scalar_one_or_none()
 
-    discount = calculate_user_discount(user)
+    discount = await calculate_total_discount(session, user)
     await state.update_data(discount=discount)
 
     # Form common preview data

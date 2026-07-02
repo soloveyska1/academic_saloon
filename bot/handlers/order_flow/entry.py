@@ -44,7 +44,7 @@ from .router import (
 )
 from .utils import (
     parse_callback_data,
-    calculate_user_discount,
+    calculate_total_discount,
     check_rate_limit,
 )
 
@@ -220,7 +220,7 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
         user_query = select(User).where(User.telegram_id == callback.from_user.id)
         user_result = await session.execute(user_query)
         user = user_result.scalar_one_or_none()
-        discount = calculate_user_discount(user)
+        discount = await calculate_total_discount(session, user)
     except Exception as e:
         logger.warning(f"Ошибка получения скидки: {e}")
 
@@ -434,7 +434,7 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    discount = calculate_user_discount(user)
+    discount = await calculate_total_discount(session, user)
     discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""🎯 <b>Оформление заказа</b>
@@ -564,7 +564,7 @@ async def order_back_to_type(callback: CallbackQuery, state: FSMContext, session
     user_query = select(User).where(User.telegram_id == callback.from_user.id)
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
-    discount = calculate_user_discount(user)
+    discount = await calculate_total_discount(session, user)
     discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""🎯 <b>Оформление заказа</b>

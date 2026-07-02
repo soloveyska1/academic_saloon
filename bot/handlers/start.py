@@ -203,6 +203,52 @@ async def cmd_support(message: Message):
     await message.answer(text, reply_markup=keyboard)
 
 
+# ══════════════════════════════════════════════════════════════
+#  /plus COMMAND — Статус подписки «Салон+»
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("plus"))
+async def cmd_plus(message: Message, session: AsyncSession):
+    """Статус подписки «Салон+»: тариф и срок, либо описание тарифов."""
+    from bot.services.subscription_service import MSK_TZ, TIERS, get_active_subscription
+
+    subscription = None
+    try:
+        subscription = await get_active_subscription(session, message.from_user.id)
+    except Exception as e:
+        logger.warning(f"[Salon+] Не удалось получить подписку {message.from_user.id}: {e}")
+
+    if subscription:
+        _, _, title = TIERS.get(subscription.tier, (0, 0, subscription.tier))
+        expires_str = subscription.expires_at.astimezone(MSK_TZ).strftime("%d.%m.%Y")
+        await message.answer(
+            f"⭐️ <b>Ваша подписка: «{title}»</b>\n\n"
+            f"├ Скидка: <b>−{subscription.discount_percent}%</b> на все заказы\n"
+            f"└ Действует до: <b>{expires_str}</b>\n\n"
+            f"<i>Скидка применяется автоматически при оформлении заказа.</i>",
+            reply_markup=get_persistent_menu(),
+        )
+        return
+
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="Оформить подписку",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    await message.answer(
+        "<b>Подписка «Салон+»</b>\n\n"
+        "• <b>Салон+</b> — 499 ₽/мес: скидка 5% на все заказы\n"
+        "• <b>Салон+ Про</b> — 999 ₽/мес: скидка 10% на все заказы\n\n"
+        "Подписка действует 30 дней, автопродления нет.\n"
+        "Скидка суммируется с прочими (общая — до 25%).\n\n"
+        "<i>Напишите менеджеру — активируем сразу после оплаты.</i>",
+        reply_markup=keyboard,
+    )
+
+
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     """
     Отправляет статус сервиса с интерактивными кнопками.
