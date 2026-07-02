@@ -14,6 +14,7 @@ from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from database.models.levels import RankLevel
 from database.models.transactions import BalanceTransaction
 from database.models.users import User
@@ -466,6 +467,18 @@ class BonusService:
                     )
 
         await session.commit()
+
+        # Уведомляем владельцев о реферальном начислении (не ломаем поток при ошибке)
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                await bot.send_message(
+                    admin_id,
+                    f"💎 Реферальная программа: пользователь {referred_name} оплатил заказ — "
+                    f"рефереру {referrer_id} начислено {bonus_amount:.0f}₽ ({percent}%)",
+                )
+            except Exception as exc:
+                logger.warning(f"[Referral] Не удалось уведомить админа {admin_id}: {exc}")
+
         return bonus_amount
 
     @staticmethod

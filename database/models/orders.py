@@ -77,17 +77,17 @@ WORK_TYPE_LABELS = {
 }
 
 
-# Минимальные цены для калькулятора (психологические)
+# Минимальные цены для калькулятора (синхронизированы с BASE_PRICES в bot/services/pricing.py)
 WORK_TYPE_PRICES = {
-    WorkType.MASTERS: "от 44 900₽",
-    WorkType.DIPLOMA: "от 34 900₽",
-    WorkType.COURSEWORK: "от 11 900₽",
-    WorkType.INDEPENDENT: "от 2 400₽",
-    WorkType.ESSAY: "от 1 400₽",
-    WorkType.REPORT: "от 900₽",
-    WorkType.CONTROL: "от 1 400₽",
-    WorkType.PRESENTATION: "от 1 900₽",
-    WorkType.PRACTICE: "от 4 900₽",
+    WorkType.MASTERS: "от 60 000₽",
+    WorkType.DIPLOMA: "от 40 000₽",
+    WorkType.COURSEWORK: "от 14 000₽",
+    WorkType.INDEPENDENT: "от 3 500₽",
+    WorkType.ESSAY: "от 2 500₽",
+    WorkType.REPORT: "от 2 500₽",
+    WorkType.CONTROL: "от 3 000₽",
+    WorkType.PRESENTATION: "от 7 000₽",
+    WorkType.PRACTICE: "от 8 000₽",
     WorkType.OTHER: "индивидуально",
 }
 

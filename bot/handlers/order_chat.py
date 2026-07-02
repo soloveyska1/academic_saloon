@@ -30,6 +30,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from aiogram import Bot, F, Router
+from aiogram.enums import ChatAction
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -41,6 +42,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     Message,
+    ReactionTypeEmoji,
     ReplyKeyboardMarkup,
 )
 from sqlalchemy import select
@@ -1782,6 +1784,11 @@ async def enter_chat_by_order(
         conv_type=ConversationType.ORDER_CHAT.value,
     )
 
+    try:
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+    except Exception:
+        pass
+
     await callback.message.answer(
         f"💬 <b>Чат по заказу #{order_id}</b>\n\n"
         "Вы в чате с менеджером.\n"
@@ -1856,6 +1863,12 @@ async def client_message_to_topic(
     Пересылает в топик админской группы.
     Self-Healing: автоматически восстанавливает удалённые топики.
     """
+    # Реакция «увидели» на сообщение клиента (реакции могут быть запрещены)
+    try:
+        await message.react([ReactionTypeEmoji(emoji="👀")])
+    except Exception:
+        pass
+
     data = await state.get_data()
     order_id = data.get("order_id")
     conv_type = data.get("conv_type", ConversationType.SUPPORT.value)
@@ -1930,6 +1943,10 @@ async def client_message_to_topic(
                 await maybe_refresh_topic_header(bot, session, conv, order, user)
 
         # Подтверждение клиенту
+        try:
+            await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+        except Exception:
+            pass
         await message.answer("✅ Сообщение отправлено!")
 
     except TelegramBadRequest as e:
