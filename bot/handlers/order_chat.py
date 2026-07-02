@@ -3071,7 +3071,7 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
             # Рассчитываем бонусы
             bonus_used = 0
             if user and float(user.balance or 0) > 0:
-                max_bonus = float(price) * 0.5
+                max_bonus = float(price) * 0.2  # потолок оплаты бонусами: 20% заказа (правила лояльности)
                 bonus_used = min(float(user.balance or 0), max_bonus)
 
             # Устанавливаем цену
@@ -3201,7 +3201,7 @@ async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSessio
     # Рассчитываем бонусы
     bonus_used = 0
     if user and float(user.balance or 0) > 0:
-        max_bonus = float(price) * 0.5
+        max_bonus = float(price) * 0.2  # потолок оплаты бонусами: 20% заказа (правила лояльности)
         bonus_used = min(float(user.balance or 0), max_bonus)
 
     old_price = float(order.price or 0)

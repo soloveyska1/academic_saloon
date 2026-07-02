@@ -2390,7 +2390,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
         return
 
     # Рассчитываем бонусы (макс 50% от цены)
-    max_bonus = float(price) * 0.5
+    max_bonus = float(price) * 0.2  # потолок оплаты бонусами: 20% заказа (правила лояльности)
     bonus_to_use = min(user.balance, max_bonus)
 
     # Обновляем заказ
@@ -3362,7 +3362,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     price = order.price
 
     # Рассчитываем бонусы (макс 50% от цены)
-    max_bonus = float(price) * 0.5
+    max_bonus = float(price) * 0.2  # потолок оплаты бонусами: 20% заказа (правила лояльности)
     bonus_to_use = min(user.balance, max_bonus)
 
     # Обновляем заказ
@@ -3488,7 +3488,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
         return
 
     # Рассчитываем бонусы (макс 50% от цены)
-    max_bonus = float(price) * 0.5
+    max_bonus = float(price) * 0.2  # потолок оплаты бонусами: 20% заказа (правила лояльности)
     bonus_to_use = min(user.balance, max_bonus)
 
     # Обновляем заказ
