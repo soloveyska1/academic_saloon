@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 
 from core.config import settings
 
@@ -38,6 +38,7 @@ from bot.handlers.channel_cards import router as channel_cards_router
 from bot.handlers.order_chat import router as order_chat_router
 from bot.handlers.devops import router as devops_router
 from bot.handlers.admin_subs import router as admin_subs_router
+from bot.handlers.admin_dashboard import router as admin_dashboard_router
 from bot.middlewares import (
     ErrorHandlerMiddleware,
     DbSessionMiddleware,
@@ -203,6 +204,7 @@ async def run_bot(runtime: ServiceRuntime):
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(devops_router)  # DevOps команды (/deploy, /rollback, /status, /logs)
     dp.include_router(admin_subs_router)  # Подписки «Салон+» (/sub, /unsub, /subinfo)
+    dp.include_router(admin_dashboard_router)  # «Глаз бога»: /boss — сводка бизнеса (только админы)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
     dp.include_router(order_chat_router)  # Приватный чат по заказам
@@ -229,6 +231,21 @@ async def run_bot(runtime: ServiceRuntime):
         ]
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
         logger.info("📋 Bot commands set")
+
+        # Админам — те же команды плюс скрытая /boss (сводка бизнеса).
+        # BotCommandScopeChat перекрывает дефолтный список только в их личке.
+        admin_commands = commands + [
+            BotCommand(command="boss", description="Сводка Салона — цифры за сегодня/7/30 дней"),
+        ]
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                await bot.set_my_commands(
+                    admin_commands,
+                    scope=BotCommandScopeChat(chat_id=admin_id),
+                )
+            except Exception as e:
+                # Например, админ ещё не открывал чат с ботом — не критично
+                logger.warning(f"⚠️ Failed to set admin commands for {admin_id}: {e}")
 
         # Menu Button — кнопка слева от поля ввода, открывает Mini App
         await bot.set_chat_menu_button(
