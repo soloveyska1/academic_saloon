@@ -319,6 +319,12 @@ async def calculate_total_discount(session, user: User | None) -> int:
         except Exception as e:
             from .router import logger
             logger.warning(f"[Salon+] Не удалось получить скидку подписки для {user.telegram_id}: {e}")
+            # Откатываем упавшую транзакцию, иначе сессия остаётся «отравленной»
+            # и все последующие запросы хендлера (создание заказа!) упадут.
+            try:
+                await session.rollback()
+            except Exception:
+                pass
 
     return min(discount, MAX_TOTAL_DISCOUNT)
 
