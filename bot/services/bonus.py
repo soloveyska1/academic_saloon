@@ -37,6 +37,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "coupon": "Купон",
     "order_refund": "Возврат бонусов",
     "achievement": "Награда за достижение",
+    "welcome_bonus": "Приветственный бонус",
 }
 
 
@@ -54,10 +55,13 @@ class BonusReason(str, Enum):
     COUPON = "coupon"                        # Промокод
     ORDER_REFUND = "order_refund"            # Возврат бонусов при отмене заказа
     ACHIEVEMENT = "achievement"              # Награда за достижение
+    WELCOME_BONUS = "welcome_bonus"          # Приветственный бонус новому пользователю
 
 
 # Настройки бонусов
 BONUS_FOR_ORDER = 50  # Бонусы за создание заказа
+WELCOME_BONUS_AMOUNT = 300  # Приветственный бонус новым пользователям (1 раз на tg id)
+WELCOME_BONUS_TTL_DAYS = 30  # Срок жизни приветственного бонуса (справочно; сгорание — по общей логике)
 
 # Referral 2.0 — tiered bonuses based on referral count
 REFERRAL_TIERS = [
