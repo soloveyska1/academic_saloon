@@ -15,20 +15,6 @@ interface Testimonial {
 
 const TESTIMONIALS: Testimonial[] = [
   {
-    workType: 'Защита',
-    icon: GraduationCap,
-    text: 'Защита прошла отлично, у меня вообще ничего не спросили, похвалили авторскую анкету. Видимо, работа очень подошла по критериям преподавателя.',
-    outcome: 'Без вопросов на защите',
-    name: 'Ноябрь 2026',
-  },
-  {
-    workType: 'Сдача работы',
-    icon: ShieldCheck,
-    text: 'Всё прошло хорошо. Всё было на высоте! Огромное спасибо! Выручаете как всегда!',
-    outcome: 'Всё на высоте',
-    name: 'Ноябрь 2026',
-  },
-  {
     workType: 'Курсовая',
     icon: BookOpen,
     text: 'Сделали за 4 дня. Уникальность 87%. Преподаватель принял с первого раза.',
@@ -150,7 +136,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             const TypeIcon = t.icon
             return (
               <motion.div
-                key={`${t.workType}-${i}`}
+                key={t.workType}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: EASE }}
